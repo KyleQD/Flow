@@ -1,0 +1,3503 @@
+{
+  "venue_profiles": [
+    {
+      "id": "venue_001",
+      "user_id": "user_001",
+      "name": "The Grand Hall",
+      "type": "concert_hall",
+      "description": "Historic concert hall in downtown, known for its exceptional acoustics and elegant architecture.",
+      "address": {
+        "street": "123 Music Avenue",
+        "city": "New York",
+        "state": "NY",
+        "zip": "10001",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        }
+      },
+      "contact": {
+        "phone": "+1-212-555-0123",
+        "email": "info@grandhall.com",
+        "website": "https://grandhall.com",
+        "social_media": {
+          "instagram": "https://instagram.com/grandhall",
+          "twitter": "https://twitter.com/grandhall",
+          "facebook": "https://facebook.com/grandhall"
+        }
+      },
+      "capacity": {
+        "seated": 2000,
+        "standing": 3000,
+        "total": 5000,
+        "vip_sections": 200
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_001",
+            "name": "Main Stage",
+            "dimensions": "40x30x20",
+            "equipment": ["PA System", "Lighting Rig", "Backline"]
+          }
+        ],
+        "dressing_rooms": 8,
+        "green_rooms": 2,
+        "parking_spaces": 500,
+        "loading_docks": 2,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "L-Acoustics",
+          "model": "K2",
+          "power": "100kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Martin",
+          "channels": 512
+        },
+        "video": {
+          "screens": 2,
+          "resolution": "4K",
+          "projectors": 4
+        }
+      },
+      "amenities": [
+        "Bar",
+        "Restaurant",
+        "Merchandise Stand",
+        "VIP Lounge",
+        "Box Office",
+        "First Aid Room"
+      ],
+      "booking_info": {
+        "min_booking_notice": 90,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "30 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 15000.00,
+        "security_deposit": 5000.00,
+        "staffing_costs": {
+          "security": 50.00,
+          "stage_hands": 35.00,
+          "box_office": 25.00
+        }
+      },
+      "availability": [
+        {
+          "id": "avail_001",
+          "date": "2024-07-15",
+          "status": "booked",
+          "event_id": "event_001"
+        },
+        {
+          "id": "avail_002",
+          "date": "2024-07-16",
+          "status": "available"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_001",
+          "author": "John Smith",
+          "rating": 4.8,
+          "comment": "Excellent venue with great sound and staff",
+          "date": "2024-03-15"
+        }
+      ],
+      "stats": {
+        "events_hosted": 150,
+        "average_attendance": 3500,
+        "rating": 4.7,
+        "revenue": 2500000.00
+      },
+      "isPublic": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-03-20T00:00:00Z"
+    },
+    {
+      "id": "venue_002",
+      "user_id": "user_002",
+      "name": "The Underground Club",
+      "type": "nightclub",
+      "description": "Intimate underground venue specializing in electronic music and live performances.",
+      "address": {
+        "street": "456 Bass Street",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip": "90001",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 34.0522,
+          "longitude": -118.2437
+        }
+      },
+      "contact": {
+        "phone": "+1-213-555-0123",
+        "email": "bookings@undergroundclub.com",
+        "website": "https://undergroundclub.com",
+        "social_media": {
+          "instagram": "https://instagram.com/undergroundclub",
+          "twitter": "https://twitter.com/undergroundclub",
+          "facebook": "https://facebook.com/undergroundclub"
+        }
+      },
+      "capacity": {
+        "seated": 100,
+        "standing": 400,
+        "total": 500,
+        "vip_sections": 50
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_002",
+            "name": "Main Stage",
+            "dimensions": "20x15x10",
+            "equipment": ["DJ Booth", "Sound System", "Lighting"]
+          }
+        ],
+        "dressing_rooms": 2,
+        "green_rooms": 1,
+        "parking_spaces": 50,
+        "loading_docks": 1,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "Funktion-One",
+          "model": "Res 5",
+          "power": "50kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Chauvet",
+          "channels": 256
+        },
+        "video": {
+          "screens": 1,
+          "resolution": "1080p",
+          "projectors": 2
+        }
+      },
+      "amenities": [
+        "Bar",
+        "VIP Area",
+        "Merchandise Stand",
+        "Box Office",
+        "First Aid Room"
+      ],
+      "booking_info": {
+        "min_booking_notice": 30,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "14 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 5000.00,
+        "security_deposit": 2000.00,
+        "staffing_costs": {
+          "security": 30.00,
+          "bar_staff": 25.00,
+          "box_office": 20.00
+        }
+      },
+      "availability": [
+        {
+          "id": "avail_003",
+          "date": "2024-07-20",
+          "status": "booked",
+          "event_id": "event_002"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_002",
+          "author": "Sarah Johnson",
+          "rating": 4.9,
+          "comment": "Amazing sound system and atmosphere",
+          "date": "2024-03-10"
+        }
+      ],
+      "stats": {
+        "events_hosted": 200,
+        "average_attendance": 400,
+        "rating": 4.8,
+        "revenue": 1000000.00
+      },
+      "isPublic": true,
+      "created_at": "2024-01-15T00:00:00Z",
+      "updated_at": "2024-03-20T00:00:00Z"
+    },
+    {
+      "id": "venue_003",
+      "user_id": "user_003",
+      "name": "Starlight Amphitheater",
+      "type": "outdoor_amphitheater",
+      "description": "Open-air amphitheater with stunning views and state-of-the-art sound system.",
+      "address": {
+        "street": "789 Hillside Drive",
+        "city": "Denver",
+        "state": "CO",
+        "zip": "80201",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 39.7392,
+          "longitude": -104.9903
+        }
+      },
+      "contact": {
+        "phone": "+1-303-555-0123",
+        "email": "info@starlightamphitheater.com",
+        "website": "https://starlightamphitheater.com",
+        "social_media": {
+          "instagram": "https://instagram.com/starlightamp",
+          "twitter": "https://twitter.com/starlightamp",
+          "facebook": "https://facebook.com/starlightamp"
+        }
+      },
+      "capacity": {
+        "seated": 5000,
+        "lawn": 10000,
+        "total": 15000,
+        "vip_sections": 500
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_003",
+            "name": "Main Stage",
+            "dimensions": "60x40x30",
+            "equipment": ["Weather-Protected PA", "Lighting Rig", "Backline"]
+          }
+        ],
+        "dressing_rooms": 12,
+        "green_rooms": 4,
+        "parking_spaces": 3000,
+        "loading_docks": 4,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "Meyer Sound",
+          "model": "LEO",
+          "power": "200kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Clay Paky",
+          "channels": 1024
+        },
+        "video": {
+          "screens": 4,
+          "resolution": "4K",
+          "projectors": 8
+        }
+      },
+      "amenities": [
+        "Multiple Bars",
+        "Food Vendors",
+        "Merchandise Stands",
+        "VIP Suites",
+        "Box Office",
+        "First Aid Stations",
+        "Restrooms",
+        "Shuttle Service"
+      ],
+      "weather_considerations": {
+        "rain_plan": "Covered seating available",
+        "temperature_range": "40-90°F",
+        "wind_restrictions": "Max 25mph for shows"
+      },
+      "booking_info": {
+        "min_booking_notice": 180,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "60 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 50000.00,
+        "security_deposit": 15000.00,
+        "staffing_costs": {
+          "security": 75.00,
+          "stage_hands": 45.00,
+          "box_office": 30.00,
+          "parking_attendants": 25.00
+        }
+      },
+      "availability": [
+        {
+          "id": "avail_003",
+          "date": "2024-07-20",
+          "status": "available"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_003",
+          "author": "Michael Johnson",
+          "rating": 4.9,
+          "comment": "Amazing outdoor venue with perfect acoustics",
+          "date": "2024-03-10"
+        }
+      ],
+      "stats": {
+        "events_hosted": 75,
+        "average_attendance": 12000,
+        "rating": 4.8,
+        "revenue": 3500000.00
+      }
+    },
+    {
+      "id": "venue_004",
+      "user_id": "user_004",
+      "name": "Metro Stadium",
+      "type": "stadium",
+      "description": "Multi-purpose stadium capable of hosting large-scale concerts and events.",
+      "address": {
+        "street": "1000 Sports Way",
+        "city": "Chicago",
+        "state": "IL",
+        "zip": "60601",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 41.8781,
+          "longitude": -87.6298
+        }
+      },
+      "contact": {
+        "phone": "+1-312-555-0123",
+        "email": "events@metrostadium.com",
+        "website": "https://metrostadium.com",
+        "social_media": {
+          "instagram": "https://instagram.com/metrostadium",
+          "twitter": "https://twitter.com/metrostadium",
+          "facebook": "https://facebook.com/metrostadium"
+        }
+      },
+      "capacity": {
+        "seated": 45000,
+        "floor": 15000,
+        "total": 60000,
+        "vip_sections": 2000
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_004",
+            "name": "Main Stage",
+            "dimensions": "100x60x40",
+            "equipment": ["Stadium PA", "Lighting Rig", "Backline"]
+          }
+        ],
+        "dressing_rooms": 20,
+        "green_rooms": 8,
+        "parking_spaces": 15000,
+        "loading_docks": 8,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "d&b audiotechnik",
+          "model": "J-Series",
+          "power": "500kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Vari-Lite",
+          "channels": 2048
+        },
+        "video": {
+          "screens": 8,
+          "resolution": "4K",
+          "projectors": 16
+        }
+      },
+      "amenities": [
+        "Multiple Bars",
+        "Restaurants",
+        "Merchandise Stands",
+        "VIP Suites",
+        "Box Office",
+        "First Aid Stations",
+        "Restrooms",
+        "Shuttle Service",
+        "Press Box",
+        "Broadcast Facilities"
+      ],
+      "booking_info": {
+        "min_booking_notice": 365,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "90 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 200000.00,
+        "security_deposit": 50000.00,
+        "staffing_costs": {
+          "security": 100.00,
+          "stage_hands": 60.00,
+          "box_office": 40.00,
+          "parking_attendants": 35.00
+        }
+      },
+      "availability": [
+        {
+          "id": "avail_004",
+          "date": "2024-08-15",
+          "status": "available"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_004",
+          "author": "Sarah Williams",
+          "rating": 4.7,
+          "comment": "World-class stadium with excellent facilities",
+          "date": "2024-03-05"
+        }
+      ],
+      "stats": {
+        "events_hosted": 200,
+        "average_attendance": 45000,
+        "rating": 4.7,
+        "revenue": 15000000.00
+      }
+    },
+    {
+      "id": "venue_005",
+      "user_id": "user_005",
+      "name": "The Royal Theater",
+      "type": "theater",
+      "description": "Historic theater specializing in Broadway shows and musical performances.",
+      "address": {
+        "street": "555 Broadway",
+        "city": "New York",
+        "state": "NY",
+        "zip": "10001",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 40.7589,
+          "longitude": -73.9851
+        }
+      },
+      "contact": {
+        "phone": "+1-212-555-0123",
+        "email": "info@royaltheater.com",
+        "website": "https://royaltheater.com",
+        "social_media": {
+          "instagram": "https://instagram.com/royaltheater",
+          "twitter": "https://twitter.com/royaltheater",
+          "facebook": "https://facebook.com/royaltheater"
+        }
+      },
+      "capacity": {
+        "orchestra": 800,
+        "mezzanine": 400,
+        "balcony": 300,
+        "total": 1500,
+        "vip_sections": 50
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_005",
+            "name": "Main Stage",
+            "dimensions": "40x30x25",
+            "equipment": ["Fly System", "Orchestra Pit", "Sound System"]
+          }
+        ],
+        "dressing_rooms": 10,
+        "green_rooms": 2,
+        "parking_spaces": 200,
+        "loading_docks": 2,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "Meyer Sound",
+          "model": "ULTRA-X40",
+          "power": "50kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "ETC",
+          "channels": 512
+        },
+        "video": {
+          "screens": 2,
+          "resolution": "4K",
+          "projectors": 2
+        }
+      },
+      "amenities": [
+        "Bar",
+        "Restaurant",
+        "Merchandise Stand",
+        "VIP Lounge",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check"
+      ],
+      "booking_info": {
+        "min_booking_notice": 365,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "90 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 25000.00,
+        "security_deposit": 10000.00,
+        "staffing_costs": {
+          "security": 40.00,
+          "stage_hands": 35.00,
+          "box_office": 25.00,
+          "ushers": 20.00
+        }
+      }
+    },
+    {
+      "id": "venue_006",
+      "user_id": "user_006",
+      "name": "Skyline Arena",
+      "type": "arena",
+      "description": "Multi-purpose indoor arena hosting concerts, sports events, and large-scale productions.",
+      "address": {
+        "street": "1000 Arena Way",
+        "city": "Houston",
+        "state": "TX",
+        "zip": "77001",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 29.7604,
+          "longitude": -95.3698
+        }
+      },
+      "contact": {
+        "phone": "+1-713-555-0123",
+        "email": "events@skylinearena.com",
+        "website": "https://skylinearena.com",
+        "social_media": {
+          "instagram": "https://instagram.com/skylinearena",
+          "twitter": "https://twitter.com/skylinearena",
+          "facebook": "https://facebook.com/skylinearena"
+        }
+      },
+      "capacity": {
+        "seated": 15000,
+        "floor": 5000,
+        "total": 20000,
+        "vip_sections": 1000
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_006",
+            "name": "Main Stage",
+            "dimensions": "80x50x35",
+            "equipment": ["Arena PA", "Lighting Rig", "Backline"]
+          }
+        ],
+        "dressing_rooms": 15,
+        "green_rooms": 5,
+        "parking_spaces": 5000,
+        "loading_docks": 6,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "L-Acoustics",
+          "model": "K1",
+          "power": "300kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Martin",
+          "channels": 1024
+        },
+        "video": {
+          "screens": 6,
+          "resolution": "4K",
+          "projectors": 12
+        }
+      },
+      "amenities": [
+        "Multiple Bars",
+        "Restaurants",
+        "Merchandise Stands",
+        "VIP Suites",
+        "Box Office",
+        "First Aid Stations",
+        "Restrooms",
+        "Shuttle Service",
+        "Press Box",
+        "Broadcast Facilities"
+      ],
+      "booking_info": {
+        "min_booking_notice": 180,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "60 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 100000.00,
+        "security_deposit": 30000.00,
+        "staffing_costs": {
+          "security": 75.00,
+          "stage_hands": 50.00,
+          "box_office": 35.00,
+          "parking_attendants": 30.00
+        }
+      }
+    },
+    {
+      "id": "venue_007",
+      "user_id": "user_007",
+      "name": "Convention Center",
+      "type": "convention_center",
+      "description": "State-of-the-art convention center with multiple halls and meeting spaces.",
+      "address": {
+        "street": "2000 Convention Blvd",
+        "city": "Las Vegas",
+        "state": "NV",
+        "zip": "89101",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 36.1699,
+          "longitude": -115.1398
+        }
+      },
+      "contact": {
+        "phone": "+1-702-555-0123",
+        "email": "events@conventioncenter.com",
+        "website": "https://conventioncenter.com",
+        "social_media": {
+          "instagram": "https://instagram.com/conventioncenter",
+          "twitter": "https://twitter.com/conventioncenter",
+          "facebook": "https://facebook.com/conventioncenter"
+        }
+      },
+      "capacity": {
+        "main_hall": 10000,
+        "meeting_rooms": 2000,
+        "ballroom": 5000,
+        "total": 17000,
+        "vip_sections": 1000
+      },
+      "facilities": {
+        "halls": [
+          {
+            "id": "hall_001",
+            "name": "Main Hall",
+            "dimensions": "200x100x30",
+            "equipment": ["PA System", "Lighting", "Projection"]
+          }
+        ],
+        "meeting_rooms": 20,
+        "dressing_rooms": 15,
+        "parking_spaces": 5000,
+        "loading_docks": 10,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "JBL",
+          "model": "Professional",
+          "power": "200kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "ETC",
+          "channels": 1024
+        },
+        "video": {
+          "screens": 10,
+          "resolution": "4K",
+          "projectors": 20
+        }
+      },
+      "amenities": [
+        "Multiple Bars",
+        "Restaurants",
+        "Business Center",
+        "VIP Lounges",
+        "Box Office",
+        "First Aid Stations",
+        "Restrooms",
+        "Shuttle Service",
+        "Press Room",
+        "Broadcast Facilities"
+      ],
+      "booking_info": {
+        "min_booking_notice": 180,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "60 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 75000.00,
+        "security_deposit": 25000.00,
+        "staffing_costs": {
+          "security": 60.00,
+          "stage_hands": 45.00,
+          "box_office": 30.00,
+          "concierge": 35.00
+        }
+      }
+    },
+    {
+      "id": "venue_008",
+      "user_id": "user_008",
+      "name": "Sunset Festival Grounds",
+      "type": "festival_grounds",
+      "description": "Expansive outdoor festival grounds with multiple stages and camping areas.",
+      "address": {
+        "street": "3000 Festival Way",
+        "city": "Austin",
+        "state": "TX",
+        "zip": "78701",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 30.2672,
+          "longitude": -97.7431
+        }
+      },
+      "contact": {
+        "phone": "+1-512-555-0123",
+        "email": "info@sunsetfestival.com",
+        "website": "https://sunsetfestival.com",
+        "social_media": {
+          "instagram": "https://instagram.com/sunsetfestival",
+          "twitter": "https://twitter.com/sunsetfestival",
+          "facebook": "https://facebook.com/sunsetfestival"
+        }
+      },
+      "capacity": {
+        "main_stage": 50000,
+        "secondary_stages": 20000,
+        "camping": 25000,
+        "total": 95000,
+        "vip_sections": 5000
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_007",
+            "name": "Main Stage",
+            "dimensions": "100x60x40",
+            "equipment": ["Weather-Protected PA", "Lighting Rig", "Backline"]
+          },
+          {
+            "id": "stage_008",
+            "name": "Secondary Stage",
+            "dimensions": "60x40x30",
+            "equipment": ["PA System", "Lighting", "Backline"]
+          }
+        ],
+        "dressing_rooms": 20,
+        "green_rooms": 10,
+        "parking_spaces": 20000,
+        "loading_docks": 8,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "Meyer Sound",
+          "model": "LEO",
+          "power": "400kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Clay Paky",
+          "channels": 2048
+        },
+        "video": {
+          "screens": 12,
+          "resolution": "4K",
+          "projectors": 24
+        }
+      },
+      "amenities": [
+        "Multiple Bars",
+        "Food Vendors",
+        "Merchandise Stands",
+        "VIP Areas",
+        "Box Office",
+        "First Aid Stations",
+        "Restrooms",
+        "Shuttle Service",
+        "Press Area",
+        "Broadcast Facilities",
+        "Camping Grounds",
+        "Water Stations"
+      ],
+      "weather_considerations": {
+        "rain_plan": "Covered areas available",
+        "temperature_range": "50-100°F",
+        "wind_restrictions": "Max 30mph for shows"
+      },
+      "booking_info": {
+        "min_booking_notice": 365,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "90 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 150000.00,
+        "security_deposit": 50000.00,
+        "staffing_costs": {
+          "security": 100.00,
+          "stage_hands": 60.00,
+          "box_office": 40.00,
+          "parking_attendants": 35.00
+        }
+      }
+    },
+    {
+      "id": "venue_009",
+      "user_id": "user_009",
+      "name": "The Jazz Lounge",
+      "type": "jazz_club",
+      "description": "Intimate jazz venue with state-of-the-art acoustics and vintage ambiance.",
+      "address": {
+        "street": "400 Jazz Street",
+        "city": "New Orleans",
+        "state": "LA",
+        "zip": "70130",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 29.9511,
+          "longitude": -90.0715
+        }
+      },
+      "contact": {
+        "phone": "+1-504-555-0123",
+        "email": "bookings@jazzlounge.com",
+        "website": "https://jazzlounge.com",
+        "social_media": {
+          "instagram": "https://instagram.com/jazzlounge",
+          "twitter": "https://twitter.com/jazzlounge",
+          "facebook": "https://facebook.com/jazzlounge"
+        }
+      },
+      "capacity": {
+        "seated": 150,
+        "standing": 50,
+        "total": 200,
+        "vip_sections": 20
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_009",
+            "name": "Main Stage",
+            "dimensions": "20x15x10",
+            "equipment": ["Grand Piano", "PA System", "Lighting"]
+          }
+        ],
+        "dressing_rooms": 2,
+        "green_rooms": 1,
+        "parking_spaces": 50,
+        "loading_docks": 1,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "Meyer Sound",
+          "model": "ULTRA-X40",
+          "power": "20kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "ETC",
+          "channels": 256
+        },
+        "video": {
+          "screens": 1,
+          "resolution": "4K",
+          "projectors": 1
+        }
+      },
+      "amenities": [
+        "Bar",
+        "VIP Seating",
+        "Merchandise Stand",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check"
+      ],
+      "booking_info": {
+        "min_booking_notice": 30,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "14 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 3000.00,
+        "security_deposit": 1000.00,
+        "staffing_costs": {
+          "security": 25.00,
+          "bar_staff": 20.00,
+          "box_office": 15.00
+        }
+      }
+    },
+    {
+      "id": "venue_010",
+      "user_id": "user_010",
+      "name": "The Opera House",
+      "type": "opera_house",
+      "description": "Historic opera house with world-class acoustics and ornate architecture.",
+      "address": {
+        "street": "500 Opera Lane",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94102",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 37.7749,
+          "longitude": -122.4194
+        }
+      },
+      "contact": {
+        "phone": "+1-415-555-0123",
+        "email": "info@operahouse.com",
+        "website": "https://operahouse.com",
+        "social_media": {
+          "instagram": "https://instagram.com/operahouse",
+          "twitter": "https://twitter.com/operahouse",
+          "facebook": "https://facebook.com/operahouse"
+        }
+      },
+      "capacity": {
+        "orchestra": 1000,
+        "balcony": 500,
+        "boxes": 200,
+        "total": 1700,
+        "vip_sections": 100
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_010",
+            "name": "Main Stage",
+            "dimensions": "50x40x30",
+            "equipment": ["Orchestra Pit", "Fly System", "Sound System"]
+          }
+        ],
+        "dressing_rooms": 12,
+        "green_rooms": 4,
+        "parking_spaces": 300,
+        "loading_docks": 2,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "Meyer Sound",
+          "model": "ULTRA-X40",
+          "power": "50kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "ETC",
+          "channels": 512
+        },
+        "video": {
+          "screens": 2,
+          "resolution": "4K",
+          "projectors": 2
+        }
+      },
+      "amenities": [
+        "Bar",
+        "Restaurant",
+        "Merchandise Stand",
+        "VIP Lounge",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check",
+        "Valet Service"
+      ],
+      "booking_info": {
+        "min_booking_notice": 365,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "90 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 30000.00,
+        "security_deposit": 10000.00,
+        "staffing_costs": {
+          "security": 40.00,
+          "stage_hands": 35.00,
+          "box_office": 25.00,
+          "ushers": 20.00
+        }
+      }
+    },
+    {
+      "id": "venue_011",
+      "user_id": "user_011",
+      "name": "Laugh Factory",
+      "type": "comedy_club",
+      "description": "Premier comedy club featuring top stand-up comedians and improv shows.",
+      "address": {
+        "street": "600 Comedy Way",
+        "city": "Chicago",
+        "state": "IL",
+        "zip": "60601",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 41.8781,
+          "longitude": -87.6298
+        }
+      },
+      "contact": {
+        "phone": "+1-312-555-0123",
+        "email": "bookings@laughfactory.com",
+        "website": "https://laughfactory.com",
+        "social_media": {
+          "instagram": "https://instagram.com/laughfactory",
+          "twitter": "https://twitter.com/laughfactory",
+          "facebook": "https://facebook.com/laughfactory"
+        }
+      },
+      "capacity": {
+        "seated": 300,
+        "standing": 50,
+        "total": 350,
+        "vip_sections": 30
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_011",
+            "name": "Main Stage",
+            "dimensions": "15x10x8",
+            "equipment": ["PA System", "Lighting", "Microphone Stands"]
+          }
+        ],
+        "dressing_rooms": 3,
+        "green_rooms": 1,
+        "parking_spaces": 100,
+        "loading_docks": 1,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "JBL",
+          "model": "Professional",
+          "power": "10kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Chauvet",
+          "channels": 128
+        },
+        "video": {
+          "screens": 2,
+          "resolution": "1080p",
+          "projectors": 1
+        }
+      },
+      "amenities": [
+        "Bar",
+        "VIP Seating",
+        "Merchandise Stand",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check"
+      ],
+      "booking_info": {
+        "min_booking_notice": 30,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "14 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 2000.00,
+        "security_deposit": 500.00,
+        "staffing_costs": {
+          "security": 20.00,
+          "bar_staff": 15.00,
+          "box_office": 15.00
+        }
+      }
+    },
+    {
+      "id": "venue_012",
+      "user_id": "user_012",
+      "name": "Sports Arena",
+      "type": "sports_arena",
+      "description": "Multi-purpose sports arena hosting professional sports events and concerts.",
+      "address": {
+        "street": "700 Sports Way",
+        "city": "Boston",
+        "state": "MA",
+        "zip": "02108",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 42.3601,
+          "longitude": -71.0589
+        }
+      },
+      "contact": {
+        "phone": "+1-617-555-0123",
+        "email": "events@sportsarena.com",
+        "website": "https://sportsarena.com",
+        "social_media": {
+          "instagram": "https://instagram.com/sportsarena",
+          "twitter": "https://twitter.com/sportsarena",
+          "facebook": "https://facebook.com/sportsarena"
+        }
+      },
+      "capacity": {
+        "seated": 18000,
+        "floor": 2000,
+        "total": 20000,
+        "vip_sections": 1000
+      },
+      "facilities": {
+        "stages": [
+          {
+            "id": "stage_012",
+            "name": "Main Stage",
+            "dimensions": "80x50x35",
+            "equipment": ["Arena PA", "Lighting Rig", "Backline"]
+          }
+        ],
+        "dressing_rooms": 20,
+        "green_rooms": 8,
+        "parking_spaces": 5000,
+        "loading_docks": 8,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "L-Acoustics",
+          "model": "K1",
+          "power": "300kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Martin",
+          "channels": 1024
+        },
+        "video": {
+          "screens": 8,
+          "resolution": "4K",
+          "projectors": 16
+        }
+      },
+      "amenities": [
+        "Multiple Bars",
+        "Restaurants",
+        "Merchandise Stands",
+        "VIP Suites",
+        "Box Office",
+        "First Aid Stations",
+        "Restrooms",
+        "Shuttle Service",
+        "Press Box",
+        "Broadcast Facilities"
+      ],
+      "booking_info": {
+        "min_booking_notice": 180,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "60 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 100000.00,
+        "security_deposit": 30000.00,
+        "staffing_costs": {
+          "security": 75.00,
+          "stage_hands": 50.00,
+          "box_office": 35.00,
+          "parking_attendants": 30.00
+        }
+      }
+    },
+    {
+      "id": "venue_013",
+      "user_id": "user_013",
+      "name": "Modern Art Museum",
+      "type": "museum",
+      "description": "Contemporary art museum with flexible exhibition spaces and event facilities.",
+      "address": {
+        "street": "800 Art Avenue",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip": "90001",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 34.0522,
+          "longitude": -118.2437
+        }
+      },
+      "contact": {
+        "phone": "+1-213-555-0123",
+        "email": "events@modernartmuseum.com",
+        "website": "https://modernartmuseum.com",
+        "social_media": {
+          "instagram": "https://instagram.com/modernartmuseum",
+          "twitter": "https://twitter.com/modernartmuseum",
+          "facebook": "https://facebook.com/modernartmuseum"
+        }
+      },
+      "capacity": {
+        "main_gallery": 500,
+        "event_space": 300,
+        "outdoor_space": 200,
+        "total": 1000,
+        "vip_sections": 50
+      },
+      "facilities": {
+        "spaces": [
+          {
+            "id": "space_001",
+            "name": "Main Gallery",
+            "dimensions": "100x50x20",
+            "features": ["Climate Control", "Lighting System", "Security System"]
+          },
+          {
+            "id": "space_002",
+            "name": "Event Space",
+            "dimensions": "60x40x15",
+            "features": ["Flexible Layout", "AV Equipment", "Catering Kitchen"]
+          }
+        ],
+        "storage_rooms": 5,
+        "parking_spaces": 200,
+        "loading_docks": 2,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "Meyer Sound",
+          "model": "ULTRA-X40",
+          "power": "30kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "ETC",
+          "channels": 256
+        },
+        "video": {
+          "screens": 2,
+          "resolution": "4K",
+          "projectors": 2
+        }
+      },
+      "amenities": [
+        "Cafe",
+        "Gift Shop",
+        "VIP Lounge",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check",
+        "Guided Tours",
+        "Educational Center"
+      ],
+      "booking_info": {
+        "min_booking_notice": 90,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "30 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 15000.00,
+        "security_deposit": 5000.00,
+        "staffing_costs": {
+          "security": 40.00,
+          "event_staff": 30.00,
+          "box_office": 25.00,
+          "docents": 35.00
+        }
+      },
+      "availability": [
+        {
+          "id": "avail_013",
+          "date": "2024-09-01",
+          "status": "available"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_013",
+          "author": "Emily Chen",
+          "rating": 4.8,
+          "comment": "Beautiful space with excellent lighting and acoustics",
+          "date": "2024-03-01"
+        }
+      ],
+      "stats": {
+        "events_hosted": 120,
+        "average_attendance": 400,
+        "rating": 4.8,
+        "revenue": 1800000.00
+      }
+    },
+    {
+      "id": "venue_014",
+      "user_id": "user_014",
+      "name": "The Gallery",
+      "type": "art_gallery",
+      "description": "Contemporary art gallery with flexible exhibition spaces and event facilities.",
+      "address": {
+        "street": "900 Gallery Street",
+        "city": "New York",
+        "state": "NY",
+        "zip": "10001",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        }
+      },
+      "contact": {
+        "phone": "+1-212-555-0123",
+        "email": "events@thegallery.com",
+        "website": "https://thegallery.com",
+        "social_media": {
+          "instagram": "https://instagram.com/thegallery",
+          "twitter": "https://twitter.com/thegallery",
+          "facebook": "https://facebook.com/thegallery"
+        }
+      },
+      "capacity": {
+        "main_space": 200,
+        "private_rooms": 100,
+        "total": 300,
+        "vip_sections": 30
+      },
+      "facilities": {
+        "spaces": [
+          {
+            "id": "space_003",
+            "name": "Main Gallery",
+            "dimensions": "40x30x12",
+            "features": ["Track Lighting", "White Walls", "Security System"]
+          },
+          {
+            "id": "space_004",
+            "name": "Private Viewing Room",
+            "dimensions": "20x15x10",
+            "features": ["Climate Control", "Specialized Lighting", "Security"]
+          }
+        ],
+        "storage_rooms": 3,
+        "parking_spaces": 50,
+        "loading_docks": 1,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "Meyer Sound",
+          "model": "ULTRA-X20",
+          "power": "15kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "ETC",
+          "channels": 128
+        },
+        "video": {
+          "screens": 1,
+          "resolution": "4K",
+          "projectors": 1
+        }
+      },
+      "amenities": [
+        "Wine Bar",
+        "VIP Lounge",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check",
+        "Private Tours",
+        "Art Storage"
+      ],
+      "booking_info": {
+        "min_booking_notice": 30,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "14 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 5000.00,
+        "security_deposit": 2000.00,
+        "staffing_costs": {
+          "security": 30.00,
+          "event_staff": 25.00,
+          "box_office": 20.00,
+          "art_handlers": 35.00
+        }
+      },
+      "availability": [
+        {
+          "id": "avail_014",
+          "date": "2024-09-15",
+          "status": "available"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_014",
+          "author": "David Kim",
+          "rating": 4.7,
+          "comment": "Intimate gallery space with perfect lighting",
+          "date": "2024-02-28"
+        }
+      ],
+      "stats": {
+        "events_hosted": 80,
+        "average_attendance": 150,
+        "rating": 4.7,
+        "revenue": 900000.00
+      }
+    },
+    {
+      "id": "venue_015",
+      "user_id": "user_015",
+      "name": "Cultural Center",
+      "type": "cultural_center",
+      "description": "Multi-purpose cultural center hosting diverse events and community programs.",
+      "address": {
+        "street": "1000 Culture Way",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94102",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 37.7749,
+          "longitude": -122.4194
+        }
+      },
+      "contact": {
+        "phone": "+1-415-555-0123",
+        "email": "events@culturalcenter.com",
+        "website": "https://culturalcenter.com",
+        "social_media": {
+          "instagram": "https://instagram.com/culturalcenter",
+          "twitter": "https://twitter.com/culturalcenter",
+          "facebook": "https://facebook.com/culturalcenter"
+        }
+      },
+      "capacity": {
+        "main_hall": 800,
+        "classrooms": 200,
+        "outdoor_space": 500,
+        "total": 1500,
+        "vip_sections": 100
+      },
+      "facilities": {
+        "spaces": [
+          {
+            "id": "space_005",
+            "name": "Main Hall",
+            "dimensions": "80x40x25",
+            "features": ["Flexible Seating", "Stage", "AV Equipment"]
+          },
+          {
+            "id": "space_006",
+            "name": "Classroom",
+            "dimensions": "30x20x10",
+            "features": ["Smart Board", "Projector", "Flexible Layout"]
+          }
+        ],
+        "storage_rooms": 4,
+        "parking_spaces": 300,
+        "loading_docks": 2,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "Meyer Sound",
+          "model": "ULTRA-X40",
+          "power": "40kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "ETC",
+          "channels": 512
+        },
+        "video": {
+          "screens": 4,
+          "resolution": "4K",
+          "projectors": 4
+        }
+      },
+      "amenities": [
+        "Cafe",
+        "Gift Shop",
+        "VIP Lounge",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check",
+        "Community Garden",
+        "Art Studio"
+      ],
+      "booking_info": {
+        "min_booking_notice": 60,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "30 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 8000.00,
+        "security_deposit": 3000.00,
+        "staffing_costs": {
+          "security": 35.00,
+          "event_staff": 25.00,
+          "box_office": 20.00,
+          "technical_staff": 40.00
+        }
+      },
+      "availability": [
+        {
+          "id": "avail_015",
+          "date": "2024-10-01",
+          "status": "available"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_015",
+          "author": "Maria Rodriguez",
+          "rating": 4.9,
+          "comment": "Versatile space perfect for cultural events",
+          "date": "2024-02-25"
+        }
+      ],
+      "stats": {
+        "events_hosted": 150,
+        "average_attendance": 600,
+        "rating": 4.9,
+        "revenue": 2400000.00
+      }
+    },
+    {
+      "id": "venue_016",
+      "user_id": "user_016",
+      "name": "Community Hall",
+      "type": "community_hall",
+      "description": "Versatile community space for local events and gatherings.",
+      "address": {
+        "street": "1100 Community Drive",
+        "city": "Seattle",
+        "state": "WA",
+        "zip": "98101",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 47.6062,
+          "longitude": -122.3321
+        }
+      },
+      "contact": {
+        "phone": "+1-206-555-0123",
+        "email": "bookings@communityhall.com",
+        "website": "https://communityhall.com",
+        "social_media": {
+          "instagram": "https://instagram.com/communityhall",
+          "twitter": "https://twitter.com/communityhall",
+          "facebook": "https://facebook.com/communityhall"
+        }
+      },
+      "capacity": {
+        "main_hall": 400,
+        "meeting_rooms": 100,
+        "total": 500,
+        "vip_sections": 50
+      },
+      "facilities": {
+        "spaces": [
+          {
+            "id": "space_007",
+            "name": "Main Hall",
+            "dimensions": "60x30x15",
+            "features": ["Flexible Layout", "Basic AV", "Kitchen"]
+          },
+          {
+            "id": "space_008",
+            "name": "Meeting Room",
+            "dimensions": "20x15x10",
+            "features": ["Projector", "Whiteboard", "Flexible Seating"]
+          }
+        ],
+        "storage_rooms": 2,
+        "parking_spaces": 100,
+        "loading_docks": 1,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "JBL",
+          "model": "Professional",
+          "power": "10kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Chauvet",
+          "channels": 128
+        },
+        "video": {
+          "screens": 1,
+          "resolution": "1080p",
+          "projectors": 1
+        }
+      },
+      "amenities": [
+        "Kitchen",
+        "Basic AV",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check",
+        "Outdoor Space"
+      ],
+      "booking_info": {
+        "min_booking_notice": 14,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "7 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 2000.00,
+        "security_deposit": 500.00,
+        "staffing_costs": {
+          "security": 25.00,
+          "event_staff": 20.00,
+          "box_office": 15.00
+        }
+      },
+      "availability": [
+        {
+          "id": "avail_016",
+          "date": "2024-10-15",
+          "status": "available"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_016",
+          "author": "James Wilson",
+          "rating": 4.6,
+          "comment": "Great community space with basic amenities",
+          "date": "2024-02-20"
+        }
+      ],
+      "stats": {
+        "events_hosted": 200,
+        "average_attendance": 250,
+        "rating": 4.6,
+        "revenue": 600000.00
+      }
+    },
+    {
+      "id": "venue_017",
+      "user_id": "user_017",
+      "name": "Sports Complex",
+      "type": "sports_complex",
+      "description": "State-of-the-art sports facility with multiple courts and training areas.",
+      "address": {
+        "street": "1200 Sports Way",
+        "city": "Miami",
+        "state": "FL",
+        "zip": "33101",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 25.7617,
+          "longitude": -80.1918
+        }
+      },
+      "contact": {
+        "phone": "+1-305-555-0123",
+        "email": "events@sportscomplex.com",
+        "website": "https://sportscomplex.com",
+        "social_media": {
+          "instagram": "https://instagram.com/sportscomplex",
+          "twitter": "https://twitter.com/sportscomplex",
+          "facebook": "https://facebook.com/sportscomplex"
+        }
+      },
+      "capacity": {
+        "main_arena": 5000,
+        "training_facilities": 1000,
+        "outdoor_fields": 2000,
+        "total": 8000,
+        "vip_sections": 500
+      },
+      "facilities": {
+        "spaces": [
+          {
+            "id": "space_009",
+            "name": "Main Arena",
+            "dimensions": "100x60x30",
+            "features": ["Retractable Seating", "Scoreboard", "Locker Rooms"]
+          },
+          {
+            "id": "space_010",
+            "name": "Training Center",
+            "dimensions": "80x40x20",
+            "features": ["Weight Room", "Cardio Area", "Recovery Room"]
+          }
+        ],
+        "locker_rooms": 8,
+        "parking_spaces": 1000,
+        "loading_docks": 4,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "L-Acoustics",
+          "model": "K2",
+          "power": "200kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Martin",
+          "channels": 1024
+        },
+        "video": {
+          "screens": 8,
+          "resolution": "4K",
+          "projectors": 8
+        }
+      },
+      "amenities": [
+        "Pro Shop",
+        "Cafe",
+        "VIP Lounge",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check",
+        "Training Center",
+        "Recovery Room"
+      ],
+      "booking_info": {
+        "min_booking_notice": 90,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "30 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 25000.00,
+        "security_deposit": 10000.00,
+        "staffing_costs": {
+          "security": 50.00,
+          "event_staff": 35.00,
+          "box_office": 25.00,
+          "technical_staff": 45.00
+        }
+      },
+      "availability": [
+        {
+          "id": "avail_017",
+          "date": "2024-11-01",
+          "status": "available"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_017",
+          "author": "Robert Taylor",
+          "rating": 4.8,
+          "comment": "Excellent sports facility with top-notch equipment",
+          "date": "2024-02-15"
+        }
+      ],
+      "stats": {
+        "events_hosted": 180,
+        "average_attendance": 4000,
+        "rating": 4.8,
+        "revenue": 7200000.00
+      }
+    },
+    {
+      "id": "venue_018",
+      "user_id": "user_018",
+      "name": "Educational Center",
+      "type": "educational_center",
+      "description": "Modern educational facility with classrooms, auditorium, and research labs.",
+      "address": {
+        "street": "1300 Education Blvd",
+        "city": "Boston",
+        "state": "MA",
+        "zip": "02108",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 42.3601,
+          "longitude": -71.0589
+        }
+      },
+      "contact": {
+        "phone": "+1-617-555-0123",
+        "email": "events@educationalcenter.com",
+        "website": "https://educationalcenter.com",
+        "social_media": {
+          "instagram": "https://instagram.com/educationalcenter",
+          "twitter": "https://twitter.com/educationalcenter",
+          "facebook": "https://facebook.com/educationalcenter"
+        }
+      },
+      "capacity": {
+        "auditorium": 1000,
+        "classrooms": 500,
+        "labs": 200,
+        "total": 1700,
+        "vip_sections": 100
+      },
+      "facilities": {
+        "spaces": [
+          {
+            "id": "space_011",
+            "name": "Main Auditorium",
+            "dimensions": "80x40x25",
+            "features": ["Smart Board", "Projection", "Sound System"]
+          },
+          {
+            "id": "space_012",
+            "name": "Research Lab",
+            "dimensions": "40x30x15",
+            "features": ["Lab Equipment", "Computers", "Whiteboard"]
+          }
+        ],
+        "storage_rooms": 6,
+        "parking_spaces": 400,
+        "loading_docks": 2,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "sound_system": {
+          "brand": "Meyer Sound",
+          "model": "ULTRA-X40",
+          "power": "50kW"
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "ETC",
+          "channels": 512
+        },
+        "video": {
+          "screens": 6,
+          "resolution": "4K",
+          "projectors": 6
+        }
+      },
+      "amenities": [
+        "Library",
+        "Cafe",
+        "Study Rooms",
+        "Box Office",
+        "First Aid Room",
+        "Computer Lab",
+        "Research Center"
+      ],
+      "booking_info": {
+        "min_booking_notice": 60,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "30 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 12000.00,
+        "security_deposit": 5000.00,
+        "staffing_costs": {
+          "security": 35.00,
+          "event_staff": 25.00,
+          "box_office": 20.00,
+          "technical_staff": 40.00
+        }
+      },
+      "availability": [
+        {
+          "id": "avail_018",
+          "date": "2024-11-15",
+          "status": "available"
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_018",
+          "author": "Lisa Anderson",
+          "rating": 4.9,
+          "comment": "State-of-the-art educational facility",
+          "date": "2024-02-10"
+        }
+      ],
+      "stats": {
+        "events_hosted": 250,
+        "average_attendance": 800,
+        "rating": 4.9,
+        "revenue": 3000000.00
+      }
+    },
+    {
+      "id": "venue_019",
+      "user_id": "user_019",
+      "name": "Conference Center",
+      "type": "conference_center",
+      "description": "Modern conference facility with multiple meeting rooms and advanced technology.",
+      "address": {
+        "street": "1400 Conference Way",
+        "city": "Chicago",
+        "state": "IL",
+        "zip": "60601",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 41.8781,
+          "longitude": -87.6298
+        }
+      },
+      "contact": {
+        "phone": "+1-312-555-0123",
+        "email": "events@conferencecenter.com",
+        "website": "https://conferencecenter.com",
+        "social_media": {
+          "instagram": "https://instagram.com/conferencecenter",
+          "twitter": "https://twitter.com/conferencecenter",
+          "facebook": "https://facebook.com/conferencecenter"
+        }
+      },
+      "capacity": {
+        "main_hall": 2000,
+        "breakout_rooms": 1000,
+        "exhibition_space": 5000,
+        "total": 8000,
+        "vip_sections": 200
+      },
+      "facilities": {
+        "spaces": [
+          {
+            "id": "space_013",
+            "name": "Main Hall",
+            "dimensions": "100x50x30",
+            "features": ["Flexible Seating", "Stage", "AV Equipment"]
+          },
+          {
+            "id": "space_014",
+            "name": "Breakout Room",
+            "dimensions": "30x20x10",
+            "features": ["Smart Board", "Video Conferencing", "Flexible Layout"]
+          }
+        ],
+        "storage_rooms": 8,
+        "parking_spaces": 800,
+        "loading_docks": 4,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "av_system": {
+          "brand": "Crestron",
+          "model": "Enterprise",
+          "features": ["4K Projection", "Video Conferencing", "Recording"]
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "ETC",
+          "channels": 1024,
+          "features": ["Dimmable", "Color Control", "Preset Scenes"]
+        },
+        "internet": {
+          "speed": "10Gbps",
+          "coverage": "Full venue",
+          "backup": "Redundant connection"
+        }
+      },
+      "amenities": [
+        "Business Center",
+        "Cafe",
+        "VIP Lounge",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check",
+        "Press Room",
+        "Broadcast Facilities"
+      ],
+      "booking_info": {
+        "min_booking_notice": 90,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "30 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 30000.00,
+        "security_deposit": 15000.00,
+        "staffing_costs": {
+          "security": 45.00,
+          "event_staff": 30.00,
+          "box_office": 25.00,
+          "technical_staff": 50.00
+        }
+      }
+    },
+    {
+      "id": "venue_020",
+      "user_id": "user_020",
+      "name": "Exhibition Hall",
+      "type": "exhibition_hall",
+      "description": "Spacious exhibition facility with flexible floor plans and loading capabilities.",
+      "address": {
+        "street": "1500 Exhibition Blvd",
+        "city": "Las Vegas",
+        "state": "NV",
+        "zip": "89101",
+        "country": "USA",
+        "coordinates": {
+          "latitude": 36.1699,
+          "longitude": -115.1398
+        }
+      },
+      "contact": {
+        "phone": "+1-702-555-0123",
+        "email": "events@exhibitionhall.com",
+        "website": "https://exhibitionhall.com",
+        "social_media": {
+          "instagram": "https://instagram.com/exhibitionhall",
+          "twitter": "https://twitter.com/exhibitionhall",
+          "facebook": "https://facebook.com/exhibitionhall"
+        }
+      },
+      "capacity": {
+        "main_hall": 10000,
+        "meeting_rooms": 2000,
+        "outdoor_space": 5000,
+        "total": 17000,
+        "vip_sections": 500
+      },
+      "facilities": {
+        "spaces": [
+          {
+            "id": "space_015",
+            "name": "Main Hall",
+            "dimensions": "200x100x30",
+            "features": ["Flexible Layout", "Loading Docks", "Power Distribution"]
+          },
+          {
+            "id": "space_016",
+            "name": "Meeting Room",
+            "dimensions": "40x30x15",
+            "features": ["AV Equipment", "Flexible Seating", "Catering Kitchen"]
+          }
+        ],
+        "storage_rooms": 10,
+        "parking_spaces": 2000,
+        "loading_docks": 8,
+        "wheelchair_accessible": true
+      },
+      "technical_specs": {
+        "av_system": {
+          "brand": "Sony",
+          "model": "Professional",
+          "features": ["4K Projection", "Sound System", "Broadcast Quality"]
+        },
+        "lighting": {
+          "type": "LED",
+          "brand": "Philips",
+          "channels": 2048,
+          "features": ["Broadcast Quality", "Energy Efficient", "Smart Control"]
+        },
+        "internet": {
+          "speed": "10Gbps",
+          "coverage": "Full venue",
+          "backup": "Redundant connection"
+        }
+      },
+      "amenities": [
+        "Business Center",
+        "Cafe",
+        "VIP Lounge",
+        "Box Office",
+        "First Aid Room",
+        "Coat Check",
+        "Press Room",
+        "Broadcast Facilities"
+      ],
+      "booking_info": {
+        "min_booking_notice": 180,
+        "deposit_required": true,
+        "insurance_required": true,
+        "cancellation_policy": "60 days notice required"
+      },
+      "pricing": {
+        "rental_fee": 50000.00,
+        "security_deposit": 20000.00,
+        "staffing_costs": {
+          "security": 50.00,
+          "event_staff": 35.00,
+          "box_office": 25.00,
+          "technical_staff": 45.00
+        }
+      }
+    }
+  ],
+  "events": [
+    {
+      "id": "event_001",
+      "venueId": "venue_001",
+      "title": "Summer Music Festival",
+      "date": "2024-07-15",
+      "type": "festival",
+      "status": "confirmed",
+      "artists": [
+        {
+          "id": "artist_001",
+          "name": "The Midnight Echoes",
+          "set_time": "20:00",
+          "duration": 90
+        }
+      ],
+      "tickets": {
+        "total": 5000,
+        "sold": 3500,
+        "price_range": {
+          "min": 50.00,
+          "max": 150.00
+        }
+      },
+      "staffing": {
+        "security": 20,
+        "stage_hands": 15,
+        "box_office": 8
+      }
+    }
+  ],
+  "staff": [
+    {
+      "id": "staff_001",
+      "venueId": "venue_001",
+      "name": "Michael Brown",
+      "role": "Venue Manager",
+      "contact": {
+        "phone": "+1-212-555-0124",
+        "email": "michael@grandhall.com"
+      },
+      "schedule": [
+        {
+          "date": "2024-07-15",
+          "shift": "day",
+          "event_id": "event_001"
+        }
+      ]
+    }
+  ],
+  "equipment": [
+    {
+      "id": "equip_001",
+      "venueId": "venue_001",
+      "name": "Main PA System",
+      "type": "sound_system",
+      "specs": {
+        "brand": "L-Acoustics",
+        "model": "K2",
+        "power": "100kW"
+      },
+      "maintenance": [
+        {
+          "date": "2024-02-15",
+          "type": "regular",
+          "notes": "System check and calibration"
+        }
+      ]
+    }
+  ],
+  "insurance": [
+    {
+      "id": "ins_001",
+      "venueId": "venue_001",
+      "provider": "Venue Insurance Co",
+      "policy_number": "VIC123456",
+      "coverage": {
+        "liability": 5000000.00,
+        "property": 2000000.00,
+        "equipment": 1000000.00
+      },
+      "expiry_date": "2024-12-31"
+    }
+  ],
+  "permits": [
+    {
+      "id": "perm_001",
+      "venueId": "venue_001",
+      "type": "entertainment",
+      "issuer": "City of New York",
+      "number": "ENT123456",
+      "issue_date": "2024-01-01",
+      "expiry_date": "2024-12-31",
+      "conditions": [
+        "Maximum capacity: 5000",
+        "Noise restrictions after 11 PM",
+        "Security required for events"
+      ]
+    }
+  ],
+  "financials": {
+    "revenue": [
+      {
+        "id": "rev_001",
+        "venueId": "venue_001",
+        "period": "2024-02",
+        "amount": 250000.00,
+        "source": "event_revenue"
+      },
+      {
+        "id": "rev_002",
+        "venueId": "venue_001",
+        "period": "2024-02",
+        "amount": 50000.00,
+        "source": "bar_sales",
+        "breakdown": {
+          "alcohol": 35000.00,
+          "food": 15000.00
+        }
+      },
+      {
+        "id": "rev_003",
+        "venueId": "venue_001",
+        "period": "2024-02",
+        "amount": 25000.00,
+        "source": "merchandise",
+        "breakdown": {
+          "artist_merch": 15000.00,
+          "venue_merch": 10000.00
+        }
+      }
+    ],
+    "expenses": [
+      {
+        "id": "exp_001",
+        "venueId": "venue_001",
+        "period": "2024-02",
+        "amount": 150000.00,
+        "category": "operational"
+      },
+      {
+        "id": "exp_002",
+        "venueId": "venue_001",
+        "period": "2024-02",
+        "amount": 50000.00,
+        "category": "utilities",
+        "breakdown": {
+          "electricity": 25000.00,
+          "water": 10000.00,
+          "gas": 15000.00
+        }
+      },
+      {
+        "id": "exp_003",
+        "venueId": "venue_001",
+        "period": "2024-02",
+        "amount": 30000.00,
+        "category": "maintenance",
+        "breakdown": {
+          "equipment": 15000.00,
+          "facilities": 15000.00
+        }
+      }
+    ],
+    "vendor_payments": [
+      {
+        "id": "vendor_001",
+        "venueId": "venue_001",
+        "vendor": "ABC Security",
+        "period": "2024-02",
+        "amount": 25000.00,
+        "services": ["Event Security", "Crowd Control"],
+        "status": "paid"
+      },
+      {
+        "id": "vendor_002",
+        "venueId": "venue_001",
+        "vendor": "XYZ Catering",
+        "period": "2024-02",
+        "amount": 35000.00,
+        "services": ["Bar Service", "Food Service"],
+        "status": "pending"
+      }
+    ]
+  },
+  "operations": {
+    "inventory": [
+      {
+        "id": "inv_001",
+        "venueId": "venue_001",
+        "category": "bar_supplies",
+        "items": [
+          {
+            "id": "item_001",
+            "name": "Beer Taps",
+            "quantity": 12,
+            "value": 2400.00
+          },
+          {
+            "id": "item_002",
+            "name": "Glassware",
+            "quantity": 1000,
+            "value": 5000.00
+          }
+        ]
+      },
+      {
+        "id": "inv_002",
+        "venueId": "venue_001",
+        "category": "technical_equipment",
+        "items": [
+          {
+            "id": "item_003",
+            "name": "Microphones",
+            "quantity": 20,
+            "value": 10000.00,
+            "condition": "good"
+          },
+          {
+            "id": "item_004",
+            "name": "Lighting Fixtures",
+            "quantity": 50,
+            "value": 25000.00,
+            "condition": "excellent"
+          }
+        ]
+      }
+    ],
+    "vendor_contracts": [
+      {
+        "id": "contract_001",
+        "venueId": "venue_001",
+        "vendor": "ABC Security",
+        "start_date": "2024-01-01",
+        "end_date": "2024-12-31",
+        "services": ["Event Security", "Crowd Control"],
+        "terms": {
+          "payment_schedule": "monthly",
+          "rate": 25000.00,
+          "insurance_required": true
+        }
+      }
+    ],
+    "maintenance_schedule": [
+      {
+        "id": "maint_001",
+        "venueId": "venue_001",
+        "type": "preventive",
+        "frequency": "monthly",
+        "tasks": [
+          {
+            "name": "HVAC Inspection",
+            "status": "scheduled",
+            "due_date": "2024-04-01"
+          },
+          {
+            "name": "Fire Safety Check",
+            "status": "scheduled",
+            "due_date": "2024-04-15"
+          }
+        ]
+      },
+      {
+        "id": "maint_002",
+        "venueId": "venue_001",
+        "type": "equipment",
+        "frequency": "weekly",
+        "tasks": [
+          {
+            "name": "Sound System Check",
+            "status": "scheduled",
+            "due_date": "2024-04-01",
+            "assigned_to": "Technical Manager"
+          },
+          {
+            "name": "Lighting System Test",
+            "status": "scheduled",
+            "due_date": "2024-04-01",
+            "assigned_to": "Lighting Technician"
+          }
+        ]
+      }
+    ],
+    "security_protocols": [
+      {
+        "id": "security_001",
+        "venueId": "venue_001",
+        "type": "emergency_response",
+        "procedures": [
+          {
+            "scenario": "Medical Emergency",
+            "response": [
+              "Alert medical team",
+              "Clear area",
+              "Provide first aid",
+              "Call emergency services if needed"
+            ],
+            "contact": {
+              "medical_team": "ext. 911",
+              "emergency_services": "911"
+            }
+          },
+          {
+            "scenario": "Fire",
+            "response": [
+              "Activate fire alarm",
+              "Evacuate venue",
+              "Direct to assembly points",
+              "Account for all staff and guests"
+            ],
+            "contact": {
+              "fire_department": "911",
+              "venue_manager": "ext. 100"
+            }
+          }
+        ],
+        "drill_schedule": {
+          "frequency": "monthly",
+          "last_drill": "2024-03-01",
+          "next_drill": "2024-04-01"
+        }
+      }
+    ],
+    "staff_scheduling": [
+      {
+        "id": "schedule_001",
+        "venueId": "venue_001",
+        "date": "2024-07-15",
+        "event_id": "event_001",
+        "shifts": [
+          {
+            "id": "shift_001",
+            "role": "security",
+            "start_time": "14:00",
+            "end_time": "23:00",
+            "staff_count": 20,
+            "rate": 50.00
+          },
+          {
+            "id": "shift_002",
+            "role": "stage_hands",
+            "start_time": "12:00",
+            "end_time": "02:00",
+            "staff_count": 15,
+            "rate": 35.00
+          }
+        ]
+      }
+    ],
+    "event_planning": [
+      {
+        "id": "plan_001",
+        "venueId": "venue_001",
+        "event_id": "event_001",
+        "timeline": [
+          {
+            "time": "08:00",
+            "activity": "Load-in begins",
+            "responsible": "Stage Manager"
+          },
+          {
+            "time": "12:00",
+            "activity": "Sound check",
+            "responsible": "Sound Engineer"
+          },
+          {
+            "time": "18:00",
+            "activity": "Doors open",
+            "responsible": "Venue Manager"
+          }
+        ],
+        "requirements": {
+          "technical": [
+            "Full PA system",
+            "Lighting rig",
+            "Backline equipment"
+          ],
+          "staffing": [
+            "Security team",
+            "Stage hands",
+            "Box office staff"
+          ],
+          "amenities": [
+            "Bar service",
+            "Merchandise stand",
+            "First aid station"
+          ]
+        }
+      },
+      {
+        "id": "plan_002",
+        "venueId": "venue_001",
+        "event_id": "event_001",
+        "production_schedule": {
+          "load_in": {
+            "date": "2024-07-14",
+            "time": "08:00",
+            "crew": 20,
+            "equipment": [
+              "PA System",
+              "Lighting Rig",
+              "Backline"
+            ]
+          },
+          "sound_check": {
+            "date": "2024-07-15",
+            "time": "12:00",
+            "duration": 120,
+            "crew": 10
+          },
+          "show": {
+            "date": "2024-07-15",
+            "doors": "18:00",
+            "start": "20:00",
+            "end": "23:00",
+            "crew": 30
+          },
+          "load_out": {
+            "date": "2024-07-16",
+            "time": "01:00",
+            "crew": 20,
+            "duration": 180
+          }
+        },
+        "artist_rider": {
+          "technical": {
+            "sound": [
+              "Full PA system",
+              "Monitor system",
+              "Microphones"
+            ],
+            "lighting": [
+              "Front lighting",
+              "Back lighting",
+              "Special effects"
+            ],
+            "stage": [
+              "Risers",
+              "Backline",
+              "Power requirements"
+            ]
+          },
+          "hospitality": {
+            "dressing_room": [
+              "Furniture",
+              "Refreshments",
+              "WiFi"
+            ],
+            "catering": [
+              "Meals",
+              "Snacks",
+              "Beverages"
+            ],
+            "security": [
+              "Access control",
+              "Guest list"
+            ]
+          }
+        }
+      },
+      {
+        "id": "plan_003",
+        "venueId": "venue_001",
+        "event_id": "event_001",
+        "marketing_plan": {
+          "channels": [
+            {
+              "type": "social_media",
+              "platforms": [
+                {
+                  "name": "Instagram",
+                  "content": [
+                    "Event teaser",
+                    "Artist spotlight",
+                    "Behind the scenes"
+                  ],
+                  "schedule": "Daily posts"
+                },
+                {
+                  "name": "Facebook",
+                  "content": [
+                    "Event page",
+                    "Ticket sales",
+                    "Fan engagement"
+                  ],
+                  "schedule": "Weekly posts"
+                }
+              ]
+            },
+            {
+              "type": "email",
+              "campaigns": [
+                {
+                  "name": "Early Bird",
+                  "audience": "Subscribers",
+                  "schedule": "30 days before"
+                },
+                {
+                  "name": "Last Chance",
+                  "audience": "Interested",
+                  "schedule": "7 days before"
+                }
+              ]
+            }
+          ],
+          "budget": {
+            "total": 10000.00,
+            "breakdown": {
+              "social_media": 4000.00,
+              "email": 2000.00,
+              "print": 2000.00,
+              "radio": 2000.00
+            }
+          }
+        },
+        "sponsorship": {
+          "tiers": [
+            {
+              "name": "Platinum",
+              "value": 50000.00,
+              "benefits": [
+                "Logo on all materials",
+                "VIP tickets",
+                "Backstage access",
+                "Social media mentions"
+              ]
+            },
+            {
+              "name": "Gold",
+              "value": 25000.00,
+              "benefits": [
+                "Logo on website",
+                "Complimentary tickets",
+                "Social media mentions"
+              ]
+            }
+          ],
+          "partners": [
+            {
+              "name": "Local Brewery",
+              "tier": "Platinum",
+              "contribution": "Beverage service"
+            },
+            {
+              "name": "Radio Station",
+              "tier": "Gold",
+              "contribution": "Media coverage"
+            }
+          ]
+        }
+      },
+      {
+        "id": "plan_004",
+        "venueId": "venue_001",
+        "event_id": "event_001",
+        "risk_assessment": {
+          "categories": [
+            {
+              "type": "safety",
+              "risks": [
+                {
+                  "description": "Crowd control issues",
+                  "probability": "medium",
+                  "impact": "high",
+                  "mitigation": [
+                    "Additional security staff",
+                    "Clear signage",
+                    "Staff training"
+                  ]
+                },
+                {
+                  "description": "Medical emergencies",
+                  "probability": "low",
+                  "impact": "high",
+                  "mitigation": [
+                    "On-site medical team",
+                    "First aid stations",
+                    "Emergency response plan"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "technical",
+              "risks": [
+                {
+                  "description": "Sound system failure",
+                  "probability": "low",
+                  "impact": "high",
+                  "mitigation": [
+                    "Backup equipment",
+                    "Technical staff on standby",
+                    "Regular maintenance"
+                  ]
+                }
+              ]
+            }
+          ],
+          "insurance_coverage": {
+            "liability": 5000000.00,
+            "equipment": 1000000.00,
+            "cancellation": 250000.00
+          }
+        },
+        "contingency_plans": [
+          {
+            "scenario": "Weather issues",
+            "plan": [
+              "Indoor alternative venue",
+              "Refund policy",
+              "Communication strategy"
+            ],
+            "contact_list": [
+              "Venue Manager",
+              "Event Coordinator",
+              "Weather Service"
+            ]
+          },
+          {
+            "scenario": "Artist cancellation",
+            "plan": [
+              "Backup artist list",
+              "Refund policy",
+              "Communication strategy"
+            ],
+            "contact_list": [
+              "Artist Manager",
+              "Booking Agent",
+              "PR Team"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "plan_005",
+        "venueId": "venue_001",
+        "event_id": "event_001",
+        "sustainability_plan": {
+          "objectives": [
+            {
+              "name": "Waste Reduction",
+              "target": "80% diversion rate",
+              "actions": [
+                "Composting program",
+                "Recycling stations",
+                "Zero-waste catering"
+              ]
+            },
+            {
+              "name": "Energy Efficiency",
+              "target": "30% reduction",
+              "actions": [
+                "LED lighting",
+                "Smart HVAC",
+                "Renewable energy"
+              ]
+            }
+          ],
+          "tracking": {
+            "metrics": [
+              "Waste diversion rate",
+              "Energy consumption",
+              "Water usage"
+            ],
+            "frequency": "per event"
+          }
+        },
+        "accessibility_features": {
+          "physical_access": [
+            "Wheelchair ramps",
+            "Elevators",
+            "Accessible restrooms"
+          ],
+          "sensory_access": [
+            "Assistive listening devices",
+            "Sign language interpreters",
+            "Audio description"
+          ],
+          "cognitive_access": [
+            "Clear signage",
+            "Quiet spaces",
+            "Social stories"
+          ],
+          "staff_training": [
+            "Disability awareness",
+            "Assistance protocols",
+            "Emergency procedures"
+          ]
+        }
+      },
+      {
+        "id": "plan_006",
+        "venueId": "venue_001",
+        "event_id": "event_001",
+        "marketing_analytics": {
+          "channels": [
+            {
+              "name": "Social Media",
+              "metrics": [
+                {
+                  "name": "Engagement Rate",
+                  "target": "5%",
+                  "tracking": "per post"
+                },
+                {
+                  "name": "Reach",
+                  "target": "10000",
+                  "tracking": "per campaign"
+                }
+              ],
+              "roi_tracking": {
+                "cost_per_engagement": 0.50,
+                "conversion_rate": "2%"
+              }
+            },
+            {
+              "name": "Email Marketing",
+              "metrics": [
+                {
+                  "name": "Open Rate",
+                  "target": "25%",
+                  "tracking": "per campaign"
+                },
+                {
+                  "name": "Click Rate",
+                  "target": "5%",
+                  "tracking": "per campaign"
+                }
+              ],
+              "roi_tracking": {
+                "cost_per_click": 1.00,
+                "conversion_rate": "3%"
+              }
+            }
+          ],
+          "attribution_model": "multi-touch",
+          "reporting_frequency": "weekly"
+        },
+        "social_impact": {
+          "metrics": [
+            {
+              "name": "Community Engagement",
+              "target": "1000 participants",
+              "tracking": "per event"
+            },
+            {
+              "name": "Local Business Support",
+              "target": "10 vendors",
+              "tracking": "per event"
+            }
+          ],
+          "sustainability_goals": [
+            {
+              "name": "Carbon Footprint",
+              "target": "30% reduction",
+              "tracking": "per event"
+            },
+            {
+              "name": "Waste Diversion",
+              "target": "80%",
+              "tracking": "per event"
+            }
+          ],
+          "reporting": {
+            "frequency": "quarterly",
+            "stakeholders": [
+              "Community Board",
+              "Local Government",
+              "Environmental Groups"
+            ]
+          }
+        }
+      },
+      {
+        "id": "plan_007",
+        "venueId": "venue_001",
+        "event_id": "event_001",
+        "resource_allocation": {
+          "staffing": [
+            {
+              "role": "Security",
+              "required": 20,
+              "assigned": 20,
+              "schedule": [
+                {
+                  "shift": "morning",
+                  "start": "08:00",
+                  "end": "16:00",
+                  "staff_count": 10
+                },
+                {
+                  "shift": "evening",
+                  "start": "16:00",
+                  "end": "00:00",
+                  "staff_count": 10
+                }
+              ]
+            },
+            {
+              "role": "Technical",
+              "required": 15,
+              "assigned": 15,
+              "schedule": [
+                {
+                  "shift": "setup",
+                  "start": "06:00",
+                  "end": "14:00",
+                  "staff_count": 8
+                },
+                {
+                  "shift": "event",
+                  "start": "14:00",
+                  "end": "22:00",
+                  "staff_count": 7
+                }
+              ]
+            }
+          ],
+          "equipment": [
+            {
+              "category": "Sound",
+              "items": [
+                {
+                  "name": "PA System",
+                  "required": 2,
+                  "assigned": 2,
+                  "status": "confirmed"
+                },
+                {
+                  "name": "Microphones",
+                  "required": 10,
+                  "assigned": 12,
+                  "status": "confirmed"
+                }
+              ]
+            },
+            {
+              "category": "Lighting",
+              "items": [
+                {
+                  "name": "Stage Lights",
+                  "required": 20,
+                  "assigned": 20,
+                  "status": "confirmed"
+                },
+                {
+                  "name": "Spotlights",
+                  "required": 4,
+                  "assigned": 4,
+                  "status": "confirmed"
+                }
+              ]
+            }
+          ]
+        },
+        "timeline_management": {
+          "milestones": [
+            {
+              "name": "Pre-Event",
+              "tasks": [
+                {
+                  "name": "Venue Setup",
+                  "start": "2024-07-14 08:00",
+                  "end": "2024-07-14 16:00",
+                  "status": "scheduled",
+                  "dependencies": []
+                },
+                {
+                  "name": "Technical Rehearsal",
+                  "start": "2024-07-14 16:00",
+                  "end": "2024-07-14 20:00",
+                  "status": "scheduled",
+                  "dependencies": ["Venue Setup"]
+                }
+              ]
+            },
+            {
+              "name": "Event Day",
+              "tasks": [
+                {
+                  "name": "Final Setup",
+                  "start": "2024-07-15 10:00",
+                  "end": "2024-07-15 14:00",
+                  "status": "scheduled",
+                  "dependencies": ["Technical Rehearsal"]
+                },
+                {
+                  "name": "Doors Open",
+                  "start": "2024-07-15 18:00",
+                  "end": "2024-07-15 19:00",
+                  "status": "scheduled",
+                  "dependencies": ["Final Setup"]
+                }
+              ]
+            }
+          ],
+          "tracking": {
+            "system": "digital",
+            "notifications": ["email", "sms"],
+            "reporting": "real-time"
+          }
+        }
+      }
+    ],
+    "catering_management": [
+      {
+        "id": "catering_001",
+        "venueId": "venue_001",
+        "event_id": "event_001",
+        "vendor": "Gourmet Catering",
+        "menu": [
+          {
+            "id": "menu_001",
+            "name": "VIP Dinner",
+            "price_per_person": 75.00,
+            "items": [
+              "Appetizers",
+              "Main Course",
+              "Dessert",
+              "Wine Pairing"
+            ]
+          }
+        ],
+        "staffing": {
+          "servers": 10,
+          "bartenders": 5,
+          "kitchen_staff": 8
+        },
+        "equipment": [
+          "Chafing Dishes",
+          "Beverage Stations",
+          "Serving Utensils"
+        ]
+      }
+    ],
+    "ticketing_system": [
+      {
+        "id": "ticket_001",
+        "venueId": "venue_001",
+        "event_id": "event_001",
+        "ticket_types": [
+          {
+            "id": "type_001",
+            "name": "General Admission",
+            "price": 50.00,
+            "quantity": 3000,
+            "sold": 2500
+          },
+          {
+            "id": "type_002",
+            "name": "VIP",
+            "price": 150.00,
+            "quantity": 200,
+            "sold": 180
+          }
+        ],
+        "sales_channels": [
+          "Box Office",
+          "Online",
+          "Phone"
+        ],
+        "refund_policy": "30 days before event"
+      }
+    ],
+    "inventory_management": [
+      {
+        "id": "inv_003",
+        "venueId": "venue_001",
+        "category": "technical_equipment",
+        "items": [
+          {
+            "id": "item_005",
+            "name": "Microphones",
+            "quantity": 20,
+            "value": 10000.00,
+            "condition": "good",
+            "maintenance_schedule": {
+              "frequency": "monthly",
+              "last_check": "2024-03-01",
+              "next_check": "2024-04-01"
+            }
+          },
+          {
+            "id": "item_006",
+            "name": "Lighting Fixtures",
+            "quantity": 50,
+            "value": 25000.00,
+            "condition": "excellent",
+            "maintenance_schedule": {
+              "frequency": "quarterly",
+              "last_check": "2024-01-01",
+              "next_check": "2024-04-01"
+            }
+          }
+        ],
+        "tracking": {
+          "last_audit": "2024-03-01",
+          "next_audit": "2024-04-01",
+          "responsible_person": "Technical Manager"
+        }
+      }
+    ],
+    "staff_training": [
+      {
+        "id": "training_001",
+        "venueId": "venue_001",
+        "programs": [
+          {
+            "name": "Emergency Response",
+            "type": "mandatory",
+            "frequency": "annually",
+            "modules": [
+              {
+                "name": "First Aid",
+                "duration": "4 hours",
+                "certification": "CPR/AED"
+              },
+              {
+                "name": "Fire Safety",
+                "duration": "2 hours",
+                "certification": "Fire Safety"
+              }
+            ]
+          },
+          {
+            "name": "Customer Service",
+            "type": "mandatory",
+            "frequency": "biannually",
+            "modules": [
+              {
+                "name": "Conflict Resolution",
+                "duration": "3 hours"
+              },
+              {
+                "name": "VIP Service",
+                "duration": "2 hours"
+              }
+            ]
+          }
+        ],
+        "records": [
+          {
+            "staff_id": "staff_001",
+            "program": "Emergency Response",
+            "completion_date": "2024-02-01",
+            "expiry_date": "2025-02-01"
+          }
+        ]
+      }
+    ],
+    "quality_control": [
+      {
+        "id": "qc_001",
+        "venueId": "venue_001",
+        "programs": [
+          {
+            "name": "Service Quality",
+            "metrics": [
+              {
+                "name": "Customer Satisfaction",
+                "target": 4.5,
+                "measurement": "5-point scale",
+                "frequency": "monthly"
+              },
+              {
+                "name": "Response Time",
+                "target": "5 minutes",
+                "measurement": "average",
+                "frequency": "weekly"
+              }
+            ],
+            "feedback_channels": [
+              "Online surveys",
+              "In-person feedback",
+              "Social media monitoring"
+            ]
+          },
+          {
+            "name": "Facility Maintenance",
+            "metrics": [
+              {
+                "name": "Cleanliness Score",
+                "target": 95,
+                "measurement": "percentage",
+                "frequency": "daily"
+              },
+              {
+                "name": "Equipment Functionality",
+                "target": 98,
+                "measurement": "percentage",
+                "frequency": "weekly"
+              }
+            ],
+            "inspection_schedule": "daily"
+          }
+        ]
+      },
+      {
+        "id": "qc_002",
+        "venueId": "venue_001",
+        "programs": [
+          {
+            "name": "Service Excellence",
+            "metrics": [
+              {
+                "name": "Customer Satisfaction",
+                "target": 4.8,
+                "measurement": "5-point scale",
+                "frequency": "per event"
+              },
+              {
+                "name": "Response Time",
+                "target": "3 minutes",
+                "measurement": "average",
+                "frequency": "daily"
+              }
+            ],
+            "feedback_channels": [
+              "Online surveys",
+              "In-person feedback",
+              "Social media monitoring"
+            ]
+          },
+          {
+            "name": "Facility Standards",
+            "metrics": [
+              {
+                "name": "Cleanliness Score",
+                "target": 98,
+                "measurement": "percentage",
+                "frequency": "daily"
+              },
+              {
+                "name": "Safety Compliance",
+                "target": 100,
+                "measurement": "percentage",
+                "frequency": "weekly"
+              }
+            ],
+            "inspection_schedule": "daily"
+          }
+        ]
+      }
+    ],
+    "performance_metrics": [
+      {
+        "id": "metrics_001",
+        "venueId": "venue_001",
+        "categories": [
+          {
+            "name": "Financial",
+            "metrics": [
+              {
+                "name": "Revenue per Event",
+                "target": 50000.00,
+                "measurement": "average",
+                "frequency": "monthly"
+              },
+              {
+                "name": "Operating Costs",
+                "target": "30% of revenue",
+                "measurement": "percentage",
+                "frequency": "monthly"
+              }
+            ]
+          },
+          {
+            "name": "Operational",
+            "metrics": [
+              {
+                "name": "Event Success Rate",
+                "target": 95,
+                "measurement": "percentage",
+                "frequency": "monthly"
+              },
+              {
+                "name": "Staff Efficiency",
+                "target": 90,
+                "measurement": "percentage",
+                "frequency": "weekly"
+              }
+            ]
+          }
+        ],
+        "reporting": {
+          "frequency": "monthly",
+          "format": "dashboard",
+          "stakeholders": [
+            "Management",
+            "Staff",
+            "Investors"
+          ]
+        }
+      }
+    ],
+    "customer_feedback": [
+      {
+        "id": "feedback_001",
+        "venueId": "venue_001",
+        "systems": [
+          {
+            "name": "Post-Event Survey",
+            "channels": [
+              {
+                "type": "email",
+                "template": "standard_survey",
+                "timing": "24 hours after event"
+              },
+              {
+                "type": "sms",
+                "template": "quick_rating",
+                "timing": "immediate"
+              }
+            ],
+            "metrics": [
+              {
+                "name": "Overall Satisfaction",
+                "scale": "1-5",
+                "target": 4.5
+              },
+              {
+                "name": "Net Promoter Score",
+                "scale": "0-10",
+                "target": 8.0
+              }
+            ]
+          },
+          {
+            "name": "Social Media Monitoring",
+            "platforms": [
+              {
+                "name": "Twitter",
+                "keywords": ["venue name", "event name"],
+                "sentiment_analysis": true
+              },
+              {
+                "name": "Instagram",
+                "hashtags": ["#venuename", "#eventname"],
+                "engagement_tracking": true
+              }
+            ]
+          }
+        ],
+        "response_protocol": {
+          "timeframe": "24 hours",
+          "priority_levels": [
+            {
+              "level": "high",
+              "response_time": "2 hours",
+              "escalation_path": "Manager"
+            },
+            {
+              "level": "medium",
+              "response_time": "12 hours",
+              "escalation_path": "Supervisor"
+            }
+          ]
+        }
+      }
+    ],
+    "maintenance_schedules": [
+      {
+        "id": "maint_003",
+        "venueId": "venue_001",
+        "categories": [
+          {
+            "name": "Daily",
+            "tasks": [
+              {
+                "name": "Cleaning",
+                "areas": ["Public spaces", "Restrooms", "Kitchen"],
+                "checklist": [
+                  "Floor cleaning",
+                  "Surface sanitization",
+                  "Restroom restocking"
+                ]
+              },
+              {
+                "name": "Safety Check",
+                "areas": ["Exits", "Fire equipment", "First aid stations"],
+                "checklist": [
+                  "Exit signs",
+                  "Fire extinguishers",
+                  "Emergency lighting"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Weekly",
+            "tasks": [
+              {
+                "name": "Equipment Maintenance",
+                "areas": ["AV equipment", "Lighting", "HVAC"],
+                "checklist": [
+                  "System checks",
+                  "Filter replacement",
+                  "Calibration"
+                ]
+              }
+            ]
+          }
+        ],
+        "tracking": {
+          "system": "digital",
+          "notifications": ["email", "sms"],
+          "reporting": "weekly"
+        }
+      }
+    ],
+    "compliance_tracking": [
+      {
+        "id": "compliance_001",
+        "venueId": "venue_001",
+        "categories": [
+          {
+            "name": "Safety",
+            "requirements": [
+              {
+                "name": "Fire Safety",
+                "frequency": "monthly",
+                "last_check": "2024-03-01",
+                "next_check": "2024-04-01",
+                "status": "compliant"
+              },
+              {
+                "name": "Emergency Exits",
+                "frequency": "weekly",
+                "last_check": "2024-03-15",
+                "next_check": "2024-03-22",
+                "status": "compliant"
+              }
+            ]
+          },
+          {
+            "name": "Environmental",
+            "requirements": [
+              {
+                "name": "Waste Management",
+                "frequency": "quarterly",
+                "last_check": "2024-01-01",
+                "next_check": "2024-04-01",
+                "status": "compliant"
+              },
+              {
+                "name": "Energy Efficiency",
+                "frequency": "monthly",
+                "last_check": "2024-03-01",
+                "next_check": "2024-04-01",
+                "status": "compliant"
+              }
+            ]
+          }
+        ],
+        "reporting": {
+          "frequency": "monthly",
+          "stakeholders": [
+            "Management",
+            "Regulatory Bodies",
+            "Insurance Providers"
+          ]
+        }
+      }
+    ]
+  }
+} 

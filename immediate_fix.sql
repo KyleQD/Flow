@@ -1,0 +1,1 @@
+-- IMMEDIATE FIX: Add missing columns to existing tables

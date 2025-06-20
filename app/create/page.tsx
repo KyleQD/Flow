@@ -1,0 +1,647 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
+import { useMultiAccount } from "@/hooks/use-multi-account"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { 
+  Music, 
+  Building, 
+  Users, 
+  Plus, 
+  CheckCircle, 
+  ArrowRight, 
+  Star,
+  Loader2,
+  AlertCircle,
+  Sparkles,
+  Mic,
+  Calendar,
+  MapPin,
+  User,
+  Zap,
+  ChevronRight
+} from "lucide-react"
+
+interface CreateOption {
+  id: string
+  title: string
+  description: string
+  icon: any
+  gradient: string
+  features: string[]
+}
+
+const createOptions: CreateOption[] = [
+  {
+    id: 'artist-account',
+    title: 'Artist Account',
+    description: 'Perfect for musicians, performers, and content creators',
+    icon: Music,
+    gradient: 'from-purple-500 via-pink-500 to-red-500',
+    features: [
+      'Professional EPK Builder',
+      'Fan Engagement Tools',
+      'Booking Management',
+      'Analytics Dashboard',
+      'Social Media Integration'
+    ]
+  },
+  {
+    id: 'venue-account',
+    title: 'Venue Account',
+    description: 'Ideal for venues, event spaces, and promoters',
+    icon: Building,
+    gradient: 'from-blue-500 via-cyan-500 to-teal-500',
+    features: [
+      'Event Management System',
+      'Artist Discovery',
+      'Booking Calendar',
+      'Revenue Tracking',
+      'Marketing Tools'
+    ]
+  }
+]
+
+export default function CreatePage() {
+  const { user, loading } = useAuth()
+  const { accounts, hasAccountType, createArtistAccount, createVenueAccount, isLoading } = useMultiAccount()
+  const router = useRouter()
+  
+  const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  
+  // Form data
+  const [artistData, setArtistData] = useState({
+    artist_name: '',
+    bio: '',
+    genres: [] as string[],
+    social_links: {
+      instagram: '',
+      spotify: '',
+      youtube: '',
+      soundcloud: ''
+    }
+  })
+  
+  const [venueData, setVenueData] = useState({
+    venue_name: '',
+    description: '',
+    address: '',
+    capacity: '',
+    venue_types: [] as string[],
+    contact_info: {
+      phone: '',
+      email: '',
+      website: ''
+    },
+    social_links: {
+      instagram: '',
+      facebook: '',
+      website: ''
+    }
+  })
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/')
+      return
+    }
+  }, [user, loading, router])
+
+  const isAccountAlreadyCreated = (optionId: string): boolean => {
+    switch (optionId) {
+      case 'artist-account':
+        return hasAccountType('artist')
+      case 'venue-account':
+        return hasAccountType('venue')
+      default:
+        return false
+    }
+  }
+
+  const renderCreateOption = (option: CreateOption) => {
+    const isCreated = isAccountAlreadyCreated(option.id)
+    
+    return (
+      <Card 
+        key={option.id} 
+        className={`group cursor-pointer transition-all duration-300 hover:scale-105 border border-white/20 backdrop-blur-xl ${
+          selectedOption === option.id 
+            ? 'bg-white/20 border-white/40 shadow-2xl' 
+            : 'bg-white/10 hover:bg-white/15'
+        } ${isCreated ? 'opacity-75' : ''}`}
+        onClick={() => !isCreated && setSelectedOption(option.id)}
+      >
+        <CardHeader className="text-center pb-4">
+          <div className="relative mx-auto mb-4">
+            <div className={`w-20 h-20 bg-gradient-to-br ${option.gradient} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-2xl`}>
+              <option.icon className="h-10 w-10 text-white" />
+            </div>
+            <div className={`absolute -inset-2 bg-gradient-to-br ${option.gradient} rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity`}></div>
+            {isCreated && (
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
+                <CheckCircle className="h-4 w-4 text-white" />
+              </div>
+            )}
+          </div>
+          
+          <CardTitle className="text-2xl text-white mb-2">
+            {option.title}
+            {isCreated && (
+              <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/50">
+                Created
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription className="text-gray-300 text-base leading-relaxed">
+            {option.description}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <div className="space-y-3">
+            <h4 className="font-semibold text-white flex items-center gap-2">
+              <Star className="h-4 w-4 text-yellow-400" />
+              Key Features
+            </h4>
+            <ul className="space-y-2">
+              {option.features.map((feature, index) => (
+                <li key={index} className="flex items-center text-sm text-gray-300">
+                  <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full mr-3"></div>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          {!isCreated && (
+            <Button
+              className={`w-full mt-6 bg-gradient-to-r ${option.gradient} hover:shadow-lg transition-all duration-300 text-white font-semibold`}
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedOption(option.id)
+              }}
+            >
+              Get Started
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+    setIsSubmitting(true)
+
+    try {
+      if (selectedOption === 'artist-account') {
+        await createArtistAccount(artistData)
+        setSuccess('Artist account created successfully! 🎵')
+      } else if (selectedOption === 'venue-account') {
+        await createVenueAccount({
+          ...venueData,
+          capacity: venueData.capacity ? parseInt(venueData.capacity) : undefined
+        })
+        setSuccess('Venue account created successfully! 🏢')
+      }
+      
+      // Reset form
+      setSelectedOption(null)
+      setArtistData({
+        artist_name: '',
+        bio: '',
+        genres: [],
+        social_links: { instagram: '', spotify: '', youtube: '', soundcloud: '' }
+      })
+      setVenueData({
+        venue_name: '',
+        description: '',
+        address: '',
+        capacity: '',
+        venue_types: [],
+        contact_info: { phone: '', email: '', website: '' },
+        social_links: { instagram: '', facebook: '', website: '' }
+      })
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create account')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="relative mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto animate-pulse">
+              <Plus className="h-8 w-8 text-white" />
+            </div>
+            <div className="absolute -inset-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl blur opacity-20 animate-ping"></div>
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Loading Creator Studio</h2>
+          <p className="text-gray-400">Preparing account creation tools...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+      {/* Animated Background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-center bg-repeat opacity-5"></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+      </div>
+
+      {/* Content */}
+      <div className="relative">
+        {/* Header */}
+        <div className="border-b border-white/10 bg-white/5 backdrop-blur-xl">
+          <div className="container mx-auto px-6 py-8">
+            <div className="text-center">
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  <div className="w-20 h-20 bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 rounded-3xl flex items-center justify-center shadow-2xl">
+                    <Plus className="h-10 w-10 text-white" />
+                  </div>
+                  <div className="absolute -inset-2 bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 rounded-3xl blur opacity-30 animate-pulse"></div>
+                </div>
+              </div>
+              
+              <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">
+                Expand Your Presence
+              </h1>
+              <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
+                Create specialized accounts to reach different audiences and unlock powerful tools for your creative journey.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="container mx-auto px-6 py-12">
+          {/* Alerts */}
+          {error && (
+            <Alert className="mb-8 bg-red-500/20 border-red-500/50 backdrop-blur-sm">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+              <AlertDescription className="text-red-200">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {success && (
+            <Alert className="mb-8 bg-green-500/20 border-green-500/50 backdrop-blur-sm">
+              <CheckCircle className="h-5 w-5 text-green-400" />
+              <AlertDescription className="text-green-200">
+                {success}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Existing Accounts */}
+          {accounts.length > 0 && (
+            <Card className="mb-12 bg-white/10 backdrop-blur-xl border border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <User className="h-6 w-6 text-purple-400" />
+                  Your Accounts
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Manage your existing accounts and switch between them
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {accounts.map((account) => (
+                    <div key={`${account.account_type}-${account.profile_id}`} className="p-4 rounded-xl bg-white/5 border border-white/10">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                          {account.account_type === 'artist' && <Music className="h-5 w-5 text-white" />}
+                          {account.account_type === 'venue' && <Building className="h-5 w-5 text-white" />}
+                          {account.account_type === 'general' && <User className="h-5 w-5 text-white" />}
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-white">
+                            {account.profile_data?.artist_name || account.profile_data?.venue_name || 'General Account'}
+                          </h4>
+                          <p className="text-xs text-gray-400 capitalize">{account.account_type}</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Active
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!selectedOption ? (
+            /* Account Type Selection */
+            <div>
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold text-white mb-4">Choose Your Account Type</h2>
+                <p className="text-gray-400 max-w-2xl mx-auto">
+                  Select the type of account that best fits your role in the music industry. 
+                  Each account type comes with specialized tools and features.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                {createOptions.map(renderCreateOption)}
+              </div>
+
+              <div className="text-center mt-12">
+                <Button 
+                  variant="outline" 
+                  className="border-white/20 text-gray-300 hover:bg-white/10"
+                  onClick={() => router.push('/dashboard')}
+                >
+                  Back to Dashboard
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Account Creation Form */
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <Button 
+                  variant="ghost" 
+                  className="text-gray-400 hover:text-white mb-4"
+                  onClick={() => setSelectedOption(null)}
+                >
+                  ← Back to Selection
+                </Button>
+                
+                <h2 className="text-3xl font-bold text-white mb-2">
+                  {selectedOption === 'artist-account' ? 'Create Artist Account' : 'Create Venue Account'}
+                </h2>
+                <p className="text-gray-400">
+                  Fill out the information below to set up your {selectedOption === 'artist-account' ? 'artist' : 'venue'} account
+                </p>
+              </div>
+
+              <Card className="bg-white/10 backdrop-blur-xl border border-white/20">
+                <CardContent className="p-8">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {selectedOption === 'artist-account' ? (
+                      /* Artist Form */
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="artist_name" className="text-white font-medium">
+                            Artist Name *
+                          </Label>
+                          <Input
+                            id="artist_name"
+                            value={artistData.artist_name}
+                            onChange={(e) => setArtistData({ ...artistData, artist_name: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                            placeholder="Your artist or stage name"
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="bio" className="text-white font-medium">
+                            Bio
+                          </Label>
+                          <Textarea
+                            id="bio"
+                            value={artistData.bio}
+                            onChange={(e) => setArtistData({ ...artistData, bio: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50 min-h-[100px]"
+                            placeholder="Tell us about your music and artistic journey..."
+                          />
+                        </div>
+
+                        <Separator className="bg-white/10" />
+
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-yellow-400" />
+                            Social Links
+                          </h3>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="instagram" className="text-white font-medium">Instagram</Label>
+                              <Input
+                                id="instagram"
+                                value={artistData.social_links.instagram}
+                                onChange={(e) => setArtistData({
+                                  ...artistData,
+                                  social_links: { ...artistData.social_links, instagram: e.target.value }
+                                })}
+                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                                placeholder="@your_handle"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="spotify" className="text-white font-medium">Spotify</Label>
+                              <Input
+                                id="spotify"
+                                value={artistData.social_links.spotify}
+                                onChange={(e) => setArtistData({
+                                  ...artistData,
+                                  social_links: { ...artistData.social_links, spotify: e.target.value }
+                                })}
+                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                                placeholder="Spotify artist URL"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* Venue Form */
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="venue_name" className="text-white font-medium">
+                            Venue Name *
+                          </Label>
+                          <Input
+                            id="venue_name"
+                            value={venueData.venue_name}
+                            onChange={(e) => setVenueData({ ...venueData, venue_name: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                            placeholder="Name of your venue or event space"
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="description" className="text-white font-medium">
+                            Description
+                          </Label>
+                          <Textarea
+                            id="description"
+                            value={venueData.description}
+                            onChange={(e) => setVenueData({ ...venueData, description: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50 min-h-[100px]"
+                            placeholder="Describe your venue, its atmosphere, and what makes it special..."
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="address" className="text-white font-medium">
+                              <MapPin className="h-4 w-4 inline mr-1" />
+                              Address
+                            </Label>
+                            <Input
+                              id="address"
+                              value={venueData.address}
+                              onChange={(e) => setVenueData({ ...venueData, address: e.target.value })}
+                              className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                              placeholder="123 Music St, City, State"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="capacity" className="text-white font-medium">
+                              <Users className="h-4 w-4 inline mr-1" />
+                              Capacity
+                            </Label>
+                            <Input
+                              id="capacity"
+                              type="number"
+                              value={venueData.capacity}
+                              onChange={(e) => setVenueData({ ...venueData, capacity: e.target.value })}
+                              className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                              placeholder="Maximum capacity"
+                            />
+                          </div>
+                        </div>
+
+                        <Separator className="bg-white/10" />
+
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-yellow-400" />
+                            Contact Information
+                          </h3>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="phone" className="text-white font-medium">Phone</Label>
+                              <Input
+                                id="phone"
+                                value={venueData.contact_info.phone}
+                                onChange={(e) => setVenueData({
+                                  ...venueData,
+                                  contact_info: { ...venueData.contact_info, phone: e.target.value }
+                                })}
+                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                                placeholder="(555) 123-4567"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="email" className="text-white font-medium">Email</Label>
+                              <Input
+                                id="email"
+                                type="email"
+                                value={venueData.contact_info.email}
+                                onChange={(e) => setVenueData({
+                                  ...venueData,
+                                  contact_info: { ...venueData.contact_info, email: e.target.value }
+                                })}
+                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                                placeholder="booking@venue.com"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex gap-4 pt-6">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1 border-white/20 text-gray-300 hover:bg-white/10"
+                        onClick={() => setSelectedOption(null)}
+                      >
+                        Cancel
+                      </Button>
+                      
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting || isLoading}
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold"
+                      >
+                        {isSubmitting || isLoading ? (
+                          <div className="flex items-center">
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Creating...
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            Create Account
+                            <Sparkles className="ml-2 h-4 w-4" />
+                          </div>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
+    </div>
+  )
+} 

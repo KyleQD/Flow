@@ -1,0 +1,138 @@
+%% Tourify Architecture Diagrams
+%% This file contains various architectural views of the Tourify application
+
+%% 1. High-Level Architecture
+flowchart TB
+    subgraph Frontend["Frontend Layer"]
+        Next["Next.js App Router"]
+        React["React Components"]
+        Tailwind["Tailwind CSS"]
+        ShadcnUI["Shadcn UI"]
+        RadixUI["Radix UI"]
+    end
+
+    subgraph Backend["Backend Layer"]
+        ServerActions["Server Actions"]
+        Prisma["Prisma ORM"]
+        Supabase["Supabase"]
+    end
+
+    subgraph Data["Data Layer"]
+        PostgreSQL["PostgreSQL"]
+        Auth["Auth System"]
+        Storage["File Storage"]
+    end
+
+    Frontend --> Backend
+    Backend --> Data
+    
+    style Frontend fill:#f9f,stroke:#333,stroke-width:2px
+    style Backend fill:#bbf,stroke:#333,stroke-width:2px
+    style Data fill:#bfb,stroke:#333,stroke-width:2px
+
+%% 2. Application Features
+mindmap
+    root((Tourify))
+        Events
+            Event Management
+            Staff Availability
+            Analytics
+            Registrations
+            Feedback
+        Documents
+            Document Management
+            File Sharing
+            Version Control
+        Staff
+            Staff Management
+            Scheduling
+            Skills
+        Communication
+            Messages
+            Groups
+            Notifications
+        Tasks
+            Task Management
+            Assignments
+            Progress Tracking
+        Equipment
+            Inventory
+            Tracking
+            Maintenance
+
+%% 3. Authentication Flow
+sequenceDiagram
+    participant U as User
+    participant C as Client
+    participant N as Next.js
+    participant S as Supabase Auth
+    participant D as Database
+
+    U->>C: Access Protected Route
+    C->>N: Check Session
+    N->>S: Verify Token
+    
+    alt Valid Session
+        S-->>N: Session Valid
+        N-->>C: Allow Access
+        C-->>U: Show Protected Content
+    else No Session
+        S-->>N: No Valid Session
+        N-->>C: Redirect to Login
+        C-->>U: Show Login Page
+        U->>C: Login Credentials
+        C->>S: Authenticate
+        S->>D: Create/Update Session
+        D-->>S: Session Created
+        S-->>C: Auth Tokens
+        C->>N: Access Protected Route
+        N-->>U: Show Protected Content
+    end
+
+%% 4. Database Schema Relationships
+erDiagram
+    User ||--o{ Event : "creates"
+    User ||--o{ Staff : "is"
+    User ||--o{ Application : "submits"
+    User ||--o{ Message : "sends"
+    
+    Event ||--o{ Staff : "has"
+    Event ||--o{ Task : "contains"
+    Event ||--o{ Document : "has"
+    Event ||--o{ Group : "has"
+    
+    Staff ||--o{ Schedule : "has"
+    Staff ||--o{ StaffSkill : "has"
+    
+    Group ||--o{ Message : "contains"
+    Group ||--o{ GroupMember : "has"
+    
+    Task ||--o{ TaskComment : "has"
+    Task ||--|| User : "assigned to"
+
+%% 5. Documents Component Hierarchy
+graph TD
+    DP[DocumentsPage] --> SP[SidebarProvider]
+    SP --> DM[DocumentsManagement]
+    DM --> DH[DocumentsHeader]
+    DM --> DS[DocumentsSidebar]
+    DM --> DC[DocumentsContent]
+    DM --> DD[DocumentDetails]
+    
+    DH --> UDD[UploadDocumentDialog]
+    DH --> CFD[CreateFolderDialog]
+    DH --> SDD[ShareDocumentDialog]
+    
+    DS --> FV[FolderView]
+    DS --> TV[TagsView]
+    
+    DC --> GL[GridLayout]
+    DC --> LL[ListLayout]
+    
+    DD --> PI[PreviewImage]
+    DD --> PD[PreviewDocument]
+    DD --> AI[ActivityInfo]
+    
+    style DP fill:#f9f
+    style SP fill:#bbf
+    style DM fill:#bfb 

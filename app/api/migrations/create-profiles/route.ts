@@ -1,0 +1,42 @@
+import { cookies } from 'next/headers'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { NextResponse } from 'next/server'
+import { Database } from '@/lib/database.types'
+
+export async function POST(request: Request) {
+  try {
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient<Database>({ 
+      cookies: () => cookieStore 
+    })
+
+    // Execute SQL to create the profiles table
+    // We use the Supabase Database API directly since it's an admin operation
+    const { error } = await supabase.from('profiles').select('id').limit(1)
+    
+    // If the table already exists, return success
+    if (!error || !error.message.includes('does not exist')) {
+      return NextResponse.json({ success: true, message: 'Profiles table already exists' })
+    }
+
+    // Otherwise, make a direct API call to execute SQL statements
+    // Note: This requires direct database access, which may not be available
+    // The alternative is to manually create these tables through the Supabase dashboard
+    
+    // Our workaround is to use Edge Functions or direct database access
+    // For now, let's just inform the client that they need to manually create the tables
+    return NextResponse.json(
+      { 
+        error: 'Manual table creation required',
+        message: 'The profiles table needs to be created manually. Please visit the Supabase dashboard and run the SQL from the migration files.'
+      },
+      { status: 400 }
+    )
+  } catch (error) {
+    console.error('Error creating profiles table:', error)
+    return NextResponse.json(
+      { error: 'Failed to create profiles table', message: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    )
+  }
+} 

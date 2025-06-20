@@ -1,0 +1,47 @@
+graph TD
+    subgraph App Structure
+        A[Next.js App] --> B[Pages]
+        A --> C[Components]
+        A --> D[Core]
+    end
+
+    subgraph Pages
+        B --> B1[Auth]
+        B --> B2[Dashboard]
+        B --> B3[Events]
+        B --> B4[Tour]
+        B --> B5[Venue]
+        B --> B6[Profile]
+        B --> B7[Settings]
+    end
+
+    subgraph Components
+        C --> C1[Layout]
+        C1 --> C1a[Header]
+        C1 --> C1b[Sidebar]
+        
+        C --> C2[Shared]
+        C2 --> C2a[PageHeader]
+        C2 --> C2b[Card]
+        C2 --> C2c[Status]
+        
+        C --> C3[Features]
+        C3 --> C3a[EventCard]
+        C3 --> C3b[TourCard]
+        C3 --> C3c[VenueCard]
+    end
+
+    subgraph Core
+        D --> D1[Auth]
+        D --> D2[Database]
+        D --> D3[State]
+        
+        D1 --> D1a[Supabase]
+        D2 --> D2a[Prisma]
+        D3 --> D3a[Context]
+    end
+
+    %% Connections
+    B --> C
+    C --> D
+    B --> D 

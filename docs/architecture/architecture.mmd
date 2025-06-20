@@ -1,0 +1,116 @@
+graph TD
+    subgraph Core Components
+        A[Layout Components]
+        A --> A1[PageLayout]
+        A --> A2[Header]
+        A --> A3[Sidebar]
+        A --> A4[Footer]
+        
+        B[Common UI Components]
+        B --> B1[PageHeader]
+        B --> B2[Card]
+        B --> B3[Progress]
+        B --> B4[Badge]
+        B --> B5[Avatar]
+        
+        C[Form Components]
+        C --> C1[Input]
+        C --> C2[Select]
+        C --> C3[Button]
+        C --> C4[Checkbox]
+    end
+
+    subgraph Feature Components
+        D[Dashboard]
+        D --> D1[EventCard]
+        D --> D2[TaskList]
+        D --> D3[ProgressChart]
+        
+        E[Logistics]
+        E --> E1[TransportCard]
+        E --> E2[VenueCard]
+        E --> E3[EquipmentList]
+        
+        F[Admin]
+        F --> F1[UserManagement]
+        F --> F2[SettingsPanel]
+    end
+
+    subgraph Shared Components
+        G[Data Display]
+        G --> G1[Table]
+        G --> G2[Chart]
+        G --> G3[List]
+        
+        H[Navigation]
+        H --> H1[Menu]
+        H --> H2[Tabs]
+        H --> H3[Breadcrumbs]
+    end
+
+    subgraph Utility Components
+        I[Loading States]
+        I --> I1[Spinner]
+        I --> I2[Skeleton]
+        
+        J[Feedback]
+        J --> J1[Toast]
+        J --> J2[Alert]
+        J --> J3[Modal]
+    end
+
+    %% Connections
+    A --> D
+    A --> E
+    A --> F
+    B --> D
+    B --> E
+    B --> F
+    G --> D
+    G --> E
+    H --> A
+    I --> D
+    I --> E
+    J --> D
+    J --> E
+
+    subgraph Frontend
+        A[Next.js App] --> B[App Directory]
+        B --> C[(dashboard)]
+        B --> D[(auth)]
+        B --> E[api]
+        B --> F[admin]
+        B --> G[onboarding]
+        B --> H[login]
+        B --> I[signup]
+        B --> J[forgot-password]
+        B --> K[reset-password]
+        
+        A --> L[Components]
+        L --> M[ui]
+        L --> N[dashboard.tsx]
+        L --> O[header.tsx]
+        L --> P[sidebar.tsx]
+        L --> Q[user-profile.tsx]
+        L --> R[event-selector.tsx]
+        
+        A --> S[Styles]
+        S --> T[globals.css]
+        S --> U[tailwind.config.js]
+    end
+
+    subgraph Backend
+        V[Supabase] --> W[Database]
+        V --> X[Authentication]
+        V --> Y[Storage]
+    end
+
+    subgraph Configuration
+        Z[package.json]
+        AA[tsconfig.json]
+        AB[next.config.mjs]
+        AC[middleware.ts]
+    end
+
+    A --> V
+    E --> V 

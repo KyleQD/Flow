@@ -1,0 +1,13 @@
+<svg width="240" height="80" viewBox="0 0 240 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main geometric background shape - angular/slanted design -->
+  <path d="M20 20 L200 10 L220 30 L210 60 L30 70 L10 50 Z" fill="white"/>
+  
+  <!-- Tourify text with the distinctive italic/slanted styling -->
+  <text x="35" y="50" font-family="Arial Black, sans-serif" font-size="24" font-weight="900" fill="black" style="font-style: italic; letter-spacing: 1px; transform: skewX(-10deg);">
+    Tourify
+  </text>
+  
+  <!-- Accent geometric elements -->
+  <circle cx="180" cy="40" r="6" fill="white"/>
+  <rect x="190" y="25" width="25" height="30" fill="white" transform="skewX(-15deg)"/>
+</svg> 

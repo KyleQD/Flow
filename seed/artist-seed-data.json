@@ -1,0 +1,727 @@
+{
+  "artist_profiles": [
+    {
+      "id": "artist_001",
+      "user_id": "user_001",
+      "artist_name": "The Midnight Echoes",
+      "bio": "Alternative rock band from New York, creating music that blends modern sounds with classic influences.",
+      "genres": ["Alternative Rock", "Indie", "Post-Rock"],
+      "artist_type": "band",
+      "social_links": {
+        "instagram": "https://instagram.com/midnightechoes",
+        "twitter": "https://twitter.com/midnightechoes",
+        "facebook": "https://facebook.com/midnightechoes",
+        "youtube": "https://youtube.com/midnightechoes",
+        "spotify": "https://open.spotify.com/artist/midnightechoes",
+        "tiktok": "https://tiktok.com/@midnightechoes",
+        "soundcloud": "https://soundcloud.com/midnightechoes"
+      },
+      "stats": {
+        "tours": 12,
+        "connections": 2500,
+        "rating": 4.8,
+        "monthly_listeners": 150000,
+        "total_streams": 5000000,
+        "followers": 75000
+      },
+      "skills": ["Live Performance", "Songwriting", "Music Production", "Vocal Training", "Instrumental Performance"],
+      "experience": [
+        {
+          "id": "exp_001",
+          "title": "Lead Vocalist",
+          "company": "The Midnight Echoes",
+          "period": "2018-Present",
+          "description": "Lead vocalist and songwriter for the band"
+        },
+        {
+          "id": "exp_002",
+          "title": "Session Musician",
+          "company": "Various Studios",
+          "period": "2016-2018",
+          "description": "Worked as a session musician for various artists and projects"
+        }
+      ],
+      "certifications": [
+        {
+          "id": "cert_001",
+          "title": "Music Production",
+          "organization": "Berklee College of Music",
+          "year": "2020"
+        },
+        {
+          "id": "cert_002",
+          "title": "Advanced Vocal Training",
+          "organization": "Vocal Institute of America",
+          "year": "2019"
+        }
+      ],
+      "gallery": [
+        {
+          "id": "gallery_001",
+          "url": "https://example.com/band-photo-1.jpg",
+          "alt": "Band performing at Madison Square Garden",
+          "type": "performance",
+          "date": "2024-02-15"
+        },
+        {
+          "id": "gallery_002",
+          "url": "https://example.com/band-photo-2.jpg",
+          "alt": "Studio recording session",
+          "type": "studio",
+          "date": "2024-01-20"
+        }
+      ],
+      "events": [
+        {
+          "id": "event_001",
+          "title": "Summer Tour 2024",
+          "date": "2024-07-15",
+          "venues": 15,
+          "rating": 4.9,
+          "ticket_sales": 45000,
+          "revenue": 900000
+        },
+        {
+          "id": "event_002",
+          "title": "Winter Festival 2024",
+          "date": "2024-12-20",
+          "venues": 5,
+          "rating": 4.7,
+          "ticket_sales": 15000,
+          "revenue": 300000
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_001",
+          "name": "John Smith",
+          "position": "Music Critic",
+          "date": "2024-03-15",
+          "comment": "An incredible live performance that showcases their musical prowess",
+          "rating": 5,
+          "source": "Rolling Stone"
+        },
+        {
+          "id": "review_002",
+          "name": "Sarah Johnson",
+          "position": "Concert Reviewer",
+          "date": "2024-03-10",
+          "comment": "Their stage presence is electrifying",
+          "rating": 4.5,
+          "source": "Pitchfork"
+        }
+      ],
+      "isPublic": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-03-20T00:00:00Z"
+    },
+    {
+      "id": "artist_002",
+      "user_id": "user_002",
+      "artist_name": "Luna Nova",
+      "bio": "Electronic music producer and DJ known for innovative sound design and immersive live performances.",
+      "genres": ["Electronic", "House", "Techno"],
+      "artist_type": "solo",
+      "social_links": {
+        "instagram": "https://instagram.com/lunanova",
+        "twitter": "https://twitter.com/lunanova",
+        "soundcloud": "https://soundcloud.com/lunanova",
+        "beatport": "https://beatport.com/artist/lunanova"
+      },
+      "stats": {
+        "tours": 8,
+        "connections": 1800,
+        "rating": 4.9,
+        "monthly_listeners": 200000,
+        "total_streams": 8000000,
+        "followers": 100000
+      },
+      "skills": ["Music Production", "DJ Performance", "Sound Design", "Live Electronics"],
+      "experience": [
+        {
+          "id": "exp_003",
+          "title": "Resident DJ",
+          "company": "Neon Club",
+          "period": "2020-Present",
+          "description": "Weekly residency at premier electronic music venue"
+        }
+      ],
+      "certifications": [
+        {
+          "id": "cert_003",
+          "title": "Advanced Sound Design",
+          "organization": "Ableton Certified Trainer",
+          "year": "2021"
+        }
+      ],
+      "gallery": [
+        {
+          "id": "gallery_003",
+          "url": "https://example.com/luna-photo-1.jpg",
+          "alt": "Live performance at Neon Club",
+          "type": "performance",
+          "date": "2024-02-20"
+        }
+      ],
+      "events": [
+        {
+          "id": "event_003",
+          "title": "European Tour 2024",
+          "date": "2024-09-01",
+          "venues": 12,
+          "rating": 4.8,
+          "ticket_sales": 30000,
+          "revenue": 600000
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_003",
+          "name": "Mike Chen",
+          "position": "Electronic Music Critic",
+          "date": "2024-03-18",
+          "comment": "Revolutionary approach to live electronic performance",
+          "rating": 5,
+          "source": "Resident Advisor"
+        }
+      ],
+      "isPublic": true,
+      "created_at": "2024-01-15T00:00:00Z",
+      "updated_at": "2024-03-20T00:00:00Z"
+    },
+    {
+      "id": "artist_003",
+      "user_id": "user_003",
+      "artist_name": "Maria Rodriguez",
+      "bio": "Classical violinist and composer, known for blending traditional classical music with contemporary elements.",
+      "genres": ["Classical", "Contemporary Classical", "Chamber Music"],
+      "artist_type": "solo",
+      "social_links": {
+        "instagram": "https://instagram.com/mariarodriguez",
+        "youtube": "https://youtube.com/mariarodriguez",
+        "spotify": "https://open.spotify.com/artist/mariarodriguez",
+        "soundcloud": "https://soundcloud.com/mariarodriguez"
+      },
+      "stats": {
+        "tours": 6,
+        "connections": 1200,
+        "rating": 4.9,
+        "monthly_listeners": 80000,
+        "total_streams": 2000000,
+        "followers": 45000
+      },
+      "skills": ["Violin Performance", "Composition", "Orchestral Arrangement", "Music Theory"],
+      "experience": [
+        {
+          "id": "exp_004",
+          "title": "Principal Violinist",
+          "company": "New York Philharmonic",
+          "period": "2019-Present",
+          "description": "Principal violinist and occasional soloist"
+        }
+      ],
+      "certifications": [
+        {
+          "id": "cert_004",
+          "title": "Master of Music",
+          "organization": "Juilliard School",
+          "year": "2018"
+        }
+      ],
+      "gallery": [
+        {
+          "id": "gallery_004",
+          "url": "https://example.com/maria-photo-1.jpg",
+          "alt": "Performance at Carnegie Hall",
+          "type": "performance",
+          "date": "2024-01-15"
+        }
+      ],
+      "events": [
+        {
+          "id": "event_004",
+          "title": "World Tour 2024",
+          "date": "2024-10-01",
+          "venues": 8,
+          "rating": 4.9,
+          "ticket_sales": 12000,
+          "revenue": 360000
+        }
+      ],
+      "reviews": [
+        {
+          "id": "review_004",
+          "name": "David Wilson",
+          "position": "Classical Music Critic",
+          "date": "2024-03-01",
+          "comment": "A masterful interpretation of contemporary classical works",
+          "rating": 5,
+          "source": "The New York Times"
+        }
+      ],
+      "isPublic": true,
+      "created_at": "2024-01-20T00:00:00Z",
+      "updated_at": "2024-03-20T00:00:00Z"
+    },
+    {
+      "id": "artist_004",
+      "user_id": "user_004",
+      "artist_name": "James Wilson",
+      "bio": "Professional session musician and studio guitarist with over 15 years of experience.",
+      "genres": ["Session Work", "Jazz", "Rock", "Pop"],
+      "artist_type": "session",
+      "social_links": {
+        "instagram": "https://instagram.com/jameswilson",
+        "linkedin": "https://linkedin.com/in/jameswilson",
+        "website": "https://jameswilson.com"
+      },
+      "stats": {
+        "sessions": 500,
+        "connections": 3000,
+        "rating": 4.9,
+        "albums_credited": 75,
+        "years_experience": 15
+      },
+      "skills": ["Guitar Performance", "Studio Recording", "Music Production", "Arrangement"],
+      "experience": [
+        {
+          "id": "exp_005",
+          "title": "Session Guitarist",
+          "company": "Various Studios",
+          "period": "2009-Present",
+          "description": "Professional session work for major artists and labels"
+        }
+      ],
+      "certifications": [
+        {
+          "id": "cert_005",
+          "title": "Advanced Studio Production",
+          "organization": "Berklee College of Music",
+          "year": "2015"
+        }
+      ],
+      "gallery": [
+        {
+          "id": "gallery_005",
+          "url": "https://example.com/james-photo-1.jpg",
+          "alt": "Studio session at Abbey Road",
+          "type": "studio",
+          "date": "2024-02-10"
+        }
+      ],
+      "isPublic": true,
+      "created_at": "2024-01-25T00:00:00Z",
+      "updated_at": "2024-03-20T00:00:00Z"
+    }
+  ],
+  "music_releases": [
+    {
+      "id": "release_001",
+      "userId": "user_001",
+      "title": "Echoes of Tomorrow",
+      "type": "album",
+      "artwork": "https://example.com/album-cover.jpg",
+      "releaseDate": "2024-02-15",
+      "streamingLinks": {
+        "spotify": "https://open.spotify.com/album/echoes-of-tomorrow",
+        "appleMusic": "https://music.apple.com/album/echoes-of-tomorrow",
+        "soundcloud": "https://soundcloud.com/midnightechoes/echoes-of-tomorrow",
+        "bandcamp": "https://midnightechoes.bandcamp.com/album/echoes-of-tomorrow"
+      },
+      "tracks": 12,
+      "featured": ["track_001", "track_002"],
+      "liked": true,
+      "stats": {
+        "total_streams": 1000000,
+        "monthly_listeners": 50000,
+        "playlist_adds": 2500
+      }
+    },
+    {
+      "id": "release_002",
+      "userId": "user_002",
+      "title": "Neon Dreams",
+      "type": "EP",
+      "artwork": "https://example.com/ep-cover.jpg",
+      "releaseDate": "2024-03-01",
+      "streamingLinks": {
+        "spotify": "https://open.spotify.com/album/neon-dreams",
+        "appleMusic": "https://music.apple.com/album/neon-dreams",
+        "beatport": "https://beatport.com/release/neon-dreams"
+      },
+      "tracks": 6,
+      "featured": ["track_003"],
+      "liked": true,
+      "stats": {
+        "total_streams": 500000,
+        "monthly_listeners": 30000,
+        "playlist_adds": 1500
+      }
+    },
+    {
+      "id": "release_003",
+      "userId": "user_003",
+      "title": "Symphony of Dreams",
+      "type": "album",
+      "artwork": "https://example.com/symphony-cover.jpg",
+      "releaseDate": "2024-01-15",
+      "streamingLinks": {
+        "spotify": "https://open.spotify.com/album/symphony-of-dreams",
+        "appleMusic": "https://music.apple.com/album/symphony-of-dreams",
+        "deezer": "https://deezer.com/album/symphony-of-dreams"
+      },
+      "tracks": 8,
+      "featured": ["track_004"],
+      "liked": true,
+      "stats": {
+        "total_streams": 300000,
+        "monthly_listeners": 20000,
+        "playlist_adds": 1000
+      }
+    }
+  ],
+  "fan_engagement": {
+    "fan_clubs": [
+      {
+        "id": "fanclub_001",
+        "artistId": "artist_001",
+        "name": "Echoes Fan Club",
+        "members": 5000,
+        "messages": [
+          {
+            "id": "msg_001",
+            "content": "New album coming soon!",
+            "timestamp": "2024-03-20T10:00:00Z",
+            "sender": "artist",
+            "fanId": null
+          }
+        ],
+        "exclusive_content": [
+          {
+            "id": "content_001",
+            "type": "video",
+            "title": "Behind the Scenes: Album Recording",
+            "url": "https://example.com/behind-scenes.mp4",
+            "releaseDate": "2024-03-19"
+          }
+        ]
+      }
+    ],
+    "merchandise": [
+      {
+        "id": "merch_001",
+        "artistId": "artist_001",
+        "name": "Tour T-Shirt 2024",
+        "price": 25.00,
+        "stock": 1000,
+        "sold": 500,
+        "image": "https://example.com/tshirt.jpg"
+      }
+    ],
+    "meet_and_greets": [
+      {
+        "id": "mng_001",
+        "artistId": "artist_001",
+        "eventId": "event_001",
+        "date": "2024-07-15",
+        "capacity": 50,
+        "price": 100.00,
+        "sold": 45
+      }
+    ]
+  },
+  "collaborations": [
+    {
+      "id": "collab_001",
+      "title": "Summer Festival Collaboration",
+      "status": "active",
+      "collaborators": [
+        {
+          "id": "collab_001",
+          "name": "Sarah Johnson",
+          "role": "Producer",
+          "avatar": "https://example.com/avatar.jpg",
+          "email": "sarah@example.com"
+        }
+      ],
+      "project_files": [
+        {
+          "id": "file_001",
+          "name": "Summer Mix.mp3",
+          "type": "audio",
+          "size": 10240000,
+          "uploadedBy": "user_001",
+          "uploadedAt": "2024-03-20T10:00:00Z",
+          "url": "https://example.com/summer-mix.mp3"
+        }
+      ]
+    }
+  ],
+  "marketing": {
+    "campaigns": [
+      {
+        "id": "campaign_001",
+        "title": "Album Launch 2024",
+        "startDate": "2024-02-01",
+        "endDate": "2024-04-01",
+        "budget": 50000,
+        "metrics": {
+          "reach": 100000,
+          "engagement": 25000,
+          "conversions": 5000
+        }
+      }
+    ],
+    "social_posts": [
+      {
+        "id": "post_001",
+        "platform": "instagram",
+        "content": "New album 'Echoes of Tomorrow' out now!",
+        "media": ["https://example.com/post-1.jpg"],
+        "metrics": {
+          "likes": 5000,
+          "shares": 1000,
+          "comments": 500,
+          "reach": 25000
+        },
+        "postedAt": "2024-03-20T10:00:00Z"
+      }
+    ]
+  },
+  "epk": {
+    "id": "epk_001",
+    "artistId": "artist_001",
+    "bio": "The Midnight Echoes is an alternative rock band...",
+    "press_photos": [
+      {
+        "id": "photo_001",
+        "url": "https://example.com/press-photo-1.jpg",
+        "caption": "Band Photo 2024"
+      }
+    ],
+    "press_releases": [
+      {
+        "id": "press_001",
+        "title": "New Album Announcement",
+        "content": "The Midnight Echoes announce their new album...",
+        "date": "2024-02-01"
+      }
+    ],
+    "technical_rider": {
+      "id": "rider_001",
+      "url": "https://example.com/tech-rider.pdf",
+      "lastUpdated": "2024-03-01"
+    },
+    "hospitality_rider": {
+      "id": "rider_002",
+      "url": "https://example.com/hospitality-rider.pdf",
+      "lastUpdated": "2024-03-01"
+    }
+  },
+  "royalties": {
+    "streaming": [
+      {
+        "id": "royalty_001",
+        "artistId": "artist_001",
+        "platform": "Spotify",
+        "period": "2024-02",
+        "amount": 25000.00,
+        "streams": 1000000
+      }
+    ],
+    "publishing": [
+      {
+        "id": "pub_001",
+        "artistId": "artist_001",
+        "title": "Echoes of Tomorrow",
+        "period": "2024-02",
+        "amount": 15000.00,
+        "licenses": 5
+      }
+    ]
+  },
+  "equipment": {
+    "inventory": [
+      {
+        "id": "equip_001",
+        "artistId": "artist_001",
+        "name": "Fender Stratocaster",
+        "type": "guitar",
+        "serial": "F123456",
+        "purchase_date": "2020-01-15",
+        "value": 1200.00,
+        "condition": "excellent"
+      }
+    ],
+    "maintenance": [
+      {
+        "id": "maint_001",
+        "equipmentId": "equip_001",
+        "date": "2024-02-15",
+        "type": "string_change",
+        "cost": 50.00,
+        "notes": "Regular maintenance"
+      }
+    ]
+  },
+  "tour_management": {
+    "rider_requests": [
+      {
+        "id": "rider_001",
+        "artistId": "artist_001",
+        "venueId": "venue_001",
+        "date": "2024-07-15",
+        "status": "pending",
+        "items": [
+          {
+            "name": "Water",
+            "quantity": 24,
+            "notes": "Room temperature"
+          }
+        ]
+      }
+    ],
+    "travel_arrangements": [
+      {
+        "id": "travel_001",
+        "artistId": "artist_001",
+        "eventId": "event_001",
+        "type": "flight",
+        "from": "New York",
+        "to": "Los Angeles",
+        "date": "2024-07-14",
+        "status": "confirmed"
+      }
+    ]
+  },
+  "songwriting_credits": [
+    {
+      "id": "credit_001",
+      "artistId": "artist_001",
+      "songId": "song_001",
+      "title": "Echoes of Tomorrow",
+      "role": "writer",
+      "percentage": 100,
+      "publisher": "Echoes Publishing",
+      "iswc": "T-123456789-0"
+    },
+    {
+      "id": "credit_002",
+      "artistId": "artist_002",
+      "songId": "song_002",
+      "title": "Neon Dreams",
+      "role": "producer",
+      "percentage": 50,
+      "publisher": "Neon Music",
+      "iswc": "T-987654321-0"
+    }
+  ],
+  "performance_rights": [
+    {
+      "id": "right_001",
+      "artistId": "artist_001",
+      "organization": "ASCAP",
+      "member_id": "ASCAP123456",
+      "join_date": "2020-01-01",
+      "status": "active"
+    },
+    {
+      "id": "right_002",
+      "artistId": "artist_002",
+      "organization": "BMI",
+      "member_id": "BMI789012",
+      "join_date": "2019-06-15",
+      "status": "active"
+    }
+  ],
+  "session_work": [
+    {
+      "id": "session_001",
+      "artistId": "artist_004",
+      "client": "Major Label Records",
+      "project": "Album Recording",
+      "date": "2024-03-15",
+      "duration": 8,
+      "rate": 500.00,
+      "instruments": ["Electric Guitar", "Acoustic Guitar"],
+      "status": "completed"
+    }
+  ],
+  "masterclasses": [
+    {
+      "id": "class_001",
+      "artistId": "artist_003",
+      "title": "Advanced Violin Techniques",
+      "date": "2024-04-15",
+      "duration": 3,
+      "capacity": 20,
+      "price": 200.00,
+      "location": "Carnegie Hall",
+      "enrolled": 15
+    }
+  ],
+  "awards": [
+    {
+      "id": "award_001",
+      "artistId": "artist_001",
+      "title": "Best Alternative Album",
+      "organization": "Grammy Awards",
+      "year": 2024,
+      "category": "Music"
+    },
+    {
+      "id": "award_002",
+      "artistId": "artist_003",
+      "title": "Young Artist of the Year",
+      "organization": "Classical Music Awards",
+      "year": 2023,
+      "category": "Classical"
+    }
+  ],
+  "endorsements": [
+    {
+      "id": "endorse_001",
+      "artistId": "artist_001",
+      "brand": "Fender",
+      "product": "Stratocaster",
+      "start_date": "2023-01-01",
+      "end_date": "2025-12-31",
+      "status": "active"
+    },
+    {
+      "id": "endorse_002",
+      "artistId": "artist_003",
+      "brand": "Stradivarius",
+      "product": "Violin",
+      "start_date": "2022-06-01",
+      "end_date": "2024-12-31",
+      "status": "active"
+    }
+  ],
+  "music_education": [
+    {
+      "id": "edu_001",
+      "artistId": "artist_003",
+      "institution": "Juilliard School",
+      "degree": "Master of Music",
+      "field": "Violin Performance",
+      "graduation_year": 2018,
+      "achievements": ["Dean's List", "Performance Award"]
+    }
+  ],
+  "instruments": [
+    {
+      "id": "inst_001",
+      "artistId": "artist_003",
+      "name": "Stradivarius Violin",
+      "type": "violin",
+      "year": 1721,
+      "value": 5000000.00,
+      "insurance": {
+        "provider": "Lloyd's of London",
+        "policy_number": "LL123456",
+        "coverage": 5000000.00
+      }
+    }
+  ]
+} 

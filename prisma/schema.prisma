@@ -1,0 +1,261 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Job {
+  id          String      @id @default(cuid())
+  title       String
+  description String
+  budget      String?
+  location    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  questions   Question[]
+  documents   Document[]
+  applications Application[]
+}
+
+model Question {
+  id        String   @id @default(cuid())
+  text      String
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  answers   Answer[]
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  type        String
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id])
+  uploads     Upload[]
+}
+
+model EventDocument {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  url         String
+  type        String   // pdf, doc, image, etc.
+  eventId     String
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  event       Event    @relation(fields: [eventId], references: [id])
+  uploader    User     @relation(fields: [uploadedBy], references: [id])
+}
+
+model Application {
+  id        String   @id @default(cuid())
+  status    String   @default("pending") // pending, accepted, rejected
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  answers   Answer[]
+  uploads   Upload[]
+  eventId   String?
+  event     Event?   @relation(fields: [eventId], references: [id])
+  role      String?  // e.g., "Photographer", "Sound Engineer", etc.
+}
+
+model Answer {
+  id            String      @id @default(cuid())
+  text          String
+  questionId    String
+  question      Question    @relation(fields: [questionId], references: [id])
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id])
+}
+
+model Upload {
+  id            String      @id @default(cuid())
+  url           String
+  documentId    String
+  document      Document    @relation(fields: [documentId], references: [id])
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  isPro         Boolean   @default(false)
+  hiredStaff    Staff[]   @relation("HiredBy")
+  sentMessages  Message[] @relation("SentMessages")
+  groups        GroupMember[]
+  createdTasks  Task[]         @relation("TaskCreator")
+  assignedTasks Task[]         @relation("TaskAssignee")
+  taskComments  TaskComment[]
+  uploadedDocuments EventDocument[]
+  jobs          Job[]
+  applications  Application[]
+  staff         Staff[]
+}
+
+model Staff {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  role      String
+  status    String   @default("confirmed") // confirmed, pending, declined
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  hiredById String
+  hiredBy   User     @relation("HiredBy", fields: [hiredById], references: [id])
+  schedules Schedule[]
+  skills    StaffSkill[]
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  location    String?
+  status      String   @default("draft")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  staff       Staff[]
+  applications Application[]
+  groups      Group[]
+  tasks       Task[]
+  schedules   Schedule[]
+  documents   EventDocument[]
+  emergencyContacts EmergencyContact[]
+  equipment   Equipment[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  senderId  String
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id])
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id])
+}
+
+model Group {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  eventId     String
+  event       Event     @relation(fields: [eventId], references: [id])
+  messages    Message[]
+  members     GroupMember[]
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      String   @default("member") // member, admin
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupId, userId])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      String   @default("pending") // pending, in_progress, completed
+  priority    String   @default("medium") // low, medium, high
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  eventId     String
+  assignedTo  String?
+  createdBy   String
+  event       Event    @relation(fields: [eventId], references: [id])
+  assignee    User?    @relation("TaskAssignee", fields: [assignedTo], references: [id])
+  creator     User     @relation("TaskCreator", fields: [createdBy], references: [id])
+  comments    TaskComment[]
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  taskId    String
+  userId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Schedule {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  location    String?
+  eventId     String
+  staffId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  event       Event    @relation(fields: [eventId], references: [id])
+  staff       Staff?   @relation(fields: [staffId], references: [id])
+}
+
+model EmergencyContact {
+  id          String   @id @default(cuid())
+  name        String
+  role        String
+  phone       String
+  email       String?
+  eventId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  event       Event    @relation(fields: [eventId], references: [id])
+}
+
+model StaffSkill {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  staffId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  staff       Staff    @relation(fields: [staffId], references: [id])
+}
+
+model Equipment {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  quantity    Int
+  eventId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  event       Event    @relation(fields: [eventId], references: [id])
+}

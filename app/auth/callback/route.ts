@@ -1,0 +1,79 @@
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+
+export async function GET(request: NextRequest) {
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get("code")
+  // Get the redirect parameter if it exists
+  const redirectTo = requestUrl.searchParams.get("redirect") || "/"
+  // Check if this is from a signup flow
+  const type = requestUrl.searchParams.get("type") || "verification"
+  // Check if email was confirmed
+  const emailConfirmed = requestUrl.searchParams.get("email_confirmed") === "true"
+  
+  console.log(`[Auth Callback] Processing callback with code: ${code ? 'exists' : 'missing'}, redirect: ${redirectTo}, type: ${type}, email_confirmed: ${emailConfirmed}`)
+  console.log(`[Auth Callback] Full URL: ${request.url}`)
+
+  if (code) {
+    try {
+      console.log(`[Auth Callback] Exchanging code for session`)
+      const cookieStore = cookies()
+      const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+      
+      // Exchange the auth code for a session
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      
+      if (error) {
+        console.error(`[Auth Callback] Error exchanging code:`, error)
+        // If there's an error, redirect to verification page with error state
+        return NextResponse.redirect(`${requestUrl.origin}/auth/verification?error=true&type=${type}&message=${encodeURIComponent(error.message)}`)
+      } else {
+        console.log(`[Auth Callback] Session established for user: ${data?.session?.user?.id || 'unknown'}`)
+        console.log(`[Auth Callback] Session token expires at: ${data?.session?.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : 'unknown'}`)
+        
+        // For email verification flows, redirect to verification success page
+        if (emailConfirmed || type === "signup") {
+          console.log(`[Auth Callback] Email confirmed, redirecting to verification page`)
+          return NextResponse.redirect(`${requestUrl.origin}/auth/verification?type=${type}&success=true`)
+        }
+        
+        // If this is from signup flow, redirect to onboarding
+        if (type === "signup") {
+          console.log(`[Auth Callback] Signup flow completed, redirecting to onboarding`)
+          return NextResponse.redirect(`${requestUrl.origin}/onboarding`)
+        }
+      }
+    } catch (err) {
+      console.error(`[Auth Callback] Exception during code exchange:`, err)
+      // If there's an exception, redirect to verification page with error state
+      return NextResponse.redirect(`${requestUrl.origin}/auth/verification?error=true&type=${type}&message=exchange_error`)
+    }
+  } else {
+    console.log(`[Auth Callback] No code provided in request`)
+  }
+
+  // Check if we have a session now
+  try {
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    console.log(`[Auth Callback] Final session check - Session exists: ${!!session}, User ID: ${session?.user?.id || 'none'}`)
+    
+    // If we have a session but no code was provided, this might be a direct navigation
+    if (session && !code) {
+      console.log(`[Auth Callback] Session exists but no code - redirecting to onboarding or dashboard`)
+      // We should check onboarding status and redirect accordingly
+      return NextResponse.redirect(`${requestUrl.origin}/onboarding`)
+    }
+  } catch (err) {
+    console.error(`[Auth Callback] Error checking final session:`, err)
+  }
+
+  // URL to redirect to after sign in process completes - use the redirect parameter if provided
+  console.log(`[Auth Callback] Redirecting to: ${requestUrl.origin}${redirectTo}`)
+  return NextResponse.redirect(`${requestUrl.origin}${redirectTo}`)
+}
+

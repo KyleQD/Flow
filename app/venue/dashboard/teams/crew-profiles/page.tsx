@@ -1,0 +1,38 @@
+"use client"
+
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { CrewProfileManager } from "../../../components/teams/crew-profile-manager"
+
+export default function CrewProfilesPage() {
+  return (
+    <div className="space-y-6">
+      {/* Breadcrumb navigation */}
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/team">Team Management</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/teams/crew-profiles" isActive>
+              Crew Profiles
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      {/* Crew Profile Manager Component */}
+      <CrewProfileManager />
+    </div>
+  )
+}
