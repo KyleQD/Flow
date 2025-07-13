@@ -23,7 +23,7 @@ import {
   Loader2,
   LinkIcon,
 } from "lucide-react"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 import { useSocial } from "@/context/social-context"
 import { useToast } from "@/hooks/use-toast"
 import { LoadingSpinner } from "@/components/loading-spinner"

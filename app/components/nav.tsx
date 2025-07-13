@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { FeaturesDialog } from "@/components/features-dialog"
 import { useUser } from "@/hooks/use-user"
+import { TourifyLogo } from "@/components/tourify-logo"
 
 export function Nav() {
   const pathname = usePathname()
@@ -20,11 +21,9 @@ export function Nav() {
       <div className="container flex h-16 items-center px-4">
         <div className="flex items-center space-x-6">
           <Link href="/">
-            <Image
-              src="/tourify-logo.png"
-              alt="Tourify"
-              width={120}
-              height={40}
+            <TourifyLogo
+              variant="white"
+              size="md"
               className="h-8 w-auto"
             />
           </Link>

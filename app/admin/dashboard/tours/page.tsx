@@ -1,428 +1,940 @@
 "use client"
 
-import * as React from "react"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { useState, useEffect } from "react"
+import { CreateTourForm } from "@/components/admin/create-tour-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { motion, AnimatePresence } from "framer-motion"
-import { 
-  Plus, 
-  CalendarRange, 
-  MapPin, 
-  Users, 
-  ArrowUpRight, 
+import {
+  Calendar as CalendarIcon,
+  MapPin,
+  Users,
   Clock,
+  Truck,
+  Music,
+  Building,
+  DollarSign,
+  Target,
   Settings,
-  Edit3,
+  Plus,
+  Edit,
   Eye,
-  Play,
-  Pause,
-  MoreVertical,
-  Rocket,
-  Sparkles
+  Download,
+  Upload,
+  CheckCircle,
+  AlertTriangle,
+  Activity,
+  BarChart3,
+  TrendingUp,
+  Star,
+  Award,
+  Crown,
+  Zap,
+  Globe,
+  Plane,
+  Car,
+  Hotel,
+  Coffee,
+  Utensils,
+  Headphones,
+  Mic,
+  Volume2,
+  Camera,
+  Video,
+  Wifi,
+  Shield,
+  Heart,
+  Share,
+  Bookmark,
+  MessageSquare,
+  Bell,
+  Search,
+  Filter,
+  RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight,
+  ChevronRight,
+  ChevronDown,
+  PlayCircle,
+  PauseCircle,
+  StopCircle,
+  RotateCcw,
+  FileText,
+  Map,
+  Route,
+  Navigation,
+  Compass,
+  Flag,
+  MapPin as LocationIcon,
+  Receipt
 } from "lucide-react"
-import { TourWizard } from "./tour-wizard/tour-wizard"
-import { TourCustomizer } from "./tour-customizer/tour-customizer"
 
-const mockTours = [
-  {
-    id: "1",
-    name: "West Coast Summer Tour",
-    status: "active",
-    startDate: "2023-07-15",
-    endDate: "2023-07-30",
-    description: "Epic summer tour across the west coast featuring major festivals",
-    budget: 500000,
-    events: [
-      { id: "e1", type: "show", city: "Los Angeles, CA", venue: "Staples Center", date: "2023-07-15", capacity: 20000 },
-      { id: "e2", type: "travel", from: "Los Angeles, CA", to: "San Francisco, CA", date: "2023-07-16" },
-      { id: "e3", type: "show", city: "San Francisco, CA", venue: "Chase Center", date: "2023-07-18", capacity: 18000 },
-      { id: "e4", type: "rest", city: "San Francisco, CA", date: "2023-07-19" },
-      { id: "e5", type: "travel", from: "San Francisco, CA", to: "Seattle, WA", date: "2023-07-21" },
-      { id: "e6", type: "show", city: "Seattle, WA", venue: "Climate Pledge Arena", date: "2023-07-23", capacity: 17000 },
-    ],
-    locations: [
-      { id: "l1", name: "Los Angeles", city: "Los Angeles, CA", venue: "Staples Center", capacity: 20000, type: "arena" },
-      { id: "l2", name: "San Francisco", city: "San Francisco, CA", venue: "Chase Center", capacity: 18000, type: "arena" },
-      { id: "l3", name: "Seattle", city: "Seattle, WA", venue: "Climate Pledge Arena", capacity: 17000, type: "arena" },
-    ],
-    crew: [
-      { id: "c1", name: "John Smith", role: "Tour Manager", department: "Management" },
-      { id: "c2", name: "Sarah Jones", role: "Production Manager", department: "Production" },
-    ],
-    venues: ["Staples Center", "Chase Center", "Climate Pledge Arena"],
-    numEvents: 3,
-    numCities: 3,
-    numAttendees: 55000,
-    createdAt: "2023-06-01T10:00:00Z",
-  },
-]
-
-const TABS = [
-  { key: "active", label: "Active Tours" },
-  { key: "upcoming", label: "Upcoming Tours" },
-  { key: "completed", label: "Completed Tours" },
-  { key: "planning", label: "Planning" },
-]
-
-function filterTours(tours: any[], tab: string) {
-  if (tab === "active") return tours.filter(t => t.status === "active")
-  if (tab === "upcoming") return tours.filter(t => t.status === "upcoming")
-  if (tab === "completed") return tours.filter(t => t.status === "completed")
-  if (tab === "planning") return tours.filter(t => t.status === "planning")
-  return tours
+interface Tour {
+  id: string
+  name: string
+  artist: string
+  status: 'planning' | 'active' | 'completed' | 'cancelled'
+  startDate: string
+  endDate: string
+  totalShows: number
+  completedShows: number
+  revenue: number
+  expenses: number
+  profit: number
+  venues: Array<{
+    id: string
+    name: string
+    city: string
+    state: string
+    date: string
+    capacity: number
+    ticketsSold: number
+    revenue: number
+    status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled'
+  }>
+  logistics: {
+    transportation: string
+    accommodation: string
+    equipment: string
+    crew: number
+    budget: number
+    spent: number
+  }
+  team: Array<{
+    id: string
+    name: string
+    role: string
+    contact: string
+    status: 'confirmed' | 'pending' | 'declined'
+  }>
 }
 
 export default function ToursPage() {
-  const [tab, setTab] = React.useState("active")
-  const [tours, setTours] = React.useState(mockTours)
-  const [isWizardOpen, setIsWizardOpen] = React.useState(false)
-  const [selectedTour, setSelectedTour] = React.useState<any>(null)
-  const [isCustomizerOpen, setIsCustomizerOpen] = React.useState(false)
+  const [selectedTour, setSelectedTour] = useState<Tour | null>(null)
+  const [isCreateTourOpen, setIsCreateTourOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>('grid')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [sortBy, setSortBy] = useState('date')
+  const [tours, setTours] = useState<Tour[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  function handleCreateTour() {
-    setIsWizardOpen(true)
-  }
-
-  function handleTourCreated(newTour: any) {
-    setTours(prev => [...prev, newTour])
-    // Optionally switch to the planning tab to show the new tour
-    if (newTour.status === "planning") {
-      setTab("planning")
+  // Fetch tours from API
+  const fetchTours = async () => {
+    try {
+      setIsLoading(true)
+      const params = new URLSearchParams()
+      if (filterStatus !== 'all') {
+        params.append('status', filterStatus)
+      }
+      
+      const response = await fetch(`/api/tours?${params}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch tours')
+      }
+      
+      const data = await response.json()
+      setTours(data.tours || [])
+    } catch (error) {
+      console.error('Error fetching tours:', error)
+      setTours([])
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  function handleTourSelect(tour: any) {
-    setSelectedTour(tour)
-    setIsCustomizerOpen(true)
+  useEffect(() => {
+    fetchTours()
+  }, [filterStatus])
+
+  const handleTourCreated = () => {
+    setIsCreateTourOpen(false)
+    fetchTours() // Refresh the tours list
   }
 
-  return (
-    <div className="container mx-auto py-8 min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950/20">
-      {/* Enhanced Header */}
-      <div className="relative mb-12">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent rounded-3xl" />
-        
-        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6 p-8 bg-slate-900/30 backdrop-blur-sm border border-purple-500/20 rounded-3xl">
-          <div>
-            <div className="flex items-center gap-4 mb-3">
-              <div className="relative">
-                <ArrowUpRight className="h-8 w-8 text-purple-400" />
-                <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-yellow-400 animate-pulse" />
-              </div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
-                Tour Management
-              </h1>
-            </div>
-            <p className="text-slate-400 text-lg">Plan, manage, and track multi-city tours and events</p>
-            <div className="flex items-center gap-6 mt-4 text-sm text-slate-500">
-              <span>{tours.length} Total Tours</span>
-              <span>•</span>
-              <span>{tours.filter(t => t.status === 'active').length} Active</span>
-              <span>•</span>
-              <span>{tours.reduce((sum, tour) => sum + tour.numAttendees, 0).toLocaleString()} Total Attendees</span>
-            </div>
-          </div>
-          
-          <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg hover:shadow-purple-500/25 transition-all duration-200 transform hover:scale-105"
-              >
-                <Rocket className="h-5 w-5 mr-2" />
-                Create New Tour
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-5xl w-full p-0 border-0 bg-transparent">
-              <TourWizard 
-                onTourCreated={handleTourCreated}
-                onClose={() => setIsWizardOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+  // Mock data for fallback/development
+  const mockTours = [
+    {
+      id: '1',
+      name: 'Summer Electronic Tour 2025',
+      artist: 'DJ Luna',
+              status: 'active' as const,
+      startDate: '2025-06-01',
+      endDate: '2025-08-15',
+      totalShows: 12,
+      completedShows: 4,
+      revenue: 485000,
+      expenses: 285000,
+      profit: 200000,
+      venues: [
+        {
+          id: '1',
+          name: 'Madison Square Garden',
+          city: 'New York',
+          state: 'NY',
+          date: '2025-06-15',
+          capacity: 20000,
+          ticketsSold: 18500,
+          revenue: 85000,
+          status: 'completed'
+        },
+        {
+          id: '2',
+          name: 'Hollywood Bowl',
+          city: 'Los Angeles',
+          state: 'CA',
+          date: '2025-06-22',
+          capacity: 15000,
+          ticketsSold: 14200,
+          revenue: 75000,
+          status: 'completed'
+        },
+        {
+          id: '3',
+          name: 'Red Rocks Amphitheatre',
+          city: 'Denver',
+          state: 'CO',
+          date: '2025-06-29',
+          capacity: 9500,
+          ticketsSold: 9500,
+          revenue: 65000,
+          status: 'completed'
+        },
+        {
+          id: '4',
+          name: 'Austin City Limits',
+          city: 'Austin',
+          state: 'TX',
+          date: '2025-07-06',
+          capacity: 12000,
+          ticketsSold: 11800,
+          revenue: 68000,
+          status: 'completed'
+        },
+        {
+          id: '5',
+          name: 'The Fillmore',
+          city: 'San Francisco',
+          state: 'CA',
+          date: '2025-07-13',
+          capacity: 8000,
+          ticketsSold: 6500,
+          revenue: 45000,
+          status: 'confirmed'
+        }
+      ],
+      logistics: {
+        transportation: 'Tour Bus + Truck',
+        accommodation: 'Hotels',
+        equipment: 'Full Production',
+        crew: 12,
+        budget: 350000,
+        spent: 185000
+      },
+      team: [
+        { id: '1', name: 'Sarah Johnson', role: 'Tour Manager', contact: 'sarah@email.com', status: 'confirmed' },
+        { id: '2', name: 'Mike Chen', role: 'Sound Engineer', contact: 'mike@email.com', status: 'confirmed' },
+        { id: '3', name: 'Lisa Rodriguez', role: 'Lighting Designer', contact: 'lisa@email.com', status: 'confirmed' },
+        { id: '4', name: 'David Kim', role: 'Stage Manager', contact: 'david@email.com', status: 'confirmed' }
+      ]
+    },
+    {
+      id: '2',
+      name: 'Indie Rock Circuit 2025',
+      artist: 'The Midnight Runners',
+      status: 'planning',
+      startDate: '2025-09-01',
+      endDate: '2025-11-30',
+      totalShows: 18,
+      completedShows: 0,
+      revenue: 0,
+      expenses: 45000,
+      profit: -45000,
+      venues: [
+        {
+          id: '6',
+          name: 'The Bowery Ballroom',
+          city: 'New York',
+          state: 'NY',
+          date: '2025-09-05',
+          capacity: 550,
+          ticketsSold: 0,
+          revenue: 0,
+          status: 'scheduled'
+        },
+        {
+          id: '7',
+          name: 'The Troubadour',
+          city: 'Los Angeles',
+          state: 'CA',
+          date: '2025-09-12',
+          capacity: 500,
+          ticketsSold: 0,
+          revenue: 0,
+          status: 'scheduled'
+        }
+      ],
+      logistics: {
+        transportation: 'Van',
+        accommodation: 'Budget Hotels',
+        equipment: 'Minimal Setup',
+        crew: 4,
+        budget: 125000,
+        spent: 45000
+      },
+      team: [
+        { id: '5', name: 'Alex Thompson', role: 'Tour Manager', contact: 'alex@email.com', status: 'confirmed' },
+        { id: '6', name: 'Emma Davis', role: 'Sound Tech', contact: 'emma@email.com', status: 'pending' }
+      ]
+    },
+    {
+      id: '3',
+      name: 'Jazz Festival Circuit',
+      artist: 'Marcus Williams Quartet',
+      status: 'completed',
+      startDate: '2025-03-01',
+      endDate: '2025-05-31',
+      totalShows: 8,
+      completedShows: 8,
+      revenue: 180000,
+      expenses: 85000,
+      profit: 95000,
+      venues: [
+        {
+          id: '8',
+          name: 'Blue Note',
+          city: 'New York',
+          state: 'NY',
+          date: '2025-03-15',
+          capacity: 300,
+          ticketsSold: 300,
+          revenue: 25000,
+          status: 'completed'
+        }
+      ],
+      logistics: {
+        transportation: 'Flights',
+        accommodation: 'Mid-range Hotels',
+        equipment: 'Acoustic Setup',
+        crew: 3,
+        budget: 95000,
+        spent: 85000
+      },
+      team: [
+        { id: '7', name: 'Jennifer Lee', role: 'Tour Manager', contact: 'jennifer@email.com', status: 'confirmed' }
+      ]
+    }
+  ]
 
-      {/* Enhanced Tabs */}
-      <Tabs value={tab} onValueChange={setTab} className="w-full mb-8">
-        <TabsList className="bg-slate-900/50 backdrop-blur-sm border border-purple-500/20 rounded-2xl p-1 flex gap-2 w-fit">
-          {TABS.map(t => (
-            <TabsTrigger
-              key={t.key}
-              value={t.key}
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg px-6 py-3 rounded-xl text-base font-medium text-slate-300 transition-all duration-200"
-            >
-              {t.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        
-        {TABS.map(t => (
-          <TabsContent key={t.key} value={t.key} className="w-full mt-8">
-            <TourCardGrid 
-              tours={filterTours(tours, t.key)} 
-              onAddNewTour={handleCreateTour}
-              onTourSelect={handleTourSelect}
-            />
-          </TabsContent>
-        ))}
-      </Tabs>
-
-      {/* Enhanced Active Tour Timeline */}
-      <div className="mt-16">
-        <ActiveTourTimeline tour={tours.find(t => t.status === "active")} />
-      </div>
-
-      {/* Tour Customizer Modal */}
-      <Dialog open={isCustomizerOpen} onOpenChange={setIsCustomizerOpen}>
-        <DialogContent className="max-w-7xl w-full h-[90vh] p-0 border-0 bg-transparent">
-          {selectedTour && (
-            <TourCustomizer 
-              tour={selectedTour}
-              onClose={() => setIsCustomizerOpen(false)}
-              onTourUpdate={(updatedTour: any) => {
-                setTours(prev => prev.map(t => t.id === updatedTour.id ? updatedTour : t))
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
-
-function TourCardGrid({ tours, onAddNewTour, onTourSelect }: { 
-  tours: any[], 
-  onAddNewTour: () => void,
-  onTourSelect: (tour: any) => void 
-}) {
-  if (!tours.length) {
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-purple-500/30 rounded-2xl bg-slate-900/20 backdrop-blur-sm"
-      >
-        <div className="text-slate-400 mb-4 text-center">
-          <Rocket className="h-12 w-12 mx-auto mb-3 text-purple-400/50" />
-          <p className="text-lg font-medium">No tours found</p>
-          <p className="text-sm">Create your first tour to get started</p>
-        </div>
-        <Button 
-          variant="outline" 
-          className="text-purple-400 border-purple-400 hover:bg-purple-400 hover:text-white transition-all duration-200"
-          onClick={onAddNewTour}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Tour
-        </Button>
-      </motion.div>
-    )
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-500/20 text-green-400 border-green-500/30'
+      case 'planning': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+      case 'completed': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+      case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30'
+      case 'confirmed': return 'bg-green-500/20 text-green-400 border-green-500/30'
+      case 'scheduled': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+    }
   }
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <AnimatePresence>
-        {tours.map((tour, index) => (
-          <motion.div
-            key={tour.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <TourCard tour={tour} onSelect={() => onTourSelect(tour)} />
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </div>
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'active': return <PlayCircle className="h-4 w-4" />
+      case 'planning': return <Clock className="h-4 w-4" />
+      case 'completed': return <CheckCircle className="h-4 w-4" />
+      case 'cancelled': return <StopCircle className="h-4 w-4" />
+      default: return <Clock className="h-4 w-4" />
+    }
+  }
+
+  // Use real tours data, fallback to mock for empty state
+  const displayTours = tours.length > 0 ? tours : (isLoading ? [] : mockTours as any)
+  const filteredTours = (displayTours as any[]).filter((tour: any) => 
+    filterStatus === 'all' || tour.status === filterStatus
   )
-}
 
-function TourCard({ tour, onSelect }: { tour: any, onSelect: () => void }) {
-  const [isHovered, setIsHovered] = React.useState(false)
-
-  return (
-    <Card 
-      className="group relative overflow-hidden bg-slate-900/50 backdrop-blur-sm border border-purple-500/20 shadow-lg hover:shadow-purple-500/25 transition-all duration-300 cursor-pointer transform hover:scale-105"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={onSelect}
-    >
-      {/* Background Gradient Effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      
-      <CardHeader className="pb-3 relative z-10">
+  const TourCard = ({ tour }: { tour: Tour }) => (
+    <Card className="bg-slate-900/50 border-slate-700/50 hover:bg-slate-900/70 transition-all duration-300 cursor-pointer">
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <CardTitle className="text-xl font-bold text-white flex items-center gap-2 group-hover:text-purple-200 transition-colors">
-            <ArrowUpRight className="h-5 w-5 text-purple-400" />
-            {tour.name}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge className={`
-              text-xs px-3 py-1 rounded-full font-medium capitalize transition-all
-              ${tour.status === 'active' ? 'bg-green-900/80 text-green-300' :
-                tour.status === 'planning' ? 'bg-purple-900/80 text-purple-300' :
-                tour.status === 'upcoming' ? 'bg-blue-900/80 text-blue-300' :
-                'bg-gray-900/80 text-gray-300'}
-            `}>
-              {tour.status}
-            </Badge>
-            <Button
-              variant="ghost"
+          <div className="space-y-1">
+            <CardTitle className="text-lg text-white">{tour.name}</CardTitle>
+            <p className="text-sm text-slate-400">{tour.artist}</p>
+          </div>
+          <Badge className={getStatusColor(tour.status)}>
+            {getStatusIcon(tour.status)}
+            <span className="ml-1 capitalize">{tour.status}</span>
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <p className="text-xs text-slate-500">Duration</p>
+            <p className="text-sm text-white">
+              {new Date(tour.startDate).toLocaleDateString()} - {new Date(tour.endDate).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-slate-500">Shows</p>
+            <p className="text-sm text-white">{tour.completedShows}/{tour.totalShows}</p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-slate-500">Progress</span>
+            <span className="text-xs text-white">{Math.round((tour.completedShows / tour.totalShows) * 100)}%</span>
+          </div>
+          <div className="w-full bg-slate-800 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(tour.completedShows / tour.totalShows) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 pt-2">
+          <div className="text-center">
+            <p className="text-xs text-slate-500">Revenue</p>
+            <p className="text-sm font-semibold text-green-400">${tour.revenue.toLocaleString()}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-slate-500">Expenses</p>
+            <p className="text-sm font-semibold text-red-400">${tour.expenses.toLocaleString()}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-slate-500">Profit</p>
+            <p className={`text-sm font-semibold ${tour.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              ${tour.profit.toLocaleString()}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center pt-2">
+          <div className="flex items-center space-x-2">
+            <Users className="h-4 w-4 text-slate-400" />
+            <span className="text-xs text-slate-400">{tour.logistics.crew} crew</span>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              variant="ghost" 
               size="sm"
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation()
-                // Handle edit action
-              }}
+              onClick={() => setSelectedTour(tour)}
             >
-              <MoreVertical className="h-4 w-4" />
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Edit className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        {tour.description && (
-          <p className="text-sm text-slate-400 mt-2 line-clamp-2">{tour.description}</p>
-        )}
-      </CardHeader>
-      
-      <CardContent className="space-y-3 relative z-10">
-        <div className="flex items-center gap-2 text-slate-400 text-sm">
-          <CalendarRange className="h-4 w-4" />
-          {tour.startDate} - {tour.endDate}
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center gap-2 text-slate-400">
-            <MapPin className="h-4 w-4" />
-            {tour.numCities} cities
-          </div>
-          <div className="flex items-center gap-2 text-slate-400">
-            <Users className="h-4 w-4" />
-            {tour.numAttendees?.toLocaleString()} attendees
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2 text-slate-400 text-sm">
-          <Clock className="h-4 w-4" />
-          {tour.numEvents} events
-        </div>
-
-        {/* Budget info */}
-        {tour.budget && (
-          <div className="pt-3 border-t border-slate-700">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-slate-400">Budget</span>
-              <span className="text-purple-400 font-medium">${tour.budget.toLocaleString()}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Quick Actions */}
-        <motion.div 
-          className="flex gap-2 pt-3"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 10 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="flex-1 border-purple-500/30 text-purple-400 hover:bg-purple-500 hover:text-white"
-            onClick={(e) => {
-              e.stopPropagation()
-              onSelect()
-            }}
-          >
-            <Settings className="h-3 w-3 mr-1" />
-            Customize
-          </Button>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white"
-            onClick={(e) => {
-              e.stopPropagation()
-              // Handle view action
-            }}
-          >
-            <Eye className="h-3 w-3" />
-          </Button>
-        </motion.div>
       </CardContent>
     </Card>
   )
-}
 
-function ActiveTourTimeline({ tour }: { tour: any }) {
-  if (!tour) return null
+  const TourDetailModal = ({ tour, onClose }: { tour: Tour; onClose: () => void }) => (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-slate-900 border-slate-700">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-2xl text-white">{tour.name}</DialogTitle>
+              <p className="text-slate-400">{tour.artist}</p>
+            </div>
+            <Badge className={getStatusColor(tour.status)}>
+              {getStatusIcon(tour.status)}
+              <span className="ml-1 capitalize">{tour.status}</span>
+            </Badge>
+          </div>
+        </DialogHeader>
+
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="bg-slate-800/50 p-1 grid grid-cols-5 w-full">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="schedule">Schedule</TabsTrigger>
+            <TabsTrigger value="logistics">Logistics</TabsTrigger>
+            <TabsTrigger value="team">Team</TabsTrigger>
+            <TabsTrigger value="finances">Finances</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <CalendarIcon className="h-8 w-8 text-blue-400" />
+                    <div>
+                      <p className="text-sm text-slate-400">Duration</p>
+                      <p className="text-lg font-semibold text-white">
+                        {Math.ceil((new Date(tour.endDate).getTime() - new Date(tour.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <MapPin className="h-8 w-8 text-purple-400" />
+                    <div>
+                      <p className="text-sm text-slate-400">Cities</p>
+                      <p className="text-lg font-semibold text-white">
+                        {new Set(tour.venues.map(v => v.city)).size}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <Users className="h-8 w-8 text-green-400" />
+                    <div>
+                      <p className="text-sm text-slate-400">Total Capacity</p>
+                      <p className="text-lg font-semibold text-white">
+                        {tour.venues.reduce((sum, venue) => sum + venue.capacity, 0).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white">Recent Shows</h3>
+              {tour.venues.slice(0, 3).map((venue) => (
+                <Card key={venue.id} className="bg-slate-800/50 border-slate-700/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                          <Building className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-white">{venue.name}</h4>
+                          <p className="text-sm text-slate-400">{venue.city}, {venue.state} • {new Date(venue.date).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge className={getStatusColor(venue.status)}>
+                          {venue.status}
+                        </Badge>
+                        <p className="text-sm text-slate-400 mt-1">
+                          {venue.ticketsSold.toLocaleString()} / {venue.capacity.toLocaleString()} tickets
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="schedule" className="space-y-6">
+            <div className="space-y-4">
+              {tour.venues.map((venue) => (
+                <Card key={venue.id} className="bg-slate-800/50 border-slate-700/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="text-center">
+                          <p className="text-sm text-slate-400">{new Date(venue.date).toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                          <p className="text-lg font-bold text-white">{new Date(venue.date).getDate()}</p>
+                          <p className="text-sm text-slate-400">{new Date(venue.date).toLocaleDateString('en-US', { month: 'short' })}</p>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-white">{venue.name}</h4>
+                          <p className="text-sm text-slate-400">{venue.city}, {venue.state}</p>
+                          <div className="flex items-center space-x-4 mt-1">
+                            <span className="text-xs text-slate-500">{venue.capacity.toLocaleString()} capacity</span>
+                            <span className="text-xs text-slate-500">{venue.ticketsSold.toLocaleString()} sold</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge className={getStatusColor(venue.status)}>
+                          {venue.status}
+                        </Badge>
+                        <p className="text-sm text-green-400 mt-1">${venue.revenue.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="logistics" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Truck className="h-5 w-5 mr-2 text-blue-400" />
+                    Transportation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-slate-300">{tour.logistics.transportation}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Hotel className="h-5 w-5 mr-2 text-purple-400" />
+                    Accommodation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-slate-300">{tour.logistics.accommodation}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Headphones className="h-5 w-5 mr-2 text-green-400" />
+                    Equipment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-slate-300">{tour.logistics.equipment}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <DollarSign className="h-5 w-5 mr-2 text-yellow-400" />
+                    Budget
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Total Budget</span>
+                      <span className="text-white">${tour.logistics.budget.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Spent</span>
+                      <span className="text-white">${tour.logistics.spent.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Remaining</span>
+                      <span className="text-green-400">${(tour.logistics.budget - tour.logistics.spent).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div className="w-full bg-slate-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-green-500 to-yellow-500 h-2 rounded-full"
+                      style={{ width: `${(tour.logistics.spent / tour.logistics.budget) * 100}%` }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="team" className="space-y-6">
+            <div className="space-y-4">
+              {tour.team.map((member) => (
+                <Card key={member.id} className="bg-slate-800/50 border-slate-700/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <Users className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-white">{member.name}</h4>
+                          <p className="text-sm text-slate-400">{member.role}</p>
+                          <p className="text-sm text-slate-500">{member.contact}</p>
+                        </div>
+                      </div>
+                      <Badge className={getStatusColor(member.status)}>
+                        {member.status}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="finances" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardContent className="p-4 text-center">
+                  <DollarSign className="h-8 w-8 text-green-400 mx-auto mb-2" />
+                  <p className="text-sm text-slate-400">Revenue</p>
+                  <p className="text-2xl font-bold text-green-400">${tour.revenue.toLocaleString()}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardContent className="p-4 text-center">
+                  <Receipt className="h-8 w-8 text-red-400 mx-auto mb-2" />
+                  <p className="text-sm text-slate-400">Expenses</p>
+                  <p className="text-2xl font-bold text-red-400">${tour.expenses.toLocaleString()}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700/50">
+                <CardContent className="p-4 text-center">
+                  <Target className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                  <p className="text-sm text-slate-400">Profit</p>
+                  <p className={`text-2xl font-bold ${tour.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    ${tour.profit.toLocaleString()}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardHeader>
+                <CardTitle className="text-white">Revenue by Show</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {tour.venues.filter(v => v.revenue > 0).map((venue) => (
+                    <div key={venue.id} className="flex justify-between items-center">
+                      <div>
+                        <p className="text-white">{venue.name}</p>
+                        <p className="text-sm text-slate-400">{venue.city}, {venue.state}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-green-400 font-semibold">${venue.revenue.toLocaleString()}</p>
+                        <p className="text-sm text-slate-400">{venue.ticketsSold.toLocaleString()} tickets</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  )
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-slate-900/50 backdrop-blur-sm border border-purple-500/20 rounded-2xl p-8"
-    >
-      <div className="flex items-center justify-between mb-8">
-        <div className="text-2xl font-bold text-white flex items-center gap-3">
-          <CalendarRange className="h-6 w-6 text-purple-400" />
-          Active Tour Timeline
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950/20 p-6">
+      <div className="container mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+              Tour Management
+            </h1>
+            <p className="text-slate-400 mt-2">
+              Plan, coordinate, and track all your tour operations
+            </p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-40 bg-slate-800/50 border-slate-700/50 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="planning">Planning</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center bg-slate-800/50 rounded-lg p-1">
+              <Button 
+                variant={viewMode === 'grid' ? 'default' : 'ghost'} 
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant={viewMode === 'list' ? 'default' : 'ghost'} 
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant={viewMode === 'calendar' ? 'default' : 'ghost'} 
+                size="sm"
+                onClick={() => setViewMode('calendar')}
+              >
+                <CalendarIcon className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button 
+              onClick={() => setIsCreateTourOpen(true)}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Tour
+            </Button>
+          </div>
         </div>
-        <Badge className="bg-green-900/50 text-green-300 px-4 py-2">
-          <Play className="h-3 w-3 mr-1" />
-          Live
-        </Badge>
-      </div>
-      
-      <div className="relative pl-8">
-        <div className="absolute left-2 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500/60 to-slate-700/30 rounded-full" />
-        
-        {tour.events.map((event: any, idx: number) => (
-          <motion.div 
-            key={event.id} 
-            className="flex items-start mb-8 relative"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: idx * 0.1 }}
-          >
-            <div className="absolute left-0 top-1.5">
-              <span className={`
-                block w-3 h-3 rounded-full border-2 border-slate-950
-                ${event.type === "show" ? "bg-purple-400" : 
-                  event.type === "travel" ? "bg-blue-400" : 
-                  event.type === "rest" ? "bg-yellow-400" : "bg-slate-400"}
-              `} />
-            </div>
-            
-            <div className="ml-6 flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h4 className="font-semibold text-white capitalize">
-                  {event.type === "show" ? `Show in ${event.city}` :
-                   event.type === "travel" ? `Travel: ${event.from} → ${event.to}` :
-                   event.type === "rest" ? `Rest Day in ${event.city}` : event.type}
-                </h4>
-                <Badge variant="secondary" className="text-xs bg-slate-800 text-slate-300">
-                  {event.date}
-                </Badge>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Active Tours</p>
+                  <p className="text-2xl font-bold text-white">
+                    {displayTours.filter((t: any) => t.status === 'active').length}
+                  </p>
+                </div>
+                <div className="p-3 rounded-full bg-green-500/20">
+                  <PlayCircle className="h-6 w-6 text-green-400" />
+                </div>
               </div>
-              
-              {event.venue && (
-                <p className="text-slate-400 text-sm mb-1">{event.venue}</p>
-              )}
-              
-              {event.capacity && (
-                <p className="text-purple-400 text-sm font-medium">
-                  Capacity: {event.capacity.toLocaleString()}
-                </p>
-              )}
-            </div>
-          </motion.div>
-        ))}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Total Shows</p>
+                  <p className="text-2xl font-bold text-white">
+                    {displayTours.reduce((sum: number, tour: any) => sum + (tour.total_shows || tour.totalShows || 0), 0)}
+                  </p>
+                </div>
+                <div className="p-3 rounded-full bg-blue-500/20">
+                  <Music className="h-6 w-6 text-blue-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Total Revenue</p>
+                  <p className="text-2xl font-bold text-green-400">
+                    ${displayTours.reduce((sum: number, tour: any) => sum + (tour.revenue || 0), 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 rounded-full bg-green-500/20">
+                  <DollarSign className="h-6 w-6 text-green-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Total Profit</p>
+                  <p className="text-2xl font-bold text-blue-400">
+                    ${displayTours.reduce((sum: number, tour: any) => sum + (tour.profit || 0), 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 rounded-full bg-blue-500/20">
+                  <Target className="h-6 w-6 text-blue-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Create Tour Form Modal */}
+        <AnimatePresence>
+          {isCreateTourOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+              onClick={() => setIsCreateTourOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              >
+                <CreateTourForm
+                  onSuccess={handleTourCreated}
+                  onCancel={() => setIsCreateTourOpen(false)}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="bg-slate-900/50 border-slate-700/50 animate-pulse">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+                    <div className="h-4 bg-slate-700 rounded w-1/2"></div>
+                    <div className="h-20 bg-slate-700 rounded"></div>
+                    <div className="h-4 bg-slate-700 rounded w-2/3"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredTours.length === 0 ? (
+          /* Empty State */
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-12 text-center">
+              <Music className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">No Tours Found</h3>
+              <p className="text-slate-400 mb-6">
+                {filterStatus === 'all' 
+                  ? "Get started by creating your first tour"
+                  : `No tours with status "${filterStatus}" found`
+                }
+              </p>
+              <Button 
+                onClick={() => setIsCreateTourOpen(true)}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Tour
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          /* Tours Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTours.map((tour: any) => (
+              <TourCard key={tour.id} tour={tour} />
+            ))}
+          </div>
+        )}
+
+        {/* Tour Detail Modal */}
+        <AnimatePresence>
+          {selectedTour && (
+            <TourDetailModal 
+              tour={selectedTour} 
+              onClose={() => setSelectedTour(null)} 
+            />
+          )}
+        </AnimatePresence>
       </div>
-    </motion.div>
+    </div>
   )
 } 

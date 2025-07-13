@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Facebook, Mail, ArrowRight } from "lucide-react"
+import { TourifyLogo } from "@/components/tourify-logo"
 
 interface SignupFormProps {
   onComplete: (data: { email: string; password: string; name: string; username: string }) => void
@@ -96,13 +97,10 @@ export default function SignupForm({ onComplete }: SignupFormProps): React.React
   return (
     <div className="p-8 bg-[#0c0d10]">
       <div className="flex items-center justify-center mb-8">
-        <Image
-          src="/placeholder-logo.png"
-          alt="Tourify"
-          width={180}
-          height={40}
-          priority
-          className="dark:invert"
+        <TourifyLogo
+          variant="white"
+          size="lg"
+          className="filter drop-shadow-lg"
         />
       </div>
       

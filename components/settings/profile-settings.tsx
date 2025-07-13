@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "@/components/ui/use-toast"
 import { Loader2, Upload, X } from "lucide-react"
+import { profileNotifications } from "@/lib/utils/notifications"
 
 const profileFormSchema = z.object({
   full_name: z
@@ -137,32 +138,25 @@ export function ProfileSettings() {
 
       try {
         setIsFetching(true)
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-
-        if (error) {
-          console.error('Error fetching profile:', error)
-          toast({
-            title: "Error",
-            description: "Failed to load profile data.",
-            variant: "destructive",
-          })
-        } else if (profile) {
+        const response = await fetch('/api/profile/current')
+        if (!response.ok) {
+          throw new Error('Failed to load profile data')
+        }
+        
+        const { profile } = await response.json()
+        if (profile) {
           setUserProfile(profile)
           
           // Update form with fetched data
           form.reset({
-            full_name: profile.metadata?.full_name || "",
-            username: profile.metadata?.username || "",
-            bio: profile.metadata?.bio || "",
-            phone: profile.metadata?.phone || "",
-            location: profile.metadata?.location || "",
-            website: profile.metadata?.website || "",
-            instagram: profile.metadata?.instagram || "",
-            twitter: profile.metadata?.twitter || "",
+            full_name: profile.profile_data?.name || profile.full_name || "",
+            username: profile.username || "",
+            bio: profile.bio || "",
+            phone: profile.profile_data?.phone || "",
+            location: profile.profile_data?.location || "",
+            website: profile.social_links?.website || "",
+            instagram: profile.social_links?.instagram || "",
+            twitter: profile.social_links?.twitter || "",
             showEmail: profile.metadata?.show_email ?? true,
             showPhone: profile.metadata?.show_phone ?? false,
             showLocation: profile.metadata?.show_location ?? true,
@@ -170,11 +164,7 @@ export function ProfileSettings() {
         }
       } catch (err) {
         console.error('Error fetching profile:', err)
-        toast({
-          title: "Error",
-          description: "Failed to load profile data.",
-          variant: "destructive",
-        })
+        profileNotifications.loadingError()
       } finally {
         setIsFetching(false)
       }
@@ -183,25 +173,24 @@ export function ProfileSettings() {
     if (user && !authLoading) {
       fetchProfile()
     }
-  }, [user, authLoading, supabase, form])
+  }, [user, authLoading, form])
 
   // Handle form submission
   async function onSubmit(data: ProfileFormValues) {
     if (!user) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to update your profile.",
-        variant: "destructive",
-      })
+      profileNotifications.updateError("You must be logged in to update your profile.")
       return
     }
 
     setIsLoading(true)
     console.log('Form data being submitted:', data)
+    
+    // Show saving progress
+    profileNotifications.saveInProgress()
 
     try {
-      const response = await fetch('/api/settings/profile', {
-        method: 'POST',
+      const response = await fetch('/api/profile/update-optimized', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -214,33 +203,40 @@ export function ProfileSettings() {
       if (!response.ok || !result.success) {
         const errorMessage = result.error || result.message || 'Failed to update profile'
         console.error('Update failed:', errorMessage)
-        throw new Error(errorMessage)
+        
+        // Handle specific error cases
+        if (result.field === 'username') {
+          profileNotifications.validationError('Username', errorMessage)
+        } else if (result.field === 'custom_url') {
+          profileNotifications.validationError('Custom URL', errorMessage)
+        } else {
+          throw new Error(errorMessage)
+        }
+        return
       }
 
       // Update local state with the returned data
-      if (result.data) {
-        setUserProfile(result.data)
+      if (result.profile) {
+        setUserProfile(result.profile)
       }
       
       // Update last saved timestamp and reset form dirty state
       setLastSaved(new Date())
       form.reset(form.getValues()) // Reset dirty state while keeping current values
       
-      toast({
-        title: "✅ Profile Updated Successfully!",
-        description: result.message || "Your profile information has been saved.",
-        duration: 4000,
-      })
+      profileNotifications.updateSuccess(result.message || "Your profile information has been saved and synced to the database.")
     } catch (err) {
       console.error('Error updating profile:', err)
-      const errorMessage = err instanceof Error ? err.message : "Failed to update profile. Please try again."
       
-      toast({
-        title: "❌ Update Failed",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 6000,
-      })
+      if (err instanceof Error) {
+        if (err.message.includes('network') || err.message.includes('fetch')) {
+          profileNotifications.networkError()
+        } else {
+          profileNotifications.updateError(err)
+        }
+      } else {
+        profileNotifications.updateError("Failed to update profile. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -254,35 +250,22 @@ export function ProfileSettings() {
     setAvatarUploading(true)
 
     try {
-      console.log('Starting avatar upload for user:', user.id)
+      const formData = new FormData()
+      formData.append('file', file)
 
-      // Remove any existing avatar first
-      if (userProfile?.avatar_url && !userProfile.avatar_url.startsWith('data:')) {
-        const oldPath = extractFilePathFromUrl(userProfile.avatar_url, 'avatars')
-        if (oldPath) {
-          await deleteFile(oldPath, 'avatar')
-        }
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to upload avatar')
       }
 
-      // Upload new avatar using utility
-      const result = await uploadFile({
-        userId: user.id,
-        file: file,
-        mediaType: 'avatar'
-      })
+      const result = await response.json()
 
       if (!result.success) {
         throw new Error(result.error || 'Upload failed')
-      }
-
-      // Update profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: result.url })
-        .eq('id', user.id)
-
-      if (updateError) {
-        throw new Error(`Profile update failed: ${updateError.message}`)
       }
 
       // Update local state
@@ -291,21 +274,12 @@ export function ProfileSettings() {
         avatar_url: result.url,
       } : null)
 
-      toast({
-        title: "✅ Avatar Updated",
-        description: "Your profile picture has been updated successfully.",
-        duration: 4000,
-      })
+      profileNotifications.avatarUploadSuccess()
     } catch (error: any) {
       console.error('Error uploading avatar:', error)
       const errorMessage = error?.message || 'Failed to upload avatar'
       
-      toast({
-        title: "❌ Upload Failed",
-        description: `${errorMessage}. Make sure storage buckets are set up.`,
-        variant: "destructive",
-        duration: 6000,
-      })
+      profileNotifications.avatarUploadError(errorMessage)
     } finally {
       setAvatarUploading(false)
     }
@@ -318,46 +292,32 @@ export function ProfileSettings() {
     setAvatarUploading(true)
 
     try {
-      console.log('Removing avatar for user:', user.id)
+      const response = await fetch('/api/profile/avatar', {
+        method: 'DELETE',
+      })
 
-      // Delete file from storage if it's not a base64 image
-      if (!userProfile.avatar_url.startsWith('data:')) {
-        const filePath = extractFilePathFromUrl(userProfile.avatar_url, 'avatars')
-        if (filePath) {
-          await deleteFile(filePath, 'avatar')
-        }
-      }
-      
-      // Update profile to remove avatar URL
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: null })
-        .eq('id', user.id)
-
-      if (error) {
-        throw error
+      if (!response.ok) {
+        throw new Error('Failed to remove avatar')
       }
 
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || 'Removal failed')
+      }
+
+      // Update local state
       setUserProfile(prev => prev ? {
         ...prev,
         avatar_url: undefined,
       } : null)
 
-      toast({
-        title: "✅ Avatar Removed",
-        description: "Your profile picture has been removed successfully.",
-        duration: 4000,
-      })
+      profileNotifications.customSuccess("Avatar Removed", "Your profile picture has been removed.")
     } catch (error: any) {
       console.error('Error removing avatar:', error)
       const errorMessage = error?.message || 'Failed to remove avatar'
       
-      toast({
-        title: "❌ Removal Failed", 
-        description: `${errorMessage}. Please try again.`,
-        variant: "destructive",
-        duration: 6000,
-      })
+      profileNotifications.customError("Removal Failed", errorMessage)
     } finally {
       setAvatarUploading(false)
     }

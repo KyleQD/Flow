@@ -160,8 +160,17 @@ export function useCurrentVenue(): UseCurrentVenueReturn {
       setIsLoading(true)
       setError(null)
 
-      // Fetch current user's venue
-      const venueData = await venueService.getCurrentUserVenue()
+      // Check if we have a specific venue ID from account switching
+      const activeVenueId = venueService.getActiveVenueId()
+      let venueData: any = null
+
+      if (activeVenueId) {
+        // Fetch specific venue by ID
+        venueData = await venueService.getVenueProfile(activeVenueId)
+      } else {
+        // Fetch current user's venue (first one if multiple)
+        venueData = await venueService.getCurrentUserVenue()
+      }
       
       if (venueData) {
         // Adapt the venue data to expected format

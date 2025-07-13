@@ -1,9 +1,10 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { supabase } from '@/lib/supabase/client'
 import { Database } from '@/lib/database.types'
 import { useMultiAccount } from '@/hooks/use-multi-account'
+import { useAuth } from '@/contexts/auth-context'
 
 interface ArtistProfile {
   id: string
@@ -73,6 +74,7 @@ interface ArtistContextType {
 const ArtistContext = createContext<ArtistContextType | undefined>(undefined)
 
 export function ArtistProvider({ children }: { children: ReactNode }) {
+  const { user: authUser, loading: authLoading } = useAuth()
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<ArtistProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -95,7 +97,6 @@ export function ArtistProvider({ children }: { children: ReactNode }) {
     totalViews: 0
   })
 
-  const supabase = createClientComponentClient<Database>()
   const { currentAccount } = useMultiAccount()
 
   // Feature flags (can be moved to database later)
@@ -141,8 +142,17 @@ export function ArtistProvider({ children }: { children: ReactNode }) {
   const avatarInitial = getAvatarInitial()
 
   useEffect(() => {
-    initializeUser()
-  }, [])
+    // Wait for auth to finish loading before initializing
+    if (!authLoading && authUser) {
+      setUser(authUser)
+      initializeUser()
+    } else if (!authLoading && !authUser) {
+      // User is not authenticated
+      setUser(null)
+      setProfile(null)
+      setIsLoading(false)
+    }
+  }, [authUser, authLoading])
 
   const initializeUser = async () => {
     try {
@@ -154,26 +164,32 @@ export function ArtistProvider({ children }: { children: ReactNode }) {
       )
       
       const initPromise = async () => {
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        if (userError) throw userError
+        // Ensure we have a valid session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        if (sessionError) {
+          console.error('Session error during artist initialization:', sessionError)
+          throw new Error('Authentication session expired')
+        }
+        
+        if (!session) {
+          console.error('No session found during artist initialization')
+          throw new Error('No active session')
+        }
 
-        if (user) {
-          setUser(user)
-          
+        if (authUser) {
           // Try to get artist profile
-          const loadedProfile = await loadArtistProfile(user.id)
-          await loadArtistStats(user.id)
+          const loadedProfile = await loadArtistProfile(authUser.id)
+          await loadArtistStats(authUser.id)
           
           // Ensure artist account exists in multi-account system
-          await ensureArtistAccountExists(user.id)
+          await ensureArtistAccountExists(authUser.id)
         }
       }
 
       // Race between initialization and timeout
       await Promise.race([initPromise(), timeoutPromise])
     } catch (error) {
-      console.error('Error initializing user:', error)
+      console.error('Error initializing artist user:', error)
       // Even on error, we should stop loading to prevent infinite loading states
     } finally {
       setIsLoading(false)
@@ -370,67 +386,96 @@ export function ArtistProvider({ children }: { children: ReactNode }) {
 
   const loadArtistStats = async (userId: string) => {
     try {
-      // Try to get enhanced analytics from the new function
-      const { data: enhancedStats, error: enhancedError } = await supabase
-        .rpc('get_dashboard_analytics', { p_user_id: userId })
+      console.log('📊 Loading artist stats for user:', userId)
+      
+      // First try to get basic counts from the tables directly
+      try {
+        // Try simple table queries first
+        const { count: musicCount } = await supabase
+          .from('artist_music')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('is_public', true)
 
-      if (!enhancedError && enhancedStats) {
-        // Use the enhanced stats directly
-        setStats({
-          totalRevenue: enhancedStats.totalRevenue || 0,
-          totalFans: enhancedStats.totalFans || 0,
-          totalStreams: enhancedStats.totalStreams || 0,
-          engagementRate: enhancedStats.engagementRate || 0,
-          monthlyListeners: enhancedStats.monthlyListeners || 0,
-          totalTracks: enhancedStats.totalTracks || 0,
-          totalEvents: enhancedStats.totalEvents || 0,
-          totalCollaborations: enhancedStats.totalCollaborations || 0,
-          musicCount: enhancedStats.musicCount || 0,
-          videoCount: enhancedStats.videoCount || 0,
-          photoCount: enhancedStats.photoCount || 0,
-          blogCount: enhancedStats.blogCount || 0,
-          eventCount: enhancedStats.eventCount || 0,
-          merchandiseCount: enhancedStats.merchandiseCount || 0,
-          totalPlays: enhancedStats.totalPlays || 0,
-          totalViews: enhancedStats.totalViews || 0
-        })
-        return
-      }
+        const { count: videoCount } = await supabase
+          .from('artist_videos')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('is_public', true)
 
-      // Fallback to basic content stats if enhanced function not available
-      const { data: contentStats, error } = await supabase
-        .rpc('get_artist_content_stats', { artist_user_id: userId })
+        const { count: photoCount } = await supabase
+          .from('artist_photos')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('is_public', true)
 
-      if (error) {
-        console.error('Error loading content stats:', error)
-        return
-      }
+        const { count: blogCount } = await supabase
+          .from('artist_blog_posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('status', 'published')
 
-      const basicStats: ArtistStats = {
-        // Real data from database
-        musicCount: contentStats?.music_count || 0,
-        videoCount: contentStats?.video_count || 0,
-        photoCount: contentStats?.photo_count || 0,
-        blogCount: contentStats?.blog_count || 0,
-        eventCount: contentStats?.event_count || 0,
-        merchandiseCount: contentStats?.merchandise_count || 0,
-        totalPlays: contentStats?.total_plays || 0,
-        totalViews: contentStats?.total_views || 0,
+        const { count: eventCount } = await supabase
+          .from('artist_events')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('is_public', true)
+
+        console.log('📊 Basic counts loaded:', { musicCount, videoCount, photoCount, blogCount, eventCount })
+
+        const basicStats: ArtistStats = {
+          // Real data from database
+          musicCount: musicCount || 0,
+          videoCount: videoCount || 0,
+          photoCount: photoCount || 0,
+          blogCount: blogCount || 0,
+          eventCount: eventCount || 0,
+          merchandiseCount: 0, // Will be updated if table exists
+          totalPlays: 0,
+          totalViews: 0,
+          
+          // Calculated/derived stats
+          totalTracks: musicCount || 0,
+          totalEvents: eventCount || 0,
+          totalFans: 0,
+          engagementRate: 0,
+          
+          // Placeholder for features not yet implemented
+          totalRevenue: 0,
+          totalStreams: 0,
+          monthlyListeners: 0,
+          totalCollaborations: 0
+        }
         
-        // Calculated/derived stats
-        totalTracks: contentStats?.music_count || 0,
-        totalEvents: contentStats?.event_count || 0,
-        totalFans: 0,
-        engagementRate: 0,
+        setStats(basicStats)
+        console.log('✅ Artist stats loaded successfully')
         
-        // Placeholder for features not yet implemented
-        totalRevenue: 0,
-        totalStreams: contentStats?.total_plays || 0,
-        monthlyListeners: Math.round((contentStats?.total_plays || 0) * 0.3),
-        totalCollaborations: 0
+      } catch (tableError) {
+        console.log('⚠️ Artist content tables not available, using default stats:', tableError)
+        
+        // Fallback to default stats
+        const defaultStats: ArtistStats = {
+          totalRevenue: 0,
+          totalFans: 0,
+          totalStreams: 0,
+          engagementRate: 0,
+          monthlyListeners: 0,
+          totalTracks: 0,
+          totalEvents: 0,
+          totalCollaborations: 0,
+          musicCount: 0,
+          videoCount: 0,
+          photoCount: 0,
+          blogCount: 0,
+          eventCount: 0,
+          merchandiseCount: 0,
+          totalPlays: 0,
+          totalViews: 0
+        }
+        
+        setStats(defaultStats)
       }
       
-      setStats(basicStats)
     } catch (error) {
       console.error('Error loading artist stats:', error)
       // Keep default stats on error
@@ -537,111 +582,82 @@ export function ArtistProvider({ children }: { children: ReactNode }) {
       }
 
       // Refresh stats after creating content
-      await refreshStats()
-      
+      await loadArtistStats(user.id)
       return result
     } catch (error) {
-      console.error(`Error creating ${type}:`, error)
+      console.error(`Error creating ${type} content:`, error)
       throw error
     }
   }
 
   const refreshStats = async () => {
-    if (user) {
-      await loadArtistStats(user.id)
-    }
+    if (!user?.id) return
+    await loadArtistStats(user.id)
   }
 
   const updateDetailedProfile = async (profileData: any): Promise<{ success: boolean; errors?: string[] }> => {
-    console.log('🔍 updateDetailedProfile called with conditions:')
-    console.log('  - User exists:', !!user)
-    console.log('  - User ID:', user?.id)
-    console.log('  - Profile exists:', !!profile)
-    console.log('  - Profile ID:', profile?.id)
-    console.log('  - Is loading:', isLoading)
-    
-    // Ensure we have user and profile data
-    let currentUser = user
-    let currentProfile = profile
-    
-    if (!currentUser) {
-      console.log('⚠️  No user found, attempting to get current user...')
-      const { data: { user: freshUser }, error } = await supabase.auth.getUser()
-      if (error) {
-        console.error('❌ Failed to get current user:', error)
-        return { success: false, errors: ['Authentication failed. Please log in again.'] }
-      }
-      if (!freshUser) {
-        return { success: false, errors: ['You must be logged in to save your profile.'] }
-      }
-      currentUser = freshUser
-      setUser(freshUser)
+    if (!user || !profile) {
+      return { success: false, errors: ['User not authenticated or no artist profile'] }
     }
-    
-    if (!currentProfile) {
-      console.log('⚠️  No profile found, attempting to load for user:', currentUser.id)
-      currentProfile = await loadArtistProfile(currentUser.id)
-      if (!currentProfile) {
-        return { success: false, errors: ['Artist profile not found. Please refresh the page and try again.'] }
-      }
-    }
-    
-    // Now we definitely have both user and profile
-    const workingUser = currentUser
-    const workingProfile = currentProfile
 
-    const errors: string[] = []
-    
     try {
-      console.log('🔍 Starting updateDetailedProfile for user:', workingUser.id)
-      console.log('📊 Current profile:', workingProfile)
-      console.log('📝 Form data received:', profileData)
-
-      // Validate required fields
-      if (profileData.stage_name && profileData.stage_name.trim().length < 2) {
-        errors.push('Artist name must be at least 2 characters long')
-      }
+      const errors: string[] = []
       
-      if (profileData.bio && profileData.bio.length > 1000) {
-        errors.push('Bio must be 1000 characters or less')
+      // Map form fields to database fields
+      const artistName = profileData.stage_name || profileData.artist_name
+      const bio = profileData.bio
+      const genre = profileData.genre
+      const location = profileData.location
+      const website = profileData.website
+      const instagram = profileData.instagram
+      const twitter = profileData.twitter
+      const youtube = profileData.youtube
+      const spotify = profileData.spotify
+      
+      // Validate required fields
+      if (!artistName?.trim()) {
+        errors.push('Artist name is required')
       }
 
+      // Validate email format if provided
       if (profileData.contact_email && !isValidEmail(profileData.contact_email)) {
-        errors.push('Please enter a valid contact email')
+        errors.push('Invalid email format')
       }
 
-      if (profileData.website && !isValidUrl(profileData.website)) {
-        errors.push('Please enter a valid website URL')
-      }
-
-      // Check for validation errors
-      if (errors.length > 0) {
-        console.log('❌ Validation errors:', errors)
-        return { success: false, errors }
-      }
-
-      // Prepare core profile data
-      const coreProfileData = {
-        artist_name: profileData.stage_name || workingProfile.artist_name,
-        bio: profileData.bio || workingProfile.bio,
-        genres: profileData.genre ? [profileData.genre] : workingProfile.genres || [],
-        social_links: {
-          ...workingProfile.social_links,
-          website: profileData.website || '',
-          instagram: profileData.instagram || '',
-          twitter: profileData.twitter || '',
-          youtube: profileData.youtube || '',
-          spotify: profileData.spotify || ''
+      // Validate URLs if provided
+      const urlFields = [
+        { field: 'website', value: website },
+        { field: 'instagram', value: instagram },
+        { field: 'twitter', value: twitter },
+        { field: 'youtube', value: youtube },
+        { field: 'spotify', value: spotify }
+      ]
+      
+      for (const { field, value } of urlFields) {
+        if (value && value.trim() && !isValidUrl(value)) {
+          errors.push(`Invalid ${field} URL format`)
         }
       }
 
-      // Prepare settings data for additional fields
-      const settingsData = {
-        ...workingProfile.settings,
+      if (errors.length > 0) {
+        return { success: false, errors }
+      }
+
+      // Prepare social links object
+      const socialLinks = {
+        website: website || '',
+        instagram: instagram || '',
+        twitter: twitter || '',
+        youtube: youtube || '',
+        spotify: spotify || ''
+      }
+
+      // Prepare settings object with professional and preferences data
+      const settings = {
         professional: {
+          location: location || '',
           contact_email: profileData.contact_email || '',
           phone: profileData.phone || '',
-          location: profileData.location || '',
           booking_rate: profileData.booking_rate || '',
           availability: profileData.availability || '',
           equipment: profileData.equipment || '',
@@ -653,125 +669,83 @@ export function ArtistProvider({ children }: { children: ReactNode }) {
           upcoming_releases: profileData.upcoming_releases || ''
         },
         preferences: {
-          collaboration_interest: Boolean(profileData.collaboration_interest),
-          available_for_hire: Boolean(profileData.available_for_hire),
-          newsletter_signup: Boolean(profileData.newsletter_signup),
+          collaboration_interest: profileData.collaboration_interest || false,
+          available_for_hire: profileData.available_for_hire || false,
+          newsletter_signup: profileData.newsletter_signup || false,
           privacy_settings: profileData.privacy_settings || 'public',
           preferred_contact: profileData.preferred_contact || 'email'
-        },
-        last_updated: new Date().toISOString()
-      }
-
-      console.log('💾 Core profile data to save:', coreProfileData)
-      console.log('⚙️  Settings data to save:', settingsData)
-
-      // First, let's check if the settings column exists
-      try {
-        const { data: testData, error: testError } = await supabase
-          .from('artist_profiles')
-          .select('settings')
-          .eq('user_id', workingUser.id)
-          .single()
-
-        if (testError) {
-          console.log('❌ Error checking settings column:', testError)
-          if (testError.message.includes('column "settings" does not exist')) {
-            return { 
-              success: false, 
-              errors: [
-                'Database schema error: The artist_profiles table is missing the settings column.',
-                'Please run the fix_artist_settings_table.sql migration in your Supabase dashboard.',
-                'Go to: Supabase Dashboard → SQL Editor → Run the migration script.'
-              ] 
-            }
-          }
-        } else {
-          console.log('✅ Settings column exists, current value:', testData?.settings)
-        }
-      } catch (schemaError) {
-        console.log('❌ Schema check error:', schemaError)
-        return { 
-          success: false, 
-          errors: ['Database connection error. Please check your Supabase configuration.'] 
         }
       }
 
-      // Update the profile in the database
-      console.log('🚀 Attempting to save to database...')
-      
-      const updatePayload = {
-        ...coreProfileData,
-        settings: settingsData,
-        updated_at: new Date().toISOString()
-      }
-
-      console.log('📦 Full update payload:', updatePayload)
-
-      const { data: updateResult, error } = await supabase
+      // Update artist profile
+      const { error: profileError } = await supabase
         .from('artist_profiles')
-        .update(updatePayload)
-        .eq('user_id', workingUser.id)
-        .select()
+        .update({
+          artist_name: artistName,
+          bio: bio || '',
+          genres: genre ? [genre] : [],
+          social_links: socialLinks,
+          settings: settings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
 
-      if (error) {
-        console.error('❌ Database error details:', error)
-        
-        // Provide specific error messages based on error type
-        let errorMessage = 'Failed to save changes. Please try again.'
-        
-        if (error.message.includes('column "settings" does not exist')) {
-          errorMessage = 'Database schema error: Missing settings column. Please run the database migration.'
-        } else if (error.message.includes('permission denied')) {
-          errorMessage = 'Permission denied. Please check your account permissions.'
-        } else if (error.message.includes('row-level security')) {
-          errorMessage = 'Security error. You can only edit your own artist profile.'
-        } else if (error.code === 'PGRST116') {
-          errorMessage = 'Artist profile not found. Please contact support.'
-        }
-        
-        return { success: false, errors: [errorMessage, `Technical details: ${error.message}`] }
+      if (profileError) {
+        console.error('Error updating artist profile:', profileError)
+        throw profileError
       }
-
-      console.log('✅ Database update successful:', updateResult)
 
       // Update local state
-      setProfile(prev => prev ? { 
-        ...prev, 
-        ...coreProfileData,
-        settings: settingsData
+      setProfile(prev => prev ? {
+        ...prev,
+        artist_name: artistName,
+        bio: bio || '',
+        genres: genre ? [genre] : [],
+        social_links: socialLinks,
+        settings: settings,
+        updated_at: new Date().toISOString()
       } : prev)
 
-      console.log('✅ Local state updated successfully')
-
       return { success: true }
-    } catch (error: any) {
-      console.error('❌ Unexpected error in updateDetailedProfile:', error)
-      return { 
-        success: false, 
-        errors: [
-          'An unexpected error occurred. Please try again.',
-          `Error details: ${error.message || 'Unknown error'}`
-        ] 
-      }
+    } catch (error) {
+      console.error('Error updating detailed profile:', error)
+      return { success: false, errors: ['Failed to update profile. Please try again.'] }
     }
   }
 
-  // Helper validation functions
   const isValidEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     return emailRegex.test(email)
   }
 
   const isValidUrl = (url: string): boolean => {
+    if (!url || !url.trim()) return true // Empty URLs are valid
+    
     try {
-      new URL(url)
+      // Handle URLs without protocol
+      const urlToTest = url.startsWith('http://') || url.startsWith('https://') 
+        ? url 
+        : `https://${url}`
+      
+      const parsedUrl = new URL(urlToTest)
+      
+      // Basic validation: must have a domain
+      if (!parsedUrl.hostname || parsedUrl.hostname.length < 3) {
+        return false
+      }
+      
+      // Must have at least one dot in the hostname (for TLD)
+      if (!parsedUrl.hostname.includes('.')) {
+        return false
+      }
+      
       return true
     } catch {
       return false
     }
   }
 
-  const value: ArtistContextType = {
+  const contextValue: ArtistContextType = {
     user,
     profile,
     isLoading,
@@ -787,7 +761,7 @@ export function ArtistProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ArtistContext.Provider value={value}>
+    <ArtistContext.Provider value={contextValue}>
       {children}
     </ArtistContext.Provider>
   )
@@ -800,5 +774,3 @@ export function useArtist() {
   }
   return context
 }
-
-export type { ArtistProfile, ArtistStats, ArtistContextType } 

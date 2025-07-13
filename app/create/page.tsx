@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { useMultiAccount } from "@/hooks/use-multi-account"
 import { Button } from "@/components/ui/button"
@@ -28,7 +28,9 @@ import {
   MapPin,
   User,
   Zap,
-  ChevronRight
+  ChevronRight,
+  Crown,
+  Briefcase
 } from "lucide-react"
 
 interface CreateOption {
@@ -68,13 +70,28 @@ const createOptions: CreateOption[] = [
       'Revenue Tracking',
       'Marketing Tools'
     ]
+  },
+  {
+    id: 'organizer-account',
+    title: 'Organizer Account',
+    description: 'For event organizers, tour managers, and agencies',
+    icon: Crown,
+    gradient: 'from-amber-500 via-orange-500 to-red-500',
+    features: [
+      'Advanced Event Management',
+      'Tour Planning & Logistics',
+      'Artist & Venue Coordination',
+      'Revenue & Analytics Dashboard',
+      'Multi-event Campaign Tools'
+    ]
   }
 ]
 
 export default function CreatePage() {
   const { user, loading } = useAuth()
-  const { accounts, hasAccountType, createArtistAccount, createVenueAccount, isLoading } = useMultiAccount()
+  const { accounts, hasAccountType, createArtistAccount, createVenueAccount, createOrganizerAccount, isLoading } = useMultiAccount()
   const router = useRouter()
+  const searchParams = useSearchParams()
   
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -112,22 +129,49 @@ export default function CreatePage() {
     }
   })
 
+  const [organizerData, setOrganizerData] = useState({
+    organization_name: '',
+    description: '',
+    organization_type: '',
+    contact_info: {
+      phone: '',
+      email: '',
+      website: ''
+    },
+    social_links: {
+      instagram: '',
+      linkedin: '',
+      website: ''
+    },
+    specialties: [] as string[]
+  })
+
   useEffect(() => {
     if (!loading && !user) {
       router.push('/')
       return
     }
-  }, [user, loading, router])
+    
+    // Check for account type in URL query params
+    const accountType = searchParams.get('type')
+    if (accountType && !selectedOption) {
+      switch (accountType) {
+        case 'artist':
+          setSelectedOption('artist-account')
+          break
+        case 'venue':
+          setSelectedOption('venue-account')
+          break
+        case 'admin':
+          setSelectedOption('organizer-account')
+          break
+      }
+    }
+  }, [user, loading, router, searchParams, selectedOption])
 
   const isAccountAlreadyCreated = (optionId: string): boolean => {
-    switch (optionId) {
-      case 'artist-account':
-        return hasAccountType('artist')
-      case 'venue-account':
-        return hasAccountType('venue')
-      default:
-        return false
-    }
+    // Remove limitations - users can create unlimited accounts of any type
+    return false
   }
 
   const renderCreateOption = (option: CreateOption) => {
@@ -140,8 +184,8 @@ export default function CreatePage() {
           selectedOption === option.id 
             ? 'bg-white/20 border-white/40 shadow-2xl' 
             : 'bg-white/10 hover:bg-white/15'
-        } ${isCreated ? 'opacity-75' : ''}`}
-        onClick={() => !isCreated && setSelectedOption(option.id)}
+        }`}
+        onClick={() => setSelectedOption(option.id)}
       >
         <CardHeader className="text-center pb-4">
           <div className="relative mx-auto mb-4">
@@ -149,20 +193,10 @@ export default function CreatePage() {
               <option.icon className="h-10 w-10 text-white" />
             </div>
             <div className={`absolute -inset-2 bg-gradient-to-br ${option.gradient} rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity`}></div>
-            {isCreated && (
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
-                <CheckCircle className="h-4 w-4 text-white" />
-              </div>
-            )}
           </div>
           
           <CardTitle className="text-2xl text-white mb-2">
             {option.title}
-            {isCreated && (
-              <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/50">
-                Created
-              </Badge>
-            )}
           </CardTitle>
           <CardDescription className="text-gray-300 text-base leading-relaxed">
             {option.description}
@@ -185,18 +219,16 @@ export default function CreatePage() {
             </ul>
           </div>
           
-          {!isCreated && (
-            <Button
-              className={`w-full mt-6 bg-gradient-to-r ${option.gradient} hover:shadow-lg transition-all duration-300 text-white font-semibold`}
-              onClick={(e) => {
-                e.stopPropagation()
-                setSelectedOption(option.id)
-              }}
-            >
-              Get Started
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            className={`w-full mt-6 bg-gradient-to-r ${option.gradient} hover:shadow-lg transition-all duration-300 text-white font-semibold`}
+            onClick={(e) => {
+              e.stopPropagation()
+              setSelectedOption(option.id)
+            }}
+          >
+            Get Started
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
         </CardContent>
       </Card>
     )
@@ -218,7 +250,15 @@ export default function CreatePage() {
           capacity: venueData.capacity ? parseInt(venueData.capacity) : undefined
         })
         setSuccess('Venue account created successfully! 🏢')
+      } else if (selectedOption === 'organizer-account') {
+        console.log('🚀 [Create Page] Creating organizer account...')
+        await createOrganizerAccount(organizerData)
+        console.log('✅ [Create Page] Organizer account creation completed')
+        setSuccess('Organizer account created successfully! 👑 You can now access it from your account switcher.')
       }
+      
+      // Give a moment for the accounts to refresh before showing success
+      await new Promise(resolve => setTimeout(resolve, 100))
       
       // Reset form
       setSelectedOption(null)
@@ -236,6 +276,14 @@ export default function CreatePage() {
         venue_types: [],
         contact_info: { phone: '', email: '', website: '' },
         social_links: { instagram: '', facebook: '', website: '' }
+      })
+      setOrganizerData({
+        organization_name: '',
+        description: '',
+        organization_type: '',
+        contact_info: { phone: '', email: '', website: '' },
+        social_links: { instagram: '', linkedin: '', website: '' },
+        specialties: []
       })
       
     } catch (err) {
@@ -295,7 +343,7 @@ export default function CreatePage() {
                 Expand Your Presence
               </h1>
               <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
-                Create specialized accounts to reach different audiences and unlock powerful tools for your creative journey.
+                Create unlimited specialized accounts to reach different audiences and unlock powerful tools for your creative journey. No limits on how many accounts you can create under one email.
               </p>
             </div>
           </div>
@@ -330,32 +378,95 @@ export default function CreatePage() {
                   Your Accounts
                 </CardTitle>
                 <CardDescription className="text-gray-400">
-                  Manage your existing accounts and switch between them
+                  Manage your existing accounts and switch between them. You can create unlimited accounts of any type under your email.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {accounts.map((account) => (
-                    <div key={`${account.account_type}-${account.profile_id}`} className="p-4 rounded-xl bg-white/5 border border-white/10">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                          {account.account_type === 'artist' && <Music className="h-5 w-5 text-white" />}
-                          {account.account_type === 'venue' && <Building className="h-5 w-5 text-white" />}
-                          {account.account_type === 'general' && <User className="h-5 w-5 text-white" />}
+                  {accounts.map((account, index) => {
+                    const getAccountGradient = (accountType: string, index: number) => {
+                      const gradients = {
+                        artist: [
+                          'from-purple-500 to-pink-500',
+                          'from-violet-500 to-purple-500', 
+                          'from-fuchsia-500 to-purple-500'
+                        ],
+                        venue: [
+                          'from-blue-500 to-cyan-500',
+                          'from-indigo-500 to-blue-500',
+                          'from-cyan-500 to-teal-500'
+                        ],
+                        admin: [
+                          'from-amber-500 to-orange-500',
+                          'from-orange-500 to-red-500',
+                          'from-yellow-500 to-amber-500'
+                        ],
+                        general: ['from-gray-500 to-slate-500']
+                      }
+                      const typeGradients = gradients[accountType as keyof typeof gradients] || gradients.general
+                      return typeGradients[index % typeGradients.length]
+                    }
+
+                    const accountTypeCount = accounts.filter(acc => acc.account_type === account.account_type).length
+                    const typeIndex = accounts.filter(acc => 
+                      acc.account_type === account.account_type && 
+                      accounts.indexOf(acc) <= index
+                    ).length
+
+                    return (
+                      <div key={`${account.account_type}-${account.profile_id}`} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`w-10 h-10 bg-gradient-to-br ${getAccountGradient(account.account_type, index)} rounded-lg flex items-center justify-center`}>
+                            {account.account_type === 'artist' && <Music className="h-5 w-5 text-white" />}
+                            {account.account_type === 'venue' && <Building className="h-5 w-5 text-white" />}
+                            {account.account_type === 'admin' && <Crown className="h-5 w-5 text-white" />}
+                            {account.account_type === 'general' && <User className="h-5 w-5 text-white" />}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-white text-sm leading-tight">
+                              {account.profile_data?.artist_name || 
+                               account.profile_data?.venue_name || 
+                               account.profile_data?.organization_name ||
+                               'General Account'}
+                            </h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-xs text-gray-400 capitalize">
+                                {account.account_type === 'admin' ? 'Organizer' : account.account_type}
+                              </p>
+                              {accountTypeCount > 1 && (
+                                <Badge variant="outline" className="text-xs px-1.5 py-0 bg-white/10 border-white/20 text-gray-300">
+                                  #{typeIndex}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-white">
-                            {account.profile_data?.artist_name || account.profile_data?.venue_name || 'General Account'}
-                          </h4>
-                          <p className="text-xs text-gray-400 capitalize">{account.account_type}</p>
-                        </div>
+                        
+                        {/* Additional context for different account types */}
+                        {account.account_type === 'artist' && account.profile_data?.bio && (
+                          <p className="text-xs text-gray-400 mb-2 line-clamp-2">
+                            {account.profile_data.bio.substring(0, 80)}...
+                          </p>
+                        )}
+                        {account.account_type === 'venue' && account.profile_data?.address && (
+                          <p className="text-xs text-gray-400 mb-2 flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {account.profile_data.address}
+                          </p>
+                        )}
+                        {account.account_type === 'admin' && account.profile_data?.organization_type && (
+                          <p className="text-xs text-gray-400 mb-2 capitalize">
+                            {account.profile_data.organization_type.replace('_', ' ')}
+                          </p>
+                        )}
+                        
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Active
+                        </Badge>
                       </div>
-                      <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Active
-                      </Badge>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -368,11 +479,11 @@ export default function CreatePage() {
                 <h2 className="text-3xl font-bold text-white mb-4">Choose Your Account Type</h2>
                 <p className="text-gray-400 max-w-2xl mx-auto">
                   Select the type of account that best fits your role in the music industry. 
-                  Each account type comes with specialized tools and features.
+                  You can create multiple accounts of the same type - each account type comes with specialized tools and features.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
                 {createOptions.map(renderCreateOption)}
               </div>
 
@@ -399,10 +510,16 @@ export default function CreatePage() {
                 </Button>
                 
                 <h2 className="text-3xl font-bold text-white mb-2">
-                  {selectedOption === 'artist-account' ? 'Create Artist Account' : 'Create Venue Account'}
+                  {selectedOption === 'artist-account' ? 'Create Artist Account' : 
+                   selectedOption === 'venue-account' ? 'Create Venue Account' : 
+                   'Create Organizer Account'}
                 </h2>
                 <p className="text-gray-400">
-                  Fill out the information below to set up your {selectedOption === 'artist-account' ? 'artist' : 'venue'} account
+                  Fill out the information below to set up your {
+                    selectedOption === 'artist-account' ? 'artist' : 
+                    selectedOption === 'venue-account' ? 'venue' : 
+                    'organizer'
+                  } account
                 </p>
               </div>
 
@@ -478,7 +595,7 @@ export default function CreatePage() {
                           </div>
                         </div>
                       </>
-                    ) : (
+                    ) : selectedOption === 'venue-account' ? (
                       /* Venue Form */
                       <>
                         <div className="space-y-2">
@@ -574,6 +691,151 @@ export default function CreatePage() {
                                 })}
                                 className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
                                 placeholder="booking@venue.com"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* Organizer Form */
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="organization_name" className="text-white font-medium">
+                            Organization Name *
+                          </Label>
+                          <Input
+                            id="organization_name"
+                            value={organizerData.organization_name}
+                            onChange={(e) => setOrganizerData({ ...organizerData, organization_name: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                            placeholder="Your company or organization name"
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="organization_type" className="text-white font-medium">
+                            Organization Type *
+                          </Label>
+                          <select
+                            id="organization_type"
+                            value={organizerData.organization_type}
+                            onChange={(e) => setOrganizerData({ ...organizerData, organization_type: e.target.value })}
+                            className="w-full bg-white/10 border border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50 px-3 py-2 rounded-md"
+                            required
+                          >
+                            <option value="" className="bg-slate-800 text-white">Select type...</option>
+                            <option value="event_management" className="bg-slate-800 text-white">Event Management Company</option>
+                            <option value="talent_agency" className="bg-slate-800 text-white">Talent Agency</option>
+                            <option value="tour_management" className="bg-slate-800 text-white">Tour Management</option>
+                            <option value="booking_agency" className="bg-slate-800 text-white">Booking Agency</option>
+                            <option value="festival_organizer" className="bg-slate-800 text-white">Festival Organizer</option>
+                            <option value="production_company" className="bg-slate-800 text-white">Production Company</option>
+                            <option value="other" className="bg-slate-800 text-white">Other</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="description" className="text-white font-medium">
+                            Description
+                          </Label>
+                          <Textarea
+                            id="description"
+                            value={organizerData.description}
+                            onChange={(e) => setOrganizerData({ ...organizerData, description: e.target.value })}
+                            className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50 min-h-[100px]"
+                            placeholder="Tell us about your organization, services, and experience in the music industry..."
+                          />
+                        </div>
+
+                        <Separator className="bg-white/10" />
+
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Briefcase className="h-5 w-5 text-amber-400" />
+                            Contact Information
+                          </h3>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="org_phone" className="text-white font-medium">Phone</Label>
+                              <Input
+                                id="org_phone"
+                                value={organizerData.contact_info.phone}
+                                onChange={(e) => setOrganizerData({
+                                  ...organizerData,
+                                  contact_info: { ...organizerData.contact_info, phone: e.target.value }
+                                })}
+                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                                placeholder="(555) 123-4567"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="org_email" className="text-white font-medium">Email</Label>
+                              <Input
+                                id="org_email"
+                                type="email"
+                                value={organizerData.contact_info.email}
+                                onChange={(e) => setOrganizerData({
+                                  ...organizerData,
+                                  contact_info: { ...organizerData.contact_info, email: e.target.value }
+                                })}
+                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                                placeholder="info@yourorganization.com"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="org_website" className="text-white font-medium">Website</Label>
+                            <Input
+                              id="org_website"
+                              value={organizerData.contact_info.website}
+                              onChange={(e) => setOrganizerData({
+                                ...organizerData,
+                                contact_info: { ...organizerData.contact_info, website: e.target.value }
+                              })}
+                              className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                              placeholder="https://yourorganization.com"
+                            />
+                          </div>
+                        </div>
+
+                        <Separator className="bg-white/10" />
+
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-yellow-400" />
+                            Social Links
+                          </h3>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="org_instagram" className="text-white font-medium">Instagram</Label>
+                              <Input
+                                id="org_instagram"
+                                value={organizerData.social_links.instagram}
+                                onChange={(e) => setOrganizerData({
+                                  ...organizerData,
+                                  social_links: { ...organizerData.social_links, instagram: e.target.value }
+                                })}
+                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                                placeholder="@your_organization"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="org_linkedin" className="text-white font-medium">LinkedIn</Label>
+                              <Input
+                                id="org_linkedin"
+                                value={organizerData.social_links.linkedin}
+                                onChange={(e) => setOrganizerData({
+                                  ...organizerData,
+                                  social_links: { ...organizerData.social_links, linkedin: e.target.value }
+                                })}
+                                className="bg-white/10 border-white/20 text-white placeholder-gray-400 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
+                                placeholder="LinkedIn company page"
                               />
                             </div>
                           </div>

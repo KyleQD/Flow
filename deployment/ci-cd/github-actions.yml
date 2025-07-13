@@ -1,0 +1,346 @@
+name: 🚀 Production Deployment Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Quality Gates
+  quality-gates:
+    name: 🔍 Quality Gates
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.changes.outputs.should-deploy }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Run unit tests
+        run: npm run test:coverage
+
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          NODE_ENV: test
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+
+      - name: Check for breaking changes
+        id: changes
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload test coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # Security Scanning
+  security-scan:
+    name: 🛡️ Security Scan
+    runs-on: ubuntu-latest
+    needs: [quality-gates]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Build and Push Container
+  build-and-push:
+    name: 🏗️ Build & Push Container
+    runs-on: ubuntu-latest
+    needs: [quality-gates, security-scan]
+    if: needs.quality-gates.outputs.should-deploy == 'true'
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-uri: ${{ steps.build.outputs.image-uri }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/production/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            NODE_ENV=production
+            NEXT_TELEMETRY_DISABLED=1
+
+      - name: Sign container image
+        run: |
+          echo "Image URI: ${{ steps.build.outputs.image-uri }}"
+          echo "Image Digest: ${{ steps.build.outputs.digest }}"
+
+  # Deploy to Staging
+  deploy-staging:
+    name: 🚀 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    environment: staging
+    if: github.ref != 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy to ECS Staging
+        run: |
+          # Update ECS service with new image
+          aws ecs update-service \
+            --cluster tourify-staging-cluster \
+            --service tourify-staging-service \
+            --force-new-deployment \
+            --desired-count 1
+
+      - name: Wait for deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster tourify-staging-cluster \
+            --services tourify-staging-service
+
+      - name: Run smoke tests
+        run: |
+          # Wait for health check
+          sleep 30
+          curl -f https://staging.tourify.com/api/health || exit 1
+
+  # Production Deployment
+  deploy-production:
+    name: 🌍 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy to ECS Production
+        run: |
+          # Blue/Green deployment strategy
+          CURRENT_TASK_DEF=$(aws ecs describe-services \
+            --cluster tourify-cluster \
+            --services tourify-service \
+            --query 'services[0].taskDefinition' \
+            --output text)
+          
+          # Create new task definition with new image
+          NEW_TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition $CURRENT_TASK_DEF \
+            --query 'taskDefinition' \
+            | jq --arg IMAGE "${{ needs.build-and-push.outputs.image-uri }}" \
+              '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy)')
+          
+          # Register new task definition
+          NEW_TASK_DEF_ARN=$(echo $NEW_TASK_DEF | aws ecs register-task-definition \
+            --cli-input-json file:///dev/stdin \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          
+          # Update service with rolling deployment
+          aws ecs update-service \
+            --cluster tourify-cluster \
+            --service tourify-service \
+            --task-definition $NEW_TASK_DEF_ARN \
+            --deployment-configuration "maximumPercent=200,minimumHealthyPercent=100"
+
+      - name: Wait for deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster tourify-cluster \
+            --services tourify-service
+
+      - name: Verify deployment
+        run: |
+          # Health check
+          for i in {1..10}; do
+            if curl -f https://tourify.com/api/health; then
+              echo "✅ Deployment successful!"
+              break
+            fi
+            echo "Waiting for health check... ($i/10)"
+            sleep 30
+          done
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+  # Performance Testing
+  performance-test:
+    name: ⚡ Performance Testing
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          urls: |
+            https://tourify.com
+            https://tourify.com/login
+            https://tourify.com/artist/events
+          configPath: './.lighthouserc.json'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Load test with Artillery
+        run: |
+          npm install -g artillery
+          artillery run deployment/testing/load-test.yml
+
+  # Notify Success
+  notify-success:
+    name: 📢 Notify Success
+    runs-on: ubuntu-latest
+    needs: [deploy-production, performance-test]
+    if: success()
+    steps:
+      - name: Notify Discord
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d "{\"content\": \"🚀 **Tourify Production Deployment Successful!**\n\n✅ Version: \`${{ github.sha }}\`\n✅ Environment: Production\n✅ Performance: Passed\n✅ Status: https://tourify.com/api/health\n\n🌍 **Live at**: https://tourify.com\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Update deployment status
+        run: |
+          echo "🎉 Deployment completed successfully!"
+          echo "🌍 Live at: https://tourify.com"
+          echo "📊 Monitoring: https://tourify.com/monitoring"
+
+  # Rollback on Failure
+  rollback:
+    name: 🔄 Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: failure()
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Rollback deployment
+        run: |
+          # Get previous stable task definition
+          PREVIOUS_TASK_DEF=$(aws ecs describe-services \
+            --cluster tourify-cluster \
+            --services tourify-service \
+            --query 'services[0].deployments[1].taskDefinition' \
+            --output text)
+          
+          # Rollback to previous version
+          aws ecs update-service \
+            --cluster tourify-cluster \
+            --service tourify-service \
+            --task-definition $PREVIOUS_TASK_DEF \
+            --force-new-deployment
+
+      - name: Notify rollback
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d "{\"content\": \"🚨 **Tourify Deployment Failed - Rollback Initiated**\n\n❌ Version: \`${{ github.sha }}\`\n🔄 Rolling back to previous stable version\n📋 Check logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }} 

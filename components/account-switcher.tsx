@@ -36,17 +36,23 @@ const accountTypeLabels = {
   general: 'Personal',
   artist: 'Artist',
   venue: 'Venue',
-  admin: 'Admin'
+  admin: 'Organizer'
 }
 
 export function AccountSwitcher() {
   const router = useRouter()
-  const { currentAccount, userAccounts } = useMultiAccount()
+  const { currentAccount, userAccounts, refreshAccounts } = useMultiAccount()
   const { switchAccount, isLoading } = useAccountSwitching()
 
   const handleAccountSwitch = async (profileId: string, accountType: ProfileType) => {
     try {
       await switchAccount(profileId, accountType)
+      
+      // Set the active venue ID for venue accounts
+      if (accountType === 'venue') {
+        const { venueService } = await import('@/lib/services/venue.service')
+        venueService.setCurrentVenueId(profileId)
+      }
       
       // Navigate to the appropriate dashboard
       switch (accountType) {
@@ -70,6 +76,8 @@ export function AccountSwitcher() {
   const handleCreateAccount = (type: 'artist' | 'venue' | 'admin') => {
     router.push(`/create?type=${type}`)
   }
+
+
 
   if (!currentAccount) {
     return null
@@ -105,6 +113,8 @@ export function AccountSwitcher() {
                   ? (currentAccount.profile_data?.artist_name || 'Artist Account')
                   : currentAccount.account_type === 'venue'
                   ? (currentAccount.profile_data?.venue_name || 'Venue Account')
+                  : currentAccount.account_type === 'admin'
+                  ? (currentAccount.profile_data?.organization_name || currentAccount.profile_data?.admin_name || 'Event & Tour Admin')
                   : (currentAccount.profile_data?.full_name || 'Personal Account')
                 }
               </div>
@@ -155,6 +165,9 @@ export function AccountSwitcher() {
                       <Icon className="h-5 w-5" />
                     </AvatarFallback>
                   </Avatar>
+                  {account.account_type === 'admin' && (
+                    <Crown className="absolute -top-1 -right-1 h-3 w-3 text-yellow-400" />
+                  )}
                 </div>
                 
                 <div className="flex-1">
@@ -163,6 +176,8 @@ export function AccountSwitcher() {
                       ? (account.profile_data?.artist_name || 'Artist Account')
                       : account.account_type === 'venue'
                       ? (account.profile_data?.venue_name || 'Venue Account')
+                      : account.account_type === 'admin'
+                      ? (account.profile_data?.organization_name || account.profile_data?.admin_name || 'Event & Tour Admin')
                       : (account.profile_data?.full_name || 'Personal Account')
                     }
                   </div>
@@ -173,6 +188,12 @@ export function AccountSwitcher() {
                     >
                       {accountTypeLabels[account.account_type]}
                     </Badge>
+                    {account.account_type === 'admin' && (
+                      <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-300 text-xs">
+                        <Crown className="h-3 w-3 mr-1" />
+                        Super
+                      </Badge>
+                    )}
                   </div>
                 </div>
                 
@@ -191,35 +212,44 @@ export function AccountSwitcher() {
             Create New Account
           </DropdownMenuLabel>
           
-          {!userAccounts.find(acc => acc.account_type === 'artist') && (
-            <DropdownMenuItem
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer"
-              onClick={() => handleCreateAccount('artist')}
-            >
-              <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                <Plus className="h-4 w-4 text-purple-400" />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-white">Create Artist Account</div>
-                <div className="text-xs text-slate-400">Showcase your music and connect with fans</div>
-              </div>
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer"
+            onClick={() => handleCreateAccount('artist')}
+          >
+            <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+              <Plus className="h-4 w-4 text-purple-400" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-white">Create Artist Account</div>
+              <div className="text-xs text-slate-400">Showcase your music and connect with fans</div>
+            </div>
+          </DropdownMenuItem>
           
-          {!userAccounts.find(acc => acc.account_type === 'venue') && (
-            <DropdownMenuItem
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer"
-              onClick={() => handleCreateAccount('venue')}
-            >
-              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                <Plus className="h-4 w-4 text-green-400" />
-              </div>
-              <div>
-                <div className="text-sm font-medium text-white">Create Venue Account</div>
-                <div className="text-xs text-slate-400">List your space and book artists</div>
-              </div>
-            </DropdownMenuItem>
-          )}
+          <DropdownMenuItem
+            className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer"
+            onClick={() => handleCreateAccount('venue')}
+          >
+            <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+              <Plus className="h-4 w-4 text-green-400" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-white">Create Venue Account</div>
+              <div className="text-xs text-slate-400">List your space and book artists</div>
+            </div>
+          </DropdownMenuItem>
+          
+          <DropdownMenuItem
+            className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer"
+            onClick={() => handleCreateAccount('admin')}
+          >
+            <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <Plus className="h-4 w-4 text-amber-400" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-white">Create Organizer Account</div>
+              <div className="text-xs text-slate-400">Manage events and tours professionally</div>
+            </div>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         
         <DropdownMenuSeparator className="bg-slate-700 my-2" />
@@ -227,7 +257,22 @@ export function AccountSwitcher() {
         <DropdownMenuGroup>
           <DropdownMenuItem
             className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-slate-800 cursor-pointer"
-            onClick={() => router.push('/settings')}
+            onClick={() => {
+              // Navigate to account-specific settings page
+              switch (currentAccount.account_type) {
+                case 'artist':
+                  router.push('/artist/settings')
+                  break
+                case 'venue':
+                  router.push('/venue/settings')
+                  break
+                case 'admin':
+                  router.push('/admin/settings')
+                  break
+                default:
+                  router.push('/settings')
+              }
+            }}
           >
             <Settings className="h-4 w-4 text-slate-400" />
             <span className="text-sm text-slate-200">Account Settings</span>

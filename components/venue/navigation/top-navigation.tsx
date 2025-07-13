@@ -19,6 +19,7 @@ import {
 import { Bell, Menu, Search, Settings, LogOut, User, HelpCircle, Command, MessageSquare } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { TourifyLogo } from "@/components/tourify-logo"
 
 interface TopNavigationProps {
   onSidebarOpen: () => void
@@ -55,7 +56,7 @@ export function TopNavigation({ onSidebarOpen, onCommandOpen }: TopNavigationPro
       {/* Logo (mobile only) */}
       <div className="flex lg:hidden">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <img src="/images/tourify-logo.png" alt="Tourify" className="h-8 w-auto" />
+          <TourifyLogo variant="light" size="md" />
         </Link>
       </div>
 

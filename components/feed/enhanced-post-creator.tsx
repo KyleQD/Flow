@@ -30,6 +30,8 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/lib/database.types'
+import { useAuth } from '@/contexts/auth-context'
+import { toast } from 'sonner'
 
 interface PostCreatorProps {
   onPostCreated?: (post: any) => void
@@ -43,17 +45,9 @@ export function EnhancedPostCreator({ onPostCreated }: PostCreatorProps) {
   const [hashtagInput, setHashtagInput] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [user, setUser] = useState<any>(null)
 
+  const { user, loading } = useAuth()
   const supabase = createClientComponentClient<Database>()
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-    }
-    getUser()
-  }, [supabase.auth])
 
   const createPost = async (postData: {
     content: string
@@ -63,60 +57,85 @@ export function EnhancedPostCreator({ onPostCreated }: PostCreatorProps) {
   }) => {
     if (!user) throw new Error('User not authenticated')
 
+    console.log('createPost called with:', postData)
+
     // Extract hashtags from content
     const hashtagMatches = postData.content.match(/#[a-zA-Z0-9_]+/g)
     const extractedHashtags = hashtagMatches?.map(tag => tag.substring(1).toLowerCase()) || []
     const allHashtags = [...extractedHashtags, ...postData.hashtags]
 
-    // Create post
-    const { data: post, error: postError } = await supabase
-      .from('posts')
-      .insert({
-        user_id: user.id,
-        content: postData.content,
-        type: 'text',
-        visibility: postData.visibility,
-        location: postData.location || null,
-        hashtags: allHashtags,
-      })
-      .select(`
-        *,
-        profiles (
-          username,
-          full_name,
-          avatar_url,
-          is_verified
-        )
-      `)
-      .single()
-
-    if (postError) throw postError
-
-    // Create hashtag records
-    if (allHashtags.length > 0) {
-      for (const hashtag of allHashtags) {
-        await supabase
-          .from('hashtags')
-          .upsert({ name: hashtag }, { onConflict: 'name' })
-
-        const { data: hashtagData } = await supabase
-          .from('hashtags')
-          .select('id')
-          .eq('name', hashtag)
-          .single()
-
-        if (hashtagData) {
-          await supabase
-            .from('post_hashtags')
-            .insert({
-              post_id: post.id,
-              hashtag_id: hashtagData.id
-            })
-        }
-      }
+    const requestBody = {
+      content: postData.content,
+      type: 'text',
+      visibility: postData.visibility,
+      location: postData.location || null,
+      hashtags: allHashtags,
     }
 
-    return post
+    console.log('Making API request to /api/posts/create with body:', requestBody)
+
+    // Use the proper API endpoint with Next.js 15 compatible authentication
+    const response = await fetch('/api/posts/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // This ensures cookies are sent
+      body: JSON.stringify(requestBody),
+    })
+
+    console.log('API response status:', response.status, response.statusText)
+
+    if (!response.ok) {
+      let errorData
+      try {
+        errorData = await response.json()
+        console.log('🔴 API error response:', errorData)
+      } catch (e) {
+        console.log('🔴 Failed to parse error response')
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const errorMessage = errorData.error || errorData.details || 'Failed to create post'
+      const debugInfo = errorData.debug || 'No debug info'
+      
+      console.error('🔴 Detailed error:', {
+        error: errorMessage,
+        details: errorData.details,
+        debug: debugInfo,
+        status: response.status
+      })
+      
+      // Better error message formatting
+      const debugText = typeof debugInfo === 'object' 
+        ? JSON.stringify(debugInfo, null, 2)
+        : String(debugInfo)
+      
+      throw new Error(`${errorMessage} (Debug: ${debugText})`)
+    }
+
+    const result = await response.json()
+    console.log('🟢 API success response:', result)
+    
+    if (!result.success) {
+      const errorMessage = result.error || result.details || 'Post creation failed'
+      const debugInfo = result.debug || 'No debug info'
+      
+      console.error('🔴 API returned error:', {
+        error: errorMessage,
+        details: result.details,
+        debug: debugInfo
+      })
+      
+      // Better error message formatting  
+      const debugText = typeof debugInfo === 'object'
+        ? JSON.stringify(debugInfo, null, 2)
+        : String(debugInfo)
+      
+      throw new Error(`${errorMessage} (Debug: ${debugText})`)
+    }
+
+    return result.data
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,12 +144,22 @@ export function EnhancedPostCreator({ onPostCreated }: PostCreatorProps) {
 
     setIsSubmitting(true)
     try {
+      console.log('Creating post with data:', {
+        content: content.trim(),
+        visibility,
+        location: location.trim() || undefined,
+        hashtags,
+        user_id: user.id
+      })
+
       const post = await createPost({
         content: content.trim(),
         visibility,
         location: location.trim() || undefined,
         hashtags,
       })
+
+      console.log('Post created successfully:', post)
 
       // Reset form
       setContent('')
@@ -141,8 +170,35 @@ export function EnhancedPostCreator({ onPostCreated }: PostCreatorProps) {
       
       // Notify parent
       onPostCreated?.(post)
+      
+      // Show success message
+      console.log('✅ Post created successfully!')
+      toast.success('Post created successfully!', {
+        description: 'Your post has been published to your feed.'
+      })
     } catch (error) {
-      console.error('Error creating post:', error)
+      console.error('❌ Error creating post:', error)
+      console.log('Full error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      })
+      
+      // Check if it's an authentication error
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (errorMessage.includes('Unauthorized') || errorMessage.includes('401')) {
+        toast.error('Authentication Error', {
+          description: 'Please refresh the page and try logging in again.',
+          action: {
+            label: 'Refresh Page',
+            onClick: () => window.location.reload()
+          }
+        })
+      } else {
+        toast.error('Failed to create post', {
+          description: errorMessage || 'An unknown error occurred. Please try again.'
+        })
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -173,13 +229,28 @@ export function EnhancedPostCreator({ onPostCreated }: PostCreatorProps) {
     private: <Lock className="h-4 w-4" />
   }
 
+  // Show loading state while auth is being checked
+  if (loading) {
+    return (
+      <Card className="mb-6 overflow-hidden bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-xl border-slate-700/50 rounded-xl">
+        <CardContent className="p-6 text-center">
+          <div className="flex items-center justify-center gap-2 text-slate-400">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+            <span>Loading...</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Show login prompt if user is not authenticated
   if (!user) {
     return (
-          <Card className="mb-6 overflow-hidden bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-xl border-slate-700/50 rounded-xl">
-      <CardContent className="p-6 text-center">
-        <p className="text-slate-400">Please log in to create posts</p>
-      </CardContent>
-    </Card>
+      <Card className="mb-6 overflow-hidden bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-xl border-slate-700/50 rounded-xl">
+        <CardContent className="p-6 text-center">
+          <p className="text-slate-400">Please log in to create posts</p>
+        </CardContent>
+      </Card>
     )
   }
 

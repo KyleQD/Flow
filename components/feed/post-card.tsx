@@ -31,11 +31,18 @@ import { formatDistanceToNow } from 'date-fns'
 import { useFeed } from '@/hooks/use-feed'
 import { useAuth } from '@/hooks/use-auth'
 import type { ExtendedPost } from '@/lib/services/feed.service'
+import Link from 'next/link'
 
 interface PostCardProps {
   post: ExtendedPost
   onCommentClick?: () => void
   onShareClick?: () => void
+}
+
+// Helper function to generate profile URL based on username
+function getProfileUrl(username: string | null | undefined) {
+  if (!username) return '/profile/user'
+  return `/profile/${username}`
 }
 
 export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) {
@@ -167,22 +174,28 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex gap-3">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={post.profiles?.avatar_url} />
-                <AvatarFallback>
-                  {post.profiles?.full_name?.[0] || post.profiles?.username?.[0] || 'U'}
-                </AvatarFallback>
-              </Avatar>
+              <Link href={getProfileUrl(post.profiles?.username)} className="flex-shrink-0">
+                <Avatar className="h-12 w-12 cursor-pointer hover:ring-2 hover:ring-purple-500/50 transition-all duration-200">
+                  <AvatarImage src={post.profiles?.avatar_url} />
+                  <AvatarFallback>
+                    {post.profiles?.full_name?.[0] || post.profiles?.username?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
               
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-white">
-                    {post.profiles?.full_name || post.profiles?.username}
-                  </h4>
+                  <Link href={getProfileUrl(post.profiles?.username)} className="hover:underline">
+                    <h4 className="font-semibold text-white">
+                      {post.profiles?.full_name || post.profiles?.username}
+                    </h4>
+                  </Link>
                   {post.profiles?.is_verified && (
                     <Verified className="h-4 w-4 text-blue-400" />
                   )}
-                  <span className="text-slate-400">@{post.profiles?.username}</span>
+                  <Link href={getProfileUrl(post.profiles?.username)} className="hover:underline">
+                    <span className="text-slate-400">@{post.profiles?.username}</span>
+                  </Link>
                 </div>
                 
                 <div className="flex items-center gap-2 text-sm text-slate-400">

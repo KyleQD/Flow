@@ -13,6 +13,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Facebook, Mail, ArrowRight, CheckCircle, Music, User, Building, Briefcase, Users } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
+import { TourifyLogo } from '@/components/tourify-logo'
 
 interface SignupFormData {
   email: string
@@ -231,7 +232,7 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#10111A] bg-[url('/starfield-bg.jpg')] bg-cover bg-center relative">
       <div className="absolute top-0 left-0 w-full flex flex-col items-center pt-10 z-10">
-        <Image src="/logo.svg" alt="Tourify" width={180} height={40} priority />
+                        <TourifyLogo variant="light" size="lg" className="h-10 w-auto" />
         
         {/* Progress indicator */}
         <div className="flex flex-col items-center mt-6 mb-4 w-full max-w-md px-8">

@@ -3,54 +3,49 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { 
-  ImageIcon, 
+  Image, 
   Video, 
-  Music, 
   MapPin, 
   Hash, 
   Send, 
+  Globe, 
+  Users, 
+  Lock, 
   Loader2,
-  Globe,
-  Users,
-  Lock,
-  X
+  Music
 } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/lib/database.types'
+import { toast } from 'sonner'
 
 interface CompactPostCreatorProps {
   onPostCreated?: (post: any) => void
+  artistUser?: any
+  artistProfile?: any
+  displayName?: string
+  avatarInitial?: string
 }
 
-export function CompactPostCreator({ onPostCreated }: CompactPostCreatorProps) {
+export function CompactPostCreator({ 
+  onPostCreated, 
+  artistUser, 
+  artistProfile, 
+  displayName, 
+  avatarInitial 
+}: CompactPostCreatorProps) {
   const [content, setContent] = useState('')
   const [hashtags, setHashtags] = useState<string[]>([])
   const [location, setLocation] = useState('')
   const [visibility, setVisibility] = useState<'public' | 'followers' | 'private'>('public')
   const [isPosting, setIsPosting] = useState(false)
-  const [user, setUser] = useState<any>(null)
   const [showOptions, setShowOptions] = useState(false)
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const supabase = createClientComponentClient<Database>()
-
-  // Get user on mount
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-      } catch (error) {
-        console.error('Error getting user:', error)
-      }
-    }
-    getUser()
-  }, [supabase.auth])
 
   // Auto-resize textarea
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -76,74 +71,121 @@ export function CompactPostCreator({ onPostCreated }: CompactPostCreatorProps) {
   const handlePost = async () => {
     if (!content.trim() || isPosting) return
 
+    // Check if artist user is authenticated
+    if (!artistUser) {
+      toast.error('Authentication Required', {
+        description: 'Please complete your artist profile setup to start posting.'
+      })
+      return
+    }
+
     setIsPosting(true)
     try {
-      // Get current user
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      if (!currentUser) {
-        alert('Please sign in to post')
-        return
+      console.log('Creating post with unified account system:', {
+        user_id: artistUser.id,
+        artist_profile: artistProfile?.artist_name || displayName,
+        content: content.trim()
+      })
+
+      // Create post via API endpoint
+      const response = await fetch('/api/posts/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          content: content.trim(),
+          type: 'text',
+          visibility,
+          location: location || null,
+          hashtags: hashtags.length > 0 ? hashtags : null,
+          // Use the unified account system
+          posted_as: 'artist' // This will be resolved to an account_id by the API
+        }),
+      })
+
+      console.log('API Response status:', response.status, response.statusText)
+
+      if (!response.ok) {
+        let errorData
+        try {
+          errorData = await response.json()
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError)
+          errorData = { error: `Server error: ${response.status} ${response.statusText}` }
+        }
+        
+        console.error('API Error:', errorData)
+        
+        // Provide more specific error messages
+        let errorMessage = 'Failed to create post'
+        if (response.status === 401) {
+          errorMessage = 'Authentication required - please sign in'
+        } else if (response.status === 403) {
+          errorMessage = 'Not authorized to post as artist'
+        } else if (response.status === 500) {
+          errorMessage = 'Server error - please try again'
+        } else if (errorData.error) {
+          errorMessage = errorData.error
+        }
+        
+        throw new Error(errorMessage)
       }
 
-      // Try to create the post with a simplified approach
-      const postData = {
-        user_id: currentUser.id,
+      let result
+      try {
+        result = await response.json()
+      } catch (parseError) {
+        console.error('Failed to parse successful response:', parseError)
+        throw new Error('Invalid response from server')
+      }
+      
+      console.log('Post created successfully with unified accounts:', result.post)
+
+      if (!result.post) {
+        throw new Error('Invalid response from server - no post data returned')
+      }
+
+      // The API now returns complete account information, so we can use it directly
+      const displayPost = {
+        ...result.post,
+        // The API provides complete account context, so we don't need to override it
+        id: result.post.id,
+        user_id: artistUser.id,
         content: content.trim(),
-        type: 'text',
-        visibility,
-        location: location || null,
-        hashtags: hashtags.length > 0 ? hashtags : null,
-        likes_count: 0,
-        comments_count: 0,
-        shares_count: 0,
-        created_at: new Date().toISOString()
+        type: result.post.type || 'text',
+        visibility: result.post.visibility || visibility,
+        location: result.post.location || location || null,
+        hashtags: result.post.hashtags || (hashtags.length > 0 ? hashtags : null),
+        likes_count: result.post.likes_count || 0,
+        comments_count: result.post.comments_count || 0,
+        shares_count: result.post.shares_count || 0,
+        created_at: result.post.created_at || new Date().toISOString(),
+        updated_at: result.post.updated_at || new Date().toISOString(),
+        is_liked: false,
+        // Use the complete account info from the unified system
+        profiles: result.post.user || result.post.profiles,
+        user: result.post.user || result.post.profiles,
+        // Include account context for the frontend
+        account_id: result.post.account_id,
+        account_type: result.post.account_type,
+        // Handle media fields based on schema
+        media_urls: result.post.media_urls || result.post.images || [],
+        images: result.post.images || result.post.media_urls || []
       }
 
-      // Try inserting to posts table
-      const { data: newPost, error } = await supabase
-        .from('posts')
-        .insert(postData)
-        .select(`
-          *,
-          profiles (
-            username,
-            full_name,
-            avatar_url,
-            is_verified
-          )
-        `)
-        .single()
+      console.log('✅ Created display post with unified account system:', {
+        id: displayPost.id,
+        account_id: displayPost.account_id,
+        account_type: displayPost.account_type,
+        display_name: displayPost.profiles?.full_name || displayPost.user?.full_name,
+        account_context_type: displayPost.profiles?.account_type || displayPost.user?.account_type
+      })
 
-      if (error) {
-        console.error('Database error:', error)
-        
-        // If posts table doesn't exist, simulate a post for demo purposes
-        const simulatedPost = {
-          id: Date.now().toString(),
-          ...postData,
-          profiles: {
-            username: currentUser.user_metadata?.username || null,
-            full_name: currentUser.user_metadata?.full_name || currentUser.email,
-            avatar_url: currentUser.user_metadata?.avatar_url || null,
-            is_verified: false
-          }
-        }
-        
-        console.log('Simulated post:', simulatedPost)
-        
-        // Call the callback with simulated post
-        if (onPostCreated) {
-          onPostCreated(simulatedPost)
-        }
-        
-        // Show success message
-        alert('Post created successfully! (Demo mode - database table may not exist yet)')
-      } else {
-        console.log('Post created successfully:', newPost)
-        // Callback to parent
-        if (onPostCreated && newPost) {
-          onPostCreated(newPost)
-        }
+      // Call the callback with the new post
+      if (onPostCreated) {
+        onPostCreated(displayPost)
       }
 
       // Reset form
@@ -157,9 +199,17 @@ export function CompactPostCreator({ onPostCreated }: CompactPostCreatorProps) {
         textareaRef.current.style.height = 'auto'
       }
 
+      // Dynamic success message based on account info
+      const accountDisplayName = displayPost.profiles?.full_name || displayPost.user?.full_name || 'Account'
+      toast.success('Post created successfully!', {
+        description: `Posted as ${accountDisplayName}`
+      })
+
     } catch (error) {
       console.error('Error creating post:', error)
-      alert('Failed to create post. Please try again.')
+      toast.error('Failed to create post', {
+        description: error instanceof Error ? error.message : 'Please try again.'
+      })
     } finally {
       setIsPosting(false)
     }
@@ -175,53 +225,66 @@ export function CompactPostCreator({ onPostCreated }: CompactPostCreatorProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -10 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-4 shadow-xl"
+      className="bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-xl"
     >
-      {/* User Avatar & Input */}
-      <div className="flex gap-3 items-start">
-        <Avatar className="h-10 w-10 shrink-0">
-          <AvatarImage src={user?.user_metadata?.avatar_url} />
-          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white">
-            {user?.user_metadata?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+      <div className="flex gap-4">
+        {/* Artist Avatar */}
+        <Avatar className="h-12 w-12 border-2 border-purple-500/30">
+          <AvatarImage src="" />
+          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold">
+            {avatarInitial || 'A'}
           </AvatarFallback>
         </Avatar>
+        
+        <div className="flex-1 space-y-4">
+          {/* Artist Info */}
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-white">
+              {displayName || 'Artist'}
+            </span>
+            {artistProfile?.verification_status === 'verified' && (
+              <Badge variant="secondary" className="bg-blue-600/20 text-blue-400 border-blue-500/30">
+                ✓ Verified
+              </Badge>
+            )}
+            <Badge variant="outline" className="border-purple-500/30 text-purple-400">
+              Artist Account
+            </Badge>
+          </div>
 
-        <div className="flex-1 space-y-3">
-          {/* Main Input */}
-          <Textarea
+          {/* Content Input */}
+          <textarea
             ref={textareaRef}
             value={content}
             onChange={handleContentChange}
+            onFocus={() => setShowOptions(true)}
             placeholder="What's happening in your music world?"
-            className="resize-none border-0 bg-transparent text-white placeholder:text-slate-400 focus-visible:ring-0 p-0 min-h-[20px] text-lg"
-            rows={1}
+            className="w-full min-h-[80px] max-h-[200px] bg-transparent text-white placeholder-slate-400 border-0 outline-0 resize-none text-lg leading-relaxed"
+            disabled={isPosting}
           />
 
           {/* Hashtags Preview */}
           {hashtags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {hashtags.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 text-xs"
-                >
+            <div className="flex flex-wrap gap-2">
+              {hashtags.map((tag, i) => (
+                <Badge key={i} variant="secondary" className="bg-blue-600/20 text-blue-400 border-blue-500/30">
                   #{tag}
                 </Badge>
               ))}
             </div>
           )}
 
-          {/* Location Input */}
+          {/* Expanded Options */}
           {showOptions && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="space-y-2"
+              className="space-y-4"
             >
+              {/* Location Input */}
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-slate-400" />
                 <input
@@ -229,103 +292,80 @@ export function CompactPostCreator({ onPostCreated }: CompactPostCreatorProps) {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Add location..."
-                  className="flex-1 bg-transparent border-0 text-sm text-white placeholder:text-slate-400 focus:outline-none"
+                  className="flex-1 bg-transparent text-slate-300 placeholder-slate-500 border-0 outline-0"
+                  disabled={isPosting}
                 />
               </div>
+
+              <Separator className="bg-slate-700/50" />
             </motion.div>
           )}
-        </div>
-      </div>
 
-      {content.trim() && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 pt-3 border-t border-slate-700/50"
-        >
-          {/* Actions Row */}
-          <div className="flex items-center justify-between">
+          {/* Action Bar */}
+          <div className="flex items-center justify-between pt-2">
+            {/* Media & Options */}
             <div className="flex items-center gap-1">
-              {/* Media Buttons */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 h-8 px-2 rounded-lg"
-              >
-                <ImageIcon className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-purple-400 hover:bg-purple-500/20">
+                <Image className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm" 
-                className="text-slate-400 hover:text-green-400 hover:bg-green-500/10 h-8 px-2 rounded-lg"
-              >
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-purple-400 hover:bg-purple-500/20">
                 <Video className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 h-8 px-2 rounded-lg"
-              >
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-purple-400 hover:bg-purple-500/20">
                 <Music className="h-4 w-4" />
               </Button>
-
-              <Separator orientation="vertical" className="h-4 bg-slate-600/50" />
-
-              {/* Options Toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowOptions(!showOptions)}
-                className="text-slate-400 hover:text-yellow-400 hover:bg-yellow-500/10 h-8 px-2 rounded-lg"
-              >
-                <MapPin className="h-4 w-4" />
-              </Button>
-
-              {/* Visibility Selector */}
-              <select
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value as any)}
-                className="bg-transparent text-xs text-slate-400 border-0 focus:outline-none cursor-pointer"
-              >
-                {visibilityOptions.map(opt => (
-                  <option key={opt.value} value={opt.value} className="bg-slate-800">
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
             </div>
 
-            {/* Character Count & Post Button */}
+            {/* Visibility & Post */}
             <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-400">
-                {content.length}/280
-              </span>
-              <Button
-                onClick={handlePost}
-                disabled={!content.trim() || isPosting || content.length > 280}
-                size="sm"
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 h-8 rounded-full"
-              >
-                {isPosting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-1" />
-                    Post
-                  </>
-                )}
-              </Button>
+              <div className="flex items-center gap-2 text-slate-400">
+                <currentVisibility.icon className="h-4 w-4" />
+                <select
+                  value={visibility}
+                  onChange={(e) => setVisibility(e.target.value as any)}
+                  className="bg-transparent text-xs text-slate-400 border-0 focus:outline-none cursor-pointer"
+                  disabled={isPosting}
+                >
+                  {visibilityOptions.map(opt => (
+                    <option key={opt.value} value={opt.value} className="bg-slate-800">
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Character Count & Post Button */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-400">
+                  {content.length}/280
+                </span>
+                <Button
+                  onClick={handlePost}
+                  disabled={!content.trim() || isPosting || content.length > 280}
+                  size="sm"
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 h-8 rounded-full"
+                >
+                  {isPosting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-1" />
+                      Post
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Auth hint if not authenticated */}
-          {!user && !isPosting && (
+          {/* Auth hint if not authenticated as artist */}
+          {!artistUser && !isPosting && (
             <div className="mt-2 text-xs text-amber-400">
-              Please sign in to create posts
+              Please complete your artist profile setup to start posting
             </div>
           )}
-        </motion.div>
-      )}
+        </div>
+      </div>
     </motion.div>
   )
 } 

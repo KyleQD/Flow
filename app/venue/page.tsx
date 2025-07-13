@@ -34,6 +34,7 @@ import { BookingDetailsModal } from "./components/booking-details-modal"
 import { EventDetailsModal } from "./components/event-details-modal"
 import { EditEventModal } from "./components/edit-event-modal"
 import { useCurrentVenue } from "./hooks/useCurrentVenue"
+import { VenueAccountSettings } from "@/components/settings/venue-account-settings"
 
 // Mock venue data - in a real app, this would come from an API
 const mockVenue = {
@@ -232,6 +233,7 @@ export default function VenueDashboard() {
   const [eventToDelete, setEventToDelete] = useState<EventFormData | null>(null)
   const [bookingNotes, setBookingNotes] = useState<Record<string, string>>({})
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false)
+  const [activeSettingsTab, setActiveSettingsTab] = useState("profile")
 
   const filteredBookings = bookingStatusFilter === "all"
     ? bookingRequests
@@ -934,62 +936,36 @@ export default function VenueDashboard() {
                   <Card className="bg-gray-900 border-gray-800">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
-                        <Settings className="h-5 w-5 text-gray-400" />
+                        <Settings className="h-5 w-5 text-green-400" />
                         Venue Settings
                       </CardTitle>
+                      <CardDescription>
+                        Manage your venue profile, booking policies, amenities, and payment settings
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-4">
-                            <h3 className="font-medium text-white">General Settings</h3>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Venue Name</label>
-                              <input 
-                                type="text" 
-                                defaultValue={venue.name}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-md p-2"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Venue Type</label>
-                              <input 
-                                type="text" 
-                                defaultValue={venue.type}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-md p-2"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Location</label>
-                              <input 
-                                type="text" 
-                                defaultValue={venue.location}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-md p-2"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-4">
-                            <h3 className="font-medium text-white">Notification Settings</h3>
-                            <div className="space-y-2">
-                              <label className="flex items-center">
-                                <input type="checkbox" className="mr-2" defaultChecked />
-                                Email notifications for new bookings
-                              </label>
-                              <label className="flex items-center">
-                                <input type="checkbox" className="mr-2" defaultChecked />
-                                SMS notifications for urgent updates
-                              </label>
-                              <label className="flex items-center">
-                                <input type="checkbox" className="mr-2" />
-                                Marketing emails and promotions
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-                        <Button className="bg-purple-600 hover:bg-purple-700">
-                          Save Settings
-                        </Button>
-                      </div>
+                      <Tabs value={activeSettingsTab} onValueChange={setActiveSettingsTab} className="space-y-6">
+                        <TabsList className="bg-gray-800 w-full justify-start overflow-x-auto">
+                          <TabsTrigger value="profile" className="flex items-center gap-2">
+                            <Settings className="h-4 w-4" />
+                            Profile
+                          </TabsTrigger>
+                          <TabsTrigger value="booking" className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            Booking
+                          </TabsTrigger>
+                          <TabsTrigger value="amenities" className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            Amenities
+                          </TabsTrigger>
+                          <TabsTrigger value="payments" className="flex items-center gap-2">
+                            <DollarSign className="h-4 w-4" />
+                            Payments
+                          </TabsTrigger>
+                        </TabsList>
+                        
+                        <VenueAccountSettings activeTab={activeSettingsTab} />
+                      </Tabs>
                     </CardContent>
                   </Card>
                 </div>

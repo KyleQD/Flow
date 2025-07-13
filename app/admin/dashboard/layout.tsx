@@ -1,5 +1,8 @@
 import type React from "react"
-import { Sidebar } from "@/app/admin/dashboard/components/sidebar"
+import { EnhancedNavigationLayout } from "@/components/admin/enhanced-navigation-layout"
+import { ErrorBoundary } from "@/components/admin/error-boundary"
+import { Toaster } from "@/components/ui/toaster"
+import { TourEventProvider } from "./components/tour-event-provider"
 
 export default function DashboardLayout({
   children,
@@ -7,9 +10,21 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">{children}</main>
-    </div>
+    <ErrorBoundary>
+      <TourEventProvider>
+        <EnhancedNavigationLayout
+          showContextualNav={true}
+          showActivityFeed={true}
+          showTourSelector={true}
+          defaultSidebarCollapsed={false}
+          className="min-h-screen"
+        >
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </EnhancedNavigationLayout>
+      </TourEventProvider>
+      <Toaster />
+    </ErrorBoundary>
   )
 }

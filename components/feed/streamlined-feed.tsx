@@ -11,6 +11,8 @@ import { RefreshCw, Heart, MessageCircle, Share2, Clock, MapPin, Loader2 } from 
 import { formatDistanceToNow } from 'date-fns'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/lib/database.types'
+import { useArtist } from '@/contexts/artist-context'
+import Link from 'next/link'
 
 interface Post {
   id: string
@@ -24,81 +26,304 @@ interface Post {
   comments_count: number
   shares_count: number
   created_at: string
+  updated_at?: string
+  media_urls?: string[]
   profiles?: {
+    id?: string
     username: string | null
     full_name: string | null
     avatar_url: string | null
     is_verified: boolean
+    account_context?: {
+      type: string
+      profile_id: string
+      display_name: string
+    }
+  } | null
+  user?: {
+    id?: string
+    username?: string | null
+    full_name?: string | null
+    avatar_url?: string | null
+    is_verified?: boolean
+    account_context?: {
+      type: string
+      profile_id: string
+      display_name: string
+    }
   } | null
   // Flag for demo posts
   isDemoPost?: boolean
+  posted_as_account_type?: string
+  posted_as_profile_id?: string
+  account_type?: string
+}
+
+// Helper function to generate profile URL based on account type and username
+function getProfileUrl(profile: Post['profiles']) {
+  if (!profile?.username) return '/profile/user'
+  
+  // For now, all profiles use the same route structure
+  // In the future, we might want different routes for different account types
+  // e.g., /artist/username, /venue/username, etc.
+  return `/profile/${profile.username}`
 }
 
 export function StreamlinedFeed() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [user, setUser] = useState<any>(null)
   const [databaseConnected, setDatabaseConnected] = useState(false)
   
+  // Use artist context instead of basic auth
+  const { user, profile, isLoading: artistLoading, displayName, avatarInitial } = useArtist()
   const supabase = createClientComponentClient<Database>()
 
   const loadPosts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          profiles (
-            username,
-            full_name,
-            avatar_url,
-            is_verified
-          )
-        `)
-        .eq('visibility', 'public')
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      if (error) {
-        console.error('Error loading posts:', error)
-        setDatabaseConnected(false)
-        
-        // Load demo posts if database isn't available
-        if (posts.length === 0) {
-          const demoPost: Post = {
-            id: 'demo-1',
-            user_id: 'demo-user',
-            content: '🎵 Welcome to your feed! This is a demo post. Try creating your own post above! #music #tourify',
-            type: 'text',
-            visibility: 'public',
-            location: 'Demo Location',
-            hashtags: ['music', 'tourify'],
-            likes_count: 5,
-            comments_count: 2,
-            shares_count: 1,
-            created_at: new Date().toISOString(),
-            profiles: {
-              username: 'demo_user',
-              full_name: 'Demo User',
-              avatar_url: null,
-              is_verified: false
-            },
-            isDemoPost: true
-          }
-          setPosts([demoPost])
-        }
-      } else {
-        console.log('Database connected, loaded posts:', data)
-        setDatabaseConnected(true)
-        setPosts(data || [])
+      console.log('�� Loading posts from API...')
+      
+      // Use the API endpoint instead of direct Supabase calls
+      const response = await fetch('/api/feed/posts?type=all&limit=20', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
       }
+      
+      const result = await response.json()
+      
+      if (result.error) {
+        console.error('❌ API Error:', result.error)
+        throw new Error(result.error)
+      }
+      
+      console.log('✅ API response received:', result.data?.length || 0, 'posts')
+      setDatabaseConnected(true)
+      
+      const postsData = result.data || []
+      
+      // Transform posts to match our interface
+      const transformedPosts = postsData.map((post: any) => ({
+        id: post.id,
+        user_id: post.user_id,
+        content: post.content,
+        type: post.type || 'text',
+        visibility: post.visibility || 'public',
+        location: post.location || null,
+        hashtags: post.hashtags || [],
+        likes_count: post.likes_count || post.like_count || 0,
+        comments_count: post.comments_count || 0,
+        shares_count: post.shares_count || 0,
+        media_urls: post.media_urls || post.images || [],
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        // Use the profile data from the API (which includes account context)
+        profiles: post.profiles || post.user || {
+          username: 'user',
+          full_name: 'User',
+          avatar_url: null,
+          is_verified: false
+        },
+        user: post.user || post.profiles,
+        // Preserve account context fields
+        posted_as_account_type: post.posted_as_account_type,
+        posted_as_profile_id: post.posted_as_profile_id,
+        account_type: post.account_type
+      }))
+      
+      console.log('📊 Transformed posts:', transformedPosts.length)
+      setPosts(transformedPosts)
+      
     } catch (error) {
-      console.error('Error in loadPosts:', error)
+      console.error('💥 Error loading posts:', error)
+      
+      // Fallback to demo mode on error
+      console.log('🔌 API failed, entering demo mode')
       setDatabaseConnected(false)
+      
+      // Show demo post if no posts available
+      if (posts.length === 0) {
+        const demoPost: Post = {
+          id: 'demo-1',
+          user_id: 'demo-user',
+          content: '🎵 Welcome to your feed! This is a demo post. Try creating your own post above! #music #tourify',
+          type: 'text',
+          visibility: 'public',
+          location: 'Demo Location',
+          hashtags: ['music', 'tourify'],
+          likes_count: 5,
+          comments_count: 2,
+          shares_count: 1,
+          created_at: new Date().toISOString(),
+          profiles: {
+            username: 'demo_user',
+            full_name: 'Demo User',
+            avatar_url: null,
+            is_verified: false
+          },
+          isDemoPost: true
+        }
+        setPosts([demoPost])
+      }
     } finally {
       setLoading(false)
       setRefreshing(false)
+    }
+  }
+
+  // Load profile information for posts that don't have it
+  const loadProfilesForPosts = async (posts: Post[]) => {
+    console.log('👥 Loading profile information for posts...')
+    
+    // Group posts by account type and user ID to avoid duplicate queries
+    const postsNeedingProfiles: { [key: string]: Post[] } = {}
+    
+    for (const post of posts) {
+      // Skip posts that already have proper profile info with account context
+      if (post.profiles?.account_context?.type || post.user?.account_context?.type) {
+        console.log(`✅ Post ${post.id} already has account context, skipping profile lookup`)
+        continue
+      }
+      
+      // Skip posts that have complete profile info
+      if (post.profiles?.full_name && post.profiles?.full_name !== 'Anonymous User' && post.profiles?.full_name !== 'User') {
+        console.log(`✅ Post ${post.id} already has complete profile info: ${post.profiles.full_name}`)
+        continue
+      }
+      
+      const key = `${post.user_id}`
+      if (!postsNeedingProfiles[key]) {
+        postsNeedingProfiles[key] = []
+      }
+      postsNeedingProfiles[key].push(post)
+    }
+    
+    // Load profiles for posts that need them
+    for (const [userId, userPosts] of Object.entries(postsNeedingProfiles)) {
+      console.log(`👤 Loading profile for user ${userId}`)
+      
+      // Check if any of these posts have account context info
+      const samplePost = userPosts[0]
+      const accountType = samplePost.posted_as_account_type || samplePost.account_type
+      const profileId = samplePost.posted_as_profile_id
+      
+      let profileInfo: any = null
+      
+      if (accountType === 'artist' && profileId) {
+        console.log('🎨 Loading artist profile for post display')
+        const { data: artistProfile } = await supabase
+          .from('artist_profiles')
+          .select('id, stage_name, artist_name, profile_image_url, is_verified')
+          .eq('id', profileId)
+          .single()
+        
+        if (artistProfile) {
+          profileInfo = {
+            id: artistProfile.id,
+            username: artistProfile.stage_name?.toLowerCase().replace(/\s+/g, '') || 'artist',
+            full_name: artistProfile.stage_name || artistProfile.artist_name || 'Artist',
+            avatar_url: artistProfile.profile_image_url || '',
+            is_verified: artistProfile.is_verified || false,
+            account_type: 'artist',
+            account_context: {
+              type: 'artist',
+              profile_id: artistProfile.id,
+              display_name: artistProfile.stage_name || artistProfile.artist_name
+            }
+          }
+        }
+      } else if (accountType === 'venue' && profileId) {
+        console.log('🏢 Loading venue profile for post display')
+        const { data: venueProfile } = await supabase
+          .from('venue_profiles')
+          .select('id, name, logo_url, is_verified')
+          .eq('id', profileId)
+          .single()
+        
+        if (venueProfile) {
+          profileInfo = {
+            id: venueProfile.id,
+            username: venueProfile.name?.toLowerCase().replace(/\s+/g, '') || 'venue',
+            full_name: venueProfile.name || 'Venue',
+            avatar_url: venueProfile.logo_url || '',
+            is_verified: venueProfile.is_verified || false,
+            account_type: 'venue',
+            account_context: {
+              type: 'venue',
+              profile_id: venueProfile.id,
+              display_name: venueProfile.name
+            }
+          }
+        }
+      } else if (accountType === 'business' && profileId) {
+        console.log('🏬 Loading business profile for post display')
+        const { data: businessProfile } = await supabase
+          .from('business_profiles')
+          .select('id, name, logo_url, is_verified')
+          .eq('id', profileId)
+          .single()
+        
+        if (businessProfile) {
+          profileInfo = {
+            id: businessProfile.id,
+            username: businessProfile.name?.toLowerCase().replace(/\s+/g, '') || 'business',
+            full_name: businessProfile.name || 'Business',
+            avatar_url: businessProfile.logo_url || '',
+            is_verified: businessProfile.is_verified || false,
+            account_type: 'business',
+            account_context: {
+              type: 'business',
+              profile_id: businessProfile.id,
+              display_name: businessProfile.name
+            }
+          }
+        }
+      } else {
+        // Primary account - load general profile
+        console.log('👤 Loading primary account profile for post display')
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, is_verified, metadata')
+          .eq('id', userId)
+          .single()
+        
+        if (profile) {
+          profileInfo = {
+            id: profile.id,
+            username: profile.metadata?.username || profile.username || 'user',
+            full_name: profile.metadata?.full_name || profile.full_name || 'User',
+            avatar_url: profile.avatar_url || '',
+            is_verified: profile.is_verified || false,
+            account_type: 'primary',
+            account_context: {
+              type: 'primary',
+              profile_id: profile.id,
+              display_name: profile.metadata?.full_name || profile.full_name
+            }
+          }
+        }
+      }
+      
+      if (profileInfo) {
+        console.log(`✅ Loaded profile info for ${userId}:`, profileInfo.full_name)
+        
+        // Update all posts for this user
+        setPosts(prevPosts => 
+          prevPosts.map(post => 
+            post.user_id === userId ? {
+              ...post,
+              profiles: profileInfo,
+              user: profileInfo
+            } : post
+          )
+        )
+      }
     }
   }
 
@@ -111,6 +336,15 @@ export function StreamlinedFeed() {
     // Remove demo posts if we're now getting real posts
     if (!newPost.isDemoPost) {
       setPosts(prev => prev.filter(post => !post.isDemoPost))
+    }
+    
+    // If the new post doesn't have proper profile info, load it
+    if (newPost.profiles?.full_name === 'Anonymous User' || newPost.profiles?.full_name === 'User' || !newPost.profiles?.full_name) {
+      setTimeout(() => {
+        loadProfilesForPosts([newPost]).then(() => {
+          console.log('✅ Updated profile info for new post')
+        })
+      }, 100)
     }
   }
 
@@ -153,17 +387,10 @@ export function StreamlinedFeed() {
   }
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-      } catch (error) {
-        console.error('Error getting user:', error)
-      }
+    if (!artistLoading) {
+      loadPosts()
     }
-    getUser()
-    loadPosts()
-  }, [])
+  }, [artistLoading])
 
   // Subscribe to real-time updates if database is connected
   useEffect(() => {
@@ -192,7 +419,7 @@ export function StreamlinedFeed() {
     }
   }, [databaseConnected])
 
-  if (loading) {
+  if (loading || artistLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="flex items-center gap-2 text-slate-400">
@@ -205,14 +432,38 @@ export function StreamlinedFeed() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Compact Post Creator */}
-      <CompactPostCreator onPostCreated={handlePostCreated} />
+      {/* Compact Post Creator - Pass artist context */}
+      <CompactPostCreator 
+        onPostCreated={handlePostCreated}
+        artistUser={user}
+        artistProfile={profile}
+        displayName={displayName}
+        avatarInitial={avatarInitial}
+      />
 
       {/* Database Status */}
       {!databaseConnected && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
           <div className="text-amber-400 text-sm">
             <strong>Demo Mode:</strong> Database tables not found. Posts will be simulated until database is set up.
+          </div>
+        </div>
+      )}
+
+      {/* Authentication Status for Artist */}
+      {!user && !artistLoading && (
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+          <div className="text-blue-400 text-sm">
+            <strong>Artist Account Required:</strong> Please complete your artist profile setup to start posting.
+          </div>
+        </div>
+      )}
+
+      {/* Debug Info for Multi-Account */}
+      {user && profile && process.env.NODE_ENV === 'development' && (
+        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
+          <div className="text-purple-400 text-xs">
+            <strong>Debug:</strong> Authenticated as {displayName} (Artist ID: {profile.id})
           </div>
         </div>
       )}
@@ -259,20 +510,26 @@ export function StreamlinedFeed() {
                 <Card className="overflow-hidden bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-xl border-slate-700/50 hover:border-slate-600/50 transition-all duration-300 rounded-2xl">
                   <CardHeader className="pb-3">
                     <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={post.profiles?.avatar_url || ''} />
-                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white">
-                          {post.profiles?.full_name?.[0] || post.profiles?.username?.[0] || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
+                      <Link href={getProfileUrl(post.profiles)} className="flex-shrink-0">
+                        <Avatar className="h-10 w-10 cursor-pointer hover:ring-2 hover:ring-purple-500/50 transition-all duration-200">
+                          <AvatarImage src={post.profiles?.avatar_url || ''} />
+                          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white">
+                            {post.profiles?.full_name?.[0] || post.profiles?.username?.[0] || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Link>
                       
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-white">
-                            {post.profiles?.full_name || post.profiles?.username || 'Anonymous'}
-                          </h4>
+                          <Link href={getProfileUrl(post.profiles)} className="hover:underline">
+                            <h4 className="font-semibold text-white">
+                              {post.profiles?.full_name || post.profiles?.username || 'Anonymous'}
+                            </h4>
+                          </Link>
                           {post.profiles?.username && (
-                            <span className="text-slate-400 text-sm">@{post.profiles.username}</span>
+                            <Link href={getProfileUrl(post.profiles)} className="hover:underline">
+                              <span className="text-slate-400 text-sm">@{post.profiles.username}</span>
+                            </Link>
                           )}
                           {post.isDemoPost && (
                             <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-400">

@@ -13,6 +13,7 @@ interface MultiAccountContextType {
   switchAccount: (profileId: string, accountType: string) => Promise<boolean>
   createArtistAccount: (data: any) => Promise<string>
   createVenueAccount: (data: any) => Promise<string>
+  createOrganizerAccount: (data: any) => Promise<string>
   refreshAccounts: () => Promise<void>
   hasAccountType: (accountType: string) => boolean
   currentAccount: UserAccount | null
@@ -100,13 +101,40 @@ export function MultiAccountProvider({ children }: MultiAccountProviderProps) {
       setIsLoading(true)
       setError(null)
       
+      console.log('🔄 [MultiAccount] Refreshing accounts for user:', user.id)
       const userAccounts = await AccountManagementService.getUserAccounts(user.id)
+      console.log('📋 [MultiAccount] Received accounts from service:', userAccounts.length)
+      console.log('📋 [MultiAccount] Account details:', userAccounts.map(acc => ({
+        type: acc.account_type,
+        id: acc.profile_id,
+        name: acc.profile_data?.organization_name || acc.profile_data?.artist_name || acc.profile_data?.venue_name || acc.profile_data?.display_name || acc.profile_data?.full_name || 'General'
+      })))
+      
+      // Update accounts state immediately
       setAccounts(userAccounts)
       
-      // Set active account (general by default, or first account)
-      const generalAccount = userAccounts.find(acc => acc.account_type === 'general')
-      const defaultActive = generalAccount || userAccounts[0]
-      setActiveAccount(defaultActive || null)
+      // Preserve current active account if it still exists, otherwise set to general
+      const currentActiveId = activeAccount?.profile_id
+      const currentActiveType = activeAccount?.account_type
+      
+      let newActiveAccount = null
+      if (currentActiveId && currentActiveType) {
+        // Try to find the same account in the new list
+        newActiveAccount = userAccounts.find(acc => 
+          acc.profile_id === currentActiveId && acc.account_type === currentActiveType
+        )
+      }
+      
+      // If current active account not found, default to general account
+      if (!newActiveAccount) {
+        const generalAccount = userAccounts.find(acc => acc.account_type === 'general')
+        newActiveAccount = generalAccount || userAccounts[0]
+      }
+      
+      setActiveAccount(newActiveAccount || null)
+      
+      console.log('✅ [MultiAccount] Active account set to:', newActiveAccount?.account_type || 'none')
+      console.log('✅ [MultiAccount] Admin accounts found:', userAccounts.filter(acc => acc.account_type === 'admin').length)
       
       // Get active session (gracefully handle if session tables don't exist)
       try {
@@ -116,6 +144,8 @@ export function MultiAccountProvider({ children }: MultiAccountProviderProps) {
         console.log('Session management not available:', sessionError)
         setActiveSession(null)
       }
+      
+      console.log('✅ [MultiAccount] Account refresh completed successfully')
       
     } catch (err) {
       console.error('Error fetching accounts:', err)
@@ -261,6 +291,87 @@ export function MultiAccountProvider({ children }: MultiAccountProviderProps) {
     }
   }
 
+  const createOrganizerAccount = async (data: {
+    organization_name: string
+    description?: string
+    organization_type: string
+    contact_info?: any
+    social_links?: any
+    specialties?: string[]
+  }): Promise<string> => {
+    if (!user?.id) throw new Error('You must be logged in to create an organizer account')
+
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      console.log('🏗️ [MultiAccount] Creating organizer account for user:', user.id)
+      console.log('🏗️ [MultiAccount] Organizer data:', data)
+      
+      // Create organizer account via API route (server-side with proper authentication)
+      const response = await fetch('/api/accounts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'create_organizer',
+          ...data
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create organizer account')
+      }
+
+      const accountId = result.organizerId
+      console.log('✅ [MultiAccount] Organizer account created successfully:', accountId)
+      
+      // Force a small delay before refreshing to ensure database consistency
+      console.log('⏳ [MultiAccount] Waiting 500ms before refreshing accounts...')
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
+      console.log('🔄 [MultiAccount] Refreshing accounts after organizer creation...')
+      await refreshAccounts()
+      
+      return accountId
+    } catch (err: any) {
+      console.error('❌ [MultiAccount] Error creating organizer account:', {
+        message: err?.message || 'Unknown error',
+        code: err?.code,
+        details: err?.details,
+        stack: err?.stack
+      })
+      
+      let errorMessage = 'Failed to create organizer account'
+      
+      if (err instanceof Error) {
+        if (err.message.includes('Unauthorized')) {
+          errorMessage = 'You must be logged in to create an organizer account'
+        } else if (err.message.includes('permission')) {
+          errorMessage = 'You do not have permission to create organizer accounts'
+        } else if (err.message.includes('duplicate')) {
+          errorMessage = 'An organization with this name already exists'
+        } else if (err.message.includes('HTTP 500')) {
+          errorMessage = 'Server error. Please try again in a few moments.'
+        } else {
+          errorMessage = err.message || 'Unknown error occurred'
+        }
+      }
+      
+      setError(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (user?.id) {
       refreshAccounts()
@@ -280,6 +391,7 @@ export function MultiAccountProvider({ children }: MultiAccountProviderProps) {
     switchAccount,
     createArtistAccount,
     createVenueAccount,
+    createOrganizerAccount,
     refreshAccounts,
     hasAccountType,
     currentAccount: activeAccount, // Alias for compatibility

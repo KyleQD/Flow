@@ -1,54 +1,69 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
-import { Database } from '@/lib/database.types'
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-export async function GET(request: Request) {
+// Create service role client for database operations
+function createServiceRoleClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Missing Supabase environment variables for service role')
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
+
+// Helper function to manually parse auth session from cookies
+function parseAuthFromCookies(request: NextRequest): any | null {
+  try {
+    const cookies = request.headers.get('cookie') || ''
+    const cookieArray = cookies.split(';').map(c => c.trim())
+    
+    const authCookie = cookieArray.find(cookie => 
+      cookie.startsWith('sb-tourify-auth-token=')
+    )
+    
+    if (!authCookie) {
+      return null
+    }
+
+    const token = authCookie.split('=')[1]
+    if (!token) {
+      return null
+    }
+
+    const sessionData = JSON.parse(decodeURIComponent(token))
+    return sessionData?.user || null
+  } catch (error) {
+    console.error('Error parsing auth cookie:', error)
+    return null
+  }
+}
+
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '0')
     const limit = parseInt(searchParams.get('limit') || '20')
     const feedType = searchParams.get('type') || 'all'
 
-    const supabase = createRouteHandlerClient<Database>({ cookies })
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = createServiceRoleClient()
+    const user = parseAuthFromCookies(request)
     
-    // Get posts first, then we'll fetch profile data separately
+    console.log('📊 Feed API called:', { feedType, page, limit, authenticated: !!user })
+
+    // Get posts from database
     let query = supabase
       .from('posts')
       .select('*')
+      .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .range(page * limit, (page + 1) * limit - 1)
-
-    if (feedType === 'all') {
-      // Show all public posts
-      query = query.eq('visibility', 'public')
-    } else if (feedType === 'following' && user) {
-      // Show posts from followed users + user's own posts
-      const { data: following } = await supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', user.id)
-
-      if (following && following.length > 0) {
-        const followingIds = following.map(f => f.following_id)
-        // Include user's own posts and posts from people they follow
-        followingIds.push(user.id)
-        
-        query = query
-          .in('user_id', followingIds)
-          .or(`visibility.eq.public,and(visibility.eq.followers,user_id.in.(${followingIds.join(',')}))`)
-      } else {
-        // If not following anyone, show only user's own posts
-        query = query.eq('user_id', user.id)
-      }
-    } else if (feedType === 'personal' && user) {
-      // Show only user's own posts
-      query = query.eq('user_id', user.id)
-    } else {
-      // Default to public posts for unauthenticated users
-      query = query.eq('visibility', 'public')
-    }
 
     const { data: posts, error } = await query
 
@@ -58,60 +73,107 @@ export async function GET(request: Request) {
     }
 
     if (!posts || posts.length === 0) {
+      console.log('📊 No posts found')
       return NextResponse.json({ data: [], error: null })
     }
 
-    // Get unique user IDs from posts
-    const userIds = [...new Set(posts.map(post => post.user_id))]
-    
-    // Fetch profile data for all users
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, metadata, avatar_url, is_verified')
-      .in('id', userIds)
+    console.log('📊 Loaded posts from database:', posts.length)
 
-    // Fetch post likes if user is authenticated
-    let postLikes: any[] = []
-    if (user) {
-      const postIds = posts.map(post => post.id)
-      const { data: likes } = await supabase
-        .from('post_likes')
-        .select('post_id, user_id')
-        .in('post_id', postIds)
-      postLikes = likes || []
-    }
+    // Load account information using the unified system
+    const extendedPosts = await Promise.all(
+      posts.map(async (post: any) => {
+        let accountInfo = {
+          id: post.user_id,
+          username: 'user',
+          full_name: 'User',
+          avatar_url: null,
+          is_verified: false,
+          account_type: 'primary'
+        }
 
-    // Create profile lookup map
-    const profileMap = new Map()
-    profiles?.forEach(profile => {
-      profileMap.set(profile.id, {
-        username: profile.metadata?.username || 'user',
-        full_name: profile.metadata?.full_name || 'Anonymous User',
-        avatar_url: profile.avatar_url,
-        is_verified: profile.is_verified || false
+        // Try to get account info from unified accounts table
+        if (post.account_id) {
+          console.log(`🔍 Looking up account info for post ${post.id} using account_id: ${post.account_id}`)
+          
+          const { data: displayInfo } = await supabase
+            .rpc('get_account_display_info', { account_id: post.account_id })
+
+          if (displayInfo) {
+            accountInfo = {
+              id: displayInfo.id,
+              username: displayInfo.username || 'user',
+              full_name: displayInfo.display_name || 'User',
+              avatar_url: displayInfo.avatar_url,
+              is_verified: displayInfo.is_verified || false,
+              account_type: displayInfo.account_type || 'primary'
+            }
+            console.log(`✅ Found account info: ${accountInfo.full_name} (${accountInfo.account_type})`)
+          } else {
+            console.log(`⚠️  No account info found for account_id: ${post.account_id}`)
+          }
+        } else {
+          console.log(`📝 Post ${post.id} has no account_id, trying fallback lookup`)
+          
+          // Fallback: try to get account info from legacy fields or user profiles
+          if (post.posted_as_account_type === 'artist' && post.posted_as_profile_id) {
+            console.log('🎨 Trying legacy artist profile lookup')
+            const { data: artistProfile } = await supabase
+              .from('artist_profiles')
+              .select('id, stage_name, artist_name, profile_image_url, is_verified')
+              .eq('id', post.posted_as_profile_id)
+              .single()
+
+            if (artistProfile) {
+              accountInfo = {
+                id: artistProfile.id,
+                username: artistProfile.stage_name?.toLowerCase().replace(/\s+/g, '') || 'artist',
+                full_name: artistProfile.stage_name || artistProfile.artist_name || 'Artist',
+                avatar_url: artistProfile.profile_image_url,
+                is_verified: artistProfile.is_verified || false,
+                account_type: 'artist'
+              }
+              console.log('🎨 Using legacy artist profile:', accountInfo.full_name)
+            }
+          } else {
+            // Primary account fallback
+            console.log('👤 Trying primary account profile lookup')
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('id, username, full_name, avatar_url, is_verified, metadata')
+              .eq('id', post.user_id)
+              .single()
+
+            if (profile) {
+              accountInfo = {
+                id: profile.id,
+                username: profile.metadata?.username || profile.username || 'user',
+                full_name: profile.metadata?.full_name || profile.full_name || 'User',
+                avatar_url: profile.avatar_url,
+                is_verified: profile.is_verified || false,
+                account_type: 'primary'
+              }
+              console.log('👤 Using primary profile:', accountInfo.full_name)
+            }
+          }
+        }
+
+        return {
+          ...post,
+          profiles: accountInfo,
+          user: accountInfo, // Add user field for compatibility
+          is_liked: false,
+          like_count: post.likes_count || 0,
+          // Handle schema differences
+          media_urls: post.media_urls || post.images || [],
+          type: post.type || post.post_type || 'text',
+          // Include account context for frontend
+          account_id: post.account_id,
+          account_type: accountInfo.account_type
+        }
       })
-    })
+    )
 
-    // Combine posts with profile data and like information
-    const extendedPosts = posts.map(post => {
-      const profileData = profileMap.get(post.user_id) || {
-        username: 'user',
-        full_name: 'Anonymous User',
-        avatar_url: null,
-        is_verified: false
-      }
-
-      const postLikeCount = postLikes.filter(like => like.post_id === post.id).length
-      const isLiked = user ? postLikes.some(like => like.post_id === post.id && like.user_id === user.id) : false
-
-      return {
-        ...post,
-        profiles: profileData,
-        is_liked: isLiked,
-        like_count: postLikeCount
-      }
-    })
-
+    console.log('✅ Extended posts with account data:', extendedPosts.length)
     return NextResponse.json({ data: extendedPosts, error: null })
   } catch (error) {
     console.error('API Error:', error)
@@ -122,10 +184,10 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = createServiceRoleClient()
+    const user = parseAuthFromCookies(request)
 
     if (!user) {
       return NextResponse.json(
@@ -183,36 +245,12 @@ export async function POST(request: Request) {
       ...post,
       profiles: {
         username: profile?.metadata?.username || 'user',
-        full_name: profile?.metadata?.full_name || 'Anonymous User',
+        full_name: profile?.metadata?.full_name || 'User',
         avatar_url: profile?.avatar_url,
         is_verified: profile?.is_verified || false
       },
       is_liked: false,
       like_count: 0
-    }
-
-    // Create hashtag records
-    if (allHashtags.length > 0) {
-      for (const hashtag of allHashtags) {
-        await supabase
-          .from('hashtags')
-          .upsert({ name: hashtag }, { onConflict: 'name' })
-
-        const { data: hashtagData } = await supabase
-          .from('hashtags')
-          .select('id')
-          .eq('name', hashtag)
-          .single()
-
-        if (hashtagData) {
-          await supabase
-            .from('post_hashtags')
-            .insert({
-              post_id: post.id,
-              hashtag_id: hashtagData.id
-            })
-        }
-      }
     }
 
     return NextResponse.json({ data: extendedPost, error: null })

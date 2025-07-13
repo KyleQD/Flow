@@ -27,6 +27,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/lib/database.types'
 import { useAuth } from '@/contexts/auth-context'
+import Link from 'next/link'
 
 interface PostData {
   id: string
@@ -60,6 +61,12 @@ interface SuggestedUser {
   following_count: number
 }
 
+// Helper function to generate profile URL based on username
+function getProfileUrl(username: string) {
+  if (!username) return '/profile/user'
+  return `/profile/${username}`
+}
+
 export function SocialFeed() {
   const [posts, setPosts] = useState<PostData[]>([])
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([])
@@ -73,7 +80,13 @@ export function SocialFeed() {
 
   const loadPosts = async (feedType = activeTab) => {
     try {
-      const response = await fetch(`/api/feed/posts?type=${feedType}&limit=20`)
+      const response = await fetch(`/api/feed/posts?type=${feedType}&limit=20`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
       const result = await response.json()
       
       if (result.error) {
@@ -91,7 +104,32 @@ export function SocialFeed() {
     if (!user) return
     
     try {
-      // Get users that the current user is not following
+      console.log('🔍 Loading suggested users via API...')
+      
+      // Use the new API endpoint for suggested users
+      const response = await fetch('/api/social/suggested?limit=5', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      
+      if (result.error) {
+        console.error('❌ API Error:', result.error)
+        return
+      }
+      
+      console.log('✅ Received suggested users:', result.users?.length || 0)
+      setSuggestedUsers(result.users || [])
+      
+      // Also get following data for the follow button states
       const { data: followingData } = await supabase
         .from('follows')
         .select('following_id')
@@ -99,32 +137,7 @@ export function SocialFeed() {
 
       const followingIds = followingData?.map(f => f.following_id) || []
       setFollowingUsers(new Set(followingIds))
-
-      // Get suggested users (excluding current user and already followed users)
-      let query = supabase
-        .from('profiles')
-        .select('id, username, full_name, avatar_url, is_verified, followers_count, following_count')
-        .neq('id', user.id)
-        .limit(5)
-
-      if (followingIds.length > 0) {
-        query = query.not('id', 'in', `(${followingIds.join(',')})`)
-      }
-
-      const { data: suggestedData } = await query
       
-      // Transform the profile data to match our interface
-      const transformedUsers = suggestedData?.map((profile: any) => ({
-        id: profile.id,
-        username: profile.metadata?.username || 'user',
-        full_name: profile.metadata?.full_name || 'Anonymous User',
-        avatar_url: profile.avatar_url,
-        is_verified: profile.is_verified || false,
-        followers_count: profile.followers_count || 0,
-        following_count: profile.following_count || 0
-      })) || []
-      
-      setSuggestedUsers(transformedUsers)
     } catch (error) {
       console.error('Error loading suggested users:', error)
     }
@@ -357,25 +370,31 @@ export function SocialFeed() {
                             <CardContent className="p-6">
                               {/* Post Header */}
                               <div className="flex items-start gap-3 mb-4">
-                                <Avatar>
-                                  <AvatarImage src={post.profiles.avatar_url || ''} />
-                                  <AvatarFallback>
-                                    {post.profiles.full_name?.[0] || post.profiles.username?.[0] || 'U'}
-                                  </AvatarFallback>
-                                </Avatar>
+                                <Link href={getProfileUrl(post.profiles.username)} className="flex-shrink-0">
+                                  <Avatar className="cursor-pointer hover:ring-2 hover:ring-purple-500/50 transition-all duration-200">
+                                    <AvatarImage src={post.profiles.avatar_url || ''} />
+                                    <AvatarFallback>
+                                      {post.profiles.full_name?.[0] || post.profiles.username?.[0] || 'U'}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                </Link>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-white">
-                                      {post.profiles.full_name || post.profiles.username}
-                                    </span>
+                                    <Link href={getProfileUrl(post.profiles.username)} className="hover:underline">
+                                      <span className="font-semibold text-white">
+                                        {post.profiles.full_name || post.profiles.username}
+                                      </span>
+                                    </Link>
                                     {post.profiles.is_verified && (
                                       <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                                         <Check className="w-2.5 h-2.5 text-white" />
                                       </div>
                                     )}
-                                    <span className="text-slate-400 text-sm">
-                                      @{post.profiles.username}
-                                    </span>
+                                    <Link href={getProfileUrl(post.profiles.username)} className="hover:underline">
+                                      <span className="text-slate-400 text-sm">
+                                        @{post.profiles.username}
+                                      </span>
+                                    </Link>
                                     <span className="text-slate-500 text-sm">
                                       {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                                     </span>
@@ -482,25 +501,42 @@ export function SocialFeed() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Suggested Users */}
-          {suggestedUsers.length > 0 && (
-            <Card className="bg-slate-900/50 border-slate-700/50">
-              <CardHeader>
-                <CardTitle className="text-white text-lg">Suggested for You</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {suggestedUsers.map((suggestedUser) => (
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardHeader>
+              <CardTitle className="text-white text-lg">Suggested for You</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {loading && suggestedUsers.length === 0 ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 animate-pulse">
+                      <div className="h-10 w-10 bg-slate-700 rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-slate-700 rounded w-3/4" />
+                        <div className="h-3 bg-slate-700 rounded w-1/2" />
+                      </div>
+                      <div className="h-8 w-16 bg-slate-700 rounded" />
+                    </div>
+                  ))}
+                </div>
+              ) : suggestedUsers.length > 0 ? (
+                suggestedUsers.map((suggestedUser) => (
                   <div key={suggestedUser.id} className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={suggestedUser.avatar_url || ''} />
-                      <AvatarFallback>
-                        {suggestedUser.full_name?.[0] || suggestedUser.username?.[0] || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
+                    <Link href={getProfileUrl(suggestedUser.username)} className="flex-shrink-0">
+                      <Avatar className="h-10 w-10 cursor-pointer hover:ring-2 hover:ring-purple-500/50 transition-all duration-200">
+                        <AvatarImage src={suggestedUser.avatar_url || ''} />
+                        <AvatarFallback>
+                          {suggestedUser.full_name?.[0] || suggestedUser.username?.[0] || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-white text-sm truncate">
-                          {suggestedUser.full_name || suggestedUser.username}
-                        </span>
+                        <Link href={getProfileUrl(suggestedUser.username)} className="hover:underline">
+                          <span className="font-medium text-white text-sm truncate">
+                            {suggestedUser.full_name || suggestedUser.username}
+                          </span>
+                        </Link>
                         {suggestedUser.is_verified && (
                           <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
                             <Check className="w-2 h-2 text-white" />
@@ -520,10 +556,14 @@ export function SocialFeed() {
                       Follow
                     </Button>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+                ))
+              ) : (
+                <div className="text-center py-4 text-slate-400">
+                  <p className="text-sm">No suggestions available</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Activity Summary */}
           <Card className="bg-slate-900/50 border-slate-700/50">

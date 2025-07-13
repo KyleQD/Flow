@@ -63,30 +63,89 @@ class VenueService {
     }
   }
 
-  async getCurrentUserVenue(): Promise<VenueProfile | null> {
+  // Get all venues for the current user
+  async getAllUserVenues(): Promise<VenueProfile[]> {
     try {
       const { data: { user } } = await this.supabase.auth.getUser()
-      if (!user) return null
+      if (!user) return []
 
-      const cached = this.getFromCache<VenueProfile>(`current_user_venue_${user.id}`)
+      const cached = this.getFromCache<VenueProfile[]>(`user_venues_${user.id}`)
       if (cached) return cached
 
       const { data, error } = await this.supabase
         .from('venue_profiles')
         .select('*')
-        .eq('user_id', user.id)
-        .single()
+        .or(`user_id.eq.${user.id},main_profile_id.eq.${user.id}`)
+        .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('Error fetching current user venue:', error)
-        return null
+        console.error('Error fetching user venues:', error)
+        return []
       }
 
-      this.setCache(`current_user_venue_${user.id}`, data)
-      return data
+      const venues = data || []
+      this.setCache(`user_venues_${user.id}`, venues)
+      return venues
+    } catch (error) {
+      console.error('Error in getAllUserVenues:', error)
+      return []
+    }
+  }
+
+  // Get current venue (or first venue if multiple exist)
+  async getCurrentUserVenue(): Promise<VenueProfile | null> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser()
+      if (!user) return null
+
+      // First check if user has selected a specific venue
+      const activeVenueId = this.getActiveVenueId()
+      if (activeVenueId) {
+        const venue = await this.getVenueProfile(activeVenueId)
+        if (venue) {
+          return venue
+        }
+      }
+
+      // Otherwise get the first venue
+      const venues = await this.getAllUserVenues()
+      return venues[0] || null
     } catch (error) {
       console.error('Error in getCurrentUserVenue:', error)
       return null
+    }
+  }
+
+  // Get/Set active venue ID for multi-venue users
+  private activeVenueId: string | null = null
+
+  setCurrentVenueId(venueId: string): void {
+    this.activeVenueId = venueId
+    // Also store in sessionStorage for persistence
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('active_venue_id', venueId)
+    }
+  }
+
+  getActiveVenueId(): string | null {
+    if (this.activeVenueId) {
+      return this.activeVenueId
+    }
+    // Try to get from sessionStorage
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('active_venue_id')
+      if (stored) {
+        this.activeVenueId = stored
+        return stored
+      }
+    }
+    return null
+  }
+
+  clearActiveVenueId(): void {
+    this.activeVenueId = null
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('active_venue_id')
     }
   }
 

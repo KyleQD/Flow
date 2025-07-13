@@ -5,23 +5,34 @@ import { AccountManagementService } from '@/lib/services/account-management.serv
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    console.log('🔍 [Accounts API] Starting request...')
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    
+    console.log('🔍 [Accounts API] Getting user authentication...')
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
+      console.error('🚫 [Accounts API] Authentication failed:', authError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const accounts = await AccountManagementService.getUserAccounts(user.id)
-    const activeSession = await AccountManagementService.getActiveSession(user.id)
+    console.log('✅ [Accounts API] User authenticated:', user.id)
+    
+    console.log('🔍 [Accounts API] Fetching user accounts...')
+    const accounts = await AccountManagementService.getUserAccounts(user.id, supabase)
+    
+    console.log('🔍 [Accounts API] Fetching active session...')
+    const activeSession = await AccountManagementService.getActiveSession(user.id, supabase)
 
+    console.log('✅ [Accounts API] Returning response with', accounts.length, 'accounts')
     return NextResponse.json({ 
       accounts, 
       activeSession,
       success: true 
     })
   } catch (error) {
-    console.error('Error fetching user accounts:', error)
+    console.error('❌ [Accounts API] Error fetching user accounts:', error)
     return NextResponse.json(
       { error: 'Failed to fetch accounts' },
       { status: 500 }
@@ -31,7 +42,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -65,6 +77,14 @@ export async function POST(request: NextRequest) {
         )
         return NextResponse.json({ venueId, success: true })
 
+      case 'create_organizer':
+        const organizerId = await AccountManagementService.createOrganizerAccount(
+          user.id, 
+          data,
+          supabase
+        )
+        return NextResponse.json({ organizerId, success: true })
+
       case 'request_admin':
         await AccountManagementService.requestAdminAccess(user.id, data)
         return NextResponse.json({ success: true })
@@ -96,7 +116,8 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
@@ -125,7 +146,8 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {

@@ -1,0 +1,176 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase/client'
+
+interface HealthCheck {
+  status: 'healthy' | 'degraded' | 'unhealthy'
+  timestamp: string
+  uptime: number
+  version: string
+  environment: string
+  services: {
+    database: ServiceStatus
+    redis: ServiceStatus
+    supabase: ServiceStatus
+  }
+  metrics: {
+    memoryUsage: NodeJS.MemoryUsage
+    cpuUsage: number[]
+  }
+}
+
+interface ServiceStatus {
+  status: 'healthy' | 'degraded' | 'unhealthy'
+  responseTime?: number
+  error?: string
+}
+
+const startTime = Date.now()
+
+export async function GET(request: NextRequest) {
+  const healthCheck: HealthCheck = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: Date.now() - startTime,
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    services: {
+      database: await checkDatabase(),
+      redis: await checkRedis(),
+      supabase: await checkSupabase()
+    },
+    metrics: {
+      memoryUsage: process.memoryUsage(),
+      cpuUsage: process.cpuUsage ? Object.values(process.cpuUsage()) : []
+    }
+  }
+
+  // Determine overall health status
+  const serviceStatuses = Object.values(healthCheck.services).map(s => s.status)
+  if (serviceStatuses.includes('unhealthy')) {
+    healthCheck.status = 'unhealthy'
+  } else if (serviceStatuses.includes('degraded')) {
+    healthCheck.status = 'degraded'
+  }
+
+  const statusCode = healthCheck.status === 'healthy' ? 200 : 
+                    healthCheck.status === 'degraded' ? 200 : 503
+
+  return NextResponse.json(healthCheck, { status: statusCode })
+}
+
+async function checkDatabase(): Promise<ServiceStatus> {
+  try {
+    const start = Date.now()
+    
+    // Simple query to test database connectivity
+    const { error } = await supabase
+      .from('profiles')
+      .select('count')
+      .limit(1)
+      .single()
+
+    const responseTime = Date.now() - start
+
+    if (error && !error.message.includes('No rows')) {
+      return {
+        status: 'unhealthy',
+        responseTime,
+        error: error.message
+      }
+    }
+
+    return {
+      status: responseTime > 1000 ? 'degraded' : 'healthy',
+      responseTime
+    }
+  } catch (error) {
+    return {
+      status: 'unhealthy',
+      error: error instanceof Error ? error.message : 'Unknown database error'
+    }
+  }
+}
+
+async function checkRedis(): Promise<ServiceStatus> {
+  try {
+    if (!process.env.REDIS_URL) {
+      return {
+        status: 'healthy', // Redis is optional
+        error: 'Redis not configured'
+      }
+    }
+
+    const start = Date.now()
+    
+    // Simple ping to test Redis connectivity
+    const response = await fetch('/api/analytics/metrics?healthcheck=true', {
+      method: 'GET',
+      headers: { 'Cache-Control': 'no-cache' }
+    })
+
+    const responseTime = Date.now() - start
+
+    if (!response.ok) {
+      return {
+        status: 'degraded',
+        responseTime,
+        error: 'Redis health check failed'
+      }
+    }
+
+    return {
+      status: responseTime > 500 ? 'degraded' : 'healthy',
+      responseTime
+    }
+  } catch (error) {
+    return {
+      status: 'degraded', // Redis failures are not critical
+      error: error instanceof Error ? error.message : 'Unknown Redis error'
+    }
+  }
+}
+
+async function checkSupabase(): Promise<ServiceStatus> {
+  try {
+    const start = Date.now()
+    
+    // Test Supabase connection
+    const { data, error } = await supabase.auth.getSession()
+
+    const responseTime = Date.now() - start
+
+    if (error) {
+      return {
+        status: 'degraded',
+        responseTime,
+        error: error.message
+      }
+    }
+
+    return {
+      status: responseTime > 2000 ? 'degraded' : 'healthy',
+      responseTime
+    }
+  } catch (error) {
+    return {
+      status: 'unhealthy',
+      error: error instanceof Error ? error.message : 'Unknown Supabase error'
+    }
+  }
+}
+
+// Readiness probe endpoint
+export async function HEAD(request: NextRequest) {
+  try {
+    // Quick health check without detailed metrics
+    const { error } = await supabase.auth.getSession()
+    
+    if (error) {
+      return new NextResponse(null, { status: 503 })
+    }
+
+    return new NextResponse(null, { status: 200 })
+  } catch (error) {
+    return new NextResponse(null, { status: 503 })
+  }
+} 

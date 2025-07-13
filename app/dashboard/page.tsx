@@ -12,6 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { CrossAccountHub } from "@/components/dashboard/cross-account-hub"
+import { LocalDiscovery } from "@/components/dashboard/local-discovery"
+import { PlatformFeaturesHub } from "@/components/dashboard/platform-features-hub"
+import { QuickPostCreator } from "@/components/dashboard/quick-post-creator"
 import { 
   Music, 
   Calendar, 
@@ -38,7 +42,10 @@ import {
   ArrowRight,
   ChevronRight,
   ExternalLink,
-  User
+  User,
+  Bell,
+  Settings,
+  Compass
 } from "lucide-react"
 
 interface DashboardData {
@@ -66,9 +73,27 @@ interface DashboardData {
 
 interface UserProfile {
   id: string
-  metadata: {
+  username?: string
+  full_name?: string
+  bio?: string
+  avatar_url?: string
+  custom_url?: string
+  phone?: string
+  location?: string
+  website?: string
+  instagram?: string
+  twitter?: string
+  show_email?: boolean
+  show_phone?: boolean
+  show_location?: boolean
+  is_verified?: boolean
+  followers_count?: number
+  following_count?: number
+  posts_count?: number
+  metadata?: {
     full_name?: string
     username?: string
+    [key: string]: any
   }
   created_at: string
   updated_at: string
@@ -84,34 +109,86 @@ export default function DashboardPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const supabase = createClientComponentClient()
 
+  // Get the username for profile viewing
+  const getUserUsername = () => {
+    // Try multiple sources for username
+    if (userProfile?.metadata?.username) {
+      return userProfile.metadata.username
+    }
+    if (userProfile?.username) {
+      return userProfile.username
+    }
+    // Fallback to email prefix
+    const emailUsername = user?.email?.split('@')[0]
+    if (emailUsername) {
+      return emailUsername
+    }
+    // Last resort fallback
+    return 'user'
+  }
+
   // Get the display name from profile or fallback to user metadata
   const getDisplayName = () => {
+    // First check direct column values (updated structure)
+    if (userProfile?.full_name) {
+      return userProfile.full_name
+    }
+    // Then check metadata for backwards compatibility
     if (userProfile?.metadata?.full_name) {
       return userProfile.metadata.full_name
+    }
+    // Then try username
+    if (userProfile?.username) {
+      return userProfile.username
     }
     if (userProfile?.metadata?.username) {
       return userProfile.metadata.username
     }
+    // Fallback to user metadata or email
     return user?.user_metadata?.name || user?.email?.split('@')[0] || "Creator"
   }
 
-  // Fetch user profile function
+  // Fetch user profile function using optimized API
   const fetchUserProfile = async () => {
     if (!user) return
 
     try {
       console.log('Fetching profile for user:', user.id)
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (error) {
-        console.error('Error fetching profile:', error)
+      const response = await fetch('/api/profile/current')
+      
+      if (response.ok) {
+        const { profile } = await response.json()
+        if (profile) {
+          // Transform API response to match dashboard interface
+          const transformedProfile: UserProfile = {
+            id: profile.id,
+            username: profile.username,
+            full_name: profile.profile_data?.name || profile.full_name,
+            bio: profile.bio,
+            avatar_url: profile.avatar_url,
+            custom_url: profile.custom_url,
+            phone: profile.profile_data?.phone,
+            location: profile.profile_data?.location || profile.location,
+            website: profile.social_links?.website || profile.profile_data?.website,
+            instagram: profile.social_links?.instagram,
+            twitter: profile.social_links?.twitter,
+            show_email: profile.metadata?.show_email,
+            show_phone: profile.metadata?.show_phone,
+            show_location: profile.metadata?.show_location,
+            is_verified: profile.verified,
+            followers_count: profile.stats?.followers,
+            following_count: profile.stats?.following,
+            posts_count: profile.stats?.posts,
+            metadata: profile.metadata || {},
+            created_at: profile.created_at,
+            updated_at: profile.updated_at || profile.created_at
+          }
+          
+          console.log('Profile transformed:', transformedProfile)
+          setUserProfile(transformedProfile)
+        }
       } else {
-        console.log('Profile fetched:', profile)
-        setUserProfile(profile)
+        console.error('Error fetching profile:', response.status)
       }
     } catch (err) {
       console.error('Error fetching profile:', err)
@@ -208,10 +285,21 @@ export default function DashboardPage() {
       }
     }
 
+    // Add storage event listener to refresh when profile is updated in settings
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'profile-updated' && user) {
+        fetchUserProfile()
+        // Clear the storage item after handling
+        localStorage.removeItem('profile-updated')
+      }
+    }
+
     window.addEventListener('focus', handleFocus)
+    window.addEventListener('storage', handleStorageChange)
     
     return () => {
       window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('storage', handleStorageChange)
     }
   }, [user, loading, router, supabase])
 
@@ -255,7 +343,7 @@ export default function DashboardPage() {
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <Avatar className="h-16 w-16 border-2 border-white/20">
-                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarImage src={userProfile?.avatar_url || user.user_metadata?.avatar_url} />
                     <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white text-lg font-semibold">
                       {getDisplayName().charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -280,31 +368,17 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Account Switcher */}
-              {accounts.length > 0 && (
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-400">Active Account:</span>
-                  <select
-                    value={currentAccount?.account_type || ''}
-                    onChange={(e) => {
-                      const account = accounts.find(acc => acc.account_type === e.target.value)
-                      if (account) switchAccount(account.profile_id, account.account_type)
-                    }}
-                    className="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500/50"
-                  >
-                    {accounts.map(account => (
-                      <option key={account.account_type} value={account.account_type} className="bg-slate-800 text-white">
-                        {account.account_type === 'artist' && '🎵'} 
-                        {account.account_type === 'venue' && '🏢'}
-                        {account.account_type === 'general' && '👤'}
-                        {account.account_type === 'admin' && '⚡'}
-                        {' '}
-                        {account.profile_data?.name || account.profile_data?.artist_name || account.profile_data?.venue_name || 'General'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* View Profile Button */}
+              <div className="flex items-center space-x-3">
+                <Button
+                  onClick={() => router.push(`/profile/${getUserUsername()}`)}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0 rounded-2xl px-6 py-3 font-medium transition-all duration-300 flex items-center gap-2 hover:scale-105"
+                >
+                  <User className="h-4 w-4" />
+                  View Public Profile
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -326,72 +400,80 @@ export default function DashboardPage() {
         <div className="container mx-auto px-6 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {/* Left Column - Stats & Quick Actions */}
+            {/* Left Column - Dynamic Content */}
             <div className="lg:col-span-2 space-y-8">
               
-              {/* Stats Cards */}
+              {/* Consolidated Analytics Overview */}
               {dashboardData && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                        <Heart className="h-6 w-6 text-white" />
+                <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl hover:bg-white/15 transition-all duration-300">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-white font-medium flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-purple-400" />
+                        Quick Stats
+                      </h3>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20 rounded-xl"
+                        onClick={() => router.push('/analytics')}
+                      >
+                        View All
+                        <ArrowRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                          <Heart className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="text-lg font-bold text-white">{dashboardData.stats.likes.toLocaleString()}</div>
+                        <div className="text-xs text-gray-400">Likes</div>
                       </div>
-                      <div className="text-3xl font-bold text-white mb-1">{dashboardData.stats.likes.toLocaleString()}</div>
-                      <div className="text-sm text-gray-400">Likes</div>
-                      <div className="flex items-center justify-center text-green-400 text-sm mt-2">
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        +12%
-                      </div>
-                    </CardContent>
-                  </Card>
 
-                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                        <Users className="h-6 w-6 text-white" />
+                      <div className="text-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                          <Users className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="text-lg font-bold text-white">{dashboardData.stats.followers.toLocaleString()}</div>
+                        <div className="text-xs text-gray-400">Followers</div>
                       </div>
-                      <div className="text-3xl font-bold text-white mb-1">{dashboardData.stats.followers.toLocaleString()}</div>
-                      <div className="text-sm text-gray-400">Followers</div>
-                      <div className="flex items-center justify-center text-green-400 text-sm mt-2">
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        +8%
-                      </div>
-                    </CardContent>
-                  </Card>
 
-                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                        <Share className="h-6 w-6 text-white" />
+                      <div className="text-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                          <Share className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="text-lg font-bold text-white">{dashboardData.stats.shares.toLocaleString()}</div>
+                        <div className="text-xs text-gray-400">Shares</div>
                       </div>
-                      <div className="text-3xl font-bold text-white mb-1">{dashboardData.stats.shares.toLocaleString()}</div>
-                      <div className="text-sm text-gray-400">Shares</div>
-                      <div className="flex items-center justify-center text-green-400 text-sm mt-2">
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        +15%
-                      </div>
-                    </CardContent>
-                  </Card>
 
-                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/15 transition-all duration-300 group">
-                    <CardContent className="p-6 text-center">
-                      <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                        <Eye className="h-6 w-6 text-white" />
+                      <div className="text-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                          <Eye className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="text-lg font-bold text-white">{dashboardData.stats.views.toLocaleString()}</div>
+                        <div className="text-xs text-gray-400">Views</div>
                       </div>
-                      <div className="text-3xl font-bold text-white mb-1">{dashboardData.stats.views.toLocaleString()}</div>
-                      <div className="text-sm text-gray-400">Views</div>
-                      <div className="flex items-center justify-center text-green-400 text-sm mt-2">
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        +23%
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Quick Post Creator */}
+              <QuickPostCreator />
+
+              {/* Dynamic Content Based on Account Types */}
+              {accounts.filter(acc => acc.account_type !== 'general').length > 0 ? (
+                // User has artist/venue accounts - show cross-account hub
+                <CrossAccountHub />
+              ) : (
+                // User only has general account - show local discovery
+                <LocalDiscovery />
               )}
 
               {/* Quick Actions */}
-              <Card className="bg-white/10 backdrop-blur-xl border border-white/20">
+              <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
                     <Zap className="h-6 w-6 text-yellow-400" />
@@ -404,35 +486,65 @@ export default function DashboardPage() {
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <Button 
-                      className="h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-white/20 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 text-white"
+                      className="h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-white/20 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 text-white rounded-2xl group hover:scale-105 transition-all duration-300"
                       onClick={() => router.push('/feed')}
                     >
-                      <Plus className="h-6 w-6" />
-                      <span className="text-sm">Create Post</span>
+                      <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                        <Plus className="h-5 w-5" />
+                      </div>
+                      <span className="text-sm font-medium">Create Post</span>
                     </Button>
 
                     <Button 
-                      className="h-20 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 hover:from-blue-500/30 hover:to-cyan-500/30 border border-white/20 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 text-white"
+                      className="h-24 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 hover:from-blue-500/30 hover:to-cyan-500/30 border border-white/20 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 text-white rounded-2xl group hover:scale-105 transition-all duration-300"
                       onClick={() => router.push('/events')}
                     >
-                      <Calendar className="h-6 w-6" />
-                      <span className="text-sm">Events</span>
+                      <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                        <Calendar className="h-5 w-5" />
+                      </div>
+                      <span className="text-sm font-medium">Events</span>
                     </Button>
 
                     <Button 
-                      className="h-20 bg-gradient-to-br from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 border border-white/20 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 text-white"
+                      className="h-24 bg-gradient-to-br from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 border border-white/20 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 text-white rounded-2xl group hover:scale-105 transition-all duration-300"
                       onClick={() => router.push('/network')}
                     >
-                      <Users className="h-6 w-6" />
-                      <span className="text-sm">Network</span>
+                      <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                        <Users className="h-5 w-5" />
+                      </div>
+                      <span className="text-sm font-medium">Network</span>
                     </Button>
 
                     <Button 
-                      className="h-20 bg-gradient-to-br from-orange-500/20 to-red-500/20 hover:from-orange-500/30 hover:to-red-500/30 border border-white/20 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 text-white"
-                      onClick={() => router.push('/analytics')}
+                      className="h-24 bg-gradient-to-br from-orange-500/20 to-red-500/20 hover:from-orange-500/30 hover:to-red-500/30 border border-white/20 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 text-white rounded-2xl group hover:scale-105 transition-all duration-300"
+                      onClick={() => router.push('/messages')}
                     >
-                      <BarChart3 className="h-6 w-6" />
-                      <span className="text-sm">Analytics</span>
+                      <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                        <MessageCircle className="h-5 w-5" />
+                      </div>
+                      <span className="text-sm font-medium">Messages</span>
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mt-4">
+                    <Button 
+                      className="h-24 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 border border-white/20 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 text-white rounded-2xl group hover:scale-105 transition-all duration-300"
+                      onClick={() => router.push(`/profile/${getUserUsername()}`)}
+                    >
+                      <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                        <User className="h-5 w-5" />
+                      </div>
+                      <span className="text-sm font-medium">View Profile</span>
+                    </Button>
+
+                    <Button 
+                      className="h-24 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 hover:from-yellow-500/30 hover:to-orange-500/30 border border-white/20 backdrop-blur-sm flex flex-col items-center justify-center space-y-2 text-white rounded-2xl group hover:scale-105 transition-all duration-300"
+                      onClick={() => router.push('/discover')}
+                    >
+                      <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                        <Compass className="h-5 w-5" />
+                      </div>
+                      <span className="text-sm font-medium">Discover</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -440,20 +552,20 @@ export default function DashboardPage() {
 
               {/* Content Tabs */}
               <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 bg-white/10 backdrop-blur-sm">
-                  <TabsTrigger value="overview" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+                <TabsList className="grid w-full grid-cols-3 bg-white/10 backdrop-blur-sm rounded-2xl p-1">
+                  <TabsTrigger value="overview" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white rounded-xl">
                     Overview
                   </TabsTrigger>
-                  <TabsTrigger value="activity" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+                  <TabsTrigger value="activity" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white rounded-xl">
                     Activity
                   </TabsTrigger>
-                  <TabsTrigger value="insights" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+                  <TabsTrigger value="insights" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white rounded-xl">
                     Insights
                   </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="overview" className="mt-6">
-                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20">
+                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
                     <CardHeader>
                       <CardTitle className="text-white">Platform Overview</CardTitle>
                       <CardDescription className="text-gray-400">
@@ -512,7 +624,7 @@ export default function DashboardPage() {
                 </TabsContent>
                 
                 <TabsContent value="activity" className="mt-6">
-                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20">
+                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
                     <CardHeader>
                       <CardTitle className="text-white flex items-center gap-2">
                         <Activity className="h-5 w-5 text-green-400" />
@@ -549,7 +661,7 @@ export default function DashboardPage() {
                 </TabsContent>
                 
                 <TabsContent value="insights" className="mt-6">
-                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20">
+                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
                     <CardHeader>
                       <CardTitle className="text-white">Performance Insights</CardTitle>
                       <CardDescription className="text-gray-400">
@@ -586,90 +698,83 @@ export default function DashboardPage() {
               </Tabs>
             </div>
 
-            {/* Right Sidebar - Quick Links & Account Info */}
+            {/* Right Sidebar - Platform Features & Account Info */}
             <div className="space-y-6">
               
-              {/* Account Status */}
-              <Card className="bg-white/10 backdrop-blur-xl border border-white/20">
+              {/* Platform Features Hub */}
+              <PlatformFeaturesHub />
+              
+              {/* Account Status - Simplified */}
+              <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
                 <CardHeader>
-                  <CardTitle className="text-white text-lg">Account Status</CardTitle>
+                  <CardTitle className="text-white text-lg flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-purple-400" />
+                    Account Status
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Profile</span>
-                    <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
+                    <span className="text-gray-300">Profile</span>
+                    <Badge className="bg-green-500/20 text-green-300 border-green-500/50">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Complete
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Verification</span>
-                    <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50">
+                    <span className="text-gray-300">Verification</span>
+                    <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/50">
                       <Clock className="h-3 w-3 mr-1" />
                       Pending
                     </Badge>
                   </div>
                   <Separator className="bg-white/10" />
-                  <Button 
-                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-                    onClick={() => router.push('/profile')}
-                  >
-                    View Profile
-                    <ExternalLink className="h-4 w-4 ml-2" />
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20 rounded-xl"
+                      onClick={() => router.push('/profile')}
+                    >
+                      <User className="h-3 w-3 mr-1" />
+                      Profile
+                    </Button>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="border-blue-500/50 text-blue-300 hover:bg-blue-500/20 rounded-xl"
+                      onClick={() => router.push('/settings')}
+                    >
+                      <Settings className="h-3 w-3 mr-1" />
+                      Settings
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
-              {/* Quick Links */}
-              {dashboardData && (
-                <Card className="bg-white/10 backdrop-blur-xl border border-white/20">
-                  <CardHeader>
-                    <CardTitle className="text-white text-lg">Quick Access</CardTitle>
-                    <CardDescription className="text-gray-400">
-                      Your most used features
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {dashboardData.quickLinks.map((link) => (
-                      <Button
-                        key={link.title}
-                        variant="ghost"
-                        className="w-full justify-start p-4 h-auto hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-300 group"
-                        onClick={() => router.push(link.href)}
-                      >
-                        <div className={`w-10 h-10 bg-gradient-to-br ${link.color} rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform`}>
-                          <link.icon className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="text-left">
-                          <div className="font-medium text-white">{link.title}</div>
-                          <div className="text-xs text-gray-400">{link.description}</div>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-gray-400 ml-auto group-hover:text-white transition-colors" />
-                      </Button>
-                    ))}
+              {/* Create Account CTA - Only show if user doesn't have all account types */}
+              {accounts.length < 3 && (
+                <Card className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 backdrop-blur-xl rounded-3xl">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Plus className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-white mb-2">Expand Your Presence</h3>
+                    <p className="text-sm text-gray-300 mb-4">
+                      {accounts.find(acc => acc.account_type === 'artist') ? 
+                        'Create a venue account to host events' : 
+                        'Create artist or venue accounts to unlock more features'
+                      }
+                    </p>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-2xl"
+                      onClick={() => router.push('/create')}
+                    >
+                      Create Account
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
                   </CardContent>
                 </Card>
               )}
-
-              {/* Create Account CTA */}
-              <Card className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 backdrop-blur-xl">
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <Plus className="h-6 w-6 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-white mb-2">Expand Your Presence</h3>
-                  <p className="text-sm text-gray-300 mb-4">
-                    Create additional accounts to reach different audiences
-                  </p>
-                  <Button 
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                    onClick={() => router.push('/create')}
-                  >
-                    Create Account
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase/client'
 import type { Database } from '@/lib/database.types'
 
 export type ProfileType = 'general' | 'artist' | 'venue' | 'admin'
@@ -7,7 +7,7 @@ export interface UserAccount {
   account_type: ProfileType
   profile_id: string
   profile_data: any
-  permissions: any
+  permissions: AccountPermissions
   is_active: boolean
 }
 
@@ -15,123 +15,279 @@ export interface ActiveSession {
   user_id: string
   active_profile_id: string
   active_account_type: ProfileType
-  session_data: any
+  session_data?: any
   last_activity: string
+  created_at: string
 }
 
 export interface AccountPermissions {
-  can_post: boolean
-  can_manage_settings: boolean
-  can_view_analytics: boolean
-  can_manage_content: boolean
+  can_post?: boolean
+  can_manage_settings?: boolean
+  can_view_analytics?: boolean
+  can_manage_content?: boolean
+  can_manage_events?: boolean
+  can_manage_tours?: boolean
+  can_moderate?: boolean
+  can_manage_users?: boolean
 }
 
 export class AccountManagementService {
-  // Get user accounts
-  static async getUserAccounts(userId: string): Promise<UserAccount[]> {
+  // Get all user accounts with proper relationship detection
+  static async getUserAccounts(userId: string, authenticatedSupabase?: any): Promise<UserAccount[]> {
     try {
-      // Try using the RPC function first (if migration has been applied)
-      try {
-        const { data, error } = await supabase.rpc('get_user_accounts', {
-          user_id: userId
-        })
+      console.log('[Account Management] Getting accounts for user:', userId)
+      
+      // Use authenticated Supabase client if provided (for API routes), otherwise use default client
+      const clientToUse = authenticatedSupabase || supabase
+      
+      const accounts: UserAccount[] = []
 
-        if (error) throw error
-        return data || []
-      } catch (rpcError: any) {
-        // If RPC function doesn't exist, fall back to manual query
-        console.log('RPC function not available, using fallback method')
+      // Get main profile first
+      const { data: mainProfile, error: profileError } = await clientToUse
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (profileError || !mainProfile) {
+        console.error('[Account Management] Error fetching main profile:', profileError)
+        throw profileError
+      }
+
+      console.log('🔍 [Account Management] Main profile data:', {
+        id: mainProfile.id,
+        hasAccountSettings: !!mainProfile.account_settings,
+        accountSettings: mainProfile.account_settings,
+        fullProfile: mainProfile
+      })
+
+      // Add main profile as general account
+      accounts.push({
+        account_type: 'general',
+        profile_id: userId,
+        profile_data: mainProfile,
+        permissions: {
+          can_post: true,
+          can_manage_settings: true,
+          can_view_analytics: false,
+          can_manage_content: false
+        },
+        is_active: true
+      })
+
+      // Check for organizer accounts in the main profile's account_settings (FIXED FIELD NAMES)
+      console.log('🔍 [Account Management] Checking for organizer accounts...')
+      console.log('🔍 [Account Management] Account settings:', mainProfile.account_settings)
+      console.log('🔍 [Account Management] Has organizer_accounts field?', !!mainProfile.account_settings?.organizer_accounts)
+      console.log('🔍 [Account Management] Has organizer_data field?', !!mainProfile.account_settings?.organizer_data)
+      
+      // Check for organizer_accounts (array format - new format)
+      if (mainProfile.account_settings?.organizer_accounts) {
+        const organizerAccounts = mainProfile.account_settings.organizer_accounts
+        console.log('📋 [Account Management] Found organizer accounts in profile settings:', organizerAccounts.length)
+        console.log('📋 [Account Management] Organizer accounts data:', organizerAccounts)
         
-        const accounts: UserAccount[] = []
-
-        // Get general profile
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single()
-
-        if (!profileError && profile) {
+        for (const organizerAccount of organizerAccounts) {
+          console.log('➕ [Account Management] Adding organizer account:', organizerAccount.organization_name)
           accounts.push({
-            account_type: 'general',
-            profile_id: profile.id,
-            profile_data: profile,
+            account_type: 'admin',
+            profile_id: organizerAccount.id,
+            profile_data: {
+              ...organizerAccount,
+              display_name: organizerAccount.organization_name,
+              account_display_type: 'Organizer'
+            },
             permissions: {
               can_post: true,
               can_manage_settings: true,
               can_view_analytics: true,
-              can_manage_content: true
+              can_manage_content: true,
+              can_manage_events: true,
+              can_manage_tours: true,
+              can_moderate: true,
+              can_manage_users: true
             },
             is_active: true
           })
+          console.log('✅ [Account Management] Found organizer account:', organizerAccount.organization_name)
         }
-
-        // Try to get artist profiles (if table exists)
-        try {
-          const { data: artistProfiles, error: artistError } = await supabase
-            .from('artist_profiles')
-            .select('*')
-            .eq('user_id', userId)
-
-          if (!artistError && artistProfiles) {
-            artistProfiles.forEach(ap => {
-              accounts.push({
-                account_type: 'artist',
-                profile_id: ap.id,
-                profile_data: ap,
-                permissions: {
-                  can_post: true,
-                  can_manage_settings: true,
-                  can_view_analytics: true,
-                  can_manage_content: true
-                },
-                is_active: true
-              })
-            })
-          }
-        } catch (e) {
-          // Artist profiles table doesn't exist
-        }
-
-        // Try to get venue profiles (if table exists)
-        try {
-          const { data: venueProfiles, error: venueError } = await supabase
-            .from('venue_profiles')
-            .select('*')
-            .eq('user_id', userId)
-
-          if (!venueError && venueProfiles) {
-            venueProfiles.forEach(vp => {
-              accounts.push({
-                account_type: 'venue',
-                profile_id: vp.id,
-                profile_data: vp,
-                permissions: {
-                  can_post: true,
-                  can_manage_settings: true,
-                  can_view_analytics: true,
-                  can_manage_content: true
-                },
-                is_active: true
-              })
-            })
-          }
-        } catch (e) {
-          // Venue profiles table doesn't exist
-        }
-
-        return accounts
       }
+      // Check for organizer_data (single object format - legacy format)
+      else if (mainProfile.account_settings?.organizer_data && mainProfile.account_settings.organizer_data.organization_name) {
+        const organizerData = mainProfile.account_settings.organizer_data
+        console.log('📋 [Account Management] Found organizer data in profile settings (legacy format)')
+        console.log('📋 [Account Management] Organizer data:', organizerData)
+        
+        // Generate a profile ID for this organizer account
+        const organizerProfileId = `${userId}-organizer-${organizerData.organization_name.toLowerCase().replace(/\s+/g, '-')}`
+        
+        console.log('➕ [Account Management] Adding organizer account (legacy):', organizerData.organization_name)
+        accounts.push({
+          account_type: 'admin',
+          profile_id: organizerProfileId,
+          profile_data: {
+            id: organizerProfileId,
+            ...organizerData,
+            display_name: organizerData.organization_name,
+            account_display_type: 'Organizer',
+            user_id: userId,
+            created_at: new Date().toISOString()
+          },
+          permissions: {
+            can_post: true,
+            can_manage_settings: true,
+            can_view_analytics: true,
+            can_manage_content: true,
+            can_manage_events: true,
+            can_manage_tours: true,
+            can_moderate: true,
+            can_manage_users: true
+          },
+          is_active: true
+        })
+        console.log('✅ [Account Management] Found organizer account (legacy):', organizerData.organization_name)
+      } else {
+        console.log('❌ [Account Management] No organizer accounts found in profile settings')
+      }
+
+      // Try to get artist profiles
+      try {
+        const { data: artistProfiles, error: artistError } = await clientToUse
+          .from('artist_profiles')
+          .select('*')
+          .eq('user_id', userId)
+
+        if (artistProfiles && !artistError) {
+          artistProfiles.forEach((artist: any) => {
+            accounts.push({
+              account_type: 'artist',
+              profile_id: artist.id,
+              profile_data: {
+                ...artist,
+                display_name: artist.artist_name,
+                account_display_type: 'Artist'
+              },
+              permissions: {
+                can_post: true,
+                can_manage_settings: true,
+                can_view_analytics: true,
+                can_manage_content: true
+              },
+              is_active: true
+            })
+          })
+        }
+      } catch (artistError) {
+        console.log('[Account Management] Artist profiles not available:', artistError)
+      }
+
+      // Try to get venue profiles - only show accounts that actually exist in database
+      try {
+        console.log('[Account Management] Checking for venue profiles in database...')
+        const { data: venueProfiles, error: venueError } = await clientToUse
+          .from('venue_profiles')
+          .select('*')
+          .or(`user_id.eq.${userId},main_profile_id.eq.${userId}`)
+
+        if (venueProfiles && !venueError && venueProfiles.length > 0) {
+          console.log(`[Account Management] Found ${venueProfiles.length} venue profiles in database:`, venueProfiles.map((v: any) => v.venue_name))
+          venueProfiles.forEach((venue: any) => {
+            accounts.push({
+              account_type: 'venue',
+              profile_id: venue.id,
+              profile_data: {
+                ...venue,
+                display_name: venue.venue_name,
+                account_display_type: 'Venue'
+              },
+              permissions: {
+                can_post: true,
+                can_manage_settings: true,
+                can_view_analytics: true,
+                can_manage_content: true
+              },
+              is_active: true
+            })
+          })
+        } else {
+          console.log('[Account Management] No venue profiles found in database for user:', userId)
+        }
+      } catch (venueError) {
+        console.log('[Account Management] Venue profiles not available:', venueError)
+      }
+
+      // Check for organizer accounts in dedicated organizer_accounts table (NEW ROBUST APPROACH)
+      try {
+        const { data: organizerAccountsTable, error: organizerError } = await clientToUse
+          .from('organizer_accounts')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+
+        if (organizerAccountsTable && !organizerError) {
+          organizerAccountsTable.forEach((organizer: any) => {
+            console.log('➕ [Account Management] Adding organizer account from table:', organizer.organization_name)
+            accounts.push({
+              account_type: 'admin',
+              profile_id: organizer.id,
+              profile_data: {
+                id: organizer.id,
+                organization_name: organizer.organization_name,
+                organization_type: organizer.organization_type,
+                description: organizer.description,
+                contact_info: organizer.contact_info,
+                social_links: organizer.social_links,
+                specialties: organizer.specialties,
+                admin_level: organizer.admin_level,
+                display_name: organizer.organization_name,
+                account_display_type: 'Organizer',
+                user_id: userId,
+                created_at: organizer.created_at,
+                updated_at: organizer.updated_at
+              },
+              permissions: {
+                can_post: true,
+                can_manage_settings: true,
+                can_view_analytics: true,
+                can_manage_content: true,
+                can_manage_events: true,
+                can_manage_tours: true,
+                can_moderate: true,
+                can_manage_users: true
+              },
+              is_active: organizer.is_active
+            })
+            console.log('✅ [Account Management] Found organizer account from table:', organizer.organization_name)
+          })
+        }
+      } catch (organizerTableError) {
+        console.log('⚠️ [Account Management] Organizer accounts table not available:', organizerTableError)
+      }
+
+      // DISABLED: Skip account relationships to avoid showing orphaned accounts
+      // Only show accounts that actually exist in their respective database tables
+      console.log('[Account Management] Skipping account_relationships table to prevent orphaned accounts')
+
+      // DISABLED: Skip localStorage fallbacks to avoid showing orphaned accounts
+      // Only show accounts that actually exist in their respective database tables
+      console.log('[Account Management] Skipping localStorage fallbacks to prevent orphaned accounts')
+
+      console.log('[Account Management] Found accounts:', accounts.map(acc => `${acc.account_type} (${acc.profile_data?.display_name || acc.profile_data?.organization_name || acc.profile_data?.artist_name || acc.profile_data?.venue_name || 'Personal'})`))
+      
+      return accounts
     } catch (error) {
-      console.error('Error getting user accounts:', error)
+      console.error('[Account Management] Error getting user accounts:', error)
       throw error
     }
   }
 
   // Get active session
-  static async getActiveSession(userId: string): Promise<ActiveSession | null> {
+  static async getActiveSession(userId: string, authenticatedSupabase?: any): Promise<ActiveSession | null> {
     try {
-      const { data, error } = await supabase
+      // Use authenticated Supabase client if provided (for API routes), otherwise use default client
+      const clientToUse = authenticatedSupabase || supabase
+      
+      const { data, error } = await clientToUse
         .from('user_sessions')
         .select('*')
         .eq('user_id', userId)
@@ -302,6 +458,83 @@ export class AccountManagementService {
     } catch (error) {
       console.error('Error creating venue account:', error)
       throw error
+    }
+  }
+
+  // Create organizer account (admin privileges) - NEW TABLE-BASED APPROACH WITH AUTHENTICATION
+  static async createOrganizerAccount(
+    userId: string,
+    organizerData: {
+      organization_name: string
+      description?: string
+      organization_type: string
+      contact_info?: any
+      social_links?: any
+      specialties?: string[]
+    },
+    authenticatedSupabase?: any
+  ): Promise<string> {
+    console.log('🏗️ [Account Management] Starting organizer account creation for user:', userId)
+    console.log('🏗️ [Account Management] Organizer data:', organizerData)
+    
+    try {
+      // Use authenticated Supabase client if provided (for API routes), otherwise use default client
+      const clientToUse = authenticatedSupabase || supabase
+      
+      // Verify authentication context
+      const { data: { user }, error: authError } = await clientToUse.auth.getUser()
+      if (authError || !user) {
+        console.error('❌ [Account Management] Authentication failed:', authError)
+        throw new Error('User must be authenticated to create organizer account')
+      }
+      
+      // Ensure the authenticated user matches the provided userId
+      if (user.id !== userId) {
+        console.error('❌ [Account Management] User ID mismatch:', { authUser: user.id, providedUser: userId })
+        throw new Error('User ID mismatch - cannot create account for different user')
+      }
+      
+      console.log('✅ [Account Management] Authentication verified for user:', user.id)
+      
+      // Try using the dedicated organizer_accounts table first (NEW ROBUST APPROACH)
+      console.log('🔄 [Account Management] Using dedicated organizer_accounts table...')
+      
+      const { data: newOrganizerAccount, error: tableError } = await clientToUse
+        .from('organizer_accounts')
+        .insert({
+          user_id: userId,
+          organization_name: organizerData.organization_name,
+          organization_type: organizerData.organization_type,
+          description: organizerData.description || null,
+          contact_info: organizerData.contact_info || {},
+          social_links: organizerData.social_links || {},
+          specialties: organizerData.specialties || []
+        })
+        .select()
+        .single()
+
+      if (tableError) {
+        console.error('❌ [Account Management] Organizer table insert failed:', tableError)
+        throw new Error(`Failed to create organizer account: ${tableError.message}`)
+      }
+
+      console.log('✅ [Account Management] Organizer account created successfully in dedicated table:', newOrganizerAccount.id)
+      console.log('🎉 [Account Management] Organizer account created:', organizerData.organization_name)
+      
+      return newOrganizerAccount.id
+      
+    } catch (error: any) {
+      console.error('❌ [Account Management] Error creating organizer account:', {
+        error: error,
+        message: error?.message || 'Unknown error',
+        stack: error?.stack || 'No stack trace',
+        name: error?.name || 'Unknown error type',
+        code: error?.code || 'No error code',
+        details: error?.details || 'No error details'
+      })
+      
+      // Re-throw with more context
+      throw new Error(`Failed to create organizer account: ${error?.message || 'Unknown error'}`)
     }
   }
 

@@ -95,6 +95,9 @@ export default function ArtistProfilePage() {
       const professional = settings.professional || {}
       const preferences = settings.preferences || {}
       
+      console.log('Loading profile data:', profile)
+      console.log('Settings structure:', settings)
+      
       setFormData({
         stage_name: profile.artist_name || "",
         bio: profile.bio || "",
@@ -156,6 +159,20 @@ export default function ArtistProfilePage() {
       return
     }
 
+    // Client-side validation
+    const clientErrors = []
+    if (!formData.stage_name?.trim()) {
+      clientErrors.push('Artist name is required')
+    }
+    
+    if (clientErrors.length > 0) {
+      setValidationErrors(clientErrors)
+      toast.error("Please fix the validation errors", {
+        description: clientErrors[0]
+      })
+      return
+    }
+
     console.log('Starting save process...')
     setIsSaving(true)
     setValidationErrors([])
@@ -192,8 +209,21 @@ export default function ArtistProfilePage() {
       }
     } catch (error) {
       console.error('Save exception:', error)
+      
+      // Provide more specific error messages
+      let errorMessage = "An unexpected error occurred. Please try again."
+      if (error instanceof Error) {
+        if (error.message.includes('network')) {
+          errorMessage = "Network connection issue. Please check your internet connection."
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "Request timed out. Please try again."
+        } else if (error.message.includes('unauthorized')) {
+          errorMessage = "Session expired. Please refresh the page and try again."
+        }
+      }
+      
       toast.error("Failed to save profile", {
-        description: "An unexpected error occurred. Please try again."
+        description: errorMessage
       })
       setSaveProgress('')
     } finally {
@@ -217,6 +247,8 @@ export default function ArtistProfilePage() {
       const settings = profile.settings || {}
       const professional = settings.professional || {}
       const preferences = settings.preferences || {}
+      
+      console.log('Resetting form data with profile:', profile)
       
       setFormData({
         stage_name: profile.artist_name || "",
@@ -261,9 +293,19 @@ export default function ArtistProfilePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
-          <span className="text-xl">Loading your profile...</span>
+        <div className="text-center">
+          <div className="flex items-center gap-3 justify-center mb-4">
+            <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
+            <span className="text-xl">Loading your profile...</span>
+          </div>
+          <p className="text-slate-400 text-sm">
+            {user ? `Authenticated as ${user.email}` : 'Checking authentication...'}
+          </p>
+          {user && !profile && (
+            <p className="text-slate-500 text-xs mt-2">
+              Initializing artist profile...
+            </p>
+          )}
         </div>
       </div>
     )
@@ -375,6 +417,34 @@ export default function ArtistProfilePage() {
                   ))}
                 </ul>
               </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Save Progress */}
+      {saveProgress && (
+        <div className="p-6 pb-0">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`border rounded-lg p-4 ${
+              saveProgress.includes('successfully') 
+                ? 'bg-green-500/10 border-green-500/20' 
+                : 'bg-blue-500/10 border-blue-500/20'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              {saveProgress.includes('successfully') ? (
+                <Check className="h-5 w-5 text-green-400" />
+              ) : (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
+              )}
+              <p className={`font-medium ${
+                saveProgress.includes('successfully') ? 'text-green-400' : 'text-blue-400'
+              }`}>
+                {saveProgress}
+              </p>
             </div>
           </motion.div>
         </div>

@@ -1,252 +1,483 @@
 "use client"
 
-import * as React from "react"
-import { EventList } from "./event-list"
-import { AdminEventWizardDialog } from "./admin-event-wizard"
-import { AdminEvent } from "./event-card"
+import { useState, useEffect } from "react"
+import { CreateEventForm } from "@/components/admin/create-event-form"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Calendar as CalendarIcon } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
-import { EventDetailsDialog } from "./event-details-dialog"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { motion, AnimatePresence } from "framer-motion"
+import { 
+  Calendar, 
+  Plus, 
+  Search, 
+  Filter, 
+  MapPin, 
+  Users, 
+  DollarSign, 
+  Clock, 
+  Music, 
+  Ticket,
+  TrendingUp,
+  PlayCircle,
+  BarChart3,
+  Eye,
+  Settings,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Star,
+  AlertTriangle,
+  CheckCircle,
+  Target,
+  Download
+} from "lucide-react"
+import { format } from "date-fns"
 
-// TODO: Replace with real data fetching from Supabase/GraphQL
-const mockEvents: AdminEvent[] = [
-  {
-    id: "1",
-    name: "Summer Music Festival 2023",
-    date: new Date().toISOString(),
-    status: "active",
-    location: "Central Park",
-    venue: "Main Stage",
-    capacity: 4500,
-    tickets_sold: 3450,
-    revenue: 84500,
-    cover_image_url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80",
-    description: "A three-day music festival featuring top artists from around the world.",
-    tasks: [
-      { id: "1", name: "Book venue", status: "completed", dueDate: "2025-05-01" },
-      { id: "2", name: "Send invites", status: "in-progress", dueDate: "2025-05-15" },
-      { id: "3", name: "Confirm catering", status: "not-started", dueDate: "2025-06-01" }
-    ],
-    schedule: [
-      { date: "2025-06-07", time: "18:00", activity: "Doors Open" },
-      { date: "2025-06-07", time: "19:00", activity: "Opening Remarks" },
-      { date: "2025-06-07", time: "20:00", activity: "Main Act" }
-    ]
-  },
-  {
-    id: "2",
-    name: "Winter Gala",
-    date: new Date(Date.now() + 86400000 * 30).toISOString(),
-    status: "draft",
-    location: "City Hall",
-    venue: "Ballroom",
-    capacity: 800,
-    tickets_sold: 0,
-    revenue: 0,
-    cover_image_url: "",
-    description: "A formal winter gala event for the community.",
-    tasks: [
-      { id: "1", name: "Book ballroom", status: "completed", dueDate: "2025-05-01" },
-      { id: "2", name: "Arrange catering", status: "not-started", dueDate: "2025-06-01" }
-    ],
-    schedule: [
-      { date: "2025-06-07", time: "18:00", activity: "Doors Open" },
-      { date: "2025-06-07", time: "19:00", activity: "Dinner" },
-      { date: "2025-06-07", time: "21:00", activity: "Dancing" }
-    ]
+interface Event {
+  id: string
+  name: string
+  description?: string
+  tour_id?: string
+  venue_name: string
+  venue_address?: string
+  event_date: string
+  event_time?: string
+  doors_open?: string
+  duration_minutes?: number
+  status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'postponed'
+  capacity: number
+  tickets_sold: number
+  ticket_price?: number
+  vip_price?: number
+  expected_revenue: number
+  actual_revenue: number
+  expenses: number
+  venue_contact_name?: string
+  venue_contact_email?: string
+  venue_contact_phone?: string
+  tour?: {
+    id: string
+    name: string
+    artist_id: string
+    status: string
   }
-]
-
-const TABS = [
-  { key: "upcoming", label: "Upcoming Events" },
-  { key: "past", label: "Past Events" },
-  { key: "draft", label: "Draft Events" },
-]
-
-function filterEvents(events: AdminEvent[], tab: string) {
-  const now = new Date()
-  if (tab === "upcoming")
-    return events.filter(e => e.status !== "draft" && new Date(e.date) >= now)
-  if (tab === "past")
-    return events.filter(e => e.status !== "draft" && new Date(e.date) < now)
-  if (tab === "draft")
-    return events.filter(e => e.status === "draft")
-  return events
 }
 
 export default function EventsPage() {
-  const [events, setEvents] = React.useState<AdminEvent[]>([])
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [isWizardOpen, setIsWizardOpen] = React.useState(false)
-  const [editingEvent, setEditingEvent] = React.useState<AdminEvent | null>(null)
-  const { toast } = useToast()
-  const [selectedEvent, setSelectedEvent] = React.useState<AdminEvent | null>(null)
-  const [isDetailsOpen, setIsDetailsOpen] = React.useState(false)
-  const [tab, setTab] = React.useState("upcoming")
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+  const [isCreateEventOpen, setIsCreateEventOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>('grid')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [events, setEvents] = useState<Event[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  React.useEffect(() => {
-    setTimeout(() => {
-      setEvents(mockEvents)
-      setIsLoading(false)
-    }, 500)
-  }, [])
-
-  function handleCreate() {
-    setEditingEvent(null)
-    setIsWizardOpen(true)
-  }
-
-  async function handleSubmitEvent(data: any) {
-    if (editingEvent) {
-      setEvents(events => events.map(ev => ev.id === editingEvent.id ? { ...editingEvent, ...data } : ev))
-      toast({ title: "Event updated", description: `${data.name} updated successfully.` })
-    } else {
-      const newEvent: AdminEvent = {
-        ...data,
-        id: (Math.random() * 100000).toFixed(0),
-        tickets_sold: 0,
-        revenue: 0,
-        cover_image_url: data.cover_image_url || "",
+  // Fetch events from API
+  const fetchEvents = async () => {
+    try {
+      setIsLoading(true)
+      const params = new URLSearchParams()
+      if (filterStatus !== 'all') {
+        params.append('status', filterStatus)
       }
-      setEvents(events => [newEvent, ...events])
-      toast({ title: "Event created", description: `${data.name} created successfully.` })
+      
+      const response = await fetch(`/api/events?${params}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch events')
+      }
+      
+      const data = await response.json()
+      setEvents(data.events || [])
+    } catch (error) {
+      console.error('Error fetching events:', error)
+      setEvents([])
+    } finally {
+      setIsLoading(false)
     }
-    setIsWizardOpen(false)
-    setEditingEvent(null)
   }
 
-  function handleEdit(event: AdminEvent) {
-    setEditingEvent(event)
-    setIsWizardOpen(true)
+  useEffect(() => {
+    fetchEvents()
+  }, [filterStatus])
+
+  const handleEventCreated = () => {
+    setIsCreateEventOpen(false)
+    fetchEvents() // Refresh the events list
   }
 
-  function handleDelete(event: AdminEvent) {
-    setEvents(events => events.filter(ev => ev.id !== event.id))
-    toast({ title: "Event deleted", description: `${event.name} deleted.` })
+  // Mock data for development
+  const mockEvents: Event[] = [
+    {
+      id: '1',
+      name: 'Summer Music Festival',
+      venue_name: 'Central Park Bandshell',
+      venue_address: 'Central Park, New York, NY',
+      event_date: '2025-07-15',
+      event_time: '19:00',
+      doors_open: '18:00',
+      status: 'confirmed',
+      capacity: 5000,
+      tickets_sold: 3750,
+      ticket_price: 85,
+      vip_price: 150,
+      expected_revenue: 400000,
+      actual_revenue: 318750,
+      expenses: 120000,
+      venue_contact_name: 'Sarah Johnson',
+      venue_contact_email: 'sarah@centralparkbandshell.com',
+      venue_contact_phone: '+1 (555) 123-4567'
+    },
+    {
+      id: '2',
+      name: 'Electronic Showcase',
+      venue_name: 'Brooklyn Warehouse',
+      venue_address: '123 Industrial Ave, Brooklyn, NY',
+      event_date: '2025-07-22',
+      event_time: '21:00',
+      doors_open: '20:00',
+      status: 'scheduled',
+      capacity: 2000,
+      tickets_sold: 1200,
+      ticket_price: 45,
+      vip_price: 80,
+      expected_revenue: 80000,
+      actual_revenue: 54000,
+      expenses: 25000,
+      tour: {
+        id: '1',
+        name: 'Summer Electronic Tour 2025',
+        artist_id: 'artist1',
+        status: 'active'
+      }
+    }
+  ]
+
+  // Use real events data, fallback to mock for development
+  const displayEvents = events.length > 0 ? events : (isLoading ? [] : mockEvents)
+  const filteredEvents = displayEvents.filter((event: any) => {
+    const matchesStatus = filterStatus === 'all' || event.status === filterStatus
+    const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         event.venue_name.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesStatus && matchesSearch
+  })
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'scheduled': return 'bg-blue-500/20 text-blue-400'
+      case 'confirmed': return 'bg-green-500/20 text-green-400'
+      case 'in_progress': return 'bg-yellow-500/20 text-yellow-400'
+      case 'completed': return 'bg-purple-500/20 text-purple-400'
+      case 'cancelled': return 'bg-red-500/20 text-red-400'
+      case 'postponed': return 'bg-orange-500/20 text-orange-400'
+      default: return 'bg-slate-500/20 text-slate-400'
+    }
   }
 
-  function handleView(event: AdminEvent) {
-    setSelectedEvent(event)
-    setIsDetailsOpen(true)
-  }
+  const EventCard = ({ event }: { event: Event }) => (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      whileHover={{ y: -5 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Card className="bg-slate-900/50 border-slate-700/50 hover:border-slate-600/50 transition-all duration-200 cursor-pointer group">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 flex-1">
+              <CardTitle className="text-lg text-white group-hover:text-purple-400 transition-colors">
+                {event.name}
+              </CardTitle>
+              <div className="flex items-center text-sm text-slate-400">
+                <MapPin className="h-4 w-4 mr-1" />
+                {event.venue_name}
+              </div>
+              <div className="flex items-center text-sm text-slate-400">
+                <Calendar className="h-4 w-4 mr-1" />
+                {format(new Date(event.event_date), 'MMM dd, yyyy')}
+                {event.event_time && ` at ${event.event_time}`}
+              </div>
+            </div>
+            <Badge className={getStatusColor(event.status)}>
+              {event.status}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Metrics Row */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-sm text-slate-400">Capacity</div>
+              <div className="text-lg font-semibold text-white">{event.capacity.toLocaleString()}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-slate-400">Sold</div>
+              <div className="text-lg font-semibold text-green-400">{event.tickets_sold.toLocaleString()}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-slate-400">Revenue</div>
+              <div className="text-lg font-semibold text-blue-400">
+                ${(event.actual_revenue || 0).toLocaleString()}
+              </div>
+            </div>
+          </div>
 
-  // Custom event card grid for new design
-  function EventCardGrid({ events }: { events: AdminEvent[] }) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-6">
-        {events.map(event => (
-          <EventCardModern key={event.id} event={event} onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
-        ))}
-      </div>
-    )
-  }
-
-  // Modern event card UI
-  function EventCardModern({ event, onEdit, onDelete, onView }: { event: AdminEvent, onEdit: any, onDelete: any, onView: any }) {
-    const now = new Date()
-    const eventDate = new Date(event.date)
-    const daysLeft = Math.ceil((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    const progress = event.capacity > 0 ? Math.round((event.tickets_sold / event.capacity) * 100) : 0
-  return (
-      <div className="rounded-xl overflow-hidden bg-slate-900/70 border border-slate-800 shadow-lg flex flex-col">
-        <div className="relative h-28 bg-gradient-to-r from-purple-800 to-indigo-800 flex items-center justify-center">
-          <CalendarIcon className="h-12 w-12 text-white/20" />
-          {daysLeft > 0 && (
-            <span className="absolute top-3 right-3 bg-purple-900/80 text-purple-300 text-xs px-3 py-1 rounded-full font-medium">
-              {daysLeft} days left
-            </span>
-          )}
-        </div>
-        <div className="flex-1 flex flex-col p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg font-bold text-white leading-tight">{event.name}</span>
-            {event.type && (
-              <span className="ml-auto bg-slate-800/70 text-slate-300 text-xs px-2 py-1 rounded-full font-medium">
-                {event.type}
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-400">Tickets Sold</span>
+              <span className="text-white">
+                {((event.tickets_sold / event.capacity) * 100).toFixed(1)}%
               </span>
+            </div>
+            <div className="w-full bg-slate-700 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min((event.tickets_sold / event.capacity) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Tour Badge */}
+          {event.tour && (
+            <div className="flex items-center">
+              <Badge variant="outline" className="border-purple-500/30 text-purple-400">
+                <Music className="h-3 w-3 mr-1" />
+                {event.tour.name}
+              </Badge>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setSelectedEvent(event)}
+              className="text-slate-400 hover:text-white"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              View Details
+            </Button>
+            <div className="flex items-center space-x-1">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  )
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950/20 p-6">
+      <div className="container mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+              Events Management
+            </h1>
+            <p className="text-slate-400 mt-2">
+              Coordinate events, manage bookings, and track performance
+            </p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Button 
+              onClick={() => setIsCreateEventOpen(true)}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
+            </Button>
+          </div>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Total Events</p>
+                  <p className="text-2xl font-bold text-white">
+                    {displayEvents.length}
+                  </p>
+                </div>
+                <div className="p-3 rounded-full bg-blue-500/20">
+                  <Calendar className="h-6 w-6 text-blue-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Total Attendance</p>
+                  <p className="text-2xl font-bold text-white">
+                    {displayEvents.reduce((sum: number, event: any) => sum + (event.tickets_sold || 0), 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 rounded-full bg-green-500/20">
+                  <Users className="h-6 w-6 text-green-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Total Revenue</p>
+                  <p className="text-2xl font-bold text-green-400">
+                    ${displayEvents.reduce((sum: number, event: any) => sum + (event.actual_revenue || 0), 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="p-3 rounded-full bg-green-500/20">
+                  <DollarSign className="h-6 w-6 text-green-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Avg Capacity</p>
+                  <p className="text-2xl font-bold text-blue-400">
+                    {displayEvents.length > 0 
+                      ? Math.round(displayEvents.reduce((sum: number, event: any) => 
+                          sum + ((event.tickets_sold || 0) / (event.capacity || 1)), 0) / displayEvents.length * 100) + '%'
+                      : '0%'
+                    }
+                  </p>
+                </div>
+                <div className="p-3 rounded-full bg-blue-500/20">
+                  <Target className="h-6 w-6 text-blue-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters and Search */}
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+              <Input
+                placeholder="Search events..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-slate-800/50 border-slate-700/50 text-white w-64"
+              />
+            </div>
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-40 bg-slate-800/50 border-slate-700/50 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="postponed">Postponed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:bg-slate-800">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </div>
+
+        {/* Create Event Form Modal */}
+        <AnimatePresence>
+          {isCreateEventOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+              onClick={() => setIsCreateEventOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              >
+                <CreateEventForm
+                  onSuccess={handleEventCreated}
+                  onCancel={() => setIsCreateEventOpen(false)}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Events Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="bg-slate-900/50 border-slate-700/50 animate-pulse">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+                    <div className="h-4 bg-slate-700 rounded w-1/2"></div>
+                    <div className="h-20 bg-slate-700 rounded"></div>
+                    <div className="h-4 bg-slate-700 rounded w-2/3"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filteredEvents.length === 0 ? (
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-12 text-center">
+              <Calendar className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">No Events Found</h3>
+              <p className="text-slate-400 mb-6">
+                {filterStatus === 'all' 
+                  ? "Get started by creating your first event"
+                  : `No events with status "${filterStatus}" found`
+                }
+              </p>
+              <Button 
+                onClick={() => setIsCreateEventOpen(true)}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Event
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEvents.map((event: any) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
         )}
       </div>
-          <div className="flex items-center text-sm text-purple-400 mb-1">
-            <CalendarIcon className="h-4 w-4 mr-1" />
-            {eventDate.toLocaleDateString()}
-          </div>
-          <div className="flex items-center text-sm text-purple-400 mb-1">
-            <span className="mr-2">📍</span>{event.venue || event.location}
-          </div>
-          <div className="flex items-center text-sm text-purple-400 mb-2">
-            <span className="mr-2">👥</span>{event.tickets_sold} / {event.capacity} attendees
-          </div>
-          <div className="text-xs text-slate-400 mb-1">Planning Progress</div>
-          <div className="w-full h-2 bg-slate-800 rounded mb-2">
-            <div className="h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded" style={{ width: `${progress}%` }} />
-          </div>
-          <div className="flex items-center gap-2 mt-auto">
-            <span className="text-green-400 font-semibold text-sm">${event.revenue.toLocaleString()}</span>
-        </div>
-        </div>
-        <div className="flex gap-2 border-t border-slate-800 bg-slate-900/80 p-4">
-          <Button variant="outline" className="flex-1" onClick={() => onView(event)}>
-            View Details
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={() => onEdit(event)}>
-            Edit
-          </Button>
-          <Button variant="destructive" className="flex-1" onClick={() => onDelete(event)}>
-            Delete
-          </Button>
-        </div>
-        </div>
-    )
-  }
-
-  return (
-    <div className="container mx-auto py-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <CalendarIcon className="h-7 w-7 text-purple-400" />
-            <h1 className="text-3xl font-bold text-white">Events Management</h1>
-          </div>
-          <div className="text-slate-400 text-base">Create, manage, and track all your events in one place</div>
-        </div>
-        <Button size="lg" className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 py-2 text-base font-semibold shadow-lg" onClick={handleCreate}>
-          + Create New Event
-          </Button>
-      </div>
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="bg-slate-800/70 rounded-full p-1 flex gap-2 mb-8 w-fit">
-          {TABS.map(t => (
-            <TabsTrigger
-              key={t.key}
-              value={t.key}
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg px-5 py-2 rounded-full text-base font-medium text-slate-300"
-            >
-              {t.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        {TABS.map(t => (
-          <TabsContent key={t.key} value={t.key} className="w-full">
-            <EventCardGrid events={filterEvents(events, t.key)} />
-          </TabsContent>
-        ))}
-      </Tabs>
-      <AdminEventWizardDialog
-        open={isWizardOpen}
-        onOpenChange={open => {
-          setIsWizardOpen(open)
-          if (!open) setEditingEvent(null)
-        }}
-        onSubmit={handleSubmitEvent}
-        initialData={editingEvent || undefined}
-      />
-      <EventDetailsDialog
-        open={isDetailsOpen}
-        onOpenChange={open => setIsDetailsOpen(open)}
-        event={selectedEvent}
-      />
     </div>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useArtist } from "@/contexts/artist-context"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { supabase } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -47,6 +47,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import EventAnalytics from "./components/event-analytics"
 import Link from "next/link"
 
+import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help"
+import { usePerformanceTracking } from "@/lib/performance-monitor"
+
 interface Event {
   id?: string
   title: string
@@ -77,7 +80,6 @@ interface Event {
 
 export default function EventsPage() {
   const { user, profile, isLoading: isUserLoading } = useArtist()
-  const supabase = createClientComponentClient()
   
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -111,6 +113,80 @@ export default function EventsPage() {
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + N to create new event
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n' && !showCreateModal) {
+        e.preventDefault()
+        setEditingEvent(null)
+        setShowCreateModal(true)
+      }
+      
+      // Escape to close modal
+      if (e.key === 'Escape' && showCreateModal) {
+        e.preventDefault()
+        setShowCreateModal(false)
+      }
+      
+      // Ctrl/Cmd + S to save form (when modal is open)
+      if ((e.ctrlKey || e.metaKey) && e.key === 's' && showCreateModal) {
+        e.preventDefault()
+        handleSaveEvent()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [showCreateModal])
+
+  // Form validation
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {}
+    
+    if (!formData.title.trim()) {
+      errors.title = 'Event title is required'
+    } else if (formData.title.length < 3) {
+      errors.title = 'Title must be at least 3 characters long'
+    } else if (formData.title.length > 100) {
+      errors.title = 'Title must be less than 100 characters'
+    }
+    
+    if (!formData.event_date) {
+      errors.event_date = 'Event date is required'
+    } else {
+      const eventDate = new Date(formData.event_date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      if (eventDate < today && formData.status === 'upcoming') {
+        errors.event_date = 'Upcoming events cannot be scheduled in the past'
+      }
+    }
+    
+    if (formData.capacity && formData.capacity < 0) {
+      errors.capacity = 'Capacity cannot be negative'
+    }
+    
+    if (formData.expected_attendance && formData.capacity && 
+        formData.expected_attendance > formData.capacity) {
+      errors.expected_attendance = 'Expected attendance cannot exceed venue capacity'
+    }
+    
+    if (formData.ticket_price_min && formData.ticket_price_min < 0) {
+      errors.ticket_price_min = 'Price cannot be negative'
+    }
+    
+    if (formData.ticket_price_max && formData.ticket_price_min && 
+        formData.ticket_price_max < formData.ticket_price_min) {
+      errors.ticket_price_max = 'Max price cannot be less than min price'
+    }
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   useEffect(() => {
     if (user) {
@@ -152,6 +228,19 @@ export default function EventsPage() {
 
     try {
       setIsLoading(true)
+      
+      // Check if we have a valid session before making the request
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) {
+        console.error('Session error:', sessionError)
+        throw new Error('Authentication session expired. Please refresh the page.')
+      }
+      
+      if (!session) {
+        console.error('No active session found')
+        throw new Error('No active session. Please log in again.')
+      }
+
       const { data, error } = await supabase
         .from('artist_events')
         .select('*')
@@ -162,7 +251,8 @@ export default function EventsPage() {
       setEvents(data || [])
     } catch (error) {
       console.error('Error loading events:', error)
-      toast.error('Failed to load events')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load events'
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -175,39 +265,39 @@ export default function EventsPage() {
     console.log('Profile:', profile ? 'Present' : 'Missing')
     console.log('Loading state:', isUserLoading)
     
-    // Comprehensive validation with better error messages
-    const validationErrors = []
-    
-    // Check for both user and profile (required by artist context)
+    // Check authentication first
     if (!user) {
-      validationErrors.push('User not authenticated')
+      toast.error('User not authenticated')
+      return
     }
     
     if (!profile) {
-      validationErrors.push('Artist profile not loaded. Please wait a moment and try again.')
+      toast.error('Artist profile not loaded. Please wait a moment and try again.')
+      return
     }
     
-    // If still loading, prevent submission
     if (isUserLoading) {
-      validationErrors.push('Please wait while your profile loads...')
-    }
-    
-    if (!formData.title.trim()) {
-      validationErrors.push('Event title is required')
-    }
-    
-    if (!formData.event_date) {
-      validationErrors.push('Event date is required')
+      toast.error('Please wait while your profile loads...')
+      return
     }
 
-    if (validationErrors.length > 0) {
-      toast.error(validationErrors[0]) // Show first error
-      console.log('Validation errors:', validationErrors)
+    // Validate form data
+    if (!validateForm()) {
+      const firstError = Object.values(formErrors)[0]
+      if (firstError) {
+        toast.error(firstError)
+      }
       return
     }
 
     try {
       setIsSubmitting(true)
+      
+      // Check session before making authenticated requests
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError || !session) {
+        throw new Error('Authentication session expired. Please refresh the page.')
+      }
       
       const eventData = {
         ...formData,
@@ -249,16 +339,50 @@ export default function EventsPage() {
       setEditingEvent(null)
     } catch (error) {
       console.error('Error saving event:', error)
-      toast.error('Failed to save event')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save event'
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  // Keyboard shortcuts for better usability
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + N to create new event
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n' && !showCreateModal) {
+        e.preventDefault()
+        setEditingEvent(null)
+        setShowCreateModal(true)
+      }
+      
+      // Escape to close modal
+      if (e.key === 'Escape' && showCreateModal) {
+        e.preventDefault()
+        setShowCreateModal(false)
+      }
+      
+      // Ctrl/Cmd + S to save form (when modal is open)
+      if ((e.ctrlKey || e.metaKey) && e.key === 's' && showCreateModal) {
+        e.preventDefault()
+        handleSaveEvent()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [showCreateModal, handleSaveEvent])
+
   const handleDeleteEvent = async (eventId: string) => {
     if (!user) return
 
     try {
+      // Check session before making authenticated requests
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError || !session) {
+        throw new Error('Authentication session expired. Please refresh the page.')
+      }
+
       const { error } = await supabase
         .from('artist_events')
         .delete()
@@ -271,7 +395,8 @@ export default function EventsPage() {
       toast.success('Event deleted successfully')
     } catch (error) {
       console.error('Error deleting event:', error)
-      toast.error('Failed to delete event')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete event'
+      toast.error(errorMessage)
     } finally {
       setDeleteEventId(null)
     }
@@ -281,6 +406,12 @@ export default function EventsPage() {
     if (!user) return
 
     try {
+      // Check session before making authenticated requests
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError || !session) {
+        throw new Error('Authentication session expired. Please refresh the page.')
+      }
+
       const { error } = await supabase
         .from('artist_events')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
@@ -296,7 +427,8 @@ export default function EventsPage() {
       toast.success(`Event marked as ${newStatus}`)
     } catch (error) {
       console.error('Error updating event status:', error)
-      toast.error('Failed to update event status')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update event status'
+      toast.error(errorMessage)
     }
   }
 
@@ -377,6 +509,54 @@ export default function EventsPage() {
             <p className="text-gray-400">
               {isUserLoading ? 'Please wait while we fetch your data.' : 'Please wait while we set up your artist account.'}
             </p>
+            
+            {/* Helpful tips while loading */}
+            <div className="mt-8 p-4 bg-blue-950/30 border border-blue-700/30 rounded-lg">
+              <h4 className="text-blue-300 font-medium mb-2">💡 What you can do with Events:</h4>
+              <ul className="text-sm text-blue-200 space-y-1 text-left max-w-md mx-auto">
+                <li>• Schedule concerts, festivals, and performances</li>
+                <li>• Track ticket sales and venue capacity</li>
+                <li>• Manage event logistics and setlists</li>
+                <li>• Export event data for reporting</li>
+                <li>• Share events with your fans</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show error state if authentication failed
+  if (!user && !isUserLoading) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-red-950/20 border-red-700/50">
+          <CardContent className="p-8 text-center">
+            <div className="text-red-400 mb-4">
+              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Authentication Required</h3>
+            <p className="text-gray-400 mb-6">
+              You need to be logged in to access your events. Please sign in to continue.
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Button 
+                onClick={() => window.location.href = '/login'}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                Sign In
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/signup'}
+                variant="outline"
+                className="border-slate-700 text-gray-300 hover:text-white"
+              >
+                Create Account
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -1123,6 +1303,9 @@ export default function EventsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Keyboard Shortcuts Help */}
+      <KeyboardShortcutsHelp />
     </div>
   )
 } 

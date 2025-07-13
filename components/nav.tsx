@@ -34,6 +34,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useProfile } from "@/hooks/use-profile"
 import { useMultiAccount } from "@/hooks/use-multi-account"
 import { AccountSwitcher } from "@/components/account-switcher"
+import { TourifyLogo } from "@/components/tourify-logo"
 import { supabase } from "@/lib/supabase"
 
 export function Nav() {
@@ -66,18 +67,17 @@ export function Nav() {
     <nav className="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-purple-400/20 shadow-lg shadow-purple-500/10">
       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-pink-500/5"></div>
       <div className="relative container flex h-16 items-center justify-between">
-        {/* Logo */}
-        <Link href="/dashboard" className="flex items-center space-x-3 group">
+        {/* Logo - Home Button */}
+        <Link href="/dashboard" className="flex items-center space-x-3 group hover:scale-105 transition-all duration-300 ease-in-out cursor-pointer">
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition-opacity"></div>
-            <div className="relative bg-slate-900 p-2 rounded-lg">
-              <Activity className="h-6 w-6 text-purple-400" />
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+            <TourifyLogo
+              variant="white"
+              size="xl"
+              className="h-12 w-auto relative z-10 group-hover:brightness-110 transition-all duration-300"
+            />
           </div>
-          <span className="text-2xl font-bold bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent">
-            Tourify
-          </span>
-          </Link>
+        </Link>
 
         {/* Center Navigation */}
         <div className="hidden md:flex items-center space-x-2 bg-slate-800/50 backdrop-blur-sm rounded-full p-1 border border-purple-400/20">

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Upload, Building2 } from "lucide-react"
 import Image from "next/image"
+import { TourifyLogo } from "@/components/tourify-logo"
 
 interface VenueProfileSetupProps {
   userData: {
@@ -46,7 +47,7 @@ export default function VenueProfileSetup({ userData, onComplete }: VenueProfile
   return (
     <div className="p-8 text-white">
       <div className="flex items-center justify-center mb-8">
-        <Image src="/tourify-logo-white.png" alt="Tourify Logo" width={180} height={60} className="h-16 w-auto" />
+        <TourifyLogo variant="white" size="xl" className="h-16 w-auto" />
       </div>
 
       <div className="flex items-center justify-center mb-6">

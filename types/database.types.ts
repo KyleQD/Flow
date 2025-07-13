@@ -225,6 +225,107 @@ export type VenueSocialIntegration = {
 };
 
 // =============================================================================
+// TOUR AND EVENT MANAGEMENT TYPES
+// =============================================================================
+
+export type Tour = {
+  id: string;
+  name: string;
+  description: string | null;
+  artist_id: string;
+  status: 'planning' | 'active' | 'completed' | 'cancelled';
+  start_date: string | null;
+  end_date: string | null;
+  total_shows: number;
+  completed_shows: number;
+  budget: number;
+  expenses: number;
+  revenue: number;
+  transportation: string | null;
+  accommodation: string | null;
+  equipment_requirements: string | null;
+  crew_size: number;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+};
+
+export type Event = {
+  id: string;
+  name: string;
+  description: string | null;
+  tour_id: string | null;
+  venue_id: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  event_date: string;
+  event_time: string | null;
+  doors_open: string | null;
+  duration_minutes: number | null;
+  status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'postponed';
+  capacity: number;
+  tickets_sold: number;
+  ticket_price: number | null;
+  vip_price: number | null;
+  expected_revenue: number;
+  actual_revenue: number;
+  expenses: number;
+  sound_requirements: string | null;
+  lighting_requirements: string | null;
+  stage_requirements: string | null;
+  special_requirements: string | null;
+  venue_contact_name: string | null;
+  venue_contact_email: string | null;
+  venue_contact_phone: string | null;
+  load_in_time: string | null;
+  sound_check_time: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+};
+
+export type TourTeamMember = {
+  id: string;
+  tour_id: string;
+  user_id: string;
+  role: string;
+  contact_email: string | null;
+  contact_phone: string | null;
+  status: 'pending' | 'confirmed' | 'declined';
+  created_at: string;
+  updated_at: string;
+};
+
+export type EventExpense = {
+  id: string;
+  event_id: string;
+  tour_id: string;
+  category: string;
+  description: string;
+  amount: number;
+  vendor: string | null;
+  expense_date: string;
+  status: 'pending' | 'approved' | 'paid' | 'cancelled';
+  receipt_url: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+};
+
+export type EventNote = {
+  id: string;
+  event_id: string;
+  tour_id: string;
+  note_type: 'general' | 'technical' | 'logistics' | 'financial' | 'urgent';
+  title: string | null;
+  content: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+};
+
+// =============================================================================
 // EXTENDED EXISTING TYPES
 // =============================================================================
 

@@ -12,6 +12,7 @@ import { Upload, Headphones } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { TourifyLogo } from "@/components/tourify-logo"
 
 interface IndustryProfileSetupProps {
   userData: {
@@ -65,7 +66,7 @@ export default function IndustryProfileSetup({ userData, onComplete }: IndustryP
   return (
     <div className="p-8 text-white">
       <div className="flex items-center justify-center mb-8">
-        <Image src="/tourify-logo-white.png" alt="Tourify Logo" width={180} height={60} className="h-16 w-auto" />
+                  <TourifyLogo variant="white" size="xl" className="h-16 w-auto" />
       </div>
 
       <div className="flex items-center justify-center mb-6">

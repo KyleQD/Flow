@@ -41,6 +41,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { useToast } from "@/hooks/use-toast"
+import { TourifyLogo } from "@/components/tourify-logo"
 
 interface NavItemProps {
   href: string
@@ -184,7 +185,7 @@ export function MainSidebar({ open, onOpenChange, className = "" }: MainSidebarP
     <>
       <div className="flex h-14 items-center border-b px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <img src="/images/tourify-logo.png" alt="Tourify" className="h-8 w-auto" />
+          <TourifyLogo variant="light" size="md" />
           <span className="text-xl font-bold">Tourify</span>
         </Link>
         <Button variant="ghost" size="icon" className="ml-auto lg:hidden" onClick={() => onOpenChange(false)}>
