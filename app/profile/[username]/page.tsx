@@ -6,6 +6,8 @@ import { PublicProfileView } from "@/components/profile/public-profile-view"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { MessageModal } from "@/components/messaging/message-modal"
+import { useAuth } from "@/contexts/auth-context"
 
 interface ProfileData {
   id: string
@@ -39,6 +41,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
+  const [showMessageModal, setShowMessageModal] = useState(false)
+  
+  const { user, isAuthenticated } = useAuth()
 
   useEffect(() => {
     if (username) {
@@ -99,8 +104,32 @@ export default function ProfilePage() {
   }
 
   const handleFollow = async (profileId: string) => {
+    if (!user || !isAuthenticated) {
+      toast.error('Please sign in to follow profiles')
+      return
+    }
+
     try {
-      toast.info('Follow feature coming soon! 👥')
+      const response = await fetch('/api/social/follow', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          followingId: profileId,
+          action: 'follow'
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast.success('Profile followed successfully! 🎵')
+        // Refresh the profile to update follower count
+        await fetchProfile()
+      } else {
+        const error = await response.json()
+        console.error('Follow action failed:', error)
+        toast.error(error.error || 'Failed to follow profile')
+      }
     } catch (error) {
       console.error('Error following profile:', error)
       toast.error('Failed to follow profile')
@@ -108,12 +137,17 @@ export default function ProfilePage() {
   }
 
   const handleMessage = async (profileId: string) => {
-    try {
-      toast.info('Messaging feature coming soon! 💬')
-    } catch (error) {
-      console.error('Error sending message:', error)
-      toast.error('Failed to send message')
+    if (!user || !isAuthenticated) {
+      toast.error('Please sign in to send messages')
+      return
     }
+    
+    if (isOwnProfile) {
+      toast.error('You cannot send a message to yourself')
+      return
+    }
+
+    setShowMessageModal(true)
   }
 
   const handleShare = async (profile: ProfileData) => {
@@ -200,6 +234,20 @@ export default function ProfilePage() {
         onMessage={handleMessage}
         onShare={handleShare}
       />
+
+      {/* Message Modal */}
+      {profile && (
+        <MessageModal
+          isOpen={showMessageModal}
+          onClose={() => setShowMessageModal(false)}
+          recipient={{
+            id: profile.id,
+            username: profile.username,
+            full_name: profile.profile_data?.name || profile.profile_data?.artist_name || profile.profile_data?.venue_name,
+            avatar_url: profile.avatar_url
+          }}
+        />
+      )}
     </div>
   )
 } 

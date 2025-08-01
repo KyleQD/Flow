@@ -38,9 +38,9 @@ import {
   Twitter,
   Facebook,
   Youtube,
-  Spotify,
-  AppleIcon,
-  SoundCloud,
+  Music2,
+  Apple,
+  Disc,
   CheckCircle,
   AlertTriangle,
   XCircle,
@@ -554,7 +554,7 @@ export default function ArtistsPage() {
                         )}
                         {artist.social_links.spotify && (
                           <Button variant="ghost" size="sm" className="p-1 h-auto">
-                            <Spotify className="h-4 w-4 text-slate-400" />
+                            <Music2 className="h-4 w-4 text-slate-400" />
                           </Button>
                         )}
                         {artist.social_links.youtube && (
@@ -750,9 +750,9 @@ export default function ArtistsPage() {
                                 case 'twitter': return <Twitter className="h-5 w-5" />
                                 case 'facebook': return <Facebook className="h-5 w-5" />
                                 case 'youtube': return <Youtube className="h-5 w-5" />
-                                case 'spotify': return <Spotify className="h-5 w-5" />
-                                case 'apple_music': return <AppleIcon className="h-5 w-5" />
-                                case 'soundcloud': return <SoundCloud className="h-5 w-5" />
+                                case 'spotify': return <Music2 className="h-5 w-5" />
+                                case 'apple_music': return <Apple className="h-5 w-5" />
+                                case 'soundcloud': return <Disc className="h-5 w-5" />
                                 default: return <Globe className="h-5 w-5" />
                               }
                             }

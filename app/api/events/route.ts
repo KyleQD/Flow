@@ -38,30 +38,46 @@ export async function GET(request: NextRequest) {
     }
 
     const { user, supabase } = authResult
-    console.log('[Events API] User authenticated:', user.id)
 
-    // Check if user has admin permissions (now allows all authenticated users)
+    // Check if user has admin permissions
     const hasAdminAccess = await checkAdminPermissions(user)
     if (!hasAdminAccess) {
-      console.log('[Events API] User lacks admin permissions')
+      console.log('[Events API] User lacks admin permissions for viewing events')
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
-    // Always return empty events array with proper structure for now
-    // This ensures the dashboard doesn't get stuck waiting for data
-    console.log('[Events API] Returning empty events array to ensure dashboard loads')
-    
-    const emptyEventsResponse = {
-      events: []
+    console.log('[Events API] Fetching events for user:', user.id)
+
+    // Fetch events for tours created by the user
+    const { data: events, error: eventsError } = await supabase
+      .from('events')
+      .select(`
+        *,
+        tours!inner (
+          id,
+          name,
+          user_id
+        )
+      `)
+      .eq('tours.user_id', user.id) // Use user_id instead of artist_id
+      .order('event_date', { ascending: true })
+
+    if (eventsError) {
+      console.error('[Events API] Error fetching events:', eventsError)
+      return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 })
     }
 
-    console.log('[Events API] Successfully returned empty events array')
-    return NextResponse.json(emptyEventsResponse)
+    console.log('[Events API] Successfully fetched events:', events?.length || 0)
+
+    return NextResponse.json({ 
+      success: true, 
+      events: events || [],
+      message: 'Events fetched successfully' 
+    })
 
   } catch (error) {
-    console.error('[Events API] Unexpected error:', error)
-    // Always return empty array, never fail
-    return NextResponse.json({ events: [] })
+    console.error('[Events API] Error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -96,19 +112,61 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Event date must be in the future' }, { status: 400 })
     }
 
-    // For now, return a mock response since the events table schema is inconsistent
-    // This can be updated once the database schema is stabilized
-    const mockEvent = {
-      id: `event-${Date.now()}`,
-      ...validatedData,
-      created_by: user.id,
-      status: 'planning',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+    // If this event is associated with a tour, validate the tour exists and user has access
+    if (validatedData.tour_id) {
+      const { data: tour, error: tourError } = await supabase
+        .from('tours')
+        .select('id, created_by')
+        .eq('id', validatedData.tour_id)
+        .single()
+
+      if (tourError || !tour) {
+        return NextResponse.json({ error: 'Tour not found' }, { status: 404 })
+      }
+
+      if (tour.created_by !== user.id) {
+        return NextResponse.json({ error: 'You can only create events for tours you created' }, { status: 403 })
+      }
     }
 
-    console.log('[Events API] Mock event created:', mockEvent.id)
-    return NextResponse.json({ event: mockEvent }, { status: 201 })
+    // Create the event
+    const { data: event, error } = await supabase
+      .from('events')
+      .insert({
+        ...validatedData,
+        created_by: user.id,
+        status: 'scheduled',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('[Events API] Error creating event:', error)
+      if (error.code === '42P01') {
+        return NextResponse.json({ error: 'Events table does not exist. Please set up the database schema first.' }, { status: 500 })
+      }
+      return NextResponse.json({ error: 'Failed to create event' }, { status: 500 })
+    }
+
+    // If this event is part of a tour, update the tour's total_shows count
+    if (validatedData.tour_id) {
+      const { data: tourEvents } = await supabase
+        .from('events')
+        .select('id')
+        .eq('tour_id', validatedData.tour_id)
+
+      if (tourEvents) {
+        await supabase
+          .from('tours')
+          .update({ total_shows: tourEvents.length })
+          .eq('id', validatedData.tour_id)
+      }
+    }
+
+    console.log('[Events API] Successfully created event:', event.id)
+    return NextResponse.json({ event }, { status: 201 })
 
   } catch (error) {
     if (error instanceof z.ZodError) {

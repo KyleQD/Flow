@@ -1,12 +1,17 @@
-import { Loader2 } from "lucide-react"
+import { BrandLoadingScreen } from '@/components/ui/brand-loading-screen'
+
+// =============================================================================
+// NEXT.JS APP ROUTER LOADING PAGE
+// This will be shown automatically during route transitions
+// =============================================================================
 
 export default function Loading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-950 to-slate-900">
-      <div className="flex flex-col items-center space-y-4">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
-        <p className="text-slate-400">Loading...</p>
-      </div>
-    </div>
+    <BrandLoadingScreen
+      variant="glow"
+      message="Loading page..."
+      subMessage="Gathering the latest information for you"
+      fullScreen={false}
+    />
   )
-} 
+}

@@ -12,6 +12,7 @@ import { MapPin, Music, Users, Play, Heart, Share2, Calendar, Star, Mic, Buildin
 import { toast } from "sonner"
 import { PublicProfileView } from "@/components/profile/public-profile-view"
 import socialInteractionsService from "@/lib/services/social-interactions.service"
+import { useAuth } from "@/contexts/auth-context"
 
 interface DemoProfile {
   id: string
@@ -46,6 +47,7 @@ export default function DiscoverPage() {
   const [followedProfiles, setFollowedProfiles] = useState<Set<string>>(new Set())
   const [selectedProfile, setSelectedProfile] = useState<DemoProfile | null>(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const { user, isAuthenticated } = useAuth()
 
   const accountTypes = [
     { value: 'general', label: 'Music Fans', icon: User, color: 'bg-blue-500' },
@@ -86,12 +88,16 @@ export default function DiscoverPage() {
   }
 
   const handleFollow = async (profileId: string) => {
+    if (!user || !isAuthenticated) {
+      toast.error('Please sign in to follow profiles')
+      return
+    }
+
     try {
       const isFollowing = followedProfiles.has(profileId)
-      const userId = socialInteractionsService.getCurrentUserId()
       
       if (isFollowing) {
-        const result = await socialInteractionsService.unfollowProfile(profileId, userId || undefined)
+        const result = await socialInteractionsService.unfollowProfile(profileId, user.id)
         if (result.success) {
           setFollowedProfiles(prev => {
             const newSet = new Set(prev)
@@ -103,7 +109,7 @@ export default function DiscoverPage() {
           toast.error(result.message)
         }
       } else {
-        const result = await socialInteractionsService.followProfile(profileId, userId || undefined)
+        const result = await socialInteractionsService.followProfile(profileId, user.id)
         if (result.success) {
           setFollowedProfiles(prev => new Set([...prev, profileId]))
           toast.success(result.message)

@@ -55,17 +55,34 @@ export async function GET(request: NextRequest) {
     const supabase = createServiceRoleClient()
     const user = parseAuthFromCookies(request)
     
-    console.log('📊 Feed API called:', { feedType, page, limit, authenticated: !!user })
+    console.log('📊 Feed API called with comprehensive system:', { feedType, page, limit, authenticated: !!user })
 
-    // Get posts from database
-    let query = supabase
+    // Get posts from database with optimized query
+    const { data: posts, error } = await supabase
       .from('posts')
-      .select('*')
+      .select(`
+        id,
+        user_id,
+        content,
+        type,
+        visibility,
+        location,
+        hashtags,
+        media_urls,
+        likes_count,
+        comments_count,
+        shares_count,
+        created_at,
+        updated_at,
+        posted_as_profile_id,
+        posted_as_account_type,
+        account_display_name,
+        account_username,
+        account_avatar_url
+      `)
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .range(page * limit, (page + 1) * limit - 1)
-
-    const { data: posts, error } = await query
 
     if (error) {
       console.error('Error fetching posts:', error)
@@ -79,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     console.log('📊 Loaded posts from database:', posts.length)
 
-    // Load account information using the unified system
+    // Process posts with comprehensive system (using cached display info)
     const extendedPosts = await Promise.all(
       posts.map(async (post: any) => {
         let accountInfo = {
@@ -91,69 +108,68 @@ export async function GET(request: NextRequest) {
           account_type: 'primary'
         }
 
-        // Try to get account info from unified accounts table
-        if (post.account_id) {
-          console.log(`🔍 Looking up account info for post ${post.id} using account_id: ${post.account_id}`)
-          
-          const { data: displayInfo } = await supabase
-            .rpc('get_account_display_info', { account_id: post.account_id })
-
-          if (displayInfo) {
-            accountInfo = {
-              id: displayInfo.id,
-              username: displayInfo.username || 'user',
-              full_name: displayInfo.display_name || 'User',
-              avatar_url: displayInfo.avatar_url,
-              is_verified: displayInfo.is_verified || false,
-              account_type: displayInfo.account_type || 'primary'
-            }
-            console.log(`✅ Found account info: ${accountInfo.full_name} (${accountInfo.account_type})`)
-          } else {
-            console.log(`⚠️  No account info found for account_id: ${post.account_id}`)
+        // First try: Use cached account display info (fast path)
+        if (post.account_display_name) {
+          console.log(`✅ Using cached account info for post ${post.id}: ${post.account_display_name}`)
+          accountInfo = {
+            id: post.posted_as_profile_id || post.user_id,
+            username: post.account_username || 'user',
+            full_name: post.account_display_name,
+            avatar_url: post.account_avatar_url,
+            is_verified: false, // We'll add this to cache later if needed
+            account_type: post.posted_as_account_type || 'primary'
           }
-        } else {
-          console.log(`📝 Post ${post.id} has no account_id, trying fallback lookup`)
+        }
+        // Second try: Use flexible account info function (slow path)
+        else if (post.posted_as_profile_id && post.posted_as_account_type) {
+          console.log(`🔄 Loading account info for post ${post.id} (${post.posted_as_account_type})`)
           
-          // Fallback: try to get account info from legacy fields or user profiles
-          if (post.posted_as_account_type === 'artist' && post.posted_as_profile_id) {
-            console.log('🎨 Trying legacy artist profile lookup')
-            const { data: artistProfile } = await supabase
-              .from('artist_profiles')
-              .select('id, stage_name, artist_name, profile_image_url, is_verified')
-              .eq('id', post.posted_as_profile_id)
-              .single()
+          const { data: displayInfo, error: displayError } = await supabase
+            .rpc('get_account_info_flexible', {
+              p_user_id: post.user_id,
+              p_account_type: post.posted_as_account_type,
+              p_profile_id: post.posted_as_profile_id
+            })
 
-            if (artistProfile) {
-              accountInfo = {
-                id: artistProfile.id,
-                username: artistProfile.stage_name?.toLowerCase().replace(/\s+/g, '') || 'artist',
-                full_name: artistProfile.stage_name || artistProfile.artist_name || 'Artist',
-                avatar_url: artistProfile.profile_image_url,
-                is_verified: artistProfile.is_verified || false,
-                account_type: 'artist'
-              }
-              console.log('🎨 Using legacy artist profile:', accountInfo.full_name)
+          if (displayInfo && displayInfo.length > 0) {
+            const account = displayInfo[0]
+            accountInfo = {
+              id: post.posted_as_profile_id,
+              username: account.username || 'user',
+              full_name: account.display_name || 'User',
+              avatar_url: account.avatar_url,
+              is_verified: account.is_verified || false,
+              account_type: account.account_type
             }
+            
+            // TODO: Update cache in background for future requests
+            
+            console.log(`✅ Loaded account info: ${accountInfo.full_name} (${accountInfo.account_type})`)
           } else {
-            // Primary account fallback
-            console.log('👤 Trying primary account profile lookup')
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('id, username, full_name, avatar_url, is_verified, metadata')
-              .eq('id', post.user_id)
-              .single()
+            console.log(`⚠️  No account info found for post ${post.id}`)
+          }
+        }
+        // Third try: Fallback to primary account
+        else {
+          console.log(`👤 Using primary account fallback for post ${post.id}`)
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, username, full_name, avatar_url, is_verified, metadata')
+            .eq('id', post.user_id)
+            .single()
 
-            if (profile) {
-              accountInfo = {
-                id: profile.id,
-                username: profile.metadata?.username || profile.username || 'user',
-                full_name: profile.metadata?.full_name || profile.full_name || 'User',
-                avatar_url: profile.avatar_url,
-                is_verified: profile.is_verified || false,
-                account_type: 'primary'
-              }
-              console.log('👤 Using primary profile:', accountInfo.full_name)
+          if (profile && !profileError) {
+            accountInfo = {
+              id: profile.id,
+              username: profile.metadata?.username || profile.username || 'user',
+              full_name: profile.metadata?.full_name || profile.full_name || 'User',
+              avatar_url: profile.avatar_url,
+              is_verified: profile.is_verified || false,
+              account_type: 'primary'
             }
+            console.log(`✅ Using primary profile: ${accountInfo.full_name}`)
+          } else {
+            console.log(`⚠️  Primary profile not found for post ${post.id}`)
           }
         }
 
@@ -164,16 +180,27 @@ export async function GET(request: NextRequest) {
           is_liked: false,
           like_count: post.likes_count || 0,
           // Handle schema differences
-          media_urls: post.media_urls || post.images || [],
-          type: post.type || post.post_type || 'text',
+          media_urls: post.media_urls || [],
+          type: post.type || 'text',
+          visibility: post.visibility || 'public',
+          hashtags: post.hashtags || [],
           // Include account context for frontend
-          account_id: post.account_id,
           account_type: accountInfo.account_type
         }
       })
     )
 
-    console.log('✅ Extended posts with account data:', extendedPosts.length)
+    console.log('✅ Extended posts with comprehensive system:', extendedPosts.length)
+    
+    // Log account types and caching status for debugging
+    const accountTypes = extendedPosts.map(p => ({
+      id: p.id.substring(0, 8),
+      name: p.profiles.full_name,
+      type: p.profiles.account_type,
+      cached: !!p.account_display_name
+    }))
+    console.log('📋 Posts with account types:', accountTypes)
+
     return NextResponse.json({ data: extendedPosts, error: null })
   } catch (error) {
     console.error('API Error:', error)
@@ -197,63 +224,64 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { content, type = 'text', visibility = 'public', location, hashtags = [] } = body
+    const { content, type = 'text', visibility = 'public', location, hashtags = [], media_urls = [] } = body
 
-    if (!content || content.trim() === '') {
+    if (!content?.trim()) {
       return NextResponse.json(
         { data: null, error: 'Content is required' },
         { status: 400 }
       )
     }
 
-    // Extract hashtags from content
-    const hashtagMatches = content.match(/#[a-zA-Z0-9_]+/g)
-    const extractedHashtags = hashtagMatches?.map((tag: string) => tag.substring(1).toLowerCase()) || []
-    const allHashtags = [...extractedHashtags, ...hashtags]
-
-    // Create post
-    const { data: post, error: postError } = await supabase
-      .from('posts')
-      .insert({
-        user_id: user.id,
-        content: content.trim(),
-        type,
-        visibility,
-        location: location || null,
-        hashtags: allHashtags,
+    // Get account info using comprehensive system
+    const { data: accountData, error: accountError } = await supabase
+      .rpc('get_or_create_account', {
+        p_user_id: user.id,
+        p_account_type: 'primary',
+        p_profile_id: null
       })
-      .select('*')
-      .single()
 
-    if (postError) {
-      console.error('Error creating post:', postError)
+    if (accountError || !accountData || accountData.length === 0) {
       return NextResponse.json(
-        { data: null, error: postError.message },
+        { data: null, error: 'Unable to get account info' },
         { status: 500 }
       )
     }
 
-    // Get user profile data
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, metadata, avatar_url, is_verified')
-      .eq('id', user.id)
-      .single()
+    const account = accountData[0]
 
-    // Format the response with profile data
-    const extendedPost = {
-      ...post,
-      profiles: {
-        username: profile?.metadata?.username || 'user',
-        full_name: profile?.metadata?.full_name || 'User',
-        avatar_url: profile?.avatar_url,
-        is_verified: profile?.is_verified || false
-      },
-      is_liked: false,
-      like_count: 0
+    // Create post with comprehensive system
+    const postData = {
+      user_id: user.id,
+      content: content.trim(),
+      type,
+      visibility,
+      location,
+      hashtags,
+      media_urls,
+      posted_as_profile_id: account.account_id,
+      posted_as_account_type: 'primary',
+      // Cache account display info
+      account_display_name: account.display_name,
+      account_username: account.username,
+      account_avatar_url: account.avatar_url
     }
 
-    return NextResponse.json({ data: extendedPost, error: null })
+    const { data: post, error } = await supabase
+      .from('posts')
+      .insert([postData])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating post:', error)
+      return NextResponse.json(
+        { data: null, error: 'Failed to create post' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ data: post, error: null })
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json(

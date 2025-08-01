@@ -68,18 +68,104 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        blob: {
+          "0%": {
+            transform: "translate(0px, 0px) scale(1)",
+          },
+          "33%": {
+            transform: "translate(30px, -50px) scale(1.1)",
+          },
+          "66%": {
+            transform: "translate(-20px, 20px) scale(0.9)",
+          },
+          "100%": {
+            transform: "translate(0px, 0px) scale(1)",
+          },
+        },
+        "spin-slow": {
+          from: {
+            transform: "rotate(0deg)",
+          },
+          to: {
+            transform: "rotate(360deg)",
+          },
+        },
+        float: {
+          "0%, 100%": {
+            transform: "translateY(0px)",
+          },
+          "50%": {
+            transform: "translateY(-20px)",
+          },
+        },
+        "gradient-x": {
+          "0%, 100%": {
+            "background-position": "0% 50%",
+          },
+          "50%": {
+            "background-position": "100% 50%",
+          },
+        },
+        "gradient-y": {
+          "0%, 100%": {
+            "background-position": "50% 0%",
+          },
+          "50%": {
+            "background-position": "50% 100%",
+          },
+        },
+        "pulse-glow": {
+          "0%, 100%": {
+            "box-shadow": "0 0 20px rgba(147, 51, 234, 0.3)",
+          },
+          "50%": {
+            "box-shadow": "0 0 40px rgba(147, 51, 234, 0.6)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        blob: "blob 7s infinite",
+        "spin-slow": "spin-slow 20s linear infinite",
+        float: "float 6s ease-in-out infinite",
+        "gradient-x": "gradient-x 15s ease infinite",
+        "gradient-y": "gradient-y 15s ease infinite",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
       },
       boxShadow: {
         "glow-purple": "0 0 15px rgba(147, 51, 234, 0.5)",
         "glow-indigo": "0 0 15px rgba(79, 70, 229, 0.5)",
+        "glow-pink": "0 0 15px rgba(236, 72, 153, 0.5)",
+        "glow-blue": "0 0 15px rgba(59, 130, 246, 0.5)",
+        "glow-green": "0 0 15px rgba(34, 197, 94, 0.5)",
+        "glow-red": "0 0 15px rgba(239, 68, 68, 0.5)",
+        "3xl": "0 35px 60px -12px rgba(0, 0, 0, 0.25)",
+        "4xl": "0 45px 100px -12px rgba(0, 0, 0, 0.25)",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+      },
+      backdropBlur: {
+        xs: "2px",
+      },
+      fontSize: {
+        "10xl": ["9rem", { lineHeight: "1" }],
+        "11xl": ["10rem", { lineHeight: "1" }],
+        "12xl": ["12rem", { lineHeight: "1" }],
+      },
+      spacing: {
+        "128": "32rem",
+        "144": "36rem",
+      },
+      transitionDuration: {
+        "2000": "2000ms",
+        "3000": "3000ms",
+      },
+      transitionDelay: {
+        "2000": "2000ms",
+        "4000": "4000ms",
       },
     },
   },

@@ -1,0 +1,642 @@
+import { createClient } from '@/lib/supabase/client'
+import {
+  ArtistJob,
+  ArtistJobApplication,
+  ArtistJobCategory,
+  ArtistJobSave,
+  JobSearchFilters,
+  JobSearchResults,
+  CreateJobFormData,
+  CreateApplicationFormData,
+  ApiResponse
+} from '@/types/artist-jobs'
+
+const supabase = createClient()
+
+export class ArtistJobsService {
+  // =============================================================================
+  // JOB CATEGORIES
+  // =============================================================================
+
+  static async getCategories(): Promise<ArtistJobCategory[]> {
+    const { data, error } = await supabase
+      .from('artist_job_categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('name')
+
+    if (error) {
+      console.error('Error fetching job categories:', error)
+      throw new Error('Failed to fetch job categories')
+    }
+
+    return data || []
+  }
+
+  // =============================================================================
+  // JOB MANAGEMENT
+  // =============================================================================
+
+  static async searchJobs(filters: JobSearchFilters = {}): Promise<JobSearchResults> {
+    const {
+      query,
+      category_id,
+      payment_type,
+      job_type,
+      location_type,
+      city,
+      state,
+      country,
+      required_experience,
+      required_genres,
+      required_skills,
+      min_payment,
+      max_payment,
+      date_from,
+      date_to,
+      deadline_from,
+      deadline_to,
+      featured_only,
+      sort_by = 'created_at',
+      sort_order = 'desc',
+      page = 1,
+      per_page = 20
+    } = filters
+
+    let queryBuilder = supabase
+      .from('artist_jobs')
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .eq('status', 'open')
+
+    // Text search
+    if (query) {
+      queryBuilder = queryBuilder.or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+    }
+
+    // Category filter
+    if (category_id) {
+      queryBuilder = queryBuilder.eq('category_id', category_id)
+    }
+
+    // Payment type filter
+    if (payment_type?.length) {
+      queryBuilder = queryBuilder.in('payment_type', payment_type)
+    }
+
+    // Job type filter
+    if (job_type?.length) {
+      queryBuilder = queryBuilder.in('job_type', job_type)
+    }
+
+    // Location type filter
+    if (location_type?.length) {
+      queryBuilder = queryBuilder.in('location_type', location_type)
+    }
+
+    // Location filters
+    if (city) {
+      queryBuilder = queryBuilder.ilike('city', `%${city}%`)
+    }
+    if (state) {
+      queryBuilder = queryBuilder.ilike('state', `%${state}%`)
+    }
+    if (country) {
+      queryBuilder = queryBuilder.ilike('country', `%${country}%`)
+    }
+
+    // Experience filter
+    if (required_experience?.length) {
+      queryBuilder = queryBuilder.in('required_experience', required_experience)
+    }
+
+    // Genre filter
+    if (required_genres?.length) {
+      queryBuilder = queryBuilder.overlaps('required_genres', required_genres)
+    }
+
+    // Skills filter
+    if (required_skills?.length) {
+      queryBuilder = queryBuilder.overlaps('required_skills', required_skills)
+    }
+
+    // Payment range filter
+    if (min_payment !== undefined) {
+      queryBuilder = queryBuilder.gte('payment_amount', min_payment)
+    }
+    if (max_payment !== undefined) {
+      queryBuilder = queryBuilder.lte('payment_amount', max_payment)
+    }
+
+    // Date filters
+    if (date_from) {
+      queryBuilder = queryBuilder.gte('event_date', date_from)
+    }
+    if (date_to) {
+      queryBuilder = queryBuilder.lte('event_date', date_to)
+    }
+
+    // Deadline filters
+    if (deadline_from) {
+      queryBuilder = queryBuilder.gte('deadline', deadline_from)
+    }
+    if (deadline_to) {
+      queryBuilder = queryBuilder.lte('deadline', deadline_to)
+    }
+
+    // Featured filter
+    if (featured_only) {
+      queryBuilder = queryBuilder.eq('featured', true)
+    }
+
+    // Sorting
+    const ascending = sort_order === 'asc'
+    queryBuilder = queryBuilder.order(sort_by, { ascending })
+
+    // Pagination
+    const from = (page - 1) * per_page
+    const to = from + per_page - 1
+    queryBuilder = queryBuilder.range(from, to)
+
+    const { data, error, count } = await queryBuilder
+
+    if (error) {
+      console.error('Error searching jobs:', error)
+      throw new Error('Failed to search jobs')
+    }
+
+    const total_count = count || 0
+    const total_pages = Math.ceil(total_count / per_page)
+
+    return {
+      jobs: data || [],
+      total_count,
+      page,
+      per_page,
+      total_pages,
+      has_next: page < total_pages,
+      has_previous: page > 1
+    }
+  }
+
+  static async getJob(id: string, userId?: string): Promise<ArtistJob | null> {
+    const { data, error } = await supabase
+      .from('artist_jobs')
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching job:', error)
+      return null
+    }
+
+    let job = data as ArtistJob
+
+    // Check if user has saved this job
+    if (userId) {
+      const { data: saveData } = await supabase
+        .from('artist_job_saves')
+        .select('id')
+        .eq('job_id', id)
+        .eq('user_id', userId)
+        .single()
+
+      job.is_saved = !!saveData
+
+      // Get user's application if exists
+      const { data: applicationData } = await supabase
+        .from('artist_job_applications')
+        .select('*')
+        .eq('job_id', id)
+        .eq('applicant_id', userId)
+        .single()
+
+      job.user_application = applicationData || undefined
+    }
+
+    // Track view
+    if (userId) {
+      await this.trackJobView(id, userId)
+    }
+
+    return job
+  }
+
+  static async createJob(jobData: CreateJobFormData, userId: string): Promise<ArtistJob> {
+    const { data, error } = await supabase
+      .from('artist_jobs')
+      .insert({
+        ...jobData,
+        posted_by: userId,
+        posted_by_type: 'artist' // Default, can be changed based on user type
+      })
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error creating job:', error)
+      throw new Error('Failed to create job')
+    }
+
+    return data as ArtistJob
+  }
+
+  static async updateJob(id: string, updates: Partial<CreateJobFormData>, userId: string): Promise<ArtistJob> {
+    const { data, error } = await supabase
+      .from('artist_jobs')
+      .update(updates)
+      .eq('id', id)
+      .eq('posted_by', userId)
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error updating job:', error)
+      throw new Error('Failed to update job')
+    }
+
+    return data as ArtistJob
+  }
+
+  static async deleteJob(id: string, userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('artist_jobs')
+      .delete()
+      .eq('id', id)
+      .eq('posted_by', userId)
+
+    if (error) {
+      console.error('Error deleting job:', error)
+      throw new Error('Failed to delete job')
+    }
+  }
+
+  static async getUserJobs(userId: string): Promise<ArtistJob[]> {
+    const { data, error } = await supabase
+      .from('artist_jobs')
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .eq('posted_by', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching user jobs:', error)
+      throw new Error('Failed to fetch user jobs')
+    }
+
+    return data || []
+  }
+
+  // =============================================================================
+  // JOB APPLICATIONS
+  // =============================================================================
+
+  static async applyToJob(applicationData: CreateApplicationFormData, userId: string): Promise<ArtistJobApplication> {
+    const { data, error } = await supabase
+      .from('artist_job_applications')
+      .insert({
+        ...applicationData,
+        applicant_id: userId
+      })
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('Error applying to job:', error)
+      throw new Error('Failed to apply to job')
+    }
+
+    return data as ArtistJobApplication
+  }
+
+  static async getJobApplications(jobId: string, userId: string): Promise<ArtistJobApplication[]> {
+    // Verify user owns the job
+    const { data: job } = await supabase
+      .from('artist_jobs')
+      .select('posted_by')
+      .eq('id', jobId)
+      .eq('posted_by', userId)
+      .single()
+
+    if (!job) {
+      throw new Error('Unauthorized: You can only view applications for your own jobs')
+    }
+
+    const { data, error } = await supabase
+      .from('artist_job_applications')
+      .select('*')
+      .eq('job_id', jobId)
+      .order('applied_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching job applications:', error)
+      throw new Error('Failed to fetch job applications')
+    }
+
+    return data || []
+  }
+
+  static async getUserApplications(userId: string): Promise<ArtistJobApplication[]> {
+    const { data, error } = await supabase
+      .from('artist_job_applications')
+      .select(`
+        *,
+        job:artist_jobs(
+          title,
+          category:artist_job_categories(name)
+        )
+      `)
+      .eq('applicant_id', userId)
+      .order('applied_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching user applications:', error)
+      throw new Error('Failed to fetch user applications')
+    }
+
+    return data || []
+  }
+
+  static async updateApplicationStatus(
+    applicationId: string,
+    status: ArtistJobApplication['status'],
+    userId: string,
+    feedback?: string
+  ): Promise<ArtistJobApplication> {
+    const { data, error } = await supabase
+      .from('artist_job_applications')
+      .update({
+        status,
+        feedback,
+        reviewed_at: new Date().toISOString(),
+        responded_at: ['accepted', 'rejected'].includes(status) ? new Date().toISOString() : undefined
+      })
+      .eq('id', applicationId)
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('Error updating application status:', error)
+      throw new Error('Failed to update application status')
+    }
+
+    return data as ArtistJobApplication
+  }
+
+  static async withdrawApplication(applicationId: string, userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('artist_job_applications')
+      .update({ status: 'withdrawn' })
+      .eq('id', applicationId)
+      .eq('applicant_id', userId)
+
+    if (error) {
+      console.error('Error withdrawing application:', error)
+      throw new Error('Failed to withdraw application')
+    }
+  }
+
+  // =============================================================================
+  // JOB SAVES/BOOKMARKS
+  // =============================================================================
+
+  static async saveJob(jobId: string, userId: string): Promise<ArtistJobSave> {
+    const { data, error } = await supabase
+      .from('artist_job_saves')
+      .insert({
+        job_id: jobId,
+        user_id: userId
+      })
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('Error saving job:', error)
+      throw new Error('Failed to save job')
+    }
+
+    return data as ArtistJobSave
+  }
+
+  static async unsaveJob(jobId: string, userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('artist_job_saves')
+      .delete()
+      .eq('job_id', jobId)
+      .eq('user_id', userId)
+
+    if (error) {
+      console.error('Error unsaving job:', error)
+      throw new Error('Failed to unsave job')
+    }
+  }
+
+  static async getSavedJobs(userId: string): Promise<ArtistJob[]> {
+    const { data, error } = await supabase
+      .from('artist_job_saves')
+      .select(`
+        job:artist_jobs(
+          *,
+          category:artist_job_categories(*)
+        )
+      `)
+      .eq('user_id', userId)
+      .order('saved_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching saved jobs:', error)
+      throw new Error('Failed to fetch saved jobs')
+    }
+
+    return (data || []).map(item => item.job as ArtistJob)
+  }
+
+  // =============================================================================
+  // ANALYTICS & TRACKING
+  // =============================================================================
+
+  static async trackJobView(jobId: string, userId?: string): Promise<void> {
+    const { error } = await supabase
+      .from('artist_job_views')
+      .insert({
+        job_id: jobId,
+        viewer_id: userId || null
+      })
+
+    if (error) {
+      console.error('Error tracking job view:', error)
+      // Don't throw error for view tracking
+    }
+  }
+
+  static async getJobAnalytics(jobId: string, userId: string): Promise<{
+    views: number
+    applications: number
+    saves: number
+    recent_views: Array<{ viewed_at: string }>
+  }> {
+    // Verify user owns the job
+    const { data: job } = await supabase
+      .from('artist_jobs')
+      .select('posted_by')
+      .eq('id', jobId)
+      .eq('posted_by', userId)
+      .single()
+
+    if (!job) {
+      throw new Error('Unauthorized: You can only view analytics for your own jobs')
+    }
+
+    const [viewsResult, applicationsResult, savesResult, recentViewsResult] = await Promise.all([
+      supabase
+        .from('artist_job_views')
+        .select('id', { count: 'exact' })
+        .eq('job_id', jobId),
+      
+      supabase
+        .from('artist_job_applications')
+        .select('id', { count: 'exact' })
+        .eq('job_id', jobId),
+      
+      supabase
+        .from('artist_job_saves')
+        .select('id', { count: 'exact' })
+        .eq('job_id', jobId),
+      
+      supabase
+        .from('artist_job_views')
+        .select('viewed_at')
+        .eq('job_id', jobId)
+        .order('viewed_at', { ascending: false })
+        .limit(10)
+    ])
+
+    return {
+      views: viewsResult.count || 0,
+      applications: applicationsResult.count || 0,
+      saves: savesResult.count || 0,
+      recent_views: recentViewsResult.data || []
+    }
+  }
+
+  // =============================================================================
+  // UTILITY FUNCTIONS
+  // =============================================================================
+
+  static async getRecommendedJobs(userId: string, limit = 10): Promise<ArtistJob[]> {
+    // Get user's application history to understand preferences
+    const { data: userApplications } = await supabase
+      .from('artist_job_applications')
+      .select(`
+        job:artist_jobs(
+          category_id,
+          required_genres,
+          required_skills,
+          payment_type,
+          location_type
+        )
+      `)
+      .eq('applicant_id', userId)
+      .limit(20)
+
+    if (!userApplications?.length) {
+      // If no history, return recent jobs
+      return this.getRecentJobs(limit)
+    }
+
+    // Extract preferences from application history
+    const categories = new Set()
+    const genres = new Set()
+    const skills = new Set()
+    const paymentTypes = new Set()
+    const locationTypes = new Set()
+
+    userApplications.forEach(app => {
+      if (app.job) {
+        categories.add(app.job.category_id)
+        app.job.required_genres?.forEach(genre => genres.add(genre))
+        app.job.required_skills?.forEach(skill => skills.add(skill))
+        paymentTypes.add(app.job.payment_type)
+        locationTypes.add(app.job.location_type)
+      }
+    })
+
+    // Build recommendation query
+    let queryBuilder = supabase
+      .from('artist_jobs')
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .eq('status', 'open')
+      .neq('posted_by', userId) // Don't recommend user's own jobs
+
+    if (categories.size > 0) {
+      queryBuilder = queryBuilder.in('category_id', Array.from(categories))
+    }
+
+    const { data, error } = await queryBuilder
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error fetching recommended jobs:', error)
+      return this.getRecentJobs(limit)
+    }
+
+    return data || []
+  }
+
+  static async getRecentJobs(limit = 10): Promise<ArtistJob[]> {
+    const { data, error } = await supabase
+      .from('artist_jobs')
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .eq('status', 'open')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error fetching recent jobs:', error)
+      return []
+    }
+
+    return data || []
+  }
+
+  static async getFeaturedJobs(limit = 5): Promise<ArtistJob[]> {
+    const { data, error } = await supabase
+      .from('artist_jobs')
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .eq('status', 'open')
+      .eq('featured', true)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error fetching featured jobs:', error)
+      return []
+    }
+
+    return data || []
+  }
+} 

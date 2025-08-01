@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { TourifyLogo } from "@/components/tourify-logo"
 import { EditVenueDialog, type VenueData } from "@/components/venue/edit-venue-dialog"
 import { toast } from "@/components/ui/use-toast"
+import { EnhancedNotificationCenter } from "@/components/notifications/enhanced-notification-center"
 
 export function VenueHeader() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -65,12 +66,7 @@ export function VenueHeader() {
             <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-white/40">⌘K</div>
           </div>
 
-          <Button variant="ghost" size="icon" className="relative text-white">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-purple-600 text-xs">
-              3
-            </span>
-          </Button>
+          <EnhancedNotificationCenter />
 
           <Button className="bg-white text-[#0f1117] hover:bg-white/90" onClick={() => setIsEditDialogOpen(true)}>
             <Edit className="mr-2 h-4 w-4" />

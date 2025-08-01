@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/hooks/use-toast"
-import OnboardingWizard from "./onboarding-wizard"
+// import OnboardingWizard from "./onboarding-wizard"
 import {
   Users,
   Plus,
@@ -94,7 +94,11 @@ interface OnboardingStep {
   notes?: string
 }
 
-export default function StaffOnboardingSystem() {
+interface StaffOnboardingSystemProps {
+  venueId: string
+}
+
+export default function StaffOnboardingSystem({ venueId }: StaffOnboardingSystemProps) {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("candidates")
   const [selectedCandidate, setSelectedCandidate] = useState<OnboardingCandidate | null>(null)
@@ -286,10 +290,15 @@ export default function StaffOnboardingSystem() {
       id: candidate.id,
       name: candidate.name,
       email: candidate.email,
+      phone: candidate.phone,
       position: candidate.position,
       department: candidate.department,
       avatar: candidate.avatar,
-      startDate: candidate.startDate || new Date().toISOString().split('T')[0]
+      startDate: candidate.startDate || new Date().toISOString().split('T')[0],
+      salary: candidate.salary,
+      skills: candidate.skills,
+      notes: candidate.notes,
+      venueId: venueId
     }
   }
 
@@ -825,12 +834,12 @@ export default function StaffOnboardingSystem() {
         </TabsContent>
       </Tabs>
 
-      {/* Onboarding Wizard */}
-      <OnboardingWizard
-        candidate={selectedCandidate ? convertCandidateForWizard(selectedCandidate) : null}
-        isOpen={showOnboardingWizard}
-        onClose={() => setShowOnboardingWizard(false)}
-      />
+              {/* Onboarding Wizard - Temporarily disabled for debugging */}
+        {/* <OnboardingWizard
+          candidate={selectedCandidate ? convertCandidateForWizard(selectedCandidate) : null}
+          isOpen={showOnboardingWizard}
+          onClose={() => setShowOnboardingWizard(false)}
+        /> */}
     </div>
   )
 } 

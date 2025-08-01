@@ -2,8 +2,93 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Calendar, Clock, Download, MapPin, Users, DollarSign, ChevronLeft, Share2, Plus, Search } from "lucide-react"
-import { Header } from "@/components/header"
+import { 
+  Calendar, 
+  Clock, 
+  Download, 
+  MapPin, 
+  Users, 
+  DollarSign, 
+  ChevronLeft, 
+  Share2, 
+  Plus, 
+  Search,
+  Settings,
+  BarChart3,
+  Ticket,
+  Users2,
+  Truck,
+  FileText,
+  Bell,
+  Edit,
+  Trash2,
+  Eye,
+  Copy,
+  ExternalLink,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  Play,
+  Pause,
+  Stop,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Zap,
+  Star,
+  Shield,
+  Wifi,
+  Music,
+  Video,
+  Camera,
+  Mic,
+  Lightbulb,
+  Speaker,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Laptop,
+  Printer,
+  Archive,
+  BookOpen,
+  Clipboard,
+  CalendarDays,
+  Clock4,
+  Timer,
+  TimerOff,
+  TimerReset,
+  TimerStart,
+  TimerPause,
+  TimerResume,
+  TimerStop,
+  TimerSkip,
+  TimerForward,
+  TimerRewind,
+  TimerFastForward,
+  TimerRewind2,
+  TimerFastForward2,
+  TimerSkipBack,
+  TimerSkipForward,
+  TimerSkipBack2,
+  TimerSkipForward2,
+  TimerSkipBack3,
+  TimerSkipForward3,
+  TimerSkipBack4,
+  TimerSkipForward4,
+  TimerSkipBack5,
+  TimerSkipForward5,
+  TimerSkipBack6,
+  TimerSkipForward6,
+  TimerSkipBack7,
+  TimerSkipForward7,
+  TimerSkipBack8,
+  TimerSkipForward8,
+  TimerSkipBack9,
+  TimerSkipForward9,
+  TimerSkipBack10,
+  TimerSkipForward10
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,596 +96,1123 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { TaskDialog, type Task, type TaskStatus } from '../../components/events/task-dialog'
-import { TaskCard } from '../../components/events/task-card'
-import { SlackIntegration } from '../../components/events/slack-integration'
-import { generatePDF } from '../../components/lib/pdf-generator'
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
+import { EventTaskManager } from "@/components/admin/event-task-manager"
+import { EventStaffManager } from "@/components/admin/event-staff-manager"
+import { EventVendorManager } from "@/components/admin/event-vendor-manager"
+import { EventJobPosting } from "@/components/admin/event-job-posting"
+import { EventJobsList } from "@/components/admin/event-jobs-list"
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { toast } from "sonner"
+import { format, parseISO, addDays, differenceInDays } from "date-fns"
 
-// Mock data - in a real app, this would come from your database
-const eventData = {
-  id: "evt-001",
-  title: "Summer Music Festival 2023",
-  date: "Aug 15-17, 2023",
-  location: "Riverside Amphitheater",
-  description:
-    "A three-day music festival featuring top artists from around the world, with multiple stages, food vendors, and interactive experiences.",
-  attendees: 4500,
-  progress: 65,
-  type: "Festival",
-  daysUntil: 30,
-  budget: {
-    total: 250000,
-    spent: 162500,
-    remaining: 87500,
-    categories: [
-      { name: "Venue", allocated: 75000, spent: 75000, remaining: 0 },
-      { name: "Artists", allocated: 100000, spent: 50000, remaining: 50000 },
-      { name: "Marketing", allocated: 25000, spent: 15000, remaining: 10000 },
-      { name: "Staff", allocated: 30000, spent: 12500, remaining: 17500 },
-      { name: "Equipment", allocated: 15000, spent: 7500, remaining: 7500 },
-      { name: "Miscellaneous", allocated: 5000, spent: 2500, remaining: 2500 },
-    ],
-  },
-  tasks: [
-    { id: "task-1", name: "Venue booking", status: "completed", dueDate: "2023-03-15" },
-    { id: "task-2", name: "Artist contracts", status: "in-progress", dueDate: "2023-06-30" },
-    { id: "task-3", name: "Vendor coordination", status: "in-progress", dueDate: "2023-07-15" },
-    { id: "task-4", name: "Marketing campaign", status: "in-progress", dueDate: "2023-07-30" },
-    { id: "task-5", name: "Ticket sales", status: "in-progress", dueDate: "2023-08-10" },
-    { id: "task-6", name: "Staff scheduling", status: "not-started", dueDate: "2023-07-25" },
-    { id: "task-7", name: "Equipment rental", status: "not-started", dueDate: "2023-08-01" },
-    { id: "task-8", name: "Security planning", status: "not-started", dueDate: "2023-07-20" },
-  ],
-  staff: [
-    { id: "staff-1", name: "Alex Johnson", role: "Event Manager", avatar: "/extraterrestrial-encounter.png" },
-    { id: "staff-2", name: "Sam Williams", role: "Technical Director", avatar: "/abstract-sv.png" },
-    { id: "staff-3", name: "Jamie Lee", role: "Marketing Coordinator", avatar: "/stylized-letter-st.png" },
-    { id: "staff-4", name: "Taylor Smith", role: "Vendor Liaison", avatar: "/computer-science-abstract.png" },
-    { id: "staff-5", name: "Jordan Patel", role: "Security Lead", avatar: "/vibrant-cityscape.png" },
-  ],
-  vendors: [
-    {
-      id: "vendor-1",
-      name: "SoundMasters Pro",
-      type: "Audio Equipment",
-      contact: "contact@soundmasterspro.com",
-      status: "confirmed",
-    },
-    { id: "vendor-2", name: "LightWorks", type: "Lighting", contact: "info@lightworks.com", status: "confirmed" },
-    {
-      id: "vendor-3",
-      name: "FoodTruck Collective",
-      type: "Food & Beverage",
-      contact: "bookings@foodtruckcollective.com",
-      status: "pending",
-    },
-    {
-      id: "vendor-4",
-      name: "CleanTeam Services",
-      type: "Cleaning",
-      contact: "service@cleanteam.com",
-      status: "confirmed",
-    },
-    { id: "vendor-5", name: "SecureEvent", type: "Security", contact: "operations@secureevent.com", status: "pending" },
-  ],
+interface Event {
+  id: string
+  name: string
+  description?: string
+  tour_id?: string
+  venue_name: string
+  venue_address?: string
+  event_date: string
+  event_time?: string
+  doors_open?: string
+  duration_minutes?: number
+  status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'postponed'
+  capacity: number
+  tickets_sold: number
+  ticket_price?: number
+  vip_price?: number
+  expected_revenue: number
+  actual_revenue: number
+  expenses: number
+  venue_contact_name?: string
+  venue_contact_email?: string
+  venue_contact_phone?: string
+  sound_requirements?: string
+  lighting_requirements?: string
+  stage_requirements?: string
+  special_requirements?: string
+  load_in_time?: string
+  sound_check_time?: string
+  tour?: {
+    id: string
+    name: string
+    artist_id: string
+    status: string
+  }
 }
 
-export default function EventDetailsPage() {
+interface Task {
+  id: string
+  name: string
+  description?: string
+  status: 'not_started' | 'in_progress' | 'completed' | 'cancelled'
+  priority: 'low' | 'medium' | 'high'
+  due_date?: string
+  assigned_to?: string
+  category: 'logistics' | 'marketing' | 'technical' | 'financial' | 'staffing' | 'vendor'
+}
+
+interface Staff {
+  id: string
+  name: string
+  role: string
+  email: string
+  phone?: string
+  avatar?: string
+  status: 'confirmed' | 'pending' | 'declined'
+  arrival_time?: string
+  departure_time?: string
+}
+
+interface Vendor {
+  id: string
+  name: string
+  type: string
+  contact_name: string
+  contact_email: string
+  contact_phone?: string
+  status: 'confirmed' | 'pending' | 'declined'
+  arrival_time?: string
+  departure_time?: string
+  requirements?: string
+}
+
+export default function EventManagementPage() {
   const params = useParams()
   const router = useRouter()
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
-  const [tasks, setTasks] = useState<Task[]>(eventData.tasks as Task[])
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>(tasks)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false)
-  const [currentTask, setCurrentTask] = useState<Task | undefined>(undefined)
-
-  // In a real app, you would fetch the event data based on the ID
   const eventId = params.id as string
-  const event = { ...eventData, tasks } // This would be fetched from your database
+  
+  // State management
+  const [event, setEvent] = useState<Event | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [isEditing, setIsEditing] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  
+  // Quick actions state
+  const [showAddTaskDialog, setShowAddTaskDialog] = useState(false)
+  const [showAddStaffDialog, setShowAddStaffDialog] = useState(false)
+  const [showAddVendorDialog, setShowAddVendorDialog] = useState(false)
+  const [showTicketsDialog, setShowTicketsDialog] = useState(false)
+  const [showShareDialog, setShowShareDialog] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
+  
+  // Edit event state
+  const [editForm, setEditForm] = useState<Partial<Event>>({})
+  
+  // Event data state
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [staff, setStaff] = useState<Staff[]>([])
+  const [vendors, setVendors] = useState<Vendor[]>([])
+  const [ticketSales, setTicketSales] = useState<any[]>([])
+  const [expenses, setExpenses] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<any[]>([])
 
+  // Fetch event data
   useEffect(() => {
-    if (searchQuery) {
-      setFilteredTasks(
-        tasks.filter(
-          (task) =>
-            task.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            task.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-        ),
-      )
-    } else {
-      setFilteredTasks(tasks)
-    }
-  }, [searchQuery, tasks])
-
-  const completedTasks = tasks.filter((task) => task.status === "completed").length
-  const totalTasks = tasks.length
-  const taskCompletionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
-
-  const handleGeneratePDF = async () => {
-    setIsGeneratingPDF(true)
-    try {
-      await generatePDF()
-    } catch (error) {
-      console.error("Error generating PDF:", error)
-      // Add a toast or alert here to notify the user
-      alert("There was an error generating the PDF. Please try again.")
-    } finally {
-      setIsGeneratingPDF(false)
-    }
-  }
-
-  const handleAddTask = () => {
-    setCurrentTask(undefined)
-    setTaskDialogOpen(true)
-  }
-
-  const handleEditTask = (task: Task) => {
-    setCurrentTask(task)
-    setTaskDialogOpen(true)
-  }
-
-  const handleSaveTask = (taskData: Omit<Task, "id">) => {
-    if (currentTask) {
-      // Update existing task
-      setTasks(tasks.map((task) => (task.id === currentTask.id ? { ...task, ...taskData } : task)))
-    } else {
-      // Add new task
-      const newTask: Task = {
-        id: `task-${Date.now()}`,
-        ...taskData,
+    const fetchEventData = async () => {
+      try {
+        setIsLoading(true)
+        
+        // Fetch event details
+        const response = await fetch(`/api/events/${eventId}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch event data')
+        }
+        
+        const data = await response.json()
+        setEvent(data.event)
+        setEditForm(data.event) // Initialize edit form with current event data
+        
+        // In a real app, you would fetch related data here
+        // For now, we'll use mock data
+        setTasks(mockTasks)
+        setStaff(mockStaff)
+        setVendors(mockVendors)
+        setTicketSales(mockTicketSales)
+        setExpenses(mockExpenses)
+        setNotifications(mockNotifications)
+        
+      } catch (error) {
+        console.error('Error fetching event data:', error)
+        toast.error("Failed to load event data")
+      } finally {
+        setIsLoading(false)
       }
-      setTasks([...tasks, newTask])
     }
-    setTaskDialogOpen(false)
+
+    if (eventId) {
+      fetchEventData()
+    }
+  }, [eventId])
+
+  // Quick action handlers
+  const handleAddTask = () => {
+    setActiveTab('tasks')
+    setShowAddTaskDialog(true)
   }
 
-  const handleDeleteTask = (taskId: string) => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      setTasks(tasks.filter((task) => task.id !== taskId))
+  const handleManageStaff = () => {
+    setActiveTab('staff')
+    setShowAddStaffDialog(true)
+  }
+
+  const handleAddVendor = () => {
+    setActiveTab('vendors')
+    setShowAddVendorDialog(true)
+  }
+
+  const handleViewTickets = () => {
+    setActiveTab('tickets')
+    setShowTicketsDialog(true)
+  }
+
+  const handleShare = () => {
+    setShowShareDialog(true)
+  }
+
+  const handleExport = () => {
+    setShowExportDialog(true)
+  }
+
+  const handleDuplicateEvent = async () => {
+    if (!event) return
+    
+    try {
+      const duplicateData = {
+        ...event,
+        name: `${event.name} (Copy)`,
+        status: 'scheduled' as const,
+        tickets_sold: 0,
+        actual_revenue: 0
+      }
+      
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(duplicateData)
+      })
+      
+      if (!response.ok) throw new Error('Failed to duplicate event')
+      
+      const newEvent = await response.json()
+      toast.success("Event duplicated successfully")
+      router.push(`/admin/dashboard/events/${newEvent.event.id}`)
+    } catch (error) {
+      toast.error("Failed to duplicate event")
     }
   }
 
-  const handleStatusChange = (taskId: string, status: TaskStatus) => {
-    setTasks(tasks.map((task) => (task.id === taskId ? { ...task, status } : task)))
+  const handleSaveEvent = async () => {
+    if (!event) return
+    
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      })
+      
+      if (!response.ok) throw new Error('Failed to update event')
+      
+      const updatedEvent = await response.json()
+      setEvent(updatedEvent.event)
+      setIsEditing(false)
+      toast.success("Event updated successfully")
+    } catch (error) {
+      toast.error("Failed to update event")
+    }
   }
 
-  return (
-    <div className="container mx-auto p-4">
-      <Header />
+  const handleStatusChange = async (newStatus: Event['status']) => {
+    if (!event) return
+    
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      
+      if (!response.ok) throw new Error('Failed to update status')
+      
+      setEvent({ ...event, status: newStatus })
+      toast.success(`Event status changed to ${newStatus}`)
+    } catch (error) {
+      toast.error("Failed to update event status")
+    }
+  }
 
-      <div className="mb-6">
-        <Button variant="ghost" className="mb-4 text-slate-400 hover:text-white" onClick={() => router.back()}>
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to Events
-        </Button>
+  const handleDeleteEvent = async () => {
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) throw new Error('Failed to delete event')
+      
+      toast.success("Event deleted successfully")
+      router.push('/admin/dashboard/events')
+    } catch (error) {
+      toast.error("Failed to delete event")
+    }
+  }
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">{event.title}</h1>
-            <div className="flex flex-wrap items-center gap-3 text-slate-400">
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-1 text-purple-500" />
-                {event.date}
-              </div>
-              <div className="flex items-center">
-                <MapPin className="h-4 w-4 mr-1 text-purple-500" />
-                {event.location}
-              </div>
-              <Badge variant="outline" className="bg-slate-800/50 text-slate-300 border-slate-700/50">
-                {event.type}
-              </Badge>
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'scheduled': return 'bg-blue-500/20 text-blue-400'
+      case 'confirmed': return 'bg-green-500/20 text-green-400'
+      case 'in_progress': return 'bg-yellow-500/20 text-yellow-400'
+      case 'completed': return 'bg-purple-500/20 text-purple-400'
+      case 'cancelled': return 'bg-red-500/20 text-red-400'
+      case 'postponed': return 'bg-orange-500/20 text-orange-400'
+      default: return 'bg-slate-500/20 text-slate-400'
+    }
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-500/20 text-red-400'
+      case 'medium': return 'bg-yellow-500/20 text-yellow-400'
+      case 'low': return 'bg-green-500/20 text-green-400'
+      default: return 'bg-slate-500/20 text-slate-400'
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950/20 p-6">
+        <div className="container mx-auto">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-slate-800 rounded w-1/3"></div>
+            <div className="h-64 bg-slate-800 rounded"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="h-32 bg-slate-800 rounded"></div>
+              <div className="h-32 bg-slate-800 rounded"></div>
+              <div className="h-32 bg-slate-800 rounded"></div>
             </div>
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" className="border-slate-700 hover:bg-slate-800">
-              <Share2 className="mr-2 h-4 w-4" />
-              Share
-            </Button>
-            <Button
-              className="bg-purple-600 hover:bg-purple-700"
-              onClick={handleGeneratePDF}
-              disabled={isGeneratingPDF}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {isGeneratingPDF ? "Generating..." : "Generate Report"}
-            </Button>
           </div>
         </div>
       </div>
+    )
+  }
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-        <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm lg:col-span-3">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-slate-100">Event Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-slate-400 mb-4">{event.description}</p>
+  if (!event) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950/20 p-6">
+        <div className="container mx-auto text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Event Not Found</h1>
+          <p className="text-slate-400 mb-6">The event you're looking for doesn't exist or has been deleted.</p>
+          <Button onClick={() => router.push('/admin/dashboard/events')}>
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back to Events
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <div className="flex items-center mb-2">
-                  <Users className="h-5 w-5 mr-2 text-purple-500" />
-                  <h3 className="font-medium text-slate-200">Attendees</h3>
-                </div>
-                <p className="text-2xl font-bold text-white">{event.attendees.toLocaleString()}</p>
-              </div>
+  const daysUntilEvent = differenceInDays(new Date(event.event_date), new Date())
+  const ticketSalesPercentage = event.capacity > 0 ? (event.tickets_sold / event.capacity) * 100 : 0
+  const revenuePercentage = event.expected_revenue > 0 ? (event.actual_revenue / event.expected_revenue) * 100 : 0
 
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <div className="flex items-center mb-2">
-                  <DollarSign className="h-5 w-5 mr-2 text-purple-500" />
-                  <h3 className="font-medium text-slate-200">Budget</h3>
-                </div>
-                <p className="text-2xl font-bold text-white">${event.budget.total.toLocaleString()}</p>
-                <p className="text-sm text-slate-400">${event.budget.spent.toLocaleString()} spent</p>
-              </div>
-
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <div className="flex items-center mb-2">
-                  <Clock className="h-5 w-5 mr-2 text-purple-500" />
-                  <h3 className="font-medium text-slate-200">Timeline</h3>
-                </div>
-                <p className="text-2xl font-bold text-white">{event.daysUntil} days</p>
-                <p className="text-sm text-slate-400">until event</p>
-              </div>
-            </div>
-
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950/20 p-6">
+      <div className="container mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => router.push('/admin/dashboard/events')}
+              className="text-slate-400 hover:text-white"
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Back to Events
+            </Button>
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium text-slate-200">Overall Progress</h3>
-                <span className="text-purple-400">{event.progress}%</span>
-              </div>
-              <Progress value={event.progress} className="h-2 bg-slate-800">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-                  style={{ width: `${event.progress}%` }}
-                />
-              </Progress>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-slate-100">Task Completion</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center h-40">
-              <div className="relative w-32 h-32">
-                <svg className="w-full h-full" viewBox="0 0 100 100">
-                  <circle
-                    className="text-slate-800 stroke-current"
-                    strokeWidth="10"
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="transparent"
-                  ></circle>
-                  <circle
-                    className="text-purple-500 stroke-current"
-                    strokeWidth="10"
-                    strokeLinecap="round"
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="transparent"
-                    strokeDasharray="251.2"
-                    strokeDashoffset={251.2 - (251.2 * taskCompletionPercentage) / 100}
-                    transform="rotate(-90 50 50)"
-                  ></circle>
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-white">{taskCompletionPercentage}%</span>
+              <h1 className="text-3xl font-bold text-white">{event.name}</h1>
+              <div className="flex items-center space-x-4 mt-2 text-slate-400">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  {format(new Date(event.event_date), 'MMM dd, yyyy')}
+                  {event.event_time && ` at ${event.event_time}`}
                 </div>
+                <div className="flex items-center">
+                  <MapPin className="h-4 w-4 mr-1" />
+                  {event.venue_name}
+                </div>
+                <Badge className={getStatusColor(event.status)}>
+                  {event.status.replace('_', ' ')}
+                </Badge>
               </div>
-              <p className="mt-4 text-slate-400">
-                {completedTasks} of {totalTasks} tasks completed
-              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" className="border-slate-700 text-slate-300" onClick={handleShare}>
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
+            </Button>
+            <Button variant="outline" className="border-slate-700 text-slate-300" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="border-slate-700 text-slate-300">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Event
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDuplicateEvent}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Duplicate Event
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-red-400 focus:text-red-400"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Event
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Days Until Event</p>
+                  <p className="text-2xl font-bold text-white">{daysUntilEvent}</p>
+                </div>
+                <Calendar className="h-8 w-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Ticket Sales</p>
+                  <p className="text-2xl font-bold text-white">{event.tickets_sold.toLocaleString()}</p>
+                  <p className="text-sm text-slate-400">of {event.capacity.toLocaleString()}</p>
+                </div>
+                <Ticket className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Revenue</p>
+                  <p className="text-2xl font-bold text-white">${event.actual_revenue.toLocaleString()}</p>
+                  <p className="text-sm text-slate-400">of ${event.expected_revenue.toLocaleString()}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-slate-900/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Staff</p>
+                  <p className="text-2xl font-bold text-white">{staff.length}</p>
+                  <p className="text-sm text-slate-400">Confirmed</p>
+                </div>
+                <Users2 className="h-8 w-8 text-yellow-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-8 bg-slate-800/50 border-slate-700/50">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-purple-600">Overview</TabsTrigger>
+            <TabsTrigger value="tasks" className="data-[state=active]:bg-purple-600">Tasks</TabsTrigger>
+            <TabsTrigger value="staff" className="data-[state=active]:bg-purple-600">Staff</TabsTrigger>
+            <TabsTrigger value="vendors" className="data-[state=active]:bg-purple-600">Vendors</TabsTrigger>
+            <TabsTrigger value="tickets" className="data-[state=active]:bg-purple-600">Tickets</TabsTrigger>
+            <TabsTrigger value="finances" className="data-[state=active]:bg-purple-600">Finances</TabsTrigger>
+            <TabsTrigger value="logistics" className="data-[state=active]:bg-purple-600">Logistics</TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-purple-600">Analytics</TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                {/* Event Details */}
+                <Card className="bg-slate-900/50 border-slate-700/50">
+                  <CardHeader>
+                    <CardTitle className="text-white">Event Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label className="text-slate-400">Description</Label>
+                      <p className="text-white mt-1">{event.description || 'No description provided'}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-slate-400">Venue</Label>
+                        <p className="text-white mt-1">{event.venue_name}</p>
+                      </div>
+                      <div>
+                        <Label className="text-slate-400">Address</Label>
+                        <p className="text-white mt-1">{event.venue_address || 'No address provided'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-slate-400">Doors Open</Label>
+                        <p className="text-white mt-1">{event.doors_open || 'TBD'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-slate-400">Duration</Label>
+                        <p className="text-white mt-1">{event.duration_minutes ? `${event.duration_minutes} minutes` : 'TBD'}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Progress Tracking */}
+                <Card className="bg-slate-900/50 border-slate-700/50">
+                  <CardHeader>
+                    <CardTitle className="text-white">Progress Tracking</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label className="text-slate-400">Ticket Sales Progress</Label>
+                        <span className="text-white">{ticketSalesPercentage.toFixed(1)}%</span>
+                      </div>
+                      <Progress value={ticketSalesPercentage} className="h-2" />
+                    </div>
+                    
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label className="text-slate-400">Revenue Progress</Label>
+                        <span className="text-white">{revenuePercentage.toFixed(1)}%</span>
+                      </div>
+                      <Progress value={revenuePercentage} className="h-2" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-6">
+                {/* Quick Actions */}
+                <Card className="bg-slate-900/50 border-slate-700/50">
+                  <CardHeader>
+                    <CardTitle className="text-white">Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button className="w-full justify-start" variant="outline" onClick={handleAddTask}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Task
+                    </Button>
+                    <Button className="w-full justify-start" variant="outline" onClick={handleManageStaff}>
+                      <Users2 className="mr-2 h-4 w-4" />
+                      Manage Staff
+                    </Button>
+                    <Button className="w-full justify-start" variant="outline" onClick={handleAddVendor}>
+                      <Truck className="mr-2 h-4 w-4" />
+                      Add Vendor
+                    </Button>
+                    <Button className="w-full justify-start" variant="outline" onClick={handleViewTickets}>
+                      <Ticket className="mr-2 h-4 w-4" />
+                      View Tickets
+                    </Button>
+                    <Separator className="bg-slate-700" />
+                    <EventJobPosting
+                      eventId={eventId}
+                      eventName={event.name}
+                      eventDate={event.event_date}
+                      eventLocation={event.venue_name}
+                      onJobPosted={(job) => {
+                        toast.success(`Job "${job.title}" posted successfully!`)
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Status Management */}
+                <Card className="bg-slate-900/50 border-slate-700/50">
+                  <CardHeader>
+                    <CardTitle className="text-white">Status Management</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Select value={event.status} onValueChange={handleStatusChange}>
+                      <SelectTrigger className="bg-slate-800 border-slate-700">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-700">
+                        <SelectItem value="scheduled">Scheduled</SelectItem>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="postponed">Postponed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Tasks Tab */}
+          <TabsContent value="tasks" className="space-y-6">
+            <EventTaskManager
+              eventId={eventId}
+              tasks={tasks}
+              onTasksUpdate={setTasks}
+            />
+          </TabsContent>
+
+          {/* Staff Tab */}
+          <TabsContent value="staff" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Event Staff</h2>
+                <p className="text-slate-400">Manage staff and post jobs for this event</p>
+              </div>
+              <EventJobPosting
+                eventId={eventId}
+                eventName={event.name}
+                eventDate={event.event_date}
+                eventLocation={event.venue_name}
+                onJobPosted={(job) => {
+                  toast.success(`Job "${job.title}" posted successfully!`)
+                }}
+              />
+            </div>
+            <EventStaffManager
+              eventId={eventId}
+              staff={staff}
+              onStaffUpdate={setStaff}
+            />
+            
+            <Separator className="bg-slate-700" />
+            
+            <EventJobsList eventId={eventId} />
+          </TabsContent>
+
+          {/* Vendors Tab */}
+          <TabsContent value="vendors" className="space-y-6">
+            <EventVendorManager
+              eventId={eventId}
+              vendors={vendors}
+              onVendorsUpdate={setVendors}
+            />
+          </TabsContent>
+
+          {/* Tickets Tab */}
+          <TabsContent value="tickets" className="space-y-6">
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardHeader>
+                <CardTitle className="text-white">Ticket Sales</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-white">{event.tickets_sold.toLocaleString()}</h3>
+                    <p className="text-slate-400">Tickets Sold</p>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-white">${event.actual_revenue.toLocaleString()}</h3>
+                    <p className="text-slate-400">Total Revenue</p>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-white">{ticketSalesPercentage.toFixed(1)}%</h3>
+                    <p className="text-slate-400">Capacity Filled</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Finances Tab */}
+          <TabsContent value="finances" className="space-y-6">
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardHeader>
+                <CardTitle className="text-white">Financial Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-green-400">${event.actual_revenue.toLocaleString()}</h3>
+                    <p className="text-slate-400">Revenue</p>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-red-400">${event.expenses.toLocaleString()}</h3>
+                    <p className="text-slate-400">Expenses</p>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-blue-400">${(event.actual_revenue - event.expenses).toLocaleString()}</h3>
+                    <p className="text-slate-400">Profit</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Logistics Tab */}
+          <TabsContent value="logistics" className="space-y-6">
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardHeader>
+                <CardTitle className="text-white">Logistics & Requirements</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-slate-400">Sound Requirements</Label>
+                    <p className="text-white mt-1">{event.sound_requirements || 'No specific requirements'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-400">Lighting Requirements</Label>
+                    <p className="text-white mt-1">{event.lighting_requirements || 'No specific requirements'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-400">Stage Requirements</Label>
+                    <p className="text-white mt-1">{event.stage_requirements || 'No specific requirements'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-400">Special Requirements</Label>
+                    <p className="text-white mt-1">{event.special_requirements || 'No special requirements'}</p>
+                  </div>
+                </div>
+                
+                <Separator className="bg-slate-700" />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-slate-400">Load-in Time</Label>
+                    <p className="text-white mt-1">{event.load_in_time || 'TBD'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-slate-400">Sound Check Time</Label>
+                    <p className="text-white mt-1">{event.sound_check_time || 'TBD'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-6">
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardHeader>
+                <CardTitle className="text-white">Event Analytics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <BarChart3 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-white mb-2">Analytics Coming Soon</h3>
+                  <p className="text-slate-400">Detailed analytics and reporting features will be available soon.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
-      <Tabs defaultValue="tasks" className="w-full">
-        <TabsList className="bg-slate-800/50 p-1 mb-6">
-          <TabsTrigger value="tasks" className="data-[state=active]:bg-slate-700 data-[state=active]:text-purple-400">
-            Tasks
-          </TabsTrigger>
-          <TabsTrigger value="budget" className="data-[state=active]:bg-slate-700 data-[state=active]:text-purple-400">
-            Budget
-          </TabsTrigger>
-          <TabsTrigger value="staff" className="data-[state=active]:bg-slate-700 data-[state=active]:text-purple-400">
-            Staff
-          </TabsTrigger>
-          <TabsTrigger value="vendors" className="data-[state=active]:bg-slate-700 data-[state=active]:text-purple-400">
-            Vendors
-          </TabsTrigger>
-          <TabsTrigger
-            value="integrations"
-            className="data-[state=active]:bg-slate-700 data-[state=active]:text-purple-400"
-          >
-            Integrations
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="tasks" className="mt-0">
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-slate-100">Event Tasks</CardTitle>
-                <Button className="bg-purple-600 hover:bg-purple-700" onClick={handleAddTask}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Task
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+      {/* Edit Event Dialog */}
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Event</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Update event details and information.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name" className="text-slate-300">Event Name</Label>
                 <Input
-                  placeholder="Search tasks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 bg-slate-800 border-slate-700 text-slate-100"
+                  id="name"
+                  value={editForm.name || ''}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
                 />
               </div>
-
-              <div className="space-y-4">
-                {filteredTasks.length > 0 ? (
-                  filteredTasks.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      eventId={eventId}
-                      eventName={event.title}
-                      onEdit={handleEditTask}
-                      onDelete={handleDeleteTask}
-                      onStatusChange={handleStatusChange}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-slate-400">
-                    {searchQuery ? (
-                      <>
-                        <p>No tasks found matching "{searchQuery}"</p>
-                        <Button variant="link" className="text-purple-400 mt-2" onClick={() => setSearchQuery("")}>
-                          Clear search
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <p>No tasks yet</p>
-                        <Button variant="link" className="text-purple-400 mt-2" onClick={handleAddTask}>
-                          Add your first task
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="budget" className="mt-0">
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-slate-100">Budget Management</CardTitle>
-                <Button className="bg-purple-600 hover:bg-purple-700">Add Expense</Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-slate-800/50 rounded-lg p-4">
-                  <h3 className="font-medium text-slate-400 mb-1">Total Budget</h3>
-                  <p className="text-2xl font-bold text-white">${event.budget.total.toLocaleString()}</p>
-                </div>
-
-                <div className="bg-slate-800/50 rounded-lg p-4">
-                  <h3 className="font-medium text-slate-400 mb-1">Spent</h3>
-                  <p className="text-2xl font-bold text-purple-400">${event.budget.spent.toLocaleString()}</p>
-                  <p className="text-sm text-slate-500">
-                    {Math.round((event.budget.spent / event.budget.total) * 100)}% of total
-                  </p>
-                </div>
-
-                <div className="bg-slate-800/50 rounded-lg p-4">
-                  <h3 className="font-medium text-slate-400 mb-1">Remaining</h3>
-                  <p className="text-2xl font-bold text-green-400">${event.budget.remaining.toLocaleString()}</p>
-                  <p className="text-sm text-slate-500">
-                    {Math.round((event.budget.remaining / event.budget.total) * 100)}% of total
-                  </p>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="font-medium text-slate-200 mb-3">Budget Breakdown</h3>
-                <div className="h-8 w-full bg-slate-800 rounded-lg overflow-hidden flex">
-                  {event.budget.categories.map((category, index) => {
-                    const percentage = (category.allocated / event.budget.total) * 100
-                    const colors = [
-                      "bg-purple-500",
-                      "bg-pink-500",
-                      "bg-blue-500",
-                      "bg-green-500",
-                      "bg-yellow-500",
-                      "bg-red-500",
-                    ]
-                    return (
-                      <div
-                        key={category.name}
-                        className={`h-full ${colors[index % colors.length]}`}
-                        style={{ width: `${percentage}%` }}
-                        title={`${category.name}: $${category.allocated.toLocaleString()} (${Math.round(percentage)}%)`}
-                      />
-                    )
-                  })}
-                </div>
-                <div className="flex flex-wrap gap-4 mt-3">
-                  {event.budget.categories.map((category, index) => {
-                    const colors = [
-                      "bg-purple-500",
-                      "bg-pink-500",
-                      "bg-blue-500",
-                      "bg-green-500",
-                      "bg-yellow-500",
-                      "bg-red-500",
-                    ]
-                    return (
-                      <div key={category.name} className="flex items-center">
-                        <div className={`w-3 h-3 rounded-full ${colors[index % colors.length]} mr-2`} />
-                        <span className="text-sm text-slate-400">{category.name}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
               <div>
-                <h3 className="font-medium text-slate-200 mb-3">Budget Categories</h3>
-                <div className="space-y-4">
-                  {event.budget.categories.map((category) => (
-                    <div key={category.name} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-medium text-slate-200">{category.name}</h4>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-white">${category.allocated.toLocaleString()}</p>
-                          <p className="text-xs text-slate-400">allocated</p>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-slate-400">Spent: ${category.spent.toLocaleString()}</span>
-                        <span className="text-slate-400">Remaining: ${category.remaining.toLocaleString()}</span>
-                      </div>
-
-                      <Progress value={(category.spent / category.allocated) * 100} className="h-1.5 bg-slate-700">
-                        <div
-                          className="h-full bg-purple-500 rounded-full"
-                          style={{ width: `${(category.spent / category.allocated) * 100}%` }}
-                        />
-                      </Progress>
-                    </div>
-                  ))}
-                </div>
+                <Label htmlFor="venue" className="text-slate-300">Venue Name</Label>
+                <Input
+                  id="venue"
+                  value={editForm.venue_name || ''}
+                  onChange={(e) => setEditForm({ ...editForm, venue_name: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="staff" className="mt-0">
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-slate-100">Staff Management</CardTitle>
-                <Button className="bg-purple-600 hover:bg-purple-700">Add Staff</Button>
+            </div>
+            <div>
+              <Label htmlFor="description" className="text-slate-300">Description</Label>
+              <Textarea
+                id="description"
+                value={editForm.description || ''}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                className="bg-slate-700 border-slate-600 text-white"
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="date" className="text-slate-300">Event Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={editForm.event_date || ''}
+                  onChange={(e) => setEditForm({ ...editForm, event_date: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {event.staff.map((staffMember) => (
-                  <div
-                    key={staffMember.id}
-                    className="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50 flex items-start"
-                  >
-                    <Avatar className="h-12 w-12 mr-4 border-2 border-purple-500/50">
-                      <AvatarImage src={staffMember.avatar || "/placeholder.svg"} alt={staffMember.name} />
-                      <AvatarFallback className="bg-purple-900 text-purple-200">
-                        {staffMember.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-medium text-slate-200">{staffMember.name}</h4>
-                      <p className="text-sm text-purple-400">{staffMember.role}</p>
-                      <div className="flex mt-2 space-x-2">
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-slate-700">
-                          Message
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-slate-700">
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div>
+                <Label htmlFor="time" className="text-slate-300">Event Time</Label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={editForm.event_time || ''}
+                  onChange={(e) => setEditForm({ ...editForm, event_time: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="vendors" className="mt-0">
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-slate-100">Vendor Management</CardTitle>
-                <Button className="bg-purple-600 hover:bg-purple-700">Add Vendor</Button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="capacity" className="text-slate-300">Capacity</Label>
+                <Input
+                  id="capacity"
+                  type="number"
+                  value={editForm.capacity || 0}
+                  onChange={(e) => setEditForm({ ...editForm, capacity: parseInt(e.target.value) })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="text-left py-3 px-4 text-slate-400 font-medium">Vendor</th>
-                      <th className="text-left py-3 px-4 text-slate-400 font-medium">Type</th>
-                      <th className="text-left py-3 px-4 text-slate-400 font-medium">Contact</th>
-                      <th className="text-left py-3 px-4 text-slate-400 font-medium">Status</th>
-                      <th className="text-right py-3 px-4 text-slate-400 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {event.vendors.map((vendor) => (
-                      <tr key={vendor.id} className="border-b border-slate-800">
-                        <td className="py-3 px-4 text-slate-200">{vendor.name}</td>
-                        <td className="py-3 px-4 text-slate-400">{vendor.type}</td>
-                        <td className="py-3 px-4 text-slate-400">{vendor.contact}</td>
-                        <td className="py-3 px-4">
-                          <Badge
-                            className={
-                              vendor.status === "confirmed"
-                                ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                : "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                            }
-                          >
-                            {vendor.status === "confirmed" ? "Confirmed" : "Pending"}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-slate-700">
-                              Contact
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-xs border-slate-700">
-                              Details
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div>
+                <Label htmlFor="ticket_price" className="text-slate-300">Ticket Price</Label>
+                <Input
+                  id="ticket_price"
+                  type="number"
+                  step="0.01"
+                  value={editForm.ticket_price || 0}
+                  onChange={(e) => setEditForm({ ...editForm, ticket_price: parseFloat(e.target.value) })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditing(false)} className="border-slate-600 text-slate-300">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEvent} className="bg-purple-600 hover:bg-purple-700">
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        <TabsContent value="integrations" className="mt-0">
-          <SlackIntegration eventId={eventId} eventName={event.title} />
-        </TabsContent>
-      </Tabs>
+      {/* Share Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Share Event</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Share this event with your team or external stakeholders.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-slate-300">Event Link</Label>
+              <div className="flex space-x-2">
+                <Input
+                  value={`${window.location.origin}/admin/dashboard/events/${eventId}`}
+                  readOnly
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/admin/dashboard/events/${eventId}`)
+                    toast.success("Link copied to clipboard")
+                  }}
+                  className="border-slate-600 text-slate-300"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label className="text-slate-300">Share via Email</Label>
+              <Input
+                placeholder="Enter email addresses"
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowShareDialog(false)} className="border-slate-600 text-slate-300">
+              Close
+            </Button>
+            <Button onClick={() => {
+              toast.success("Event shared successfully")
+              setShowShareDialog(false)
+            }} className="bg-purple-600 hover:bg-purple-700">
+              Share Event
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <TaskDialog
-        open={taskDialogOpen}
-        onOpenChange={setTaskDialogOpen}
-        onSave={handleSaveTask}
-        task={currentTask}
-        title={currentTask ? "Edit Task" : "Add Task"}
-      />
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Export Event Data</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Export event information in various formats.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Button variant="outline" className="border-slate-600 text-slate-300 h-20 flex flex-col items-center justify-center">
+                <FileText className="h-6 w-6 mb-2" />
+                PDF Report
+              </Button>
+              <Button variant="outline" className="border-slate-600 text-slate-300 h-20 flex flex-col items-center justify-center">
+                <BarChart3 className="h-6 w-6 mb-2" />
+                Excel Data
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Button variant="outline" className="border-slate-600 text-slate-300 h-20 flex flex-col items-center justify-center">
+                <Calendar className="h-6 w-6 mb-2" />
+                Calendar Event
+              </Button>
+              <Button variant="outline" className="border-slate-600 text-slate-300 h-20 flex flex-col items-center justify-center">
+                <Users className="h-6 w-6 mb-2" />
+                Staff List
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExportDialog(false)} className="border-slate-600 text-slate-300">
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              toast.success("Event data exported successfully")
+              setShowExportDialog(false)
+            }} className="bg-purple-600 hover:bg-purple-700">
+              Export All
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tickets Dialog */}
+      <Dialog open={showTicketsDialog} onOpenChange={setShowTicketsDialog}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-white">Ticket Management</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              View and manage ticket sales for this event.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+              <Card className="bg-slate-700 border-slate-600">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-white">{event?.tickets_sold || 0}</p>
+                  <p className="text-sm text-slate-400">Tickets Sold</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-slate-700 border-slate-600">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-white">{event?.capacity || 0}</p>
+                  <p className="text-sm text-slate-400">Total Capacity</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-slate-700 border-slate-600">
+                <CardContent className="p-4 text-center">
+                  <p className="text-2xl font-bold text-white">${event?.actual_revenue || 0}</p>
+                  <p className="text-sm text-slate-400">Revenue</p>
+                </CardContent>
+              </Card>
+            </div>
+            <div>
+              <Label className="text-slate-300">Sales Progress</Label>
+              <Progress value={ticketSalesPercentage} className="h-3 mt-2" />
+              <p className="text-sm text-slate-400 mt-1">{ticketSalesPercentage.toFixed(1)}% sold</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTicketsDialog(false)} className="border-slate-600 text-slate-300">
+              Close
+            </Button>
+            <Button onClick={() => {
+              toast.success("Ticket data updated")
+              setShowTicketsDialog(false)
+            }} className="bg-purple-600 hover:bg-purple-700">
+              Update Sales
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="bg-slate-800 border-slate-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete Event</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Are you sure you want to delete this event? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-slate-700 border-slate-600 text-white hover:bg-slate-600">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteEvent}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete Event
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
+
+// Mock data for development
+const mockTasks: Task[] = [
+  {
+    id: '1',
+    name: 'Venue Setup',
+    description: 'Coordinate with venue for setup requirements',
+    status: 'completed',
+    priority: 'high',
+    category: 'logistics',
+    due_date: '2024-01-15'
+  },
+  {
+    id: '2',
+    name: 'Sound Check',
+    description: 'Schedule and conduct sound check',
+    status: 'in_progress',
+    priority: 'medium',
+    category: 'technical',
+    due_date: '2024-01-20'
+  },
+  {
+    id: '3',
+    name: 'Staff Briefing',
+    description: 'Brief all staff on event procedures',
+    status: 'not_started',
+    priority: 'high',
+    category: 'staffing',
+    due_date: '2024-01-25'
+  }
+]
+
+const mockStaff: Staff[] = [
+  {
+    id: '1',
+    name: 'John Smith',
+    role: 'Event Manager',
+    email: 'john@example.com',
+    status: 'confirmed'
+  },
+  {
+    id: '2',
+    name: 'Sarah Johnson',
+    role: 'Technical Director',
+    email: 'sarah@example.com',
+    status: 'confirmed'
+  },
+  {
+    id: '3',
+    name: 'Mike Wilson',
+    role: 'Security Lead',
+    email: 'mike@example.com',
+    status: 'pending'
+  }
+]
+
+const mockVendors: Vendor[] = [
+  {
+    id: '1',
+    name: 'SoundMasters Pro',
+    type: 'Audio Equipment',
+    contact_name: 'David Brown',
+    contact_email: 'david@soundmasters.com',
+    status: 'confirmed'
+  },
+  {
+    id: '2',
+    name: 'LightWorks',
+    type: 'Lighting',
+    contact_name: 'Lisa Chen',
+    contact_email: 'lisa@lightworks.com',
+    status: 'confirmed'
+  },
+  {
+    id: '3',
+    name: 'FoodTruck Collective',
+    type: 'Food & Beverage',
+    contact_name: 'Tom Garcia',
+    contact_email: 'tom@foodtruck.com',
+    status: 'pending'
+  }
+]
+
+const mockTicketSales: any[] = []
+const mockExpenses: any[] = []
+const mockNotifications: any[] = []

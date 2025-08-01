@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
 import { 
   Heart, 
   MessageCircle, 
@@ -51,6 +52,20 @@ interface PostData {
   like_count: number
 }
 
+interface Comment {
+  id: string
+  content: string
+  created_at: string
+  updated_at: string
+  user: {
+    id: string
+    username: string
+    full_name: string
+    avatar_url?: string
+    is_verified: boolean
+  }
+}
+
 interface SuggestedUser {
   id: string
   username: string
@@ -73,6 +88,9 @@ export function SocialFeed() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState('following')
+  const [comments, setComments] = useState<{ [postId: string]: Comment[] }>({})
+  const [showComments, setShowComments] = useState<{ [postId: string]: boolean }>({})
+  const [loadingComments, setLoadingComments] = useState<{ [postId: string]: boolean }>({})
   const [followingUsers, setFollowingUsers] = useState(new Set<string>())
   
   const { user } = useAuth()
@@ -80,7 +98,16 @@ export function SocialFeed() {
 
   const loadPosts = async (feedType = activeTab) => {
     try {
-      const response = await fetch(`/api/feed/posts?type=${feedType}&limit=20`, {
+      // Use personal feed API for "following" tab, regular posts API for others
+      const endpoint = feedType === 'following' ? '/api/feed/personal' : '/api/feed/posts'
+      const params = new URLSearchParams({
+        limit: '20',
+        type: feedType === 'following' ? 'following' : feedType
+      })
+      
+      console.log(`[SocialFeed] Loading ${feedType} feed from ${endpoint}`)
+      
+      const response = await fetch(`${endpoint}?${params}`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -94,7 +121,11 @@ export function SocialFeed() {
         return
       }
       
-      setPosts(result.data || [])
+      // Handle both API response formats
+      const postsData = result.content || result.data || []
+      setPosts(postsData)
+      
+      console.log(`[SocialFeed] Loaded ${postsData.length} posts for ${feedType} feed`)
     } catch (error) {
       console.error('Error loading posts:', error)
     }
@@ -158,6 +189,12 @@ export function SocialFeed() {
     if (!user) return
 
     try {
+      const currentPost = posts.find(p => p.id === postId)
+      if (!currentPost) return
+
+      const isCurrentlyLiked = currentPost.is_liked
+      const action = isCurrentlyLiked ? 'unlike' : 'like'
+
       // Optimistic update
       setPosts(prev => prev.map(post => 
         post.id === postId 
@@ -169,22 +206,21 @@ export function SocialFeed() {
           : post
       ))
 
-      if (posts.find(p => p.id === postId)?.is_liked) {
-        // Unlike
-        await supabase
-          .from('post_likes')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user.id)
-      } else {
-        // Like
-        await supabase
-          .from('post_likes')
-          .insert({
-            post_id: postId,
-            user_id: user.id
-          })
+      // Call the new API
+      const response = await fetch(`/api/posts/${postId}/likes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ action })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle like')
       }
+
+      console.log('✅ Successfully toggled like')
     } catch (error) {
       // Revert on error
       setPosts(prev => prev.map(post => 
@@ -197,6 +233,91 @@ export function SocialFeed() {
           : post
       ))
       console.error('Error toggling like:', error)
+    }
+  }
+
+  const loadComments = async (postId: string) => {
+    try {
+      setLoadingComments(prev => ({ ...prev, [postId]: true }))
+      
+      const response = await fetch(`/api/posts/${postId}/comments`, {
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to load comments')
+      }
+
+      const result = await response.json()
+      setComments(prev => ({ ...prev, [postId]: result.comments || [] }))
+      
+      console.log('✅ Successfully loaded comments for post:', postId)
+    } catch (error) {
+      console.error('Error loading comments:', error)
+    } finally {
+      setLoadingComments(prev => ({ ...prev, [postId]: false }))
+    }
+  }
+
+  const toggleComments = async (postId: string) => {
+    const isCurrentlyShowing = showComments[postId]
+    
+    if (!isCurrentlyShowing) {
+      // Load comments if we don't have them yet
+      if (!comments[postId]) {
+        await loadComments(postId)
+      }
+    }
+    
+    setShowComments(prev => ({ ...prev, [postId]: !isCurrentlyShowing }))
+  }
+
+  const handleComment = async (postId: string, content: string) => {
+    if (!user || !content.trim()) return
+
+    try {
+      console.log('💬 Adding comment to post:', postId)
+
+      // Call the new API
+      const response = await fetch(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ content: content.trim() })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to add comment')
+      }
+
+      const result = await response.json()
+      
+      // Add the new comment to the local state
+      setComments(prev => ({
+        ...prev,
+        [postId]: [...(prev[postId] || []), result.comment]
+      }))
+      
+      // Update the post comments count
+      setPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              comments_count: post.comments_count + 1
+            }
+          : post
+      ))
+
+      // Ensure comments are shown after adding one
+      setShowComments(prev => ({ ...prev, [postId]: true }))
+
+      console.log('✅ Successfully added comment')
+      return result.comment
+    } catch (error) {
+      console.error('Error adding comment:', error)
+      throw error
     }
   }
 
@@ -219,6 +340,7 @@ export function SocialFeed() {
 
       const response = await fetch('/api/social/follow', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           followingId: userId,
@@ -445,7 +567,12 @@ export function SocialFeed() {
                                     <Heart className={`h-4 w-4 mr-2 ${post.is_liked ? 'fill-current' : ''}`} />
                                     {post.like_count}
                                   </Button>
-                                  <Button variant="ghost" size="sm" className="text-slate-400 hover:text-blue-400">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="text-slate-400 hover:text-blue-400"
+                                    onClick={() => toggleComments(post.id)}
+                                  >
                                     <MessageCircle className="h-4 w-4 mr-2" />
                                     {post.comments_count}
                                   </Button>
@@ -463,6 +590,84 @@ export function SocialFeed() {
                                   <span className="capitalize">{post.visibility}</span>
                                 </div>
                               </div>
+                              
+                              {/* Comments Section */}
+                              {showComments[post.id] && (
+                                <div className="px-4 py-3 border-t border-slate-800 space-y-4">
+                                  {/* Existing Comments */}
+                                  {loadingComments[post.id] ? (
+                                    <div className="flex items-center justify-center py-4">
+                                      <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                                      <span className="ml-2 text-slate-400">Loading comments...</span>
+                                    </div>
+                                  ) : comments[post.id] && comments[post.id].length > 0 ? (
+                                    <div className="space-y-3">
+                                      {comments[post.id].map((comment) => (
+                                        <div key={comment.id} className="flex gap-3">
+                                          <Avatar className="h-8 w-8 flex-shrink-0">
+                                            <AvatarImage src={comment.user.avatar_url} />
+                                            <AvatarFallback>
+                                              {comment.user.full_name?.charAt(0) || comment.user.username?.charAt(0) || 'U'}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="bg-slate-700/50 rounded-lg px-3 py-2">
+                                              <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-medium text-white text-sm">
+                                                  {comment.user.full_name || comment.user.username}
+                                                </span>
+                                                {comment.user.is_verified && (
+                                                  <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                                                    <Check className="w-2 h-2 text-white" />
+                                                  </div>
+                                                )}
+                                                <span className="text-slate-400 text-xs">
+                                                  {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                                                </span>
+                                              </div>
+                                              <p className="text-slate-200 text-sm">{comment.content}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-4">
+                                      <p className="text-slate-400 text-sm">No comments yet. Be the first to comment!</p>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Comment Input */}
+                                  <div className="flex gap-2 pt-2">
+                                    <Avatar className="h-8 w-8 flex-shrink-0">
+                                      <AvatarImage src={user?.user_metadata?.avatar_url} />
+                                      <AvatarFallback>
+                                        {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                      <Input
+                                        placeholder="Write a comment..."
+                                        className="bg-slate-700 border-slate-600 text-sm"
+                                        onKeyDown={async (e) => {
+                                          if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault()
+                                            const content = e.currentTarget.value
+                                            if (content.trim()) {
+                                              try {
+                                                await handleComment(post.id, content)
+                                                e.currentTarget.value = ''
+                                              } catch (error) {
+                                                console.error('Failed to add comment:', error)
+                                              }
+                                            }
+                                          }
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </CardContent>
                           </Card>
                         </motion.div>

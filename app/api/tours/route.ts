@@ -5,7 +5,6 @@ import { authenticateApiRequest, checkAdminPermissions } from '@/lib/auth/api-au
 const createTourSchema = z.object({
   name: z.string().min(1, 'Tour name is required'),
   description: z.string().optional(),
-  artist_id: z.string().uuid('Invalid artist ID').optional(),
   start_date: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid start date'),
   end_date: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid end date'),
   budget: z.number().min(0, 'Budget must be positive').optional(),
@@ -26,12 +25,11 @@ export async function GET(request: NextRequest) {
     }
 
     const { user, supabase } = authResult
-    console.log('[Tours API] User authenticated:', user.id)
 
-    // Check if user has admin permissions (now allows all authenticated users)
+    // Check if user has admin permissions
     const hasAdminAccess = await checkAdminPermissions(user)
     if (!hasAdminAccess) {
-      console.log('[Tours API] User lacks admin permissions')
+      console.log('[Tours API] User lacks admin permissions for viewing tours')
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
@@ -40,10 +38,22 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    // Simplified query that works with basic schema - no complex joins
+    console.log('[Tours API] Fetching tours for user:', user.id)
+
+    // Build query to fetch tours with optional filtering
     let query = supabase
       .from('tours')
-      .select('*')
+      .select(`
+        *,
+        events (
+          id,
+          name,
+          event_date,
+          status,
+          venue_name
+        )
+      `)
+      .eq('user_id', user.id) // Use user_id instead of artist_id
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -51,34 +61,37 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status)
     }
 
-    const { data: tours, error } = await query
+    const { data: tours, error: toursError } = await query
 
-    if (error) {
-      console.error('[Tours API] Error fetching tours:', error)
+    if (toursError) {
+      console.error('[Tours API] Error fetching tours:', toursError)
       // Return empty array instead of error if table doesn't exist
-      if (error.code === '42P01') {
+      if (toursError.code === '42P01') {
         console.log('[Tours API] Tours table does not exist, returning empty array')
-        return NextResponse.json({ tours: [] })
+        return NextResponse.json({ 
+          success: true, 
+          tours: [],
+          message: 'No tours found' 
+        })
       }
       return NextResponse.json({ error: 'Failed to fetch tours' }, { status: 500 })
     }
 
-    // Simple transformation without complex relationships
-    const toursWithStats = tours?.map((tour: any) => {
-      return {
-        ...tour,
-        total_shows: 0, // Will be calculated when events are implemented
-        completed_shows: 0,
-        revenue: 0,
-        events: [] // Empty for now
-      }
-    }) || []
+    console.log('[Tours API] Successfully fetched tours:', tours?.length || 0)
 
-    console.log('[Tours API] Successfully fetched', tours?.length || 0, 'tours')
-    return NextResponse.json({ tours: toursWithStats })
+    return NextResponse.json({ 
+      success: true, 
+      tours: tours || [],
+      message: 'Tours fetched successfully' 
+    })
+
   } catch (error) {
-    console.error('[Tours API] Unexpected error:', error)
-    return NextResponse.json({ tours: [] }) // Return empty array instead of error
+    console.error('[Tours API] Error:', error)
+    return NextResponse.json({ 
+      success: true, 
+      tours: [],
+      message: 'Error occurred while fetching tours' 
+    })
   }
 }
 
@@ -104,46 +117,74 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createTourSchema.parse(body)
 
-    // Validate date range
-    const startDate = new Date(validatedData.start_date)
-    const endDate = new Date(validatedData.end_date)
-    
-    if (endDate < startDate) {
-      return NextResponse.json({ error: 'End date must be after start date' }, { status: 400 })
+    console.log('[Tours API] Creating tour with data:', validatedData)
+
+    // Create the tour
+    const tourData = {
+      ...validatedData,
+      user_id: user.id, // Use user_id instead of artist_id
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
 
-    // Simple insert without complex relationships
-    const { data: tour, error } = await supabase
+    const { data: tour, error: tourError } = await supabase
       .from('tours')
-      .insert({
-        ...validatedData,
-        created_by: user.id,
-        status: 'planning', // Default status
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(tourData)
       .select('*')
       .single()
 
-    if (error) {
-      console.error('[Tours API] Error creating tour:', error)
-      if (error.code === '42P01') {
-        return NextResponse.json({ error: 'Tours table does not exist. Please set up the database schema first.' }, { status: 500 })
-      }
+    if (tourError) {
+      console.error('[Tours API] Error creating tour:', tourError)
       return NextResponse.json({ error: 'Failed to create tour' }, { status: 500 })
     }
 
-    console.log('[Tours API] Successfully created tour:', tour.id)
-    return NextResponse.json({ tour }, { status: 201 })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        error: 'Validation error', 
-        details: error.errors 
-      }, { status: 400 })
+    console.log('[Tours API] Tour created successfully:', tour.id)
+
+    // Create a default event for the tour so it appears on the events tab and calendar
+    const defaultEvent = {
+      tour_id: tour.id,
+      name: `${tour.name} - Tour Event`,
+      description: `Default event for ${tour.name}`,
+      venue_name: 'TBD',
+      event_date: validatedData.start_date,
+      event_time: '19:00',
+      capacity: 0,
+      status: 'scheduled',
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
 
-    console.error('[Tours API] Unexpected error:', error)
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .insert(defaultEvent)
+      .select('*')
+      .single()
+
+    if (eventError) {
+      console.error('[Tours API] Error creating default event:', eventError)
+      // Don't fail the tour creation if event creation fails
+    } else {
+      console.log('[Tours API] Default event created successfully:', event.id)
+      
+      // Update tour with total_shows count
+      await supabase
+        .from('tours')
+        .update({ total_shows: 1 })
+        .eq('id', tour.id)
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      tour,
+      message: 'Tour created successfully' 
+    })
+
+  } catch (error) {
+    console.error('[Tours API] Error:', error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid data', details: error.errors }, { status: 400 })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

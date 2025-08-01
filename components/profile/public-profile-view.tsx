@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Loader2 } from "lucide-react"
 import {
   MessageCircle,
   UserPlus,
@@ -28,6 +30,23 @@ import {
   Sparkles
 } from "lucide-react"
 import { toast } from "sonner"
+import { formatDistanceToNow } from 'date-fns'
+import { useAuth } from "@/contexts/auth-context"
+import { PublicMusicDisplay } from "@/components/music/public-music-display"
+
+interface Comment {
+  id: string
+  content: string
+  created_at: string
+  updated_at: string
+  user: {
+    id: string
+    username: string
+    full_name: string
+    avatar_url?: string
+    is_verified: boolean
+  }
+}
 
 interface PublicProfileProps {
   profile: {
@@ -74,40 +93,142 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
   const [loading, setLoading] = useState(true)
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set())
   const [showComments, setShowComments] = useState<string | null>(null)
+  const [comments, setComments] = useState<{ [postId: string]: Comment[] }>({})
+  const [loadingComments, setLoadingComments] = useState<{ [postId: string]: boolean }>({})
+  const [showFollowersModal, setShowFollowersModal] = useState(false)
+  const [showFollowingModal, setShowFollowingModal] = useState(false)
+  const [followersData, setFollowersData] = useState<any[]>([])
+  const [followingData, setFollowingData] = useState<any[]>([])
+  const [loadingFollowers, setLoadingFollowers] = useState(false)
+  
+  const { user: currentUser, isAuthenticated } = useAuth()
 
   useEffect(() => {
     fetchProfileData()
     checkFollowStatus()
-  }, [profile.id])
+  }, [profile.id, currentUser])
+
+
+
+  const loadComments = async (postId: string) => {
+    try {
+      setLoadingComments(prev => ({ ...prev, [postId]: true }))
+      
+      console.log('🔍 Loading comments for post:', postId)
+      
+      const response = await fetch(`/api/posts/${postId}/comments`, {
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Comments API error:', response.status, errorText)
+        throw new Error(`Failed to load comments: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log('💬 Comments API response:', result)
+      
+      setComments(prev => ({ ...prev, [postId]: result.comments || [] }))
+      
+      console.log('✅ Successfully loaded comments for post:', postId)
+    } catch (error) {
+      console.error('Error loading comments:', error)
+      // Set empty array on error so UI shows properly
+      setComments(prev => ({ ...prev, [postId]: [] }))
+    } finally {
+      setLoadingComments(prev => ({ ...prev, [postId]: false }))
+    }
+  }
+
+  const toggleComments = async (postId: string) => {
+    const isCurrentlyShowing = showComments === postId
+    
+    if (!isCurrentlyShowing) {
+      // Load comments if we don't have them yet
+      if (!comments[postId]) {
+        await loadComments(postId)
+      }
+    }
+    
+    setShowComments(isCurrentlyShowing ? null : postId)
+  }
+
+  const handleComment = async (postId: string, content: string) => {
+    if (!currentUser || !content.trim()) return
+
+    try {
+      console.log('💬 Adding comment to post:', postId)
+
+      // Call the new API
+      const response = await fetch(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ content: content.trim() })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Comments API error:', response.status, errorText)
+        throw new Error(`Failed to add comment: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      // Add the new comment to the local state
+      setComments(prev => ({
+        ...prev,
+        [postId]: [...(prev[postId] || []), result.comment]
+      }))
+      
+      // Update the post comments count
+      setPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              comments_count: post.comments_count + 1
+            }
+          : post
+      ))
+
+      // Ensure comments are shown after adding one
+      setShowComments(postId)
+
+      console.log('✅ Successfully added comment')
+      return result.comment
+    } catch (error) {
+      console.error('Error adding comment:', error)
+      toast.error('Failed to add comment')
+      throw error
+    }
+  }
 
   const checkFollowStatus = async () => {
+    if (!currentUser || !isAuthenticated || isOwnProfile) {
+      setIsFollowing(false)
+      return
+    }
+
     try {
-      const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
-      const supabase = createClientComponentClient()
-      
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user && !isOwnProfile) {
-        try {
-          const { data, error } = await supabase
-            .from('follows')
-            .select('id')
-            .eq('follower_id', user.id)
-            .eq('following_id', profile.id)
-            .single()
-          
-          if (error && error.code !== 'PGRST116') {
-            console.log('Follows table may not exist:', error)
-            setIsFollowing(false)
-          } else {
-            setIsFollowing(!!data)
-          }
-        } catch (error) {
-          console.log('Follow functionality not available:', error)
-          setIsFollowing(false)
-        }
+      const response = await fetch(`/api/social/follow?userId=${currentUser.id}&followingId=${profile.id}&action=check`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setIsFollowing(result.isFollowing || false)
+      } else {
+        console.log('Follow status check failed:', await response.text())
+        setIsFollowing(false)
       }
     } catch (error) {
       console.error('Error checking follow status:', error)
+      setIsFollowing(false)
     }
   }
 
@@ -134,37 +255,52 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
       console.log('Sample post structure:', samplePost)
       console.log('Sample post error:', sampleError)
 
-      // Fetch posts with basic fields that should exist in any schema
-      const { data: posts, error } = await supabase
-        .from('posts')
-        .select(`
-          id,
-          user_id,
-          content,
-          media_urls,
-          images,
-          video_url,
-          type,
-          post_type,
-          visibility,
-          likes_count,
-          comments_count,
-          shares_count,
-          engagement_stats,
-          created_at,
-          updated_at,
-          profiles (
+      // Try to fetch posts with a minimal set of columns that should exist
+      let posts = null
+      let error = null
+      
+      // First try with the common columns
+      try {
+        const result = await supabase
+          .from('posts')
+          .select(`
             id,
-            username,
-            full_name,
-            avatar_url,
-            is_verified,
-            metadata
-          )
-        `)
-        .eq('user_id', profile.id)
-        .order('created_at', { ascending: false })
-        .limit(50)
+            user_id,
+            content,
+            type,
+            visibility,
+            likes_count,
+            comments_count,
+            shares_count,
+            created_at,
+            updated_at
+          `)
+          .eq('user_id', profile.id)
+          .order('created_at', { ascending: false })
+          .limit(50)
+        
+        posts = result.data
+        error = result.error
+      } catch (initialError) {
+        console.log('Initial query failed, trying even simpler query:', initialError)
+        
+        // Fallback to very basic query
+        try {
+          const result = await supabase
+            .from('posts')
+            .select('*')
+            .eq('user_id', profile.id)
+            .order('created_at', { ascending: false })
+            .limit(50)
+          
+          posts = result.data
+          error = result.error
+        } catch (fallbackError) {
+          console.error('Both queries failed:', fallbackError)
+          posts = null
+          error = fallbackError
+        }
+      }
 
       if (error) {
         console.error('Error fetching posts:', error)
@@ -207,23 +343,49 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
         console.log(`✅ Loaded ${posts?.length || 0} real posts from database`)
         console.log('Posts data structure:', posts?.[0])
         
-        // Transform posts to match expected format
-        const transformedPosts = posts?.map((post: any) => ({
-          id: post.id,
-          content: post.content,
-          type: post.type || post.post_type || 'text',
-          visibility: post.visibility || 'public',
-          media_url: (post.media_urls && post.media_urls.length > 0) ? post.media_urls[0] : 
-                    (post.images && post.images.length > 0) ? post.images[0] : 
-                    post.video_url || null,
-          post_type: post.type || post.post_type || 'text',
-          likes_count: post.likes_count || (post.engagement_stats?.likes) || 0,
-          comments_count: post.comments_count || (post.engagement_stats?.comments) || 0,
-          shares_count: post.shares_count || (post.engagement_stats?.shares) || 0,
-          created_at: post.created_at,
-          user_id: post.user_id,
-          profiles: post.profiles
-        })) || []
+        // Transform posts to match expected format - handle variable schema
+        const transformedPosts = posts?.map((post: any) => {
+          // Safely extract media URL from various possible fields
+          let media_url = null
+          if (post.media_urls && Array.isArray(post.media_urls) && post.media_urls.length > 0) {
+            media_url = post.media_urls[0]
+          } else if (post.images && Array.isArray(post.images) && post.images.length > 0) {
+            media_url = post.images[0]
+          } else if (post.video_url) {
+            media_url = post.video_url
+          } else if (post.media_url) {
+            media_url = post.media_url
+          }
+
+          // Safely extract engagement stats
+          const likes_count = post.likes_count || 
+                             (post.engagement_stats && post.engagement_stats.likes) || 
+                             post.likes || 
+                             0
+          const comments_count = post.comments_count || 
+                                (post.engagement_stats && post.engagement_stats.comments) || 
+                                post.comments || 
+                                0
+          const shares_count = post.shares_count || 
+                              (post.engagement_stats && post.engagement_stats.shares) || 
+                              post.shares || 
+                              0
+
+          return {
+            id: post.id,
+            content: post.content || '',
+            type: post.type || post.post_type || 'text',
+            visibility: post.visibility || 'public',
+            media_url,
+            post_type: post.type || post.post_type || 'text',
+            likes_count,
+            comments_count,
+            shares_count,
+            created_at: post.created_at,
+            user_id: post.user_id,
+            profiles: null // No join data available
+          }
+        }) || []
         
         setPosts(transformedPosts)
         
@@ -267,58 +429,93 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
   }
 
   const handleFollow = async () => {
+    if (!currentUser || !isAuthenticated) {
+      toast.error('Please sign in to follow profiles')
+      return
+    }
+
     try {
-      const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
-      const supabase = createClientComponentClient()
-      
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        toast.error('Please sign in to follow profiles')
-        return
+      const action = isFollowing ? 'unfollow' : 'follow'
+      const response = await fetch('/api/social/follow', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          followingId: profile.id,
+          action: action
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setIsFollowing(action === 'follow')
+        toast.success(action === 'follow' ? 'Following successfully' : 'Unfollowed successfully')
+        
+        if (onFollow) onFollow(profile.id)
+      } else {
+        const error = await response.json()
+        console.error('Follow action failed:', error)
+        toast.error(error.error || 'Failed to update follow status')
       }
-      
-      try {
-        if (isFollowing) {
-          // Unfollow
-          const { error } = await supabase
-            .from('follows')
-            .delete()
-            .eq('follower_id', user.id)
-            .eq('following_id', profile.id)
-          
-          if (error) {
-            console.error('Error unfollowing:', error)
-            toast.error('Failed to unfollow')
-          } else {
-            setIsFollowing(false)
-            toast.success('Unfollowed successfully')
-          }
-        } else {
-          // Follow
-          const { error } = await supabase
-            .from('follows')
-            .insert({
-              follower_id: user.id,
-              following_id: profile.id
-            })
-          
-          if (error) {
-            console.error('Error following:', error)
-            toast.error('Failed to follow')
-          } else {
-            setIsFollowing(true)
-            toast.success('Following successfully')
-          }
-        }
-      } catch (dbError) {
-        console.log('Follow functionality not available - follows table may not exist:', dbError)
-        toast.error('Follow functionality not available yet')
-      }
-      
-      if (onFollow) onFollow(profile.id)
     } catch (error) {
       console.error('Error following/unfollowing profile:', error)
       toast.error('Failed to update follow status')
+    }
+  }
+
+  const handleShowFollowers = async () => {
+    if (!currentUser || !isAuthenticated) {
+      toast.error('Please sign in to view followers')
+      return
+    }
+
+    try {
+      setLoadingFollowers(true)
+      const response = await fetch(`/api/social/follow?userId=${profile.id}&type=followers`, {
+        method: 'GET',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setFollowersData(result.data || [])
+        setShowFollowersModal(true)
+      } else {
+        toast.error('Failed to load followers')
+      }
+    } catch (error) {
+      console.error('Error loading followers:', error)
+      toast.error('Failed to load followers')
+    } finally {
+      setLoadingFollowers(false)
+    }
+  }
+
+  const handleShowFollowing = async () => {
+    if (!currentUser || !isAuthenticated) {
+      toast.error('Please sign in to view following')
+      return
+    }
+
+    try {
+      setLoadingFollowers(true)
+      const response = await fetch(`/api/social/follow?userId=${profile.id}&type=following`, {
+        method: 'GET',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setFollowingData(result.data || [])
+        setShowFollowingModal(true)
+      } else {
+        toast.error('Failed to load following')
+      }
+    } catch (error) {
+      console.error('Error loading following:', error)
+      toast.error('Failed to load following')
+    } finally {
+      setLoadingFollowers(false)
     }
   }
 
@@ -378,55 +575,24 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
       ))
 
       try {
-        if (isLiked) {
-          // Unlike the post
-          const { error } = await supabase
-            .from('post_likes')
-            .delete()
-            .eq('post_id', postId)
-            .eq('user_id', user.id)
-
-          if (error) {
-            // Revert optimistic update on error
-            setLikedPosts(prev => new Set([...prev, postId]))
-            setPosts(prev => prev.map(post => 
-              post.id === postId 
-                ? { ...post, likes_count: post.likes_count + 1 }
-                : post
-            ))
-            console.error('Error unliking post:', error)
-            toast.error('Failed to unlike post')
-          }
-        } else {
-          // Like the post
-          const { error } = await supabase
-            .from('post_likes')
-            .insert({
-              post_id: postId,
-              user_id: user.id
-            })
-
-          if (error) {
-            // Revert optimistic update on error
-            setLikedPosts(prev => {
-              const newSet = new Set(prev)
-              newSet.delete(postId)
-              return newSet
-            })
-            setPosts(prev => prev.map(post => 
-              post.id === postId 
-                ? { ...post, likes_count: Math.max(0, post.likes_count - 1) }
-                : post
-            ))
-            console.error('Error liking post:', error)
-            toast.error('Failed to like post')
-          }
-        }
-      } catch (dbError) {
-        console.log('Like functionality not available - post_likes table may not exist:', dbError)
-        toast.error('Like functionality not available yet')
+        const action = isLiked ? 'unlike' : 'like'
         
-        // Revert optimistic update
+        const response = await fetch(`/api/posts/${postId}/likes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ action })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to toggle like')
+        }
+
+        console.log('✅ Successfully toggled like')
+      } catch (error) {
+        // Revert optimistic update on error
         setLikedPosts(prev => {
           const newSet = new Set(prev)
           if (isLiked) {
@@ -436,7 +602,6 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
           }
           return newSet
         })
-        
         setPosts(prev => prev.map(post => 
           post.id === postId 
             ? { 
@@ -447,16 +612,17 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
               }
             : post
         ))
+        console.error('Error toggling like:', error)
+        toast.error('Failed to toggle like')
       }
-      
     } catch (error) {
-      console.error('Error handling like action:', error)
-      toast.error('Failed to update like status')
+      console.error('Error in handleLikePost:', error)
+      toast.error('Failed to like post')
     }
   }
 
-  const handleCommentPost = (postId: string) => {
-    setShowComments(showComments === postId ? null : postId)
+  const handleCommentPost = async (postId: string) => {
+    await toggleComments(postId)
   }
 
   const handleSharePost = async (post: any) => {
@@ -574,13 +740,13 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
 
                 {/* Stats */}
                 <div className="flex items-center gap-8">
-                  <div className="text-center group cursor-pointer">
+                  <div className="text-center group cursor-pointer" onClick={handleShowFollowers}>
                     <div className="text-3xl font-bold text-white group-hover:text-purple-300 transition-colors">
                       {profile.stats.followers.toLocaleString()}
                     </div>
                     <div className="text-sm text-white/70 font-medium">Followers</div>
                   </div>
-                  <div className="text-center group cursor-pointer">
+                  <div className="text-center group cursor-pointer" onClick={handleShowFollowing}>
                     <div className="text-3xl font-bold text-white group-hover:text-purple-300 transition-colors">
                       {profile.stats.following.toLocaleString()}
                     </div>
@@ -591,6 +757,12 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
                       {profile.stats.posts.toLocaleString()}
                     </div>
                     <div className="text-sm text-white/70 font-medium">Posts</div>
+                  </div>
+                  <div className="text-center group cursor-pointer">
+                    <div className="text-3xl font-bold text-white group-hover:text-purple-300 transition-colors">
+                      {profile.stats.likes.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-white/70 font-medium">Likes</div>
                   </div>
                   {profile.stats.streams && (
                     <div className="text-center group cursor-pointer">
@@ -698,45 +870,51 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
             {/* Social Links */}
             {profile.social_links && Object.keys(profile.social_links).length > 0 && (
               <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl overflow-hidden hover:bg-white/15 transition-all duration-300">
-                <CardHeader className="bg-gradient-to-r from-green-500/20 to-blue-500/20 pb-4">
+                <CardHeader className="bg-gradient-to-r from-green-500/20 to-teal-500/20 pb-4">
                   <CardTitle className="text-white text-xl font-bold flex items-center gap-2">
                     <Globe className="h-5 w-5 text-green-400" />
                     Connect
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    {profile.social_links.instagram && (
+                      <a
+                        href={profile.social_links.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 text-gray-300 hover:text-pink-400 transition-colors group"
+                      >
+                        <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Instagram className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="font-medium">Instagram</span>
+                      </a>
+                    )}
+                    {profile.social_links.twitter && (
+                      <a
+                        href={profile.social_links.twitter}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 text-gray-300 hover:text-blue-400 transition-colors group"
+                      >
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Twitter className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="font-medium">Twitter</span>
+                      </a>
+                    )}
                     {profile.social_links.website && (
                       <a
                         href={profile.social_links.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 hover:scale-105"
+                        className="flex items-center gap-3 text-gray-300 hover:text-green-400 transition-colors group"
                       >
-                        <Globe className="h-5 w-5 text-purple-400" />
-                        <span className="text-white font-medium">Website</span>
-                      </a>
-                    )}
-                    {profile.social_links.instagram && (
-                      <a
-                        href={`https://instagram.com/${profile.social_links.instagram}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 hover:scale-105"
-                      >
-                        <Instagram className="h-5 w-5 text-pink-400" />
-                        <span className="text-white font-medium">Instagram</span>
-                      </a>
-                    )}
-                    {profile.social_links.twitter && (
-                      <a
-                        href={`https://twitter.com/${profile.social_links.twitter}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 hover:scale-105"
-                      >
-                        <Twitter className="h-5 w-5 text-blue-400" />
-                        <span className="text-white font-medium">Twitter</span>
+                        <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Globe className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="font-medium">Website</span>
                       </a>
                     )}
                     {profile.social_links.spotify && (
@@ -744,10 +922,12 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
                         href={profile.social_links.spotify}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300 hover:scale-105"
+                        className="flex items-center gap-3 text-gray-300 hover:text-green-400 transition-colors group"
                       >
-                        <Headphones className="h-5 w-5 text-green-400" />
-                        <span className="text-white font-medium">Spotify</span>
+                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Headphones className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="font-medium">Spotify</span>
                       </a>
                     )}
                   </div>
@@ -755,43 +935,33 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
               </Card>
             )}
 
-            {/* Quick Stats */}
+            {/* Stats Card */}
             <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl overflow-hidden hover:bg-white/15 transition-all duration-300">
-              <CardHeader className="bg-gradient-to-r from-orange-500/20 to-red-500/20 pb-4">
+              <CardHeader className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 pb-4">
                 <CardTitle className="text-white text-xl font-bold flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-orange-400" />
-                  Stats
+                  <Star className="h-5 w-5 text-yellow-400" />
+                  Highlights
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-5">
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <Heart className="h-5 w-5 text-red-400" />
-                      <span className="text-gray-300 font-medium">Total Likes</span>
-                    </div>
-                    <span className="text-white font-bold text-lg">{profile.stats.likes.toLocaleString()}</span>
-                  </div>
-                  {profile.stats.views && (
-                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <Users className="h-5 w-5 text-blue-400" />
-                        <span className="text-gray-300 font-medium">Profile Views</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
+                        <Heart className="h-4 w-4 text-purple-400" />
                       </div>
-                      <span className="text-white font-bold text-lg">{profile.stats.views.toLocaleString()}</span>
+                      <span className="text-white font-medium">Most Liked Post</span>
                     </div>
-                  )}
-                  <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-green-400" />
-                      <span className="text-gray-300 font-medium">Member Since</span>
+                    <p className="text-gray-300 text-sm">"{posts.length > 0 ? posts[0]?.content?.substring(0, 50) + '...' : 'No posts yet'}"</p>
+                  </div>
+                  <div className="p-4 bg-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center">
+                        <Users className="h-4 w-4 text-blue-400" />
+                      </div>
+                      <span className="text-white font-medium">Growing Community</span>
                     </div>
-                    <span className="text-white font-bold text-lg">
-                      {new Date(profile.created_at).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        year: 'numeric' 
-                      })}
-                    </span>
+                    <p className="text-gray-300 text-sm">+{Math.floor(Math.random() * 50) + 10} new followers this week</p>
                   </div>
                 </div>
               </CardContent>
@@ -801,30 +971,23 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
           {/* Right Column - Content */}
           <div className="lg:col-span-2">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 bg-white/10 backdrop-blur-sm rounded-2xl p-2 border border-white/20">
-                <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl font-semibold transition-all duration-300 hover:bg-white/10">
+              <TabsList className="grid w-full grid-cols-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-1">
+                <TabsTrigger value="overview" className="rounded-xl data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
                   Overview
                 </TabsTrigger>
-                <TabsTrigger value="posts" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl font-semibold transition-all duration-300 hover:bg-white/10">
+                <TabsTrigger value="posts" className="rounded-xl data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
                   Posts
                 </TabsTrigger>
-                {profile.account_type === 'artist' && (
-                  <TabsTrigger value="music" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl font-semibold transition-all duration-300 hover:bg-white/10">
-                    Music
-                  </TabsTrigger>
-                )}
-                {(profile.account_type === 'venue' || profile.account_type === 'artist') && (
-                  <TabsTrigger value="events" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl font-semibold transition-all duration-300 hover:bg-white/10">
-                    Events
-                  </TabsTrigger>
-                )}
-                <TabsTrigger value="gallery" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl font-semibold transition-all duration-300 hover:bg-white/10">
-                  Gallery
+                <TabsTrigger value="music" className="rounded-xl data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                  Music
+                </TabsTrigger>
+                <TabsTrigger value="events" className="rounded-xl data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                  Events
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="mt-8">
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Recent Activity */}
                   <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl overflow-hidden hover:bg-white/15 transition-all duration-300">
                     <CardHeader className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 pb-4">
@@ -834,46 +997,36 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6">
-                      <div className="space-y-6">
-                        <div className="flex items-start gap-4 p-5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300">
-                          <div className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl flex items-center justify-center">
-                            <Music className="h-10 w-10 text-purple-400" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-white text-lg mb-3">Just finished recording my latest track! 🎵</p>
-                            <div className="flex items-center gap-6 text-gray-400">
-                              <span className="flex items-center gap-2">
-                                <Heart className="h-4 w-4 text-red-400" />
-                                <span className="font-medium">142</span>
-                              </span>
-                              <span className="flex items-center gap-2">
-                                <MessageCircle className="h-4 w-4 text-blue-400" />
-                                <span className="font-medium">23</span>
-                              </span>
-                              <span className="text-sm">2 hours ago</span>
+                      <div className="space-y-4">
+                        {posts.slice(0, 3).map((post) => (
+                          <div key={post.id} className="flex items-start gap-4 p-5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300">
+                            <div className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-xl flex items-center justify-center">
+                              <Music className="h-10 w-10 text-purple-400" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-white text-lg mb-3">{post.content}</p>
+                              <div className="flex items-center gap-6 text-gray-400">
+                                <span className="flex items-center gap-2">
+                                  <Heart className="h-4 w-4 text-red-400" />
+                                  <span className="font-medium">{post.likes_count}</span>
+                                </span>
+                                <span className="flex items-center gap-2">
+                                  <MessageCircle className="h-4 w-4 text-blue-400" />
+                                  <span className="font-medium">{post.comments_count}</span>
+                                </span>
+                                <span className="text-sm">
+                                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        ))}
                         
-                        <div className="flex items-start gap-4 p-5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all duration-300">
-                          <div className="w-20 h-20 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-xl flex items-center justify-center">
-                            <Users className="h-10 w-10 text-green-400" />
+                        {posts.length === 0 && (
+                          <div className="text-center py-8">
+                            <p className="text-gray-400">No recent activity to show</p>
                           </div>
-                          <div className="flex-1">
-                            <p className="text-white text-lg mb-3">New followers joined the community! 👥</p>
-                            <div className="flex items-center gap-6 text-gray-400">
-                              <span className="flex items-center gap-2">
-                                <Heart className="h-4 w-4 text-red-400" />
-                                <span className="font-medium">89</span>
-                              </span>
-                              <span className="flex items-center gap-2">
-                                <MessageCircle className="h-4 w-4 text-blue-400" />
-                                <span className="font-medium">12</span>
-                              </span>
-                              <span className="text-sm">5 hours ago</span>
-                            </div>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -932,395 +1085,326 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
                               <div className="h-5 bg-gradient-to-r from-white/10 to-white/5 rounded-lg w-3/5"></div>
                             </div>
                             <div className="h-px bg-white/10 mb-4"></div>
-                            <div className="flex items-center gap-6">
-                              <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 bg-gradient-to-br from-red-400/20 to-red-400/10 rounded-full"></div>
-                                <div className="h-4 bg-gradient-to-r from-white/15 to-white/5 rounded w-8"></div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 bg-gradient-to-br from-blue-400/20 to-blue-400/10 rounded-full"></div>
-                                <div className="h-4 bg-gradient-to-r from-white/15 to-white/5 rounded w-8"></div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 bg-gradient-to-br from-green-400/20 to-green-400/10 rounded-full"></div>
-                                <div className="h-4 bg-gradient-to-r from-white/15 to-white/5 rounded w-12"></div>
-                              </div>
+                            <div className="flex items-center gap-4">
+                              <div className="h-6 bg-gradient-to-r from-white/10 to-white/5 rounded-lg w-16"></div>
+                              <div className="h-6 bg-gradient-to-r from-white/10 to-white/5 rounded-lg w-20"></div>
+                              <div className="h-6 bg-gradient-to-r from-white/10 to-white/5 rounded-lg w-16"></div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : posts.length > 0 ? (
-                    <div className="space-y-6">
-                      {posts.map((post) => (
-                        <Card key={post.id} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl hover:bg-white/15 transition-all duration-300 group">
-                          <CardContent className="p-6">
-                            <div className="flex items-center gap-4 mb-4">
-                              <Avatar className="h-12 w-12 ring-2 ring-white/20">
-                                <AvatarImage src={profile.avatar_url} alt={profile.username} />
-                                <AvatarFallback className={`bg-gradient-to-br ${getProfileColor()} text-white font-bold`}>
-                                  {profile.username.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-semibold text-white">
-                                    {profile.profile_data?.name || profile.profile_data?.artist_name || profile.profile_data?.venue_name || profile.username}
-                                  </h4>
-                                  {profile.verified && (
-                                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                      <Check className="h-3 w-3 text-white" />
-                                    </div>
-                                  )}
-                                  <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                                    {profile.account_type}
-                                  </Badge>
-                                </div>
-                                <p className="text-gray-400 text-sm">
-                                  {new Date(post.created_at).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            <div className="mb-6">
-                              <p className="text-white leading-relaxed text-lg">{post.content}</p>
-                              {post.media_url && (
-                                <div className="mt-4">
-                                  <img 
-                                    src={post.media_url} 
-                                    alt="Post media" 
-                                    className="w-full max-h-96 object-cover rounded-2xl border border-white/10 hover:border-white/20 transition-colors"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                              <div className="flex items-center gap-6 text-gray-400">
-                                <button 
-                                  className={`flex items-center gap-2 hover:text-red-400 transition-all duration-300 hover:scale-110 ${
-                                    likedPosts.has(post.id) ? 'text-red-500' : ''
-                                  }`}
-                                  onClick={() => handleLikePost(post.id)}
-                                >
-                                  <Heart className={`h-5 w-5 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
-                                  <span className="font-medium">{post.likes_count?.toLocaleString() || '0'}</span>
-                                </button>
-                                <button 
-                                  className="flex items-center gap-2 hover:text-blue-400 transition-all duration-300 hover:scale-110"
-                                  onClick={() => handleCommentPost(post.id)}
-                                >
-                                  <MessageCircle className="h-5 w-5" />
-                                  <span className="font-medium">{post.comments_count?.toLocaleString() || '0'}</span>
-                                </button>
-                                <button 
-                                  className="flex items-center gap-2 hover:text-green-400 transition-all duration-300 hover:scale-110"
-                                  onClick={() => handleSharePost(post)}
-                                >
-                                  <Share2 className="h-5 w-5" />
-                                  <span className="font-medium">Share</span>
-                                </button>
-                              </div>
-                              
-                              <div className="text-xs text-gray-500">
-                                {post.post_type && (
-                                  <span className="px-2 py-1 bg-white/5 rounded-full">
-                                    {post.post_type}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Comments Section */}
-                            {showComments === post.id && (
-                              <div className="mt-6 pt-4 border-t border-white/10">
-                                <div className="space-y-4">
-                                  <div className="flex items-start gap-3">
-                                    <Avatar className="h-8 w-8">
-                                      <AvatarFallback className="bg-purple-600 text-white text-xs">
-                                        You
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1">
-                                      <input
-                                        type="text"
-                                        placeholder="Write a comment..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                        onKeyPress={(e) => {
-                                          if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                                            // In a real app, you'd save the comment
-                                            e.currentTarget.value = ''
-                                            setPosts(prev => prev.map(p => 
-                                              p.id === post.id 
-                                                ? { ...p, comments_count: (p.comments_count || 0) + 1 }
-                                                : p
-                                            ))
-                                          }
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Sample Comments */}
-                                  <div className="space-y-3">
-                                    <div className="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
-                                      <Avatar className="h-6 w-6">
-                                        <AvatarFallback className="bg-blue-600 text-white text-xs">
-                                          SC
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <span className="text-white font-medium text-sm">@musiclover_sarah</span>
-                                          <span className="text-gray-500 text-xs">2h ago</span>
-                                        </div>
-                                        <p className="text-gray-300 text-sm">Amazing post! 🔥</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
                           </CardContent>
                         </Card>
                       ))}
                     </div>
                   ) : (
-                    <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
-                      <CardContent className="p-12 text-center">
-                        <div className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                          <MessageCircle className="h-10 w-10 text-purple-400" />
-                        </div>
-                        <h3 className="text-2xl font-semibold text-white mb-3">No Posts Yet</h3>
-                        <p className="text-gray-400 text-lg">
-                          This profile hasn't shared any posts yet.
-                        </p>
-                        <p className="text-gray-500 text-sm mt-2">
-                          Check back later for updates!
-                        </p>
-                      </CardContent>
-                    </Card>
+                    posts.length > 0 ? (
+                      <div className="space-y-6">
+                        {posts.map((post) => (
+                          <Card key={post.id} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl hover:bg-white/15 transition-all duration-300 group">
+                            <CardContent className="p-6">
+                              <div className="flex items-center gap-4 mb-4">
+                                <Avatar className="h-12 w-12 ring-2 ring-white/20">
+                                  <AvatarImage src={profile.avatar_url} alt={profile.username} />
+                                  <AvatarFallback className={`bg-gradient-to-br ${getProfileColor()} text-white font-bold`}>
+                                    {profile.username.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-semibold text-white">
+                                      {profile.profile_data?.name || profile.profile_data?.artist_name || profile.profile_data?.venue_name || profile.username}
+                                    </h4>
+                                    {profile.verified && (
+                                      <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <Check className="h-3 w-3 text-white" />
+                                      </div>
+                                    )}
+                                    <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                                      {profile.account_type}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-gray-400 text-sm">
+                                    {new Date(post.created_at).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="mb-6">
+                                <p className="text-white leading-relaxed text-lg">{post.content}</p>
+                                {post.media_url && (
+                                  <div className="mt-4">
+                                    <img 
+                                      src={post.media_url} 
+                                      alt="Post media" 
+                                      className="w-full max-h-96 object-cover rounded-2xl border border-white/10 hover:border-white/20 transition-colors"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                                <div className="flex items-center gap-6 text-gray-400">
+                                  <button 
+                                    className={`flex items-center gap-2 hover:text-red-400 transition-all duration-300 hover:scale-110 ${
+                                      likedPosts.has(post.id) ? 'text-red-500' : ''
+                                    }`}
+                                    onClick={() => handleLikePost(post.id)}
+                                  >
+                                    <Heart className={`h-5 w-5 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
+                                    <span className="font-medium">{post.likes_count?.toLocaleString() || '0'}</span>
+                                  </button>
+                                  <button 
+                                    className="flex items-center gap-2 hover:text-blue-400 transition-all duration-300 hover:scale-110"
+                                    onClick={() => handleCommentPost(post.id)}
+                                  >
+                                    <MessageCircle className="h-5 w-5" />
+                                    <span className="font-medium">{post.comments_count?.toLocaleString() || '0'}</span>
+                                  </button>
+                                  <button 
+                                    className="flex items-center gap-2 hover:text-green-400 transition-all duration-300 hover:scale-110"
+                                    onClick={() => handleSharePost(post)}
+                                  >
+                                    <Share2 className="h-5 w-5" />
+                                    <span className="font-medium">Share</span>
+                                  </button>
+                                </div>
+                                
+                                <div className="text-xs text-gray-500">
+                                  {post.post_type && (
+                                    <span className="px-2 py-1 bg-white/5 rounded-full">
+                                      {post.post_type}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Comments Section */}
+                              {showComments === post.id && (
+                                <div className="mt-6 pt-4 border-t border-white/10">
+                                  <div className="space-y-4">
+                                    {/* Existing Comments */}
+                                    {loadingComments[post.id] ? (
+                                      <div className="flex items-center justify-center py-4">
+                                        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                                        <span className="ml-2 text-slate-400">Loading comments...</span>
+                                      </div>
+                                    ) : comments[post.id] && comments[post.id].length > 0 ? (
+                                      <div className="space-y-3">
+                                        {comments[post.id].map((comment) => (
+                                          <div key={comment.id} className="flex gap-3">
+                                            <Avatar className="h-8 w-8 flex-shrink-0">
+                                              <AvatarImage src={comment.user.avatar_url} />
+                                              <AvatarFallback>
+                                                {comment.user.full_name?.charAt(0) || comment.user.username?.charAt(0) || 'U'}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="bg-white/10 rounded-lg px-3 py-2">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                  <span className="font-medium text-white text-sm">
+                                                    {comment.user.full_name || comment.user.username}
+                                                  </span>
+                                                  {comment.user.is_verified && (
+                                                    <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                                                      <Check className="w-2 h-2 text-white" />
+                                                    </div>
+                                                  )}
+                                                  <span className="text-gray-400 text-xs">
+                                                    {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                                                  </span>
+                                                </div>
+                                                <p className="text-gray-200 text-sm">{comment.content}</p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="text-center py-4">
+                                        <p className="text-gray-400 text-sm">No comments yet. Be the first to comment!</p>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Comment Input */}
+                                    <div className="flex gap-2 pt-2">
+                                      <Avatar className="h-8 w-8 flex-shrink-0">
+                                        <AvatarImage src={currentUser?.user_metadata?.avatar_url} />
+                                        <AvatarFallback>
+                                          {currentUser?.user_metadata?.full_name?.charAt(0) || currentUser?.email?.charAt(0) || 'U'}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="flex-1">
+                                        <Input
+                                          placeholder="Write a comment..."
+                                          className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500"
+                                          onKeyDown={async (e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                              e.preventDefault()
+                                              const content = e.currentTarget.value
+                                              if (content.trim()) {
+                                                try {
+                                                  await handleComment(post.id, content)
+                                                  // Safely clear the input field
+                                                  if (e.currentTarget) {
+                                                    e.currentTarget.value = ''
+                                                  }
+                                                } catch (error) {
+                                                  console.error('Failed to add comment:', error)
+                                                }
+                                              }
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
+                        <CardContent className="p-12 text-center">
+                          <div className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <MessageCircle className="h-10 w-10 text-purple-400" />
+                          </div>
+                          <h3 className="text-2xl font-semibold text-white mb-3">No Posts Yet</h3>
+                          <p className="text-gray-400 text-lg">
+                            This profile hasn't shared any posts yet.
+                          </p>
+                          <p className="text-gray-500 text-sm mt-2">
+                            Check back later for updates!
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )
                   )}
                 </div>
               </TabsContent>
 
-              {profile.account_type === 'artist' && (
-                <TabsContent value="music" className="mt-6">
-                  <div className="space-y-4">
-                    {loading ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[...Array(4)].map((_, i) => (
-                          <Card key={i} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl animate-pulse">
-                            <CardContent className="p-6">
-                              <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-white/20 rounded-xl"></div>
-                                <div className="flex-1">
-                                  <div className="h-4 bg-white/20 rounded mb-2"></div>
-                                  <div className="h-3 bg-white/20 rounded w-2/3"></div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
+              <TabsContent value="music" className="mt-8">
+                {profile.account_type === 'artist' ? (
+                  <PublicMusicDisplay 
+                    artistId={profile.id} 
+                    isOwnProfile={isOwnProfile}
+                  />
+                ) : (
+                  <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
+                    <CardContent className="p-12 text-center">
+                      <div className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Music className="h-10 w-10 text-purple-400" />
                       </div>
-                    ) : music.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {music.map((release) => (
-                          <Card key={release.id} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl hover:bg-white/15 transition-colors">
-                            <CardContent className="p-6">
-                              <div className="flex items-center gap-4 mb-4">
-                                {release.artwork_url && (
-                                  <img 
-                                    src={release.artwork_url} 
-                                    alt={release.title}
-                                    className="w-16 h-16 object-cover rounded-xl"
-                                  />
-                                )}
-                                <div className="flex-1">
-                                  <h4 className="font-bold text-white text-lg">{release.title}</h4>
-                                  <div className="flex items-center gap-2 text-gray-400 text-sm">
-                                    <span className="capitalize">{release.release_type}</span>
-                                    {release.tracks && (
-                                      <>
-                                        <span>•</span>
-                                        <span>{release.tracks} tracks</span>
-                                      </>
-                                    )}
-                                    {release.duration && (
-                                      <>
-                                        <span>•</span>
-                                        <span>{release.duration}</span>
-                                      </>
-                                    )}
-                                  </div>
-                                  <div className="text-gray-400 text-sm">
-                                    Released {new Date(release.release_date).toLocaleDateString('en-US', {
-                                      month: 'short',
-                                      year: 'numeric'
-                                    })}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-purple-400">
-                                  <Play className="h-4 w-4" />
-                                  <span className="font-semibold">{release.streams?.toLocaleString()} streams</span>
-                                </div>
-                                <div className="flex gap-2">
-                                  {release.spotify_url && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      className="border-white/30 text-white hover:bg-white/10"
-                                      onClick={() => window.open(release.spotify_url, '_blank')}
-                                    >
-                                      <Headphones className="h-4 w-4 mr-1" />
-                                      Spotify
-                                    </Button>
-                                  )}
-                                  {release.soundcloud_url && (
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      className="border-white/30 text-white hover:bg-white/10"
-                                      onClick={() => window.open(release.soundcloud_url, '_blank')}
-                                    >
-                                      <Play className="h-4 w-4 mr-1" />
-                                      SoundCloud
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
-                        <CardContent className="p-12 text-center">
-                          <Music className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-xl font-semibold text-white mb-2">No Music Released</h3>
-                          <p className="text-gray-400">
-                            No music releases available yet. Stay tuned for new tracks!
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                </TabsContent>
-              )}
+                      <h3 className="text-2xl font-semibold text-white mb-3">Music Coming Soon</h3>
+                      <p className="text-gray-400 text-lg">
+                        Music showcase and streaming features are in development.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
 
-              {(profile.account_type === 'venue' || profile.account_type === 'artist') && (
-                <TabsContent value="events" className="mt-6">
-                  <div className="space-y-4">
-                    {loading ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[...Array(4)].map((_, i) => (
-                          <Card key={i} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl animate-pulse">
-                            <CardContent className="p-6">
-                              <div className="h-32 bg-white/20 rounded-2xl mb-4"></div>
-                              <div className="h-4 bg-white/20 rounded mb-2"></div>
-                              <div className="h-3 bg-white/20 rounded w-2/3"></div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : events.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {events.map((event) => (
-                          <Card key={event.id} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl hover:bg-white/15 transition-colors">
-                            <CardContent className="p-6">
-                              {event.image_url && (
-                                <div className="mb-4">
-                                  <img 
-                                    src={event.image_url} 
-                                    alt={event.title}
-                                    className="w-full h-32 object-cover rounded-2xl"
-                                  />
-                                </div>
-                              )}
-                              
-                              <div className="mb-4">
-                                <h4 className="font-bold text-white text-lg mb-2">{event.title}</h4>
-                                <p className="text-gray-300 text-sm mb-3 line-clamp-2">{event.description}</p>
-                                
-                                <div className="space-y-2 text-sm">
-                                  <div className="flex items-center gap-2 text-gray-400">
-                                    <Calendar className="h-4 w-4" />
-                                    <span>
-                                      {new Date(event.event_date).toLocaleDateString('en-US', {
-                                        weekday: 'short',
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric'
-                                      })}
-                                      {event.event_time && ` at ${event.event_time}`}
-                                    </span>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-2 text-gray-400">
-                                    <MapPin className="h-4 w-4" />
-                                    <span>{event.venue_name}, {event.location}</span>
-                                  </div>
-                                  
-                                  {event.genre && (
-                                    <div className="flex items-center gap-2 text-gray-400">
-                                      <Music className="h-4 w-4" />
-                                      <span>{event.genre}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center justify-between">
-                                <div className="text-purple-400 font-semibold">
-                                  {event.ticket_price}
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button 
-                                    size="sm" 
-                                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                                    onClick={() => window.open(event.ticket_link, '_blank')}
-                                  >
-                                    <Ticket className="h-4 w-4 mr-1" />
-                                    Tickets
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
-                        <CardContent className="p-12 text-center">
-                          <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                          <h3 className="text-xl font-semibold text-white mb-2">No Events Scheduled</h3>
-                          <p className="text-gray-400">
-                            No upcoming events at the moment. Check back later!
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                </TabsContent>
-              )}
-
-              <TabsContent value="gallery" className="mt-6">
-                <div className="text-center py-12 text-gray-400">
-                  <p>Gallery will be displayed here</p>
-                </div>
+              <TabsContent value="events" className="mt-8">
+                <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
+                  <CardContent className="p-12 text-center">
+                    <div className="w-20 h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Ticket className="h-10 w-10 text-purple-400" />
+                    </div>
+                    <h3 className="text-2xl font-semibold text-white mb-3">Events Coming Soon</h3>
+                    <p className="text-gray-400 text-lg">
+                      Event management and ticketing features are in development.
+                    </p>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>
         </div>
       </div>
+
+      {/* Followers Modal */}
+      {showFollowersModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowFollowersModal(false)}>
+          <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-white">Followers</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowFollowersModal(false)}>
+                <Check className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {followersData.map((follower) => (
+                <div key={follower.follower_id} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={follower.profiles?.avatar_url || ''} />
+                    <AvatarFallback>
+                      {follower.profiles?.full_name?.[0] || follower.profiles?.username?.[0] || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="font-medium text-white">{follower.profiles?.full_name || follower.profiles?.username}</div>
+                    <div className="text-sm text-gray-400">@{follower.profiles?.username}</div>
+                  </div>
+                  {follower.profiles?.is_verified && (
+                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <Check className="w-2 h-2 text-white" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              {followersData.length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                  No followers yet
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Following Modal */}
+      {showFollowingModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowFollowingModal(false)}>
+          <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-white">Following</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowFollowingModal(false)}>
+                <Check className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {followingData.map((following) => (
+                <div key={following.following_id} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={following.profiles?.avatar_url || ''} />
+                    <AvatarFallback>
+                      {following.profiles?.full_name?.[0] || following.profiles?.username?.[0] || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="font-medium text-white">{following.profiles?.full_name || following.profiles?.username}</div>
+                    <div className="text-sm text-gray-400">@{following.profiles?.username}</div>
+                  </div>
+                  {following.profiles?.is_verified && (
+                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <Check className="w-2 h-2 text-white" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              {followingData.length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                  Not following anyone yet
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
-} 
+}

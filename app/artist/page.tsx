@@ -35,11 +35,38 @@ import {
   Radio,
   Clock,
   Menu,
-  Loader2
+  Loader2,
+  RefreshCw,
+  User,
+  Settings,
+  MapPin,
+  Eye,
+  Play,
+  Image as ImageIcon,
+  FileText,
+  Target,
+  Zap,
+  Bell,
+  CheckCircle,
+  CalendarDays,
+  TrendingDown
 } from "lucide-react"
 import { cn } from "@/utils"
 import { useArtist } from "@/contexts/artist-context"
+import { useMultiAccount } from "@/hooks/use-multi-account"
+import { useAuth } from "@/contexts/auth-context"
 import Link from "next/link"
+import { toast } from "sonner"
+import { format, addDays, isToday, isTomorrow, differenceInDays } from "date-fns"
+
+// Import Phase 2 components
+import { ArtistEventsOverview } from '@/components/dashboard/artist-events-overview'
+import { ArtistContentOverview } from '@/components/dashboard/artist-content-overview'
+import { ArtistActionItems } from '@/components/dashboard/artist-action-items'
+import { ArtistBusinessInsights } from '@/components/dashboard/artist-business-insights'
+import { ArtistSmartRecommendations } from '@/components/dashboard/artist-smart-recommendations'
+import { ArtistNotifications } from '@/components/dashboard/artist-notifications'
+import { ArtistAnalyticsOverview } from '@/components/dashboard/artist-analytics-overview'
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -51,91 +78,154 @@ const floatingAnimation = {
   y: [0, -10, 0]
 }
 
+// Enhanced quick actions with better categorization
 const quickActions = [
   { 
     title: "Upload Track", 
     icon: Upload, 
     color: "from-purple-500 via-fuchsia-500 to-pink-600", 
-    href: "/artist/content",
-    description: "Share your latest creation"
+    href: "/artist/music",
+    description: "Share your latest creation",
+    category: "content"
   },
   { 
     title: "Create Event", 
     icon: CalendarIcon, 
     color: "from-blue-500 via-cyan-500 to-teal-600", 
     href: "/artist/events",
-    description: "Plan your next show"
+    description: "Plan your next show",
+    category: "events"
   },
   { 
     title: "Messages", 
     icon: MessageSquare, 
     color: "from-green-500 via-emerald-500 to-teal-600", 
     href: "/artist/messages",
-    description: "Connect with fans"
+    description: "Connect with fans",
+    category: "social"
   },
   { 
     title: "Analytics", 
     icon: BarChart2, 
     color: "from-pink-500 via-rose-500 to-red-600", 
     href: "/artist/business",
-    description: "Track your performance"
+    description: "Track your performance",
+    category: "business"
   }
 ]
 
-const recentActivity = [
+// Mock upcoming events data - would be fetched from API
+const mockUpcomingEvents = [
   {
-    id: 1,
-    title: "New Release",
-    description: "Your single 'Midnight Dreams' was uploaded",
-    date: "2024-03-15",
-    type: "release",
-    icon: Disc,
-    color: "text-purple-400",
-    bgColor: "bg-purple-500/10",
-    borderColor: "border-purple-500/20",
-    status: "active"
+    id: "1",
+    title: "Summer Festival 2024",
+    date: addDays(new Date(), 7),
+    venue: "Central Park",
+    city: "New York",
+    status: "confirmed",
+    ticketSales: 450,
+    capacity: 1000,
+    revenue: 22500,
+    type: "festival"
   },
   {
-    id: 2,
-    title: "Performance",
-    description: "Upcoming show at Madison Square Garden",
-    date: "2024-04-20",
-    type: "event",
-    icon: Radio,
-    color: "text-blue-400",
-    bgColor: "bg-blue-500/10",
-    borderColor: "border-blue-500/20",
-    status: "upcoming"
+    id: "2", 
+    title: "Album Release Party",
+    date: addDays(new Date(), 14),
+    venue: "The Grand Hall",
+    city: "Los Angeles",
+    status: "confirmed",
+    ticketSales: 180,
+    capacity: 300,
+    revenue: 18000,
+    type: "concert"
   },
   {
-    id: 3,
-    title: "Achievement",
-    description: "Reached 1M monthly listeners on Spotify",
-    date: "2024-03-10",
-    type: "milestone",
-    icon: Award,
-    color: "text-yellow-400",
-    bgColor: "bg-yellow-500/10",
-    borderColor: "border-yellow-500/20",
-    status: "completed"
+    id: "3",
+    title: "Acoustic Night",
+    date: addDays(new Date(), 21),
+    venue: "Blue Note Jazz Club",
+    city: "Chicago",
+    status: "pending",
+    ticketSales: 0,
+    capacity: 150,
+    revenue: 0,
+    type: "concert"
+  }
+]
+
+// Mock content performance data
+const mockContentPerformance = [
+  {
+    id: "1",
+    title: "Midnight Dreams",
+    type: "track",
+    plays: 15420,
+    likes: 892,
+    shares: 156,
+    uploadDate: addDays(new Date(), -5),
+    trend: "up"
   },
   {
-    id: 4,
-    title: "New Collaboration",
-    description: "Started working with producer Mike Stevens",
-    date: "2024-03-08",
-    type: "collaboration",
-    icon: Users,
-    color: "text-green-400",
-    bgColor: "bg-green-500/10",
-    borderColor: "border-green-500/20",
-    status: "active"
+    id: "2",
+    title: "Live at Central Park",
+    type: "video",
+    views: 8920,
+    likes: 445,
+    shares: 89,
+    uploadDate: addDays(new Date(), -3),
+    trend: "up"
+  },
+  {
+    id: "3",
+    title: "Behind the Scenes",
+    type: "photo",
+    views: 3240,
+    likes: 234,
+    shares: 45,
+    uploadDate: addDays(new Date(), -1),
+    trend: "down"
+  }
+]
+
+// Action items and tasks
+const mockActionItems = [
+  {
+    id: "1",
+    title: "Complete EPK",
+    description: "Your Electronic Press Kit is 60% complete",
+    priority: "high",
+    dueDate: addDays(new Date(), 3),
+    type: "profile"
+  },
+  {
+    id: "2",
+    title: "Review Collaboration Request",
+    description: "Producer Mike Stevens wants to collaborate",
+    priority: "medium",
+    dueDate: addDays(new Date(), 7),
+    type: "collaboration"
+  },
+  {
+    id: "3",
+    title: "Update Social Links",
+    description: "Add your latest social media profiles",
+    priority: "low",
+    dueDate: addDays(new Date(), 14),
+    type: "profile"
   }
 ]
 
 export default function ArtistDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { user, profile, stats, isLoading, features, displayName, avatarInitial, syncArtistName } = useArtist()
+  const [isRetrying, setIsRetrying] = useState(false)
+  const { user: authUser } = useAuth()
+  const { currentAccount, userAccounts, switchAccount } = useMultiAccount()
+  const { user, profile, stats, isLoading, features, displayName, avatarInitial, syncArtistName, refreshStats } = useArtist()
+
+  // Check if we need to switch to artist account
+  const artistAccount = userAccounts.find(acc => acc.account_type === 'artist')
+  const isInArtistMode = currentAccount?.account_type === 'artist'
 
   // Generate dynamic stats from context
   const dynamicStats = [
@@ -189,21 +279,133 @@ export default function ArtistDashboard() {
     }
   ]
 
+  // Calculate upcoming events summary
+  const upcomingEventsSummary = {
+    total: mockUpcomingEvents.length,
+    confirmed: mockUpcomingEvents.filter(e => e.status === 'confirmed').length,
+    pending: mockUpcomingEvents.filter(e => e.status === 'pending').length,
+    totalRevenue: mockUpcomingEvents.reduce((sum, e) => sum + e.revenue, 0),
+    nextEvent: mockUpcomingEvents[0]
+  }
+
+  // Calculate content performance summary
+  const contentSummary = {
+    totalTracks: stats.musicCount,
+    totalVideos: stats.videoCount,
+    totalPhotos: stats.photoCount,
+    totalViews: mockContentPerformance.reduce((sum, c) => sum + (c.views || c.plays), 0),
+    totalLikes: mockContentPerformance.reduce((sum, c) => sum + c.likes, 0)
+  }
+
+  // Handle account switching
+  const handleSwitchToArtist = async () => {
+    if (!artistAccount) {
+      toast.error("No artist account found. Please create one first.")
+      return
+    }
+
+    try {
+      setIsRetrying(true)
+      await switchAccount(artistAccount.profile_id, 'artist')
+      toast.success("Switched to artist mode")
+    } catch (error) {
+      console.error("Error switching to artist account:", error)
+      toast.error("Failed to switch to artist mode")
+    } finally {
+      setIsRetrying(false)
+    }
+  }
+
   // Auto-sync artist name if it's missing
   useEffect(() => {
-    if (profile && !profile.artist_name && user) {
+    if (profile && !profile.artist_name && user && isInArtistMode) {
       console.log('Artist name is missing, attempting to sync...')
       syncArtistName()
     }
-  }, [profile, user, syncArtistName])
+  }, [profile, user, syncArtistName, isInArtistMode])
 
+  // Show account switching prompt if not in artist mode
+  if (!isInArtistMode && artistAccount) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-slate-950 to-black text-white flex items-center justify-center">
+        <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm max-w-md rounded-2xl">
+          <CardContent className="p-8 text-center">
+            <div className="mb-6">
+              <Music className="h-16 w-16 text-purple-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">Switch to Artist Mode</h2>
+              <p className="text-gray-400">
+                You're currently in {currentAccount?.account_type || 'general'} mode. 
+                Switch to your artist account to access the full dashboard.
+              </p>
+            </div>
+            
+            <Button 
+              onClick={handleSwitchToArtist}
+              disabled={isRetrying}
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            >
+              {isRetrying ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Switching...
+                </>
+              ) : (
+                <>
+                  <User className="h-4 w-4 mr-2" />
+                  Switch to Artist Mode
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black via-slate-950 to-black text-white flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-purple-400" />
-          <span className="text-xl">Loading your dashboard...</span>
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-purple-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">Loading Artist Dashboard</h2>
+          <p className="text-gray-400">Setting up your music career hub...</p>
         </div>
+      </div>
+    )
+  }
+
+  // Show error state if no artist account exists
+  if (!artistAccount) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-slate-950 to-black text-white flex items-center justify-center">
+        <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm max-w-md rounded-2xl">
+          <CardContent className="p-8 text-center">
+            <div className="mb-6">
+              <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">No Artist Account</h2>
+              <p className="text-gray-400">
+                You don't have an artist account set up yet. Create one to access the artist dashboard.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <Button asChild className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                <Link href="/create?type=artist">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Artist Account
+                </Link>
+              </Button>
+              
+              <Button variant="outline" asChild className="w-full">
+                <Link href="/">
+                  <ArrowUpRight className="h-4 w-4 mr-2" />
+                  Back to Home
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -233,92 +435,70 @@ export default function ArtistDashboard() {
             delay: 1
           }}
         />
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-emerald-500/3 to-teal-500/3 rounded-full blur-3xl"
-          animate={{
-            y: [0, -10, 0]
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
-        />
       </div>
 
-      {/* Header */}
-      <div className="border-b border-slate-800/50 bg-black/40 backdrop-blur-xl sticky top-0 z-50 relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5" />
-        <div className="px-4 py-4 lg:px-6 lg:py-6">
-          <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-              className="flex items-center space-x-4"
-            >
-              <Avatar className="h-12 w-12">
-                <AvatarImage src="" />
-                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white">
+      <div className="relative z-10 p-6 lg:p-8">
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16 border-2 border-purple-500/20">
+                <AvatarImage src={profile?.social_links?.avatar} />
+                <AvatarFallback className="bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xl font-bold">
                   {avatarInitial}
                 </AvatarFallback>
               </Avatar>
-              <div className="space-y-1">
-                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+              <div>
+                <h1 className="text-3xl font-bold text-white mb-1">
                   Welcome back, {displayName}!
                 </h1>
-                <p className="text-sm text-slate-400">Here's what's happening with your music.</p>
-              </div>
-            </motion.div>
-            
-            <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:space-y-0 lg:space-x-3">
-              <div className="flex items-center space-x-2">
-                <div className="relative flex-1 lg:flex-none">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 w-full lg:w-[200px] bg-slate-800/50 border-slate-700/50 text-white focus:border-purple-500/50 focus:ring-purple-500/20 rounded-xl"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between lg:justify-start space-x-2">
-                <Button
-                  size="sm"
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg rounded-xl"
-                  asChild
-                >
-                  <Link href="/artist/content">
-                    <Plus className="mr-1 lg:mr-2 h-4 w-4" />
-                    <span className="hidden lg:inline">New Content</span>
-                    <span className="lg:hidden">New</span>
-                  </Link>
-                </Button>
-                <Link href="/artist/messages">
-                  <Button
-                    size="icon"
-                    className="rounded-xl bg-slate-800/50 hover:bg-purple-600 focus:ring-2 focus:ring-purple-500 transition-all shadow-lg"
-                    aria-label="Go to messages"
-                  >
-                    <MessageSquare className="h-5 w-5 text-purple-400 hover:text-white transition-colors" />
-                  </Button>
-                </Link>
+                <p className="text-gray-400">
+                  Ready to make some music magic today?
+                </p>
               </div>
             </div>
+            
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refreshStats()}
+                className="border-slate-700 text-gray-300 hover:text-white"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button asChild variant="outline" size="sm" className="border-slate-700 text-gray-300 hover:text-white">
+                <Link href="/artist/settings">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Link>
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="p-4 lg:p-6 space-y-6 lg:space-y-8">
+          {/* Search Bar */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search your content, events, or analytics..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-gray-400"
+            />
+          </div>
+        </motion.div>
+
         {/* Profile Completion Alert */}
         {profile && (!profile.bio || !profile.genres || !profile.artist_name) && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            className="mb-6"
           >
             <Alert className="bg-blue-500/10 border-blue-500/20 text-blue-400">
               <AlertCircle className="h-4 w-4" />
@@ -338,89 +518,49 @@ export default function ArtistDashboard() {
         )}
 
         {/* Stats Grid */}
-        <motion.div 
-          className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
           {dynamicStats.map((stat, index) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-              whileHover={{ 
-                y: -8, 
-                scale: 1.03,
-                transition: { type: "spring", stiffness: 400, damping: 17 }
-              }}
-              className="group cursor-pointer"
+              transition={{ delay: 0.1 + index * 0.1 }}
             >
-              <Card 
-                className={cn(
-                  "bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60",
-                  "border border-slate-700/30 backdrop-blur-xl",
-                  "transition-all duration-500 hover:border-slate-600/50",
-                  "hover:shadow-2xl hover:shadow-slate-900/50",
-                  "relative overflow-hidden",
-                  stat.glowColor && `hover:${stat.glowColor}`
-                )}
-              >
-                <div className={cn(
-                  "absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-500",
-                  stat.color
-                )} />
-                
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg" />
-                
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
-                  <CardTitle className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors duration-300">
-                    {stat.title}
-                  </CardTitle>
-                  <motion.div 
-                    className={cn(
-                      "h-12 w-12 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-xl",
-                      "border border-white/10 group-hover:border-white/20 transition-all duration-300",
-                      stat.color
-                    )}
-                    whileHover={{ 
-                      rotate: 360,
-                      transition: { duration: 0.6, ease: "easeInOut" }
-                    }}
-                  >
-                    <stat.icon className="h-6 w-6 text-white drop-shadow-sm" />
-                  </motion.div>
-                </CardHeader>
-                <CardContent className="relative z-10">
-                  <motion.div 
-                    className="text-3xl font-bold mb-3 bg-gradient-to-r from-white to-slate-200 bg-clip-text text-transparent transition-all duration-300 group-hover:from-white group-hover:to-slate-100"
-                    animate={{ scale: [1, 1.02, 1] }}
-                    transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
-                  >
-                    {stat.value}
-                  </motion.div>
-                  <div className="flex items-center justify-between">
-                    <div className={cn(
-                      "flex items-center text-xs font-medium transition-colors duration-300", 
-                      stat.trend === "up" 
-                        ? "text-emerald-400 group-hover:text-emerald-300" 
-                        : "text-rose-400 group-hover:text-rose-300"
-                    )}>
-                      <motion.div
-                        animate={{ y: [0, -2, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity, repeatType: "reverse" }}
-                      >
-                        {stat.trend === "up" ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownRight className="h-3 w-3 mr-1" />}
-                      </motion.div>
-                      {stat.change}
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm hover:border-slate-600/50 transition-all duration-300 group rounded-2xl">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-2xl bg-gradient-to-r ${stat.color} ${stat.glowColor}`}>
+                      <stat.icon className="h-6 w-6 text-white" />
                     </div>
-                    <div className="w-[60%]">
-                      <Progress 
-                        value={stat.progress} 
-                        className="h-2 bg-slate-800/50"
-                      />
+                    <div className="flex items-center gap-1">
+                      {stat.trend === "up" ? (
+                        <ArrowUpRight className="h-4 w-4 text-green-400" />
+                      ) : (
+                        <ArrowDownRight className="h-4 w-4 text-red-400" />
+                      )}
+                      <span className={`text-sm font-medium ${stat.trend === "up" ? "text-green-400" : "text-red-400"}`}>
+                        {stat.change}
+                      </span>
                     </div>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <h3 className="text-2xl font-bold text-white mb-1">{stat.value}</h3>
+                    <p className="text-gray-400 text-sm">{stat.title}</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-400">Progress</span>
+                      <span className="text-white">{Math.round(stat.progress)}%</span>
+                    </div>
+                    <Progress value={stat.progress} className="h-2" />
+                    <p className="text-xs text-gray-500">{stat.dataSource}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -428,208 +568,397 @@ export default function ArtistDashboard() {
           ))}
         </motion.div>
 
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5" />
-            
-            <CardHeader className="relative z-10">
-              <CardTitle className="text-slate-200 flex items-center group">
-                <motion.div
-                  animate={{ rotate: [0, 360] }}
-                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                >
-                  <Sparkles className="h-5 w-5 mr-3 text-yellow-400 group-hover:text-yellow-300 transition-colors" />
-                </motion.div>
-                <span className="bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                  Quick Actions
-                </span>
-              </CardTitle>
-              <CardDescription className="text-slate-400">Fast access to your most used features</CardDescription>
-            </CardHeader>
-            <CardContent className="relative z-10">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {quickActions.map((action, index) => (
-                  <motion.div
-                    key={action.title}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1, type: "spring", stiffness: 300 }}
-                    whileHover={{ 
-                      scale: 1.08,
-                      y: -5,
-                      transition: { type: "spring", stiffness: 400, damping: 17 }
-                    }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Link href={action.href}>
-                      <Button
-                        variant="ghost"
-                        className="h-24 w-full flex flex-col items-center justify-center space-y-3 bg-gradient-to-br from-slate-800/30 to-slate-900/50 hover:from-slate-700/50 hover:to-slate-800/70 border border-slate-700/30 hover:border-slate-600/50 rounded-2xl backdrop-blur-sm transition-all duration-300 group relative overflow-hidden"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <motion.div 
-                          className={cn("h-12 w-12 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-lg border border-white/10 group-hover:border-white/20 transition-all duration-300", action.color)}
-                          whileHover={{ rotate: [0, -10, 10, 0] }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          <action.icon className="h-6 w-6 text-white drop-shadow-sm" />
-                        </motion.div>
-                        <div className="text-center space-y-1 relative z-10">
-                          <span className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors duration-300">{action.title}</span>
-                          <p className="text-xs text-slate-400 group-hover:text-slate-300 transition-colors duration-300">{action.description}</p>
+        {/* Main Dashboard Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Left Column - Scheduled Events & Quick Actions */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Scheduled Events Overview */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm rounded-2xl">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <CalendarDays className="h-5 w-5 text-blue-400" />
+                        Scheduled Events
+                      </CardTitle>
+                      <CardDescription className="text-gray-400">
+                        Your upcoming performances and events
+                      </CardDescription>
+                    </div>
+                    <Button asChild variant="outline" size="sm" className="border-slate-700 text-gray-300 hover:text-white">
+                      <Link href="/artist/events">
+                        <CalendarIcon className="h-4 w-4 mr-2" />
+                        View All
+                      </Link>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {upcomingEventsSummary.total > 0 ? (
+                    <div className="space-y-4">
+                      {/* Next Event Highlight */}
+                      {upcomingEventsSummary.nextEvent && (
+                        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-2xl p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-blue-500/20 rounded-2xl">
+                                <CalendarIcon className="h-5 w-5 text-blue-400" />
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-white">Next Event</h3>
+                                <p className="text-sm text-gray-400">
+                                  {isToday(upcomingEventsSummary.nextEvent.date) ? 'Today' : 
+                                   isTomorrow(upcomingEventsSummary.nextEvent.date) ? 'Tomorrow' :
+                                   `in ${differenceInDays(upcomingEventsSummary.nextEvent.date, new Date())} days`}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                              {upcomingEventsSummary.nextEvent.status}
+                            </Badge>
+                          </div>
+                          <h4 className="text-lg font-semibold text-white mb-2">
+                            {upcomingEventsSummary.nextEvent.title}
+                          </h4>
+                          <div className="flex items-center gap-4 text-sm text-gray-400">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              {upcomingEventsSummary.nextEvent.venue}, {upcomingEventsSummary.nextEvent.city}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Users className="h-4 w-4" />
+                              {upcomingEventsSummary.nextEvent.ticketSales}/{upcomingEventsSummary.nextEvent.capacity}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-4 w-4" />
+                              ${upcomingEventsSummary.nextEvent.revenue.toLocaleString()}
+                            </div>
+                          </div>
                         </div>
-                      </Button>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Recent Activity */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="lg:col-span-2"
-          >
-            <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5" />
-              
-              <CardHeader className="flex flex-row items-center justify-between relative z-10">
-                <div>
-                  <CardTitle className="text-slate-200 flex items-center space-x-2">
-                    <motion.div
-                      animate={{ rotate: [0, 360] }}
-                      transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                    >
-                      <Activity className="h-5 w-5 text-cyan-400" />
-                    </motion.div>
-                    <span className="bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                      Recent Activity
-                    </span>
-                  </CardTitle>
-                  <CardDescription className="text-slate-400">Your latest updates and achievements</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="space-y-3">
-                  {recentActivity.map((activity, index) => (
-                    <motion.div
-                      key={activity.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      whileHover={{ 
-                        x: 4,
-                        transition: { type: "spring", stiffness: 400, damping: 17 }
-                      }}
-                      className={cn(
-                        "flex items-center space-x-4 p-4 rounded-2xl group transition-all duration-300 relative overflow-hidden border",
-                        activity.bgColor,
-                        activity.borderColor,
-                        "hover:border-opacity-50 hover:bg-opacity-80"
                       )}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
                       
-                      <motion.div 
-                        className={cn(
-                          "h-14 w-14 rounded-2xl flex items-center justify-center relative z-10 border border-white/10 group-hover:border-white/20 transition-all duration-300",
-                          activity.bgColor
-                        )}
-                        whileHover={{ 
-                          scale: 1.1,
-                          rotate: [0, -5, 5, 0],
-                          transition: { duration: 0.6 }
-                        }}
-                      >
-                        <activity.icon className={cn("h-7 w-7 drop-shadow-sm", activity.color)} />
-                      </motion.div>
-                      
-                      <div className="flex-1 min-w-0 relative z-10">
-                        <motion.div 
-                          className="font-semibold text-white group-hover:text-slate-100 transition-colors duration-300"
-                          whileHover={{ x: 2 }}
-                        >
-                          {activity.title}
-                        </motion.div>
-                        <div className="text-sm text-slate-400 group-hover:text-slate-300 truncate transition-colors duration-300">
-                          {activity.description}
+                      {/* Events Summary */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center p-3 bg-slate-800/50 rounded-2xl">
+                          <div className="text-2xl font-bold text-blue-400">{upcomingEventsSummary.total}</div>
+                          <div className="text-sm text-gray-400">Total Events</div>
                         </div>
-                        <div className="text-xs text-slate-500 mt-1">{activity.date}</div>
+                        <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                          <div className="text-2xl font-bold text-green-400">{upcomingEventsSummary.confirmed}</div>
+                          <div className="text-sm text-gray-400">Confirmed</div>
+                        </div>
+                        <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                          <div className="text-2xl font-bold text-yellow-400">{upcomingEventsSummary.pending}</div>
+                          <div className="text-sm text-gray-400">Pending</div>
+                        </div>
+                        <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                          <div className="text-2xl font-bold text-purple-400">${(upcomingEventsSummary.totalRevenue / 1000).toFixed(1)}K</div>
+                          <div className="text-sm text-gray-400">Projected Revenue</div>
+                        </div>
                       </div>
-                      
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "relative z-10 transition-colors duration-300",
-                          activity.status === "completed" && "bg-green-500/10 text-green-400 border-green-500/20 group-hover:bg-green-500/20",
-                          activity.status === "active" && "bg-blue-500/10 text-blue-400 border-blue-500/20 group-hover:bg-blue-500/20",
-                          activity.status === "upcoming" && "bg-yellow-500/10 text-yellow-400 border-yellow-500/20 group-hover:bg-yellow-500/20"
-                        )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <CalendarIcon className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                      <p className="text-gray-400 mb-4">No upcoming events scheduled</p>
+                      <Button asChild className="bg-purple-600 hover:bg-purple-700">
+                        <Link href="/artist/events">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Your First Event
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Content Performance */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm rounded-2xl">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-green-400" />
+                        Content Performance
+                      </CardTitle>
+                      <CardDescription className="text-gray-400">
+                        How your content is performing
+                      </CardDescription>
+                    </div>
+                    <Button asChild variant="outline" size="sm" className="border-slate-700 text-gray-300 hover:text-white">
+                      <Link href="/artist/content">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View All
+                      </Link>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-400">{contentSummary.totalTracks}</div>
+                      <div className="text-sm text-gray-400">Tracks</div>
+                    </div>
+                    <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-400">{contentSummary.totalVideos}</div>
+                      <div className="text-sm text-gray-400">Videos</div>
+                    </div>
+                    <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-400">{contentSummary.totalPhotos}</div>
+                      <div className="text-sm text-gray-400">Photos</div>
+                    </div>
+                    <div className="text-center p-3 bg-slate-800/50 rounded-lg">
+                      <div className="text-2xl font-bold text-pink-400">{(contentSummary.totalViews / 1000).toFixed(1)}K</div>
+                      <div className="text-sm text-gray-400">Total Views</div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {mockContentPerformance.map((content, index) => (
+                      <div key={content.id} className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-slate-700/50 rounded-lg">
+                            {content.type === 'track' && <Music className="h-4 w-4 text-purple-400" />}
+                            {content.type === 'video' && <Video className="h-4 w-4 text-blue-400" />}
+                            {content.type === 'photo' && <ImageIcon className="h-4 w-4 text-green-400" />}
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-white">{content.title}</h4>
+                            <p className="text-sm text-gray-400">
+                              {content.plays ? `${(content.plays / 1000).toFixed(1)}K plays` : `${(content.views / 1000).toFixed(1)}K views`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 text-sm">
+                            <Heart className="h-4 w-4 text-red-400" />
+                            {content.likes}
+                          </div>
+                          {content.trend === 'up' ? (
+                            <TrendingUp className="h-4 w-4 text-green-400" />
+                          ) : (
+                            <TrendingDown className="h-4 w-4 text-red-400" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Right Column - Quick Actions & Action Items */}
+          <div className="space-y-8">
+            {/* Quick Actions */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm rounded-2xl">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-yellow-400" />
+                    Quick Actions
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Fast access to your most used features
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    {quickActions.map((action, index) => (
+                      <motion.div
+                        key={action.title}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.2 + index * 0.1 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
-                        {activity.status}
-                      </Badge>
-                    </motion.div>
-                  ))}
-                </div>
-                <div className="mt-6 text-center">
-                  <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800/50" asChild>
-                    <Link href="/artist/feed">View All Activity</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                        <Link href={action.href}>
+                          <Card className="bg-slate-800/30 border-slate-700/50 hover:border-slate-600/50 transition-all duration-300 cursor-pointer group rounded-2xl">
+                            <CardContent className="p-4 text-center">
+                              <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${action.color} mx-auto mb-3 flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                                <action.icon className="h-5 w-5 text-white" />
+                              </div>
+                              <h3 className="font-semibold text-white text-sm mb-1">{action.title}</h3>
+                              <p className="text-gray-400 text-xs">{action.description}</p>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Action Items */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm rounded-2xl">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Target className="h-5 w-5 text-orange-400" />
+                    Action Items
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Tasks that need your attention
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {mockActionItems.map((item, index) => (
+                      <div key={item.id} className="flex items-start gap-3 p-3 bg-slate-800/30 rounded-lg">
+                        <div className={`p-2 rounded-lg ${
+                          item.priority === 'high' ? 'bg-red-500/20' :
+                          item.priority === 'medium' ? 'bg-yellow-500/20' :
+                          'bg-blue-500/20'
+                        }`}>
+                          <Bell className={`h-4 w-4 ${
+                            item.priority === 'high' ? 'text-red-400' :
+                            item.priority === 'medium' ? 'text-yellow-400' :
+                            'text-blue-400'
+                          }`} />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-white text-sm">{item.title}</h4>
+                          <p className="text-gray-400 text-xs mb-2">{item.description}</p>
+                          <div className="flex items-center justify-between">
+                            <Badge className={`text-xs ${
+                              item.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                              item.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-blue-500/20 text-blue-400'
+                            }`}>
+                              {item.priority}
+                            </Badge>
+                            <span className="text-xs text-gray-500">
+                              Due {format(item.dueDate, 'MMM d')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Business Insights */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm rounded-2xl">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-yellow-400" />
+                    Business Insights
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Key metrics and recommendations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="h-4 w-4 text-green-400" />
+                        <span className="text-sm font-medium text-green-400">Revenue Growth</span>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        Your revenue is up 12.5% this month. Consider releasing new content to maintain momentum.
+                      </p>
+                    </div>
+                    
+                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="h-4 w-4 text-blue-400" />
+                        <span className="text-sm font-medium text-blue-400">Fan Engagement</span>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        Your latest track has 15% higher engagement. Share behind-the-scenes content to boost interaction.
+                      </p>
+                    </div>
+                    
+                    <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CalendarIcon className="h-4 w-4 text-purple-400" />
+                        <span className="text-sm font-medium text-purple-400">Event Opportunity</span>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        You have 3 upcoming events. Promote them on social media to increase ticket sales.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Phase 2: Advanced Features */}
+        <div className="mt-12 space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-purple-400" />
+              Advanced Insights & Analytics
+            </h2>
           </motion.div>
 
-          {/* Quick Stats Sidebar */}
+          {/* Smart Recommendations */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
           >
-            <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-teal-500/5" />
-              
-              <CardHeader className="relative z-10">
-                <CardTitle className="text-slate-200 flex items-center">
-                  <TrendingUp className="h-5 w-5 mr-2 text-emerald-400" />
-                  Your Growth
-                </CardTitle>
-                <CardDescription className="text-slate-400">This month's highlights</CardDescription>
-              </CardHeader>
-              <CardContent className="relative z-10 space-y-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-white mb-2">{stats.totalTracks}</div>
-                  <div className="text-sm text-slate-400">Total Tracks</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-white mb-2">{stats.totalEvents}</div>
-                  <div className="text-sm text-slate-400">Upcoming Events</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-white mb-2">{stats.totalCollaborations}</div>
-                  <div className="text-sm text-slate-400">Active Collaborations</div>
-                </div>
+            <ArtistSmartRecommendations 
+              artistStats={stats}
+              recentContent={mockContentPerformance}
+              upcomingEvents={mockUpcomingEvents}
+            />
+          </motion.div>
 
-                <Button 
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-                  asChild
-                >
-                  <Link href="/artist/business">View Full Analytics</Link>
-                </Button>
-              </CardContent>
-            </Card>
+          {/* Analytics Overview */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+          >
+            <ArtistAnalyticsOverview 
+              data={undefined} // Will use mock data from component
+              timeRange="30d"
+            />
+          </motion.div>
+
+          {/* Notifications */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <ArtistNotifications />
           </motion.div>
         </div>
       </div>

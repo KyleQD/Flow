@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { CreateEventForm } from "@/components/admin/create-event-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,7 @@ import {
   Download
 } from "lucide-react"
 import { format } from "date-fns"
+import Link from "next/link"
 
 interface Event {
   id: string
@@ -68,6 +70,7 @@ interface Event {
 }
 
 export default function EventsPage() {
+  const router = useRouter()
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>('grid')
@@ -167,14 +170,51 @@ export default function EventsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'bg-blue-500/20 text-blue-400'
       case 'confirmed': return 'bg-green-500/20 text-green-400'
+      case 'scheduled': return 'bg-blue-500/20 text-blue-400'
       case 'in_progress': return 'bg-yellow-500/20 text-yellow-400'
       case 'completed': return 'bg-purple-500/20 text-purple-400'
       case 'cancelled': return 'bg-red-500/20 text-red-400'
       case 'postponed': return 'bg-orange-500/20 text-orange-400'
       default: return 'bg-slate-500/20 text-slate-400'
     }
+  }
+
+  // Simple logistics status component
+  const LogisticsStatus = ({ eventId }: { eventId: string }) => {
+    const [logisticsProgress, setLogisticsProgress] = useState(0)
+    const [logisticsStatus, setLogisticsStatus] = useState('Not Started')
+
+    useEffect(() => {
+      // Mock logistics data - in real implementation, this would fetch from API
+      const mockProgress = Math.floor(Math.random() * 100)
+      setLogisticsProgress(mockProgress)
+      setLogisticsStatus(mockProgress === 100 ? 'Complete' : mockProgress > 50 ? 'In Progress' : 'Not Started')
+    }, [eventId])
+
+    return (
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-slate-400">Logistics</span>
+          <span className="text-white font-medium">{logisticsProgress}%</span>
+        </div>
+        <div className="w-full bg-slate-700 rounded-full h-1.5">
+          <div 
+            className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all duration-300"
+            style={{ width: `${logisticsProgress}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-slate-400">{logisticsStatus}</span>
+          <Link href={`/admin/dashboard/logistics?eventId=${eventId}`}>
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+              <Target className="h-3 w-3 mr-1" />
+              Manage
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   const EventCard = ({ event }: { event: Event }) => (
@@ -243,6 +283,9 @@ export default function EventsPage() {
             </div>
           </div>
 
+          {/* Logistics Status */}
+          <LogisticsStatus eventId={event.id} />
+
           {/* Tour Badge */}
           {event.tour && (
             <div className="flex items-center">
@@ -258,11 +301,11 @@ export default function EventsPage() {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => setSelectedEvent(event)}
+              onClick={() => router.push(`/admin/dashboard/events/${event.id}`)}
               className="text-slate-400 hover:text-white"
             >
               <Eye className="h-4 w-4 mr-2" />
-              View Details
+              Manage Event
             </Button>
             <div className="flex items-center space-x-1">
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -291,15 +334,23 @@ export default function EventsPage() {
               Coordinate events, manage bookings, and track performance
             </p>
           </div>
-          <div className="flex items-center space-x-4">
-            <Button 
-              onClick={() => setIsCreateEventOpen(true)}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Event
-            </Button>
-          </div>
+                      <div className="flex items-center space-x-4">
+              <Button
+                onClick={() => router.push('/admin/dashboard/events/planner')}
+                variant="outline"
+                className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Event Planner
+              </Button>
+              <Button 
+                onClick={() => setIsCreateEventOpen(true)}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Quick Create
+              </Button>
+            </div>
         </div>
 
         {/* Summary Cards */}

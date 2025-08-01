@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { useArtist } from "@/contexts/artist-context"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -37,6 +39,26 @@ import { useParams, useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import Image from "next/image"
+
+// Animation variants
+const fadeIn = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -20 }
+}
+
+const floatingAnimation = {
+  y: [0, -10, 0]
+}
+
+const staggerContainer = {
+  initial: {},
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
 
 interface Event {
   id: string
@@ -83,6 +105,43 @@ interface Expense {
   date: string
 }
 
+interface CrewMember {
+  id: string
+  user_id?: string
+  email?: string
+  name: string
+  role: string
+  status: 'invited' | 'accepted' | 'declined'
+  permissions: string[]
+  created_at: string
+}
+
+interface Venue {
+  id: string
+  name: string
+  address: string
+  city: string
+  state: string
+  country: string
+  capacity: number
+  venue_type: string
+  amenities: string[]
+  contact_email?: string
+  booking_status?: 'available' | 'pending' | 'booked' | 'unavailable'
+  price_range?: { min: number; max: number }
+  images?: string[]
+  user_id?: string
+}
+
+interface BookingRequest {
+  id: string
+  venue_id: string
+  event_id: string
+  message: string
+  status: 'pending' | 'approved' | 'declined'
+  created_at: string
+}
+
 export default function EventDetailPage() {
   const { user } = useArtist()
   const supabase = createClientComponentClient()
@@ -98,6 +157,25 @@ export default function EventDetailPage() {
   const [showExpenseModal, setShowExpenseModal] = useState(false)
   const [newTask, setNewTask] = useState({ title: '', description: '', due_date: '' })
   const [newExpense, setNewExpense] = useState({ description: '', amount: 0, category: '', date: new Date().toISOString().split('T')[0] })
+  
+  // Crew management state
+  const [crewMembers, setCrewMembers] = useState<CrewMember[]>([])
+  const [showCrewModal, setShowCrewModal] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [newCrewMember, setNewCrewMember] = useState({ name: '', email: '', role: '', permissions: [] as string[] })
+  const [availableRoles] = useState([
+    'Production Manager', 'Sound Engineer', 'Lighting Technician', 'Stage Manager', 
+    'Security', 'Photographer', 'Videographer', 'Merchandise', 'Tour Manager', 'Roadie'
+  ])
+  
+  // Venue management state
+  const [venues, setVenues] = useState<Venue[]>([])
+  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null)
+  const [bookingRequests, setBookingRequests] = useState<BookingRequest[]>([])
+  const [showVenueSearch, setShowVenueSearch] = useState(false)
+  const [showBookingModal, setShowBookingModal] = useState(false)
+  const [venueSearchQuery, setVenueSearchQuery] = useState('')
+  const [bookingMessage, setBookingMessage] = useState('')
 
   const eventId = params.id as string
 
@@ -106,6 +184,9 @@ export default function EventDetailPage() {
       loadEvent()
       loadTasks()
       loadExpenses()
+      loadCrewMembers()
+      loadVenues()
+      loadBookingRequests()
     }
   }, [user, eventId])
 
@@ -154,6 +235,81 @@ export default function EventDetailPage() {
       { id: '1', description: 'Venue rental', amount: 2500, category: 'Venue', date: '2024-01-10' },
       { id: '2', description: 'Sound equipment', amount: 800, category: 'Equipment', date: '2024-01-12' },
       { id: '3', description: 'Marketing materials', amount: 300, category: 'Marketing', date: '2024-01-14' }
+    ])
+  }
+
+  const loadCrewMembers = async () => {
+    // Mock data for now - you could create an event_crew table
+    setCrewMembers([
+      { 
+        id: '1', 
+        user_id: 'user1', 
+        name: 'John Smith', 
+        email: 'john@example.com',
+        role: 'Sound Engineer', 
+        status: 'accepted', 
+        permissions: ['equipment_access', 'backstage_access'],
+        created_at: new Date().toISOString()
+      },
+      { 
+        id: '2', 
+        name: 'Sarah Johnson', 
+        email: 'sarah@example.com',
+        role: 'Stage Manager', 
+        status: 'invited', 
+        permissions: ['full_access'],
+        created_at: new Date().toISOString()
+      }
+    ])
+  }
+
+  const loadVenues = async () => {
+    // Mock data for now - you could create a venues table
+    setVenues([
+      {
+        id: '1',
+        name: 'The Grand Theater',
+        address: '123 Main St',
+        city: 'Los Angeles',
+        state: 'CA',
+        country: 'USA',
+        capacity: 2500,
+        venue_type: 'Theater',
+        amenities: ['Sound System', 'Lighting Rig', 'Green Rooms', 'Parking'],
+        contact_email: 'booking@grandtheater.com',
+        booking_status: 'available',
+        price_range: { min: 5000, max: 15000 },
+        user_id: 'venue_user_1'
+      },
+      {
+        id: '2',
+        name: 'Riverside Amphitheater',
+        address: '456 River Rd',
+        city: 'Austin',
+        state: 'TX',
+        country: 'USA',
+        capacity: 8000,
+        venue_type: 'Outdoor',
+        amenities: ['Outdoor Stage', 'VIP Area', 'Food Court', 'Merchandise Booths'],
+        contact_email: 'events@riverside.com',
+        booking_status: 'available',
+        price_range: { min: 10000, max: 25000 },
+        user_id: 'venue_user_2'
+      }
+    ])
+  }
+
+  const loadBookingRequests = async () => {
+    // Mock data for now - you could create a booking_requests table
+    setBookingRequests([
+      {
+        id: '1',
+        venue_id: '1',
+        event_id: eventId,
+        message: 'Looking to book for our upcoming concert.',
+        status: 'pending',
+        created_at: new Date().toISOString()
+      }
     ])
   }
 
@@ -249,6 +405,80 @@ export default function EventDetailPage() {
     return event.ticket_price_min * event.expected_attendance
   }
 
+  // Crew management functions
+  const addCrewMember = async () => {
+    if (!newCrewMember.name.trim() || !newCrewMember.role) return
+
+    const crewMember: CrewMember = {
+      id: Date.now().toString(),
+      email: newCrewMember.email,
+      name: newCrewMember.name,
+      role: newCrewMember.role,
+      status: 'invited',
+      permissions: newCrewMember.permissions,
+      created_at: new Date().toISOString()
+    }
+
+    setCrewMembers(prev => [...prev, crewMember])
+    setNewCrewMember({ name: '', email: '', role: '', permissions: [] })
+    setShowInviteModal(false)
+    toast.success('Crew member invited successfully')
+  }
+
+  const removeCrewMember = (crewId: string) => {
+    setCrewMembers(prev => prev.filter(member => member.id !== crewId))
+    toast.success('Crew member removed')
+  }
+
+  const updateCrewStatus = (crewId: string, status: CrewMember['status']) => {
+    setCrewMembers(prev => prev.map(member => 
+      member.id === crewId ? { ...member, status } : member
+    ))
+    toast.success(`Crew member status updated to ${status}`)
+  }
+
+  // Venue management functions
+  const searchVenues = (query: string) => {
+    setVenueSearchQuery(query)
+    // In a real app, this would make an API call to search venues
+    // For now, we'll filter the mock data
+    if (!query.trim()) return venues
+    return venues.filter(venue => 
+      venue.name.toLowerCase().includes(query.toLowerCase()) ||
+      venue.city.toLowerCase().includes(query.toLowerCase()) ||
+      venue.venue_type.toLowerCase().includes(query.toLowerCase())
+    )
+  }
+
+  const sendBookingRequest = async () => {
+    if (!selectedVenue || !bookingMessage.trim()) return
+
+    const request: BookingRequest = {
+      id: Date.now().toString(),
+      venue_id: selectedVenue.id,
+      event_id: eventId,
+      message: bookingMessage,
+      status: 'pending',
+      created_at: new Date().toISOString()
+    }
+
+    setBookingRequests(prev => [...prev, request])
+    setBookingMessage('')
+    setShowBookingModal(false)
+    setSelectedVenue(null)
+    toast.success('Booking request sent successfully')
+  }
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'accepted': return 'bg-green-600/20 text-green-300 border-green-500/30'
+      case 'invited': return 'bg-yellow-600/20 text-yellow-300 border-yellow-500/30'
+      case 'declined': return 'bg-red-600/20 text-red-300 border-red-500/30'
+      case 'pending': return 'bg-blue-600/20 text-blue-300 border-blue-500/30'
+      default: return 'bg-gray-600/20 text-gray-300 border-gray-500/30'
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -266,54 +496,105 @@ export default function EventDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-black via-slate-950 to-black text-white relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-purple-500/8 to-pink-500/8 rounded-full blur-3xl"
+          animate={floatingAnimation}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-r from-blue-500/8 to-cyan-500/8 rounded-full blur-3xl"
+          animate={floatingAnimation}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
+        <motion.div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-emerald-500/5 to-teal-500/5 rounded-full blur-3xl"
+          animate={floatingAnimation}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        />
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/artist/events')}
-            className="text-gray-400 hover:text-white"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Events
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={copyEventLink}>
-            <Copy className="h-4 w-4 mr-2" />
-            Copy Link
-          </Button>
-          <Button variant="outline">
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </Button>
-          <Button 
-            onClick={() => router.push(`/artist/events/${event.id}/edit`)}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Event
-          </Button>
+      <div className="border-b border-slate-800/50 bg-black/40 backdrop-blur-xl sticky top-0 z-50 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5" />
+        <div className="px-6 py-4 relative">
+          <div className="flex items-center justify-between">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex items-center gap-4"
+            >
+              <Button
+                variant="ghost"
+                onClick={() => router.push('/artist/events')}
+                className="text-gray-400 hover:text-white hover:bg-white/10 backdrop-blur-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Events
+              </Button>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="flex items-center gap-3"
+            >
+              <Button 
+                variant="outline" 
+                onClick={copyEventLink}
+                className="border-slate-700/50 text-slate-300 hover:bg-slate-800/50 backdrop-blur-sm"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copy Link
+              </Button>
+              <Button 
+                variant="outline"
+                className="border-slate-700/50 text-slate-300 hover:bg-slate-800/50 backdrop-blur-sm"
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
+              <Button 
+                onClick={() => router.push(`/artist/events/${event.id}/edit`)}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Event
+              </Button>
+            </motion.div>
+          </div>
         </div>
       </div>
 
+      <div className="p-6 space-y-8 relative">{/* Spacer for content */}
+
       {/* Event Header */}
-      <Card className="bg-slate-900/50 border-slate-700/50">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-white">{event.title}</h1>
-                <Badge className={getStatusColor(event.status)}>
-                  {event.status.replace('_', ' ')}
-                </Badge>
-                {!event.is_public && (
-                  <Badge variant="outline" className="border-gray-500/30 text-gray-400">
-                    Private
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl shadow-2xl">
+          <CardContent className="p-8">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-4">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                    {event.title}
+                  </h1>
+                  <Badge className={`${getStatusColor(event.status)} border border-current/30 backdrop-blur-sm`}>
+                    {event.status.replace('_', ' ')}
                   </Badge>
-                )}
-              </div>
+                  {!event.is_public && (
+                    <Badge variant="outline" className="border-gray-500/30 text-gray-400 bg-gray-500/5 backdrop-blur-sm">
+                      Private
+                    </Badge>
+                  )}
+                </div>
               
               {event.description && (
                 <p className="text-gray-400 mb-4">{event.description}</p>
@@ -401,65 +682,104 @@ export default function EventDetailPage() {
           )}
         </CardContent>
       </Card>
+      </motion.div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-900/50 border-slate-700/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Progress</p>
-                <p className="text-2xl font-bold text-white">{getCompletionProgress()}%</p>
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-4 gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <motion.div
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl hover:border-green-500/30 transition-all duration-300 group">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Progress</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
+                    {getCompletionProgress()}%
+                  </p>
+                </div>
+                <CheckCircle className="h-10 w-10 text-green-400 group-hover:scale-110 transition-transform" />
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
-            </div>
-            <Progress value={getCompletionProgress()} className="mt-2" />
-          </CardContent>
-        </Card>
+              <Progress value={getCompletionProgress()} className="mt-3 h-2" />
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Card className="bg-slate-900/50 border-slate-700/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Tasks</p>
-                <p className="text-2xl font-bold text-white">
-                  {tasks.filter(t => t.completed).length}/{tasks.length}
-                </p>
+        <motion.div
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl hover:border-blue-500/30 transition-all duration-300 group">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Tasks</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                    {tasks.filter(t => t.completed).length}/{tasks.length}
+                  </p>
+                </div>
+                <FileText className="h-10 w-10 text-blue-400 group-hover:scale-110 transition-transform" />
               </div>
-              <FileText className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Card className="bg-slate-900/50 border-slate-700/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Expenses</p>
-                <p className="text-2xl font-bold text-white">${getTotalExpenses().toLocaleString()}</p>
+        <motion.div
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl hover:border-red-500/30 transition-all duration-300 group">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Expenses</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-red-400 to-pink-400 bg-clip-text text-transparent">
+                    ${getTotalExpenses().toLocaleString()}
+                  </p>
+                </div>
+                <DollarSign className="h-10 w-10 text-red-400 group-hover:scale-110 transition-transform" />
               </div>
-              <DollarSign className="h-8 w-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Card className="bg-slate-900/50 border-slate-700/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Projected Revenue</p>
-                <p className="text-2xl font-bold text-white">${getProjectedRevenue().toLocaleString()}</p>
+        <motion.div
+          whileHover={{ y: -4, scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl hover:border-emerald-500/30 transition-all duration-300 group">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Projected Revenue</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                    ${getProjectedRevenue().toLocaleString()}
+                  </p>
+                </div>
+                <DollarSign className="h-10 w-10 text-emerald-400 group-hover:scale-110 transition-transform" />
               </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
 
       {/* Main Content Tabs */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid grid-cols-5 gap-4 bg-slate-800/50 w-full">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+          <TabsList className="grid grid-cols-7 gap-2 bg-gradient-to-r from-slate-800/50 via-slate-700/50 to-slate-800/50 backdrop-blur-xl border border-slate-700/30 p-2 w-full">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="crew">Crew</TabsTrigger>
+          <TabsTrigger value="venues">Venues</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="budget">Budget</TabsTrigger>
           <TabsTrigger value="marketing">Marketing</TabsTrigger>
@@ -469,9 +789,12 @@ export default function EventDetailPage() {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Event Details */}
-            <Card className="bg-slate-900/50 border-slate-700/50">
+            <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl">
               <CardHeader>
-                <CardTitle className="text-white">Event Details</CardTitle>
+                <CardTitle className="text-xl bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-purple-400" />
+                  Event Details
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
@@ -551,6 +874,207 @@ export default function EventDetailPage() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="crew" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white">Crew Management</h2>
+            <Button onClick={() => setShowInviteModal(true)} className="bg-purple-600 hover:bg-purple-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Invite Crew Member
+            </Button>
+          </div>
+
+          {/* Crew Members List */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {crewMembers.map((member) => (
+              <Card key={member.id} className="bg-slate-900/50 border-slate-700/50">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-white">{member.name}</h3>
+                      <p className="text-sm text-gray-400">{member.email}</p>
+                      <p className="text-sm font-medium text-purple-300 mt-1">{member.role}</p>
+                    </div>
+                    <Badge variant="outline" className={getStatusBadgeColor(member.status)}>
+                      {member.status}
+                    </Badge>
+                  </div>
+                  
+                  {member.permissions.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-1">Permissions:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {member.permissions.map((permission, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {permission.replace('_', ' ')}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    {member.status === 'invited' && (
+                      <>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => updateCrewStatus(member.id, 'accepted')}
+                          className="text-green-400 border-green-400 hover:bg-green-400/10"
+                        >
+                          Accept
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => updateCrewStatus(member.id, 'declined')}
+                          className="text-red-400 border-red-400 hover:bg-red-400/10"
+                        >
+                          Decline
+                        </Button>
+                      </>
+                    )}
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => removeCrewMember(member.id)}
+                      className="text-gray-400 hover:text-red-400"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {crewMembers.length === 0 && (
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardContent className="p-12 text-center">
+                <Users className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-white mb-2">No crew members yet</h3>
+                <p className="text-gray-400 mb-4">Start building your event team by inviting crew members.</p>
+                <Button onClick={() => setShowInviteModal(true)} className="bg-purple-600 hover:bg-purple-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Invite First Crew Member
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="venues" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-white">Venue Management</h2>
+            <Button onClick={() => setShowVenueSearch(true)} className="bg-purple-600 hover:bg-purple-700">
+              <MapPin className="h-4 w-4 mr-2" />
+              Find Venues
+            </Button>
+          </div>
+
+          {/* Booking Requests */}
+          {bookingRequests.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Booking Requests</h3>
+              <div className="space-y-3">
+                {bookingRequests.map((request) => {
+                  const venue = venues.find(v => v.id === request.venue_id)
+                  return (
+                    <Card key={request.id} className="bg-slate-900/50 border-slate-700/50">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-white">{venue?.name || 'Unknown Venue'}</h4>
+                            <p className="text-sm text-gray-400">{venue?.address}, {venue?.city}</p>
+                            <p className="text-sm text-gray-300 mt-2">{request.message}</p>
+                            <p className="text-xs text-gray-500 mt-2">
+                              Sent: {format(new Date(request.created_at), 'PPP')}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className={getStatusBadgeColor(request.status)}>
+                            {request.status}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Available Venues */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4">Available Venues</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {venues.filter(venue => venue.booking_status === 'available').map((venue) => (
+                <Card key={venue.id} className="bg-slate-900/50 border-slate-700/50">
+                  <CardContent className="p-4">
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-white">{venue.name}</h4>
+                      <p className="text-sm text-gray-400">{venue.address}</p>
+                      <p className="text-sm text-gray-400">{venue.city}, {venue.state}</p>
+                    </div>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Type:</span>
+                        <span className="text-white">{venue.venue_type}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Capacity:</span>
+                        <span className="text-white">{venue.capacity.toLocaleString()}</span>
+                      </div>
+                      {venue.price_range && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">Price Range:</span>
+                          <span className="text-white">${venue.price_range.min.toLocaleString()} - ${venue.price_range.max.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {venue.amenities.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs text-gray-500 mb-2">Amenities:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {venue.amenities.map((amenity, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {amenity}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <Button 
+                      onClick={() => {
+                        setSelectedVenue(venue)
+                        setShowBookingModal(true)
+                      }}
+                      className="w-full bg-purple-600 hover:bg-purple-700"
+                    >
+                      Request Booking
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {venues.filter(venue => venue.booking_status === 'available').length === 0 && (
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardContent className="p-12 text-center">
+                <MapPin className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-white mb-2">No venues available</h3>
+                <p className="text-gray-400 mb-4">Search for venues that match your event requirements.</p>
+                <Button onClick={() => setShowVenueSearch(true)} className="bg-purple-600 hover:bg-purple-700">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Search Venues
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -724,7 +1248,8 @@ export default function EventDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+              </Tabs>
+      </motion.div>
 
       {/* Add Task Modal */}
       <Dialog open={showTaskModal} onOpenChange={setShowTaskModal}>
@@ -837,6 +1362,138 @@ export default function EventDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Crew Invitation Modal */}
+      <Dialog open={showInviteModal} onOpenChange={setShowInviteModal}>
+        <DialogContent className="bg-slate-900 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Invite Crew Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-gray-300">Name</Label>
+              <Input
+                value={newCrewMember.name}
+                onChange={(e) => setNewCrewMember(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter crew member name"
+                className="bg-slate-800 border-slate-600 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-gray-300">Email</Label>
+              <Input
+                type="email"
+                value={newCrewMember.email}
+                onChange={(e) => setNewCrewMember(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Enter email address"
+                className="bg-slate-800 border-slate-600 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-gray-300">Role</Label>
+              <Select onValueChange={(value: string) => setNewCrewMember(prev => ({ ...prev, role: value }))}>
+                <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-600">
+                  {availableRoles.map((role) => (
+                    <SelectItem key={role} value={role} className="text-white">
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-gray-300">Permissions</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {['backstage_access', 'equipment_access', 'admin_access', 'full_access'].map((permission) => (
+                  <div key={permission} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={permission}
+                      className="rounded border-slate-600 bg-slate-800"
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setNewCrewMember(prev => ({ 
+                            ...prev, 
+                            permissions: [...prev.permissions, permission] 
+                          }))
+                        } else {
+                          setNewCrewMember(prev => ({ 
+                            ...prev, 
+                            permissions: prev.permissions.filter(p => p !== permission) 
+                          }))
+                        }
+                      }}
+                    />
+                    <Label htmlFor={permission} className="text-sm text-gray-300">
+                      {permission.replace('_', ' ')}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setShowInviteModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={addCrewMember} className="bg-purple-600 hover:bg-purple-700">
+                Send Invitation
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Venue Booking Modal */}
+      <Dialog open={showBookingModal} onOpenChange={setShowBookingModal}>
+        <DialogContent className="bg-slate-900 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Request Booking</DialogTitle>
+          </DialogHeader>
+          {selectedVenue && (
+            <div className="space-y-4">
+              <div className="bg-slate-800 p-4 rounded-lg">
+                <h3 className="font-semibold text-white">{selectedVenue.name}</h3>
+                <p className="text-sm text-gray-400">{selectedVenue.address}</p>
+                <p className="text-sm text-gray-400">{selectedVenue.city}, {selectedVenue.state}</p>
+                <div className="flex justify-between mt-2">
+                  <span className="text-sm text-gray-400">Capacity:</span>
+                  <span className="text-sm text-white">{selectedVenue.capacity.toLocaleString()}</span>
+                </div>
+                {selectedVenue.price_range && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-400">Price Range:</span>
+                    <span className="text-sm text-white">
+                      ${selectedVenue.price_range.min.toLocaleString()} - ${selectedVenue.price_range.max.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <Label className="text-gray-300">Booking Message</Label>
+                <Textarea
+                  value={bookingMessage}
+                  onChange={(e) => setBookingMessage(e.target.value)}
+                  placeholder="Tell the venue about your event and requirements..."
+                  className="bg-slate-800 border-slate-600 text-white mt-2"
+                  rows={4}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setShowBookingModal(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={sendBookingRequest} className="bg-purple-600 hover:bg-purple-700">
+                  Send Request
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      </div>
     </div>
   )
 } 

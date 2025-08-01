@@ -21,6 +21,7 @@ import {
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/lib/database.types'
 import { toast } from 'sonner'
+import { useRouteAccountContext } from '@/hooks/use-route-account-context'
 
 interface CompactPostCreatorProps {
   onPostCreated?: (post: any) => void
@@ -46,6 +47,9 @@ export function CompactPostCreator({
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const supabase = createClientComponentClient<Database>()
+  
+  // Use route-based account context detection
+  const { accountType, routeContext, displayContext } = useRouteAccountContext()
 
   // Auto-resize textarea
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -81,13 +85,15 @@ export function CompactPostCreator({
 
     setIsPosting(true)
     try {
-      console.log('Creating post with unified account system:', {
+      console.log('Creating post with route-based account system:', {
         user_id: artistUser.id,
-        artist_profile: artistProfile?.artist_name || displayName,
+        route_context: routeContext,
+        account_type: accountType,
+        display_context: displayContext,
         content: content.trim()
       })
 
-      // Create post via API endpoint
+      // Create post via main API endpoint
       const response = await fetch('/api/posts/create', {
         method: 'POST',
         headers: {
@@ -100,8 +106,9 @@ export function CompactPostCreator({
           visibility,
           location: location || null,
           hashtags: hashtags.length > 0 ? hashtags : null,
-          // Use the unified account system
-          posted_as: 'artist' // This will be resolved to an account_id by the API
+          // Use route-based account system
+          route_context: routeContext,
+          posted_as: accountType // Fallback for route-based detection
         }),
       })
 
@@ -199,10 +206,10 @@ export function CompactPostCreator({
         textareaRef.current.style.height = 'auto'
       }
 
-      // Dynamic success message based on account info
-      const accountDisplayName = displayPost.profiles?.full_name || displayPost.user?.full_name || 'Account'
+      // Dynamic success message based on route-based account context
+      const accountDisplayName = displayPost.profiles?.full_name || displayPost.user?.full_name || displayContext
       toast.success('Post created successfully!', {
-        description: `Posted as ${accountDisplayName}`
+        description: `Posted as ${accountDisplayName} (${displayContext})`
       })
 
     } catch (error) {

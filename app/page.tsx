@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Loader2 } from "lucide-react"
+import { SocialFeed } from "@/components/feed/social-feed"
 
 export default function HomePage() {
   const { user, loading, isAuthenticated } = useAuth()
@@ -13,10 +14,8 @@ export default function HomePage() {
     // Only redirect after initial loading is complete and we have auth state
     if (!loading) {
       if (isAuthenticated && user) {
-        // Use a small delay to ensure auth state is stable
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 100)
+        // Don't redirect - show the social feed instead
+        return
       }
       // Don't redirect unauthenticated users - let them stay on homepage
     }
@@ -37,17 +36,11 @@ export default function HomePage() {
     )
   }
 
-  // If authenticated user, show brief loading before redirect
+  // If authenticated user, show the social feed
   if (isAuthenticated && user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="text-center text-white">
-          <div className="relative">
-            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-green-400" />
-            <div className="absolute inset-0 h-12 w-12 rounded-full bg-green-400/20 animate-pulse mx-auto mb-4"></div>
-          </div>
-          <p className="text-lg font-light">Welcome back! Redirecting to dashboard...</p>
-        </div>  
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+        <SocialFeed />
       </div>
     )
   }

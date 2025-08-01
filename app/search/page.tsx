@@ -34,6 +34,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import socialInteractionsService from "@/lib/services/social-interactions.service"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -46,6 +47,7 @@ export default function SearchPage() {
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null)
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false)
   const router = useRouter()
+  const { user, isAuthenticated } = useAuth()
 
   // Load data on component mount and search changes
   useEffect(() => {
@@ -94,12 +96,16 @@ export default function SearchPage() {
   }
 
   const handleFollow = async (profileId: string, profileType: string) => {
+    if (!user || !isAuthenticated) {
+      toast.error('Please sign in to follow profiles')
+      return
+    }
+
     try {
       const isFollowing = followedProfiles.has(profileId)
-      const userId = socialInteractionsService.getCurrentUserId()
       
       if (isFollowing) {
-        const result = await socialInteractionsService.unfollowProfile(profileId, userId || undefined)
+        const result = await socialInteractionsService.unfollowProfile(profileId, user.id)
         if (result.success) {
           setFollowedProfiles(prev => {
             const newSet = new Set(prev)
@@ -111,7 +117,7 @@ export default function SearchPage() {
           toast.error(result.message)
         }
       } else {
-        const result = await socialInteractionsService.followProfile(profileId, userId || undefined)
+        const result = await socialInteractionsService.followProfile(profileId, user.id)
         if (result.success) {
           setFollowedProfiles(prev => new Set([...prev, profileId]))
           toast.success(result.message)

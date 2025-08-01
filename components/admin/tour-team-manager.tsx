@@ -1,0 +1,553 @@
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Plus, Edit, Trash2, CheckCircle, Clock, XCircle, Users, Mail, Phone, Calendar, User } from "lucide-react"
+import { toast } from "sonner"
+
+interface TourMember {
+  id: string
+  name: string
+  role: string
+  email: string
+  phone?: string
+  avatar?: string
+  status: 'confirmed' | 'pending' | 'declined'
+  arrival_date?: string
+  departure_date?: string
+  responsibilities?: string
+}
+
+interface TourTeamManagerProps {
+  tourId: string
+  members: TourMember[]
+  onMembersUpdate: (members: TourMember[]) => void
+}
+
+export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamManagerProps) {
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedMember, setSelectedMember] = useState<TourMember | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const [formData, setFormData] = useState({
+    name: '',
+    role: '',
+    email: '',
+    phone: '',
+    status: 'pending' as const,
+    arrival_date: '',
+    departure_date: '',
+    responsibilities: ''
+  })
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      role: '',
+      email: '',
+      phone: '',
+      status: 'pending',
+      arrival_date: '',
+      departure_date: '',
+      responsibilities: ''
+    })
+  }
+
+  const handleAddMember = () => {
+    resetForm()
+    setIsAddDialogOpen(true)
+  }
+
+  const handleEditMember = (member: TourMember) => {
+    setSelectedMember(member)
+    setFormData({
+      name: member.name,
+      role: member.role,
+      email: member.email,
+      phone: member.phone || '',
+      status: member.status,
+      arrival_date: member.arrival_date || '',
+      departure_date: member.departure_date || '',
+      responsibilities: member.responsibilities || ''
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handleDeleteMember = (member: TourMember) => {
+    setSelectedMember(member)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleSubmit = async (isEdit: boolean = false) => {
+    setIsSubmitting(true)
+    try {
+      const url = isEdit 
+        ? `/api/tours/${tourId}/team/${selectedMember?.id}`
+        : `/api/tours/${tourId}/team`
+      
+      const method = isEdit ? 'PATCH' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save team member')
+      }
+
+      const result = await response.json()
+      
+      if (isEdit) {
+        const updatedMembers = members.map(member => 
+          member.id === selectedMember?.id ? result.member : member
+        )
+        onMembersUpdate(updatedMembers)
+        toast.success('Team member updated successfully')
+      } else {
+        const newMembers = [...members, result.member]
+        onMembersUpdate(newMembers)
+        toast.success('Team member added successfully')
+      }
+
+      setIsAddDialogOpen(false)
+      setIsEditDialogOpen(false)
+      resetForm()
+    } catch (error) {
+      console.error('Error saving team member:', error)
+      toast.error('Failed to save team member')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!selectedMember) return
+
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(`/api/tours/${tourId}/team/${selectedMember.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete team member')
+      }
+
+      const updatedMembers = members.filter(member => member.id !== selectedMember.id)
+      onMembersUpdate(updatedMembers)
+      toast.success('Team member removed successfully')
+      setIsDeleteDialogOpen(false)
+    } catch (error) {
+      console.error('Error deleting team member:', error)
+      toast.error('Failed to delete team member')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-green-500/20 text-green-400'
+      case 'pending': return 'bg-yellow-500/20 text-yellow-400'
+      case 'declined': return 'bg-red-500/20 text-red-400'
+      default: return 'bg-slate-500/20 text-slate-400'
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'confirmed': return <CheckCircle className="h-4 w-4" />
+      case 'pending': return <Clock className="h-4 w-4" />
+      case 'declined': return <XCircle className="h-4 w-4" />
+      default: return <Clock className="h-4 w-4" />
+    }
+  }
+
+  const filteredMembers = members.filter(member => {
+    const matchesStatus = filterStatus === 'all' || member.status === filterStatus
+    const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         member.email.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesStatus && matchesSearch
+  })
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Tour Team</h2>
+          <p className="text-slate-400">Manage team members for this tour</p>
+        </div>
+        <Button onClick={handleAddMember} className="bg-purple-600 hover:bg-purple-700">
+          <Plus className="mr-2 h-4 w-4" />
+          Add Member
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center space-x-4">
+        <div className="flex-1">
+          <Input
+            placeholder="Search team members..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-slate-800/50 border-slate-700 text-white"
+          />
+        </div>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-40 bg-slate-800/50 border-slate-700 text-white">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="confirmed">Confirmed</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="declined">Declined</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Team Members Grid */}
+      <div className="grid gap-4">
+        {filteredMembers.map((member) => (
+          <Card key={member.id} className="bg-slate-900/50 border-slate-700/50 hover:bg-slate-900/70 transition-colors">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <User className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-white">{member.name}</h4>
+                    <p className="text-sm text-slate-400">{member.role}</p>
+                    <div className="flex items-center space-x-4 mt-1">
+                      <div className="flex items-center space-x-1">
+                        <Mail className="h-3 w-3 text-slate-500" />
+                        <span className="text-xs text-slate-500">{member.email}</span>
+                      </div>
+                      {member.phone && (
+                        <div className="flex items-center space-x-1">
+                          <Phone className="h-3 w-3 text-slate-500" />
+                          <span className="text-xs text-slate-500">{member.phone}</span>
+                        </div>
+                      )}
+                      {member.arrival_date && (
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="h-3 w-3 text-slate-500" />
+                          <span className="text-xs text-slate-500">
+                            Arrives: {new Date(member.arrival_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {member.responsibilities && (
+                      <p className="text-xs text-slate-500 mt-1">{member.responsibilities}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge className={getStatusColor(member.status)}>
+                    {getStatusIcon(member.status)}
+                    <span className="ml-1 capitalize">{member.status}</span>
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditMember(member)}
+                    className="text-slate-400 hover:text-white"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteMember(member)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {filteredMembers.length === 0 && (
+        <Card className="bg-slate-900/50 border-slate-700/50">
+          <CardContent className="p-12 text-center">
+            <Users className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No Team Members Found</h3>
+            <p className="text-slate-400 mb-6">
+              {searchTerm || filterStatus !== 'all' 
+                ? 'No team members match your current filters'
+                : 'Get started by adding your first team member to this tour'
+              }
+            </p>
+            <Button onClick={handleAddMember} className="bg-purple-600 hover:bg-purple-700">
+              <Plus className="mr-2 h-4 w-4" />
+              Add First Member
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Add Member Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-md bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Add Team Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-300">Name</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">Role</Label>
+                <Input
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-slate-300">Email</Label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+            </div>
+
+            <div>
+              <Label className="text-slate-300">Phone (Optional)</Label>
+              <Input
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-300">Arrival Date</Label>
+                <Input
+                  type="date"
+                  value={formData.arrival_date}
+                  onChange={(e) => setFormData({ ...formData, arrival_date: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">Departure Date</Label>
+                <Input
+                  type="date"
+                  value={formData.departure_date}
+                  onChange={(e) => setFormData({ ...formData, departure_date: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-slate-300">Status</Label>
+              <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="declined">Declined</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-slate-300">Responsibilities (Optional)</Label>
+              <Textarea
+                value={formData.responsibilities}
+                onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
+                className="bg-slate-700 border-slate-600 text-white"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsAddDialogOpen(false)}
+                className="border-slate-600 text-slate-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => handleSubmit(false)}
+                disabled={isSubmitting}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {isSubmitting ? 'Adding...' : 'Add Member'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Member Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Edit Team Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-300">Name</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">Role</Label>
+                <Input
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-slate-300">Email</Label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+            </div>
+
+            <div>
+              <Label className="text-slate-300">Phone (Optional)</Label>
+              <Input
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-300">Arrival Date</Label>
+                <Input
+                  type="date"
+                  value={formData.arrival_date}
+                  onChange={(e) => setFormData({ ...formData, arrival_date: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">Departure Date</Label>
+                <Input
+                  type="date"
+                  value={formData.departure_date}
+                  onChange={(e) => setFormData({ ...formData, departure_date: e.target.value })}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-slate-300">Status</Label>
+              <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="declined">Declined</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-slate-300">Responsibilities (Optional)</Label>
+              <Textarea
+                value={formData.responsibilities}
+                onChange={(e) => setFormData({ ...formData, responsibilities: e.target.value })}
+                className="bg-slate-700 border-slate-600 text-white"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+                className="border-slate-600 text-slate-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => handleSubmit(true)}
+                disabled={isSubmitting}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {isSubmitting ? 'Updating...' : 'Update Member'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="bg-slate-800 border-slate-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Remove Team Member</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-300">
+              Are you sure you want to remove "{selectedMember?.name}" from the tour team? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-slate-600 text-slate-300">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isSubmitting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isSubmitting ? 'Removing...' : 'Remove Member'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+} 

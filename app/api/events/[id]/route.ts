@@ -1,25 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
-import { Event } from '@/types/database.types'
+import { authenticateApiRequest, checkAdminPermissions } from '@/lib/auth/api-auth'
 
 const updateEventSchema = z.object({
   name: z.string().min(1, 'Event name is required').optional(),
   description: z.string().optional(),
+  tour_id: z.string().uuid('Invalid tour ID').optional(),
   venue_name: z.string().min(1, 'Venue name is required').optional(),
   venue_address: z.string().optional(),
   event_date: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid event date').optional(),
   event_time: z.string().optional(),
   doors_open: z.string().optional(),
   duration_minutes: z.number().int().min(0, 'Duration must be non-negative').optional(),
-  status: z.enum(['scheduled', 'confirmed', 'in_progress', 'completed', 'cancelled', 'postponed']).optional(),
   capacity: z.number().int().min(0, 'Capacity must be non-negative').optional(),
-  tickets_sold: z.number().int().min(0, 'Tickets sold must be non-negative').optional(),
   ticket_price: z.number().min(0, 'Ticket price must be positive').optional(),
   vip_price: z.number().min(0, 'VIP price must be positive').optional(),
   expected_revenue: z.number().min(0, 'Expected revenue must be positive').optional(),
-  actual_revenue: z.number().min(0, 'Actual revenue must be positive').optional(),
-  expenses: z.number().min(0, 'Expenses must be positive').optional(),
+  status: z.enum(['scheduled', 'confirmed', 'in_progress', 'completed', 'cancelled', 'postponed']).optional(),
   sound_requirements: z.string().optional(),
   lighting_requirements: z.string().optional(),
   stage_requirements: z.string().optional(),
@@ -33,202 +30,236 @@ const updateEventSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const { id } = await params
+    console.log('[Events API] GET request for event:', id)
+    
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult) {
+      console.log('[Events API] Authentication failed')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: event, error } = await (supabase
-      .from('events') as any)
+    const { user, supabase } = authResult
+
+    // Check if user has admin permissions
+    const hasAdminAccess = await checkAdminPermissions(user)
+    if (!hasAdminAccess) {
+      console.log('[Events API] User lacks admin permissions for viewing event')
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    }
+
+    // Fetch the specific event
+    const { data: event, error: eventError } = await supabase
+      .from('events')
       .select(`
         *,
-        tour:tours(id, name, artist_id, status),
-        event_expenses(
-          id, category, description, amount, vendor, expense_date, status, receipt_url
-        ),
-        event_notes(
-          id, note_type, title, content, priority, created_at, created_by
+        tours (
+          id,
+          name,
+          user_id,
+          status
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+    if (eventError) {
+      console.error('[Events API] Error fetching event:', eventError)
+      if (eventError.code === 'PGRST116') {
         return NextResponse.json({ error: 'Event not found' }, { status: 404 })
       }
-      console.error('Error fetching event:', error)
       return NextResponse.json({ error: 'Failed to fetch event' }, { status: 500 })
     }
 
-    // Calculate computed fields
-    const expenses = event.event_expenses || []
-    const totalExpenses = expenses.reduce((sum: number, expense: any) => sum + (expense.amount || 0), 0)
-    const profit = (event.actual_revenue || 0) - totalExpenses
-    const ticketSalesPercentage = event.capacity > 0 ? (event.tickets_sold / event.capacity) * 100 : 0
-
-    const eventWithStats = {
-      ...event,
-      total_expenses: totalExpenses,
-      profit,
-      ticket_sales_percentage: ticketSalesPercentage,
-      venue: {
-        name: event.venue_name,
-        address: event.venue_address,
-        contact: {
-          name: event.venue_contact_name,
-          email: event.venue_contact_email,
-          phone: event.venue_contact_phone
-        }
-      },
-      expenses: expenses.map((expense: any) => ({
-        id: expense.id,
-        category: expense.category,
-        description: expense.description,
-        amount: expense.amount,
-        vendor: expense.vendor,
-        date: expense.expense_date,
-        status: expense.status,
-        receipt_url: expense.receipt_url
-      })),
-      notes: event.event_notes || []
+    // Verify the user has access to this event (through tour ownership)
+    if (event.tours && event.tours.user_id !== user.id) {
+      console.log('[Events API] User does not have access to this event')
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    return NextResponse.json({ event: eventWithStats })
+    console.log('[Events API] Successfully fetched event:', event.id)
+
+    return NextResponse.json({ 
+      success: true, 
+      event,
+      message: 'Event fetched successfully' 
+    })
+
   } catch (error) {
-    console.error('Event GET API error:', error)
+    console.error('[Events API] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function PUT(
+export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const { id } = await params
+    console.log('[Events API] PATCH request for event:', id)
+    
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult) {
+      console.log('[Events API] Authentication failed')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const validatedData = updateEventSchema.parse(body)
+    const { user, supabase } = authResult
 
-    // Validate ticket sales don't exceed capacity
-    if (validatedData.tickets_sold && validatedData.capacity && validatedData.tickets_sold > validatedData.capacity) {
-      return NextResponse.json({ error: 'Tickets sold cannot exceed capacity' }, { status: 400 })
+    // Check if user has admin permissions
+    const hasAdminAccess = await checkAdminPermissions(user)
+    if (!hasAdminAccess) {
+      console.log('[Events API] User lacks admin permissions for updating event')
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
-    const { data: event, error } = await (supabase
-      .from('events') as any)
+    const body = await request.json()
+    
+    // Validate the update data
+    const validatedData = updateEventSchema.parse(body)
+
+    // First, verify the user has access to this event
+    const { data: existingEvent, error: fetchError } = await supabase
+      .from('events')
+      .select(`
+        id,
+        tours (
+          id,
+          user_id
+        )
+      `)
+      .eq('id', id)
+      .single()
+
+    if (fetchError) {
+      console.error('[Events API] Error fetching existing event:', fetchError)
+      if (fetchError.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+      }
+      return NextResponse.json({ error: 'Failed to fetch event' }, { status: 500 })
+    }
+
+    // Verify the user has access to this event (through tour ownership)
+    if (existingEvent.tours && existingEvent.tours.user_id !== user.id) {
+      console.log('[Events API] User does not have access to this event')
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Update the event
+    const { data: updatedEvent, error: updateError } = await supabase
+      .from('events')
       .update(validatedData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select(`
         *,
-        tour:tours(id, name, artist_id, status)
+        tours (
+          id,
+          name,
+          user_id,
+          status
+        )
       `)
       .single()
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Event not found' }, { status: 404 })
-      }
-      console.error('Error updating event:', error)
+    if (updateError) {
+      console.error('[Events API] Error updating event:', updateError)
       return NextResponse.json({ error: 'Failed to update event' }, { status: 500 })
     }
 
-    // If this event is part of a tour and we changed its status, update tour metrics
-    if (event.tour_id && validatedData.status) {
-      const { data: tourEvents } = await (supabase
-        .from('events') as any)
-        .select('status')
-        .eq('tour_id', event.tour_id)
+    console.log('[Events API] Successfully updated event:', id)
 
-      if (tourEvents) {
-        const completedShows = tourEvents.filter((e: any) => e.status === 'completed').length
-        await (supabase
-          .from('tours') as any)
-          .update({ completed_shows: completedShows })
-          .eq('id', event.tour_id)
-      }
-    }
+    return NextResponse.json({ 
+      success: true, 
+      event: updatedEvent,
+      message: 'Event updated successfully' 
+    })
 
-    return NextResponse.json({ event })
   } catch (error) {
+    console.error('[Events API] Error:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json({ 
         error: 'Validation error', 
         details: error.errors 
       }, { status: 400 })
     }
-
-    console.error('Event PUT API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const { id } = await params
+    console.log('[Events API] DELETE request for event:', id)
+    
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult) {
+      console.log('[Events API] Authentication failed')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // First, get the event to check if it's part of a tour
-    const { data: event } = await (supabase
-      .from('events') as any)
-      .select('tour_id')
-      .eq('id', params.id)
+    const { user, supabase } = authResult
+
+    // Check if user has admin permissions
+    const hasAdminAccess = await checkAdminPermissions(user)
+    if (!hasAdminAccess) {
+      console.log('[Events API] User lacks admin permissions for deleting event')
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    }
+
+    // First, verify the user has access to this event
+    const { data: existingEvent, error: fetchError } = await supabase
+      .from('events')
+      .select(`
+        id,
+        tours (
+          id,
+          user_id
+        )
+      `)
+      .eq('id', id)
       .single()
 
-    const { error } = await (supabase
-      .from('events') as any)
-      .delete()
-      .eq('id', params.id)
-
-    if (error) {
-      if (error.code === 'PGRST116') {
+    if (fetchError) {
+      console.error('[Events API] Error fetching existing event:', fetchError)
+      if (fetchError.code === 'PGRST116') {
         return NextResponse.json({ error: 'Event not found' }, { status: 404 })
       }
-      console.error('Error deleting event:', error)
+      return NextResponse.json({ error: 'Failed to fetch event' }, { status: 500 })
+    }
+
+    // Verify the user has access to this event (through tour ownership)
+    if (existingEvent.tours && existingEvent.tours.user_id !== user.id) {
+      console.log('[Events API] User does not have access to this event')
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Delete the event
+    const { error: deleteError } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', id)
+
+    if (deleteError) {
+      console.error('[Events API] Error deleting event:', deleteError)
       return NextResponse.json({ error: 'Failed to delete event' }, { status: 500 })
     }
 
-    // If this event was part of a tour, update the tour's total_shows count
-    if (event?.tour_id) {
-      const { data: tourEvents } = await (supabase
-        .from('events') as any)
-        .select('id, status')
-        .eq('tour_id', event.tour_id)
+    console.log('[Events API] Successfully deleted event:', id)
 
-      if (tourEvents) {
-        const totalShows = tourEvents.length
-        const completedShows = tourEvents.filter((e: any) => e.status === 'completed').length
-        await (supabase
-          .from('tours') as any)
-          .update({ 
-            total_shows: totalShows,
-            completed_shows: completedShows 
-          })
-          .eq('id', event.tour_id)
-      }
-    }
+    return NextResponse.json({ 
+      success: true,
+      message: 'Event deleted successfully' 
+    })
 
-    return NextResponse.json({ message: 'Event deleted successfully' })
   } catch (error) {
-    console.error('Event DELETE API error:', error)
+    console.error('[Events API] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

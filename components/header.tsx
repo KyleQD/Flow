@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import React from "react"
 import { FeaturesButton } from "./features/features-button"
+import { EnhancedNotificationCenter } from "@/components/notifications/enhanced-notification-center"
 
 export function Header() {
   const router = useRouter()
@@ -51,19 +52,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center space-x-3">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative text-slate-400 hover:text-slate-100">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute -top-1 -right-1 h-2 w-2 bg-purple-500 rounded-full animate-pulse"></span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Notifications</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <EnhancedNotificationCenter />
 
           <TooltipProvider>
             <Tooltip>

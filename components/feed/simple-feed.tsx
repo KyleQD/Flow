@@ -32,6 +32,7 @@ interface Post {
     avatar_url: string | null
     is_verified: boolean
   } | null
+  is_liked: boolean
 }
 
 // Helper function to generate profile URL based on username
@@ -89,29 +90,49 @@ export function SimpleFeed() {
     if (!user) return
 
     try {
+      const currentPost = posts.find(p => p.id === postId)
+      if (!currentPost) return
+
+      const isCurrentlyLiked = currentPost.is_liked
+      const action = isCurrentlyLiked ? 'unlike' : 'like'
+
       // Optimistic update
       setPosts(prev => prev.map(post => 
         post.id === postId 
-          ? { ...post, likes_count: post.likes_count + 1 }
+          ? { 
+              ...post, 
+              is_liked: !post.is_liked,
+              likes_count: post.is_liked ? post.likes_count - 1 : post.likes_count + 1
+            }
           : post
       ))
 
-      const { error } = await supabase
-        .from('post_likes')
-        .insert({
-          post_id: postId,
-          user_id: user.id
-        })
+      const response = await fetch(`/api/posts/${postId}/likes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ action })
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        throw new Error('Failed to toggle like')
+      }
+
+      console.log('✅ Successfully toggled like')
     } catch (error) {
       // Revert on error
       setPosts(prev => prev.map(post => 
         post.id === postId 
-          ? { ...post, likes_count: post.likes_count - 1 }
+          ? { 
+              ...post, 
+              is_liked: !post.is_liked,
+              likes_count: post.is_liked ? post.likes_count + 1 : post.likes_count - 1
+            }
           : post
       ))
-      console.error('Error liking post:', error)
+      console.error('Error toggling like:', error)
     }
   }
 

@@ -181,6 +181,21 @@ export default function SignUpPage() {
                 userId: data.user.id
               })
             })
+          } else if (inviteType === 'staff') {
+            // Handle staff onboarding invitation
+            await fetch(`/api/invitations`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                token,
+                status: 'accepted',
+                userId: data.user.id
+              })
+            })
+            
+            // Redirect to onboarding completion page
+            router.push(`/onboarding/complete?token=${token}`)
+            return
           } else {
             await fetch(`/api/invitations`, {
               method: 'PATCH',

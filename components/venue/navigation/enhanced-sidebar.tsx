@@ -36,6 +36,7 @@ import {
   Grid3X3,
   X,
   CheckSquare,
+  Sparkles,
 } from "lucide-react"
 
 interface EnhancedSidebarProps {
@@ -56,7 +57,7 @@ export function EnhancedSidebar({ isOpen, onClose }: EnhancedSidebarProps) {
   // Main navigation items
   const mainNavItems = [
     { title: "Home", href: "/", icon: Home },
-    { title: "Feed", href: "/feed", icon: Music },
+    { title: "For You", href: "/feed", icon: Sparkles },
     { title: "Network", href: "/network", icon: Users },
     { title: "Messages", href: "/messages", icon: MessageSquare, badge: 5 },
     { title: "Events", href: "/events", icon: Calendar, badge: 3 },

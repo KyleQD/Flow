@@ -1,184 +1,255 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
-import { Tour } from '@/types/database.types'
+import { authenticateApiRequest, checkAdminPermissions } from '@/lib/auth/api-auth'
 
 const updateTourSchema = z.object({
   name: z.string().min(1, 'Tour name is required').optional(),
   description: z.string().optional(),
-  artist_id: z.string().uuid('Invalid artist ID').optional(),
-  start_date: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid start date').optional(),
-  end_date: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid end date').optional(),
   status: z.enum(['planning', 'active', 'completed', 'cancelled']).optional(),
-  budget: z.number().min(0, 'Budget must be positive').optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+  expected_revenue: z.number().min(0).optional(),
+  budget: z.number().min(0).optional(),
+  crew_size: z.number().min(0).optional(),
   transportation: z.string().optional(),
   accommodation: z.string().optional(),
   equipment_requirements: z.string().optional(),
-  crew_size: z.number().int().min(0, 'Crew size must be non-negative').optional(),
+  special_requirements: z.string().optional()
 })
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const { id } = await params
+    console.log('[Tour API] GET request for tour:', id)
+    
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult) {
+      console.log('[Tour API] Authentication failed')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { data: tour, error } = await (supabase
-      .from('tours') as any)
+    const { user, supabase } = authResult
+
+    // Check if user has admin permissions
+    const hasAdminAccess = await checkAdminPermissions(user)
+    if (!hasAdminAccess) {
+      console.log('[Tour API] User lacks admin permissions for viewing tour')
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    }
+
+    // Fetch tour with events
+    const { data: tour, error: tourError } = await supabase
+      .from('tours')
       .select(`
         *,
-        artist:profiles!tours_artist_id_fkey(id, display_name, avatar_url),
-        events(
-          id, name, description, event_date, event_time, doors_open, 
-          duration_minutes, status, capacity, tickets_sold, ticket_price, 
-          vip_price, expected_revenue, actual_revenue, expenses,
-          sound_requirements, lighting_requirements, stage_requirements,
-          special_requirements, venue_name, venue_address,
-          venue_contact_name, venue_contact_email, venue_contact_phone,
-          load_in_time, sound_check_time
-        ),
-        tour_team_members(
-          id, role, contact_email, contact_phone, status,
-          user:profiles!tour_team_members_user_id_fkey(id, display_name, avatar_url)
+        events (
+          id,
+          name,
+          venue_name,
+          event_date,
+          status,
+          capacity,
+          tickets_sold,
+          actual_revenue,
+          expenses
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+    if (tourError) {
+      console.error('[Tour API] Error fetching tour:', tourError)
+      if (tourError.code === 'PGRST116') {
         return NextResponse.json({ error: 'Tour not found' }, { status: 404 })
       }
-      console.error('Error fetching tour:', error)
       return NextResponse.json({ error: 'Failed to fetch tour' }, { status: 500 })
     }
 
-    // Calculate computed fields
-    const events = tour.events || []
-    const totalShows = events.length
-    const completedShows = events.filter((e: any) => e.status === 'completed').length
-    const revenue = events.reduce((sum: number, e: any) => sum + (e.actual_revenue || 0), 0)
-    const expenses = events.reduce((sum: number, e: any) => sum + (e.expenses || 0), 0)
+    // Check if user owns this tour
+    if (tour.user_id !== user.id) {
+      console.log('[Tour API] User does not have access to this tour')
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
 
-    const tourWithStats = {
+    // Calculate derived fields
+    const totalShows = tour.events?.length || 0
+    const completedShows = tour.events?.filter((event: any) => event.status === 'completed').length || 0
+    const actualRevenue = tour.events?.reduce((sum: number, event: any) => sum + (event.actual_revenue || 0), 0) || 0
+    const totalExpenses = tour.events?.reduce((sum: number, event: any) => sum + (event.expenses || 0), 0) || 0
+
+    const tourWithCalculations = {
       ...tour,
       total_shows: totalShows,
       completed_shows: completedShows,
-      revenue,
-      expenses,
-      profit: revenue - expenses,
-      events: events.map((e: any) => ({
-        ...e,
-        venue: {
-          name: e.venue_name,
-          address: e.venue_address,
-          contact: {
-            name: e.venue_contact_name,
-            email: e.venue_contact_email,
-            phone: e.venue_contact_phone
-          }
-        }
-      }))
+      actual_revenue: actualRevenue,
+      expenses: totalExpenses
     }
 
-    return NextResponse.json({ tour: tourWithStats })
+    console.log('[Tour API] Successfully fetched tour:', id)
+
+    return NextResponse.json(tourWithCalculations)
+
   } catch (error) {
-    console.error('Tour GET API error:', error)
+    console.error('[Tour API] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function PUT(
+export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const { id } = await params
+    console.log('[Tour API] PATCH request for tour:', id)
+    
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult) {
+      console.log('[Tour API] Authentication failed')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { user, supabase } = authResult
+
+    // Check if user has admin permissions
+    const hasAdminAccess = await checkAdminPermissions(user)
+    if (!hasAdminAccess) {
+      console.log('[Tour API] User lacks admin permissions for updating tour')
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
     const body = await request.json()
     const validatedData = updateTourSchema.parse(body)
 
-    // Validate date range if both dates are provided
-    if (validatedData.start_date && validatedData.end_date) {
-      const startDate = new Date(validatedData.start_date)
-      const endDate = new Date(validatedData.end_date)
-      
-      if (endDate < startDate) {
-        return NextResponse.json({ error: 'End date must be after start date' }, { status: 400 })
-      }
-    }
-
-    const { data: tour, error } = await (supabase
-      .from('tours') as any)
-      .update(validatedData)
-      .eq('id', params.id)
-      .select(`
-        *,
-        artist:profiles!tours_artist_id_fkey(id, display_name, avatar_url)
-      `)
+    // Verify the user owns this tour
+    const { data: existingTour, error: fetchError } = await supabase
+      .from('tours')
+      .select('user_id')
+      .eq('id', id)
       .single()
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+    if (fetchError) {
+      console.error('[Tour API] Error fetching tour for ownership check:', fetchError)
+      if (fetchError.code === 'PGRST116') {
         return NextResponse.json({ error: 'Tour not found' }, { status: 404 })
       }
-      console.error('Error updating tour:', error)
+      return NextResponse.json({ error: 'Failed to fetch tour' }, { status: 500 })
+    }
+
+    if (existingTour.user_id !== user.id) {
+      console.log('[Tour API] User does not have access to this tour')
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Update the tour
+    const { data: updatedTour, error: updateError } = await supabase
+      .from('tours')
+      .update({
+        ...validatedData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error('[Tour API] Error updating tour:', updateError)
       return NextResponse.json({ error: 'Failed to update tour' }, { status: 500 })
     }
 
-    return NextResponse.json({ tour })
+    console.log('[Tour API] Successfully updated tour:', id)
+
+    return NextResponse.json(updatedTour)
+
   } catch (error) {
+    console.error('[Tour API] Error:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json({ 
         error: 'Validation error', 
         details: error.errors 
       }, { status: 400 })
     }
-
-    console.error('Tour PUT API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const { id } = await params
+    console.log('[Tour API] DELETE request for tour:', id)
+    
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult) {
+      console.log('[Tour API] Authentication failed')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { error } = await (supabase
-      .from('tours') as any)
-      .delete()
-      .eq('id', params.id)
+    const { user, supabase } = authResult
 
-    if (error) {
-      if (error.code === 'PGRST116') {
+    // Check if user has admin permissions
+    const hasAdminAccess = await checkAdminPermissions(user)
+    if (!hasAdminAccess) {
+      console.log('[Tour API] User lacks admin permissions for deleting tour')
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    }
+
+    // Verify the user owns this tour
+    const { data: existingTour, error: fetchError } = await supabase
+      .from('tours')
+      .select('user_id')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) {
+      console.error('[Tour API] Error fetching tour for ownership check:', fetchError)
+      if (fetchError.code === 'PGRST116') {
         return NextResponse.json({ error: 'Tour not found' }, { status: 404 })
       }
-      console.error('Error deleting tour:', error)
+      return NextResponse.json({ error: 'Failed to fetch tour' }, { status: 500 })
+    }
+
+    if (existingTour.user_id !== user.id) {
+      console.log('[Tour API] User does not have access to this tour')
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Delete associated events first
+    const { error: eventsDeleteError } = await supabase
+      .from('events')
+      .delete()
+      .eq('tour_id', id)
+
+    if (eventsDeleteError) {
+      console.error('[Tour API] Error deleting associated events:', eventsDeleteError)
+      return NextResponse.json({ error: 'Failed to delete associated events' }, { status: 500 })
+    }
+
+    // Delete the tour
+    const { error: deleteError } = await supabase
+      .from('tours')
+      .delete()
+      .eq('id', id)
+
+    if (deleteError) {
+      console.error('[Tour API] Error deleting tour:', deleteError)
       return NextResponse.json({ error: 'Failed to delete tour' }, { status: 500 })
     }
 
-    return NextResponse.json({ message: 'Tour deleted successfully' })
+    console.log('[Tour API] Successfully deleted tour:', id)
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Tour deleted successfully' 
+    })
+
   } catch (error) {
-    console.error('Tour DELETE API error:', error)
+    console.error('[Tour API] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

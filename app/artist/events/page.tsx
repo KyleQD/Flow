@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useArtist } from "@/contexts/artist-context"
 import { supabase } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,7 +34,8 @@ import {
   Wallet,
   Settings,
   Bell,
-  Download
+  Download,
+  ExternalLink
 } from "lucide-react"
 import { 
   DropdownMenu,
@@ -79,6 +81,7 @@ interface Event {
 }
 
 export default function EventsPage() {
+  const router = useRouter()
   const { user, profile, isLoading: isUserLoading } = useArtist()
   
   const [events, setEvents] = useState<Event[]>([])
@@ -500,7 +503,7 @@ export default function EventsPage() {
         </div>
 
         {/* Loading state */}
-        <Card className="bg-slate-900/50 border-slate-700/50">
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
           <CardContent className="p-12 text-center">
             <div className="animate-spin h-8 w-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
             <h3 className="text-xl font-semibold text-white mb-2">
@@ -531,7 +534,7 @@ export default function EventsPage() {
   if (!user && !isUserLoading) {
     return (
       <div className="space-y-6">
-        <Card className="bg-red-950/20 border-red-700/50">
+        <Card className="bg-red-950/20 border-red-700/50 rounded-2xl">
           <CardContent className="p-8 text-center">
             <div className="text-red-400 mb-4">
               <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -632,7 +635,7 @@ export default function EventsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-900/50 border-slate-700/50">
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -643,7 +646,7 @@ export default function EventsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-900/50 border-slate-700/50">
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -654,7 +657,7 @@ export default function EventsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-900/50 border-slate-700/50">
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -665,7 +668,7 @@ export default function EventsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-900/50 border-slate-700/50">
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -676,7 +679,7 @@ export default function EventsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-900/50 border-slate-700/50">
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -691,7 +694,7 @@ export default function EventsPage() {
 
       {/* Main Content */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid grid-cols-6 gap-4 bg-slate-800/50 w-full">
+        <TabsList className="grid grid-cols-6 gap-4 bg-slate-800/50 w-full rounded-2xl">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">
             <BarChart className="h-4 w-4 mr-1" />
@@ -720,7 +723,7 @@ export default function EventsPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <Card key={i} className="bg-slate-900/50 border-slate-700/50 animate-pulse">
+                <Card key={i} className="bg-slate-900/50 border-slate-700/50 animate-pulse rounded-2xl">
                   <CardContent className="p-6">
                     <div className="h-4 bg-slate-700 rounded w-1/3 mb-2"></div>
                     <div className="h-3 bg-slate-700 rounded w-2/3 mb-4"></div>
@@ -752,7 +755,7 @@ export default function EventsPage() {
           ) : (
             <div className="space-y-4">
               {events.map((event) => (
-                <Card key={event.id} className="bg-slate-900/50 border-slate-700/50 group hover:border-purple-500/50 transition-all duration-200">
+                <Card key={event.id} className="bg-slate-900/50 border-slate-700/50 group hover:border-purple-500/50 transition-all duration-200 rounded-2xl">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -814,9 +817,34 @@ export default function EventsPage() {
                         )}
                       </div>
                       
+                      <div className="flex items-center gap-2">
+                        <Button
+                          onClick={() => router.push(`/artist/events/${event.id}`)}
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+                          size="sm"
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Manage
+                        </Button>
+                        
+                        <Button
+                          onClick={() => router.push(`/events/${event.id}`)}
+                          variant="outline"
+                          className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+                          size="sm"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                      
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-gray-400 hover:text-white"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -831,13 +859,30 @@ export default function EventsPage() {
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-gray-300 hover:text-white">
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
+                          <DropdownMenuItem 
+                            onClick={() => router.push(`/artist/events/${event.id}`)}
+                            className="text-gray-300 hover:text-white"
+                          >
+                            <Settings className="h-4 w-4 mr-2" />
+                            Manage Event
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-gray-300 hover:text-white">
+                          <DropdownMenuItem 
+                            onClick={() => window.open(`/events/${event.id}`, '_blank')}
+                            className="text-gray-300 hover:text-white"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Event Page
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              const eventUrl = `${window.location.origin}/events/${event.id}`
+                              navigator.clipboard.writeText(eventUrl)
+                              toast.success('Event page link copied to clipboard')
+                            }}
+                            className="text-gray-300 hover:text-white"
+                          >
                             <Share2 className="h-4 w-4 mr-2" />
-                            Share
+                            Copy Event Link
                           </DropdownMenuItem>
                           
                           {event.status === 'upcoming' && (
@@ -874,6 +919,7 @@ export default function EventsPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -887,7 +933,7 @@ export default function EventsPage() {
         </TabsContent>
 
         <TabsContent value="marketing">
-          <Card className="bg-slate-900/50 border-slate-700/50">
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
             <CardHeader>
               <CardTitle className="text-white">Marketing Tools</CardTitle>
             </CardHeader>
@@ -902,7 +948,7 @@ export default function EventsPage() {
         </TabsContent>
 
         <TabsContent value="financial">
-          <Card className="bg-slate-900/50 border-slate-700/50">
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
             <CardHeader>
               <CardTitle className="text-white">Financial Tracking</CardTitle>
             </CardHeader>
@@ -917,7 +963,7 @@ export default function EventsPage() {
         </TabsContent>
 
         <TabsContent value="team">
-          <Card className="bg-slate-900/50 border-slate-700/50">
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
             <CardHeader>
               <CardTitle className="text-white">Team Management</CardTitle>
             </CardHeader>
@@ -932,7 +978,7 @@ export default function EventsPage() {
         </TabsContent>
 
         <TabsContent value="settings">
-          <Card className="bg-slate-900/50 border-slate-700/50">
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
             <CardHeader>
               <CardTitle className="text-white">Event Settings</CardTitle>
             </CardHeader>

@@ -1,33 +1,15 @@
-import { NextAuthOptions, getServerSession } from "next-auth"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "./prisma"
-import GoogleProvider from "next-auth/providers/google"
+import { checkAuth } from "./auth/server"
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
-  callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id
-      }
-      return session
-    },
-  },
-  pages: {
-    signIn: "/login",
-    error: "/auth/error",
-  },
-  session: {
-    strategy: "jwt",
-  },
-}
-
-export async function getSession() {
-  return await getServerSession(authOptions)
+/**
+ * Get authenticated user for API routes using Supabase
+ * This function uses the existing checkAuth utility
+ */
+export async function getAuthUser() {
+  try {
+    const auth = await checkAuth()
+    return auth?.user || null
+  } catch (error) {
+    console.error('[getAuthUser] Error getting authenticated user:', error)
+    return null
+  }
 } 

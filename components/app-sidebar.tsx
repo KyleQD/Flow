@@ -21,7 +21,10 @@ import {
   Mic,
   Radio,
   Zap,
-  Sparkles
+  Sparkles,
+  Bell,
+  User,
+  Heart
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -33,9 +36,173 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { TourifyLogo } from "./tourify-logo"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
+import { useAuth } from "@/contexts/auth-context"
+import { useMultiAccount } from "@/hooks/use-multi-account"
+import { useEffect, useState } from "react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+
+// Profile Card Component
+function ProfileCard() {
+  const { user } = useAuth()
+  const { currentAccount } = useMultiAccount()
+  const [notifications, setNotifications] = useState(0)
+  const [followers, setFollowers] = useState(0)
+  const supabase = createClientComponentClient()
+
+  useEffect(() => {
+    async function loadProfileData() {
+      if (!user?.id || !currentAccount) return
+      
+      try {
+        // For artist accounts, get artist profile data
+        if (currentAccount.account_type === 'artist') {
+          const { data: artistProfile, error: artistError } = await supabase
+            .from('artist_profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .single()
+          
+          if (!artistError && artistProfile) {
+            setFollowers(artistProfile.followers_count || 0)
+          }
+        } else {
+          // For other account types, get general profile data
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, full_name, username, avatar_url, is_verified, followers_count')
+            .eq('id', user.id)
+            .single()
+          
+          if (!profileError && profileData) {
+            setFollowers(profileData.followers_count || 0)
+          }
+        }
+
+        // Load unread notifications count
+        const { count: notificationsCount } = await supabase
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('read', false)
+        
+        setNotifications(notificationsCount || 0)
+      } catch (error) {
+        console.error('Error loading profile data:', error)
+      }
+    }
+    
+    loadProfileData()
+  }, [user?.id, currentAccount, supabase])
+
+  if (!currentAccount) {
+    return (
+      <div className="p-4">
+        <div className="animate-pulse">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-slate-700 rounded-full"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+              <div className="h-3 bg-slate-700 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Get display name based on account type
+  const getDisplayName = () => {
+    if (currentAccount.account_type === 'artist') {
+      return currentAccount.profile_data?.artist_name || currentAccount.profile_data?.display_name || 'Artist'
+    }
+    return currentAccount.profile_data?.full_name || currentAccount.profile_data?.display_name || 'User'
+  }
+
+  // Get username based on account type
+  const getUsername = () => {
+    if (currentAccount.account_type === 'artist') {
+      return currentAccount.profile_data?.artist_name?.toLowerCase().replace(/\s+/g, '') || 'artist'
+    }
+    return currentAccount.profile_data?.username || 'user'
+  }
+
+  const displayName = getDisplayName()
+  const username = getUsername()
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="p-4"
+    >
+      <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/30 border border-slate-700/50 rounded-2xl p-4 backdrop-blur-sm">
+        {/* Profile Header */}
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="relative">
+            <Avatar className="h-12 w-12 ring-2 ring-purple-500/30">
+              <AvatarImage src={currentAccount.profile_data?.avatar_url} alt={displayName} />
+              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold">
+                {displayName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {currentAccount.profile_data?.is_verified && (
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-white text-sm truncate">
+              {displayName}
+            </h3>
+            <p className="text-slate-400 text-xs truncate">
+              @{username}
+            </p>
+          </div>
+        </div>
+
+        {/* Stats Row */}
+        <div className="flex items-center justify-between space-x-2">
+          {/* Followers */}
+          <div className="flex items-center space-x-1">
+            <Heart className="h-3 w-3 text-red-400" />
+            <span className="text-xs text-slate-300 font-medium">
+              {followers.toLocaleString()}
+            </span>
+          </div>
+
+          {/* Notifications */}
+          <div className="flex items-center space-x-1">
+            <div className="relative">
+              <Bell className="h-3 w-3 text-purple-400" />
+              {notifications > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs flex items-center justify-center bg-red-500 border-0"
+                >
+                  {notifications > 9 ? '9+' : notifications}
+                </Badge>
+              )}
+            </div>
+            <span className="text-xs text-slate-300 font-medium">
+              {notifications}
+            </span>
+          </div>
+
+          {/* Artist Badge */}
+          <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
+            <Music2 className="h-3 w-3 mr-1" />
+            Artist
+          </Badge>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
 
 export function AppSidebar() {
   const pathname = usePathname()
@@ -53,21 +220,12 @@ export function AppSidebar() {
       <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
       
       <SidebarHeader className="border-b border-slate-800/50 py-6 relative z-10">
-        <div className="flex items-center justify-center">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-          >
-            <TourifyLogo className="h-8 filter drop-shadow-lg" />
-          </motion.div>
-        </div>
-        
         {/* Artist Mode Indicator */}
         {isArtistPage && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-4 px-3 py-2 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-xl flex items-center space-x-2"
+            className="px-3 py-2 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-xl flex items-center space-x-2 mb-4"
           >
             <motion.div
               animate={{ rotate: [0, 360] }}
@@ -78,6 +236,9 @@ export function AppSidebar() {
             <span className="text-xs font-medium text-purple-300">Artist Mode</span>
           </motion.div>
         )}
+
+        {/* Profile Card */}
+        {isArtistPage && <ProfileCard />}
       </SidebarHeader>
       
       <SidebarContent className="bg-transparent relative z-10">
@@ -207,6 +368,7 @@ const artistNavigation = [
   { name: 'Dashboard', href: '/artist', icon: LayoutDashboard },
   { name: 'Feed', href: '/artist/feed', icon: Home },
   { name: 'Content', href: '/artist/content', icon: Video },
+  { name: 'Music', href: '/artist/music', icon: Music2 },
   { name: 'Community', href: '/artist/community', icon: Users },
   { name: 'Business', href: '/artist/business', icon: ShoppingBag },
   { name: 'Events', href: '/artist/events', icon: Calendar },

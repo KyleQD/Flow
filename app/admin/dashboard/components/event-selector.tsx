@@ -1,42 +1,122 @@
 "use client"
 
-import { useState } from "react"
-import { Plus } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-export function EventSelector() {
-  const [selectedEvent, setSelectedEvent] = useState("summer-festival")
+interface Event {
+  id: string
+  title: string
+  event_date: string
+  status: string
+  venue_name?: string
+}
 
-  // Calculate days until event
-  const daysUntilEvent = () => {
-    const eventDate = new Date("2023-08-15")
+interface EventSelectorProps {
+  selectedEvent?: string
+  onEventChange?: (eventId: string) => void
+  showNewEventButton?: boolean
+}
+
+export function EventSelector({ selectedEvent, onEventChange, showNewEventButton = true }: EventSelectorProps) {
+  const [events, setEvents] = useState<Event[]>([])
+  const [loading, setLoading] = useState(true)
+  const [currentSelectedEvent, setCurrentSelectedEvent] = useState(selectedEvent || "all")
+
+  useEffect(() => {
+    fetchEvents()
+  }, [])
+
+  useEffect(() => {
+    if (selectedEvent) {
+      setCurrentSelectedEvent(selectedEvent)
+    }
+  }, [selectedEvent])
+
+  const fetchEvents = async () => {
+    try {
+      setLoading(true)
+      
+      // Fetch events from the API
+      const response = await fetch('/api/events', {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setEvents(data.events || [])
+      } else {
+        console.error('Failed to fetch events')
+        setEvents([])
+      }
+    } catch (error) {
+      console.error('Error fetching events:', error)
+      setEvents([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEventChange = (eventId: string) => {
+    setCurrentSelectedEvent(eventId)
+    if (onEventChange) {
+      onEventChange(eventId)
+    }
+  }
+
+  const getSelectedEvent = () => {
+    if (currentSelectedEvent === "all") {
+      return { title: "All Events", event_date: null }
+    }
+    return events.find(event => event.id === currentSelectedEvent) || { title: "Select Event", event_date: null }
+  }
+
+  const calculateDaysUntilEvent = (eventDate: string) => {
+    const eventDateObj = new Date(eventDate)
     const today = new Date()
-    const diffTime = Math.abs(eventDate.getTime() - today.getTime())
+    const diffTime = Math.abs(eventDateObj.getTime() - today.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
   }
 
+  const selectedEventData = getSelectedEvent()
+
   return (
     <div className="flex items-center space-x-4">
-      <Select defaultValue={selectedEvent} onValueChange={setSelectedEvent}>
+      <Select value={currentSelectedEvent} onValueChange={handleEventChange}>
         <SelectTrigger className="w-[240px] bg-slate-800/70 border-slate-700">
-          <SelectValue placeholder="Select Event" />
+          {loading ? (
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading events...</span>
+            </div>
+          ) : (
+            <SelectValue placeholder="Select Event" />
+          )}
         </SelectTrigger>
         <SelectContent className="bg-slate-800 border-slate-700">
-          <SelectItem value="summer-festival">Summer Music Festival 2023</SelectItem>
-          <SelectItem value="concert-series">Downtown Concert Series</SelectItem>
-          <SelectItem value="corporate-event">TechCorp Annual Conference</SelectItem>
-          <SelectItem value="charity-gala">Charity Fundraiser Gala</SelectItem>
+          <SelectItem value="all">All Events</SelectItem>
+          {events.map((event) => (
+            <SelectItem key={event.id} value={event.id}>
+              {event.title}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
-      <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/50">
-        {daysUntilEvent()} days until event
-      </Badge>
-      <Button className="bg-purple-600 hover:bg-purple-700">
-        <Plus className="h-4 w-4 mr-2" /> New Event
-      </Button>
+      
+      {selectedEventData.event_date && (
+        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/50">
+          {calculateDaysUntilEvent(selectedEventData.event_date)} days until event
+        </Badge>
+      )}
+      
+      {showNewEventButton && (
+        <Button className="bg-purple-600 hover:bg-purple-700">
+          <Plus className="h-4 w-4 mr-2" /> New Event
+        </Button>
+      )}
     </div>
   )
 }

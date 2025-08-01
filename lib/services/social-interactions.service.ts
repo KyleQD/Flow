@@ -31,16 +31,16 @@ class SocialInteractionsService {
         return { success: false, message: 'You cannot follow yourself' }
       }
 
-      // Use API endpoint instead of direct database call
-      const response = await fetch('/api/demo-accounts', {
+      // Use the proper social follow API
+      const response = await fetch('/api/social/follow', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'follow',
-          profileId,
-          userId
+          followingId: profileId,
+          action: 'follow'
         })
       })
 
@@ -70,16 +70,16 @@ class SocialInteractionsService {
         return { success: false, message: 'Please log in to unfollow profiles' }
       }
 
-      // Use API endpoint instead of direct database call
-      const response = await fetch('/api/demo-accounts', {
+      // Use the proper social follow API
+      const response = await fetch('/api/social/follow', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'unfollow',
-          profileId,
-          userId
+          followingId: profileId,
+          action: 'unfollow'
         })
       })
 
@@ -90,7 +90,7 @@ class SocialInteractionsService {
 
       return { 
         success: true, 
-        message: 'Profile unfollowed',
+        message: 'Profile unfollowed! 👋',
         data: { action: 'unfollow', profileId, userId }
       }
     } catch (error) {
@@ -458,16 +458,15 @@ class SocialInteractionsService {
 
   // Utility functions
   getCurrentUserId(): string | null {
-    // For demo purposes, we'll use one of the existing demo profile IDs
-    // In a real app, you'd get this from auth context
-    // Using Sarah's profile ID as the current user for demo interactions
-    return '6c0a1bb9-9c71-4775-ba28-fd820d69b5da' // musiclover_sarah's ID
+    // This should be called from components that have access to auth context
+    // Return null here so components can handle authentication properly
+    return null
   }
 
   isAuthenticated(): boolean {
-    // In a real app, you'd check auth status
-    // For demo purposes, return true
-    return true
+    // This should be called from components that have access to auth context
+    // Return false here so components can handle authentication properly
+    return false
   }
 }
 

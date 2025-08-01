@@ -472,7 +472,8 @@ export class AccountManagementService {
       social_links?: any
       specialties?: string[]
     },
-    authenticatedSupabase?: any
+    authenticatedSupabase?: any,
+    authenticatedUser?: any  // New parameter to pass pre-authenticated user
   ): Promise<string> {
     console.log('🏗️ [Account Management] Starting organizer account creation for user:', userId)
     console.log('🏗️ [Account Management] Organizer data:', organizerData)
@@ -481,11 +482,20 @@ export class AccountManagementService {
       // Use authenticated Supabase client if provided (for API routes), otherwise use default client
       const clientToUse = authenticatedSupabase || supabase
       
-      // Verify authentication context
-      const { data: { user }, error: authError } = await clientToUse.auth.getUser()
-      if (authError || !user) {
-        console.error('❌ [Account Management] Authentication failed:', authError)
-        throw new Error('User must be authenticated to create organizer account')
+      let user = authenticatedUser
+      
+      // Only verify authentication if user wasn't pre-authenticated
+      if (!user) {
+        console.log('🔍 [Account Management] No pre-authenticated user, verifying authentication...')
+        const { data: { user: authUser }, error: authError } = await clientToUse.auth.getUser()
+        if (authError || !authUser) {
+          console.error('❌ [Account Management] Authentication failed:', authError)
+          throw new Error('User must be authenticated to create organizer account')
+        }
+        user = authUser
+        console.log('✅ [Account Management] Authentication verified for user:', user.id)
+      } else {
+        console.log('✅ [Account Management] Using pre-authenticated user:', user.id)
       }
       
       // Ensure the authenticated user matches the provided userId
@@ -494,34 +504,29 @@ export class AccountManagementService {
         throw new Error('User ID mismatch - cannot create account for different user')
       }
       
-      console.log('✅ [Account Management] Authentication verified for user:', user.id)
+      // Use the RPC function which has SECURITY DEFINER privileges to bypass RLS
+      console.log('🔄 [Account Management] Using create_organizer_account RPC function...')
       
-      // Try using the dedicated organizer_accounts table first (NEW ROBUST APPROACH)
-      console.log('🔄 [Account Management] Using dedicated organizer_accounts table...')
-      
-      const { data: newOrganizerAccount, error: tableError } = await clientToUse
-        .from('organizer_accounts')
-        .insert({
-          user_id: userId,
-          organization_name: organizerData.organization_name,
-          organization_type: organizerData.organization_type,
-          description: organizerData.description || null,
-          contact_info: organizerData.contact_info || {},
-          social_links: organizerData.social_links || {},
-          specialties: organizerData.specialties || []
+      const { data: newOrganizerAccountId, error: rpcError } = await clientToUse
+        .rpc('create_organizer_account', {
+          p_user_id: userId,
+          p_organization_name: organizerData.organization_name,
+          p_organization_type: organizerData.organization_type,
+          p_description: organizerData.description || null,
+          p_contact_info: organizerData.contact_info || {},
+          p_social_links: organizerData.social_links || {},
+          p_specialties: organizerData.specialties || []
         })
-        .select()
-        .single()
 
-      if (tableError) {
-        console.error('❌ [Account Management] Organizer table insert failed:', tableError)
-        throw new Error(`Failed to create organizer account: ${tableError.message}`)
+      if (rpcError) {
+        console.error('❌ [Account Management] RPC function failed:', rpcError)
+        throw new Error(`Failed to create organizer account: ${rpcError.message}`)
       }
 
-      console.log('✅ [Account Management] Organizer account created successfully in dedicated table:', newOrganizerAccount.id)
+      console.log('✅ [Account Management] Organizer account created successfully via RPC:', newOrganizerAccountId)
       console.log('🎉 [Account Management] Organizer account created:', organizerData.organization_name)
       
-      return newOrganizerAccount.id
+      return newOrganizerAccountId
       
     } catch (error: any) {
       console.error('❌ [Account Management] Error creating organizer account:', {

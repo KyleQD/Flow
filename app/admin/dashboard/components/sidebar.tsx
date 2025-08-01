@@ -47,12 +47,12 @@ import {
   Handshake,
   Settings
 } from "lucide-react"
-import { Button } from "./ui/button"
-import { Card, CardContent } from "./ui/card"
-import { Badge } from "./ui/badge"
-import { Input } from "./ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
-import { Separator } from "./ui/separator"
+import { Button } from "../../../../components/ui/button"
+import { Card, CardContent } from "../../../../components/ui/card"
+import { Badge } from "../../../../components/ui/badge"
+import { Input } from "../../../../components/ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "../../../../components/ui/avatar"
+import { Separator } from "../../../../components/ui/separator"
 import { motion, AnimatePresence } from "framer-motion"
 import { Suspense } from "react"
 
@@ -71,7 +71,7 @@ interface ActiveEvent {
   id: string
   title: string
   date: string
-  status: 'live' | 'upcoming' | 'preparing'
+  status: 'live' | 'preparing' | 'upcoming'
   venue: string
   artist: string
   progress: number
@@ -137,94 +137,40 @@ const navItems: NavItem[] = [
     href: "/admin/dashboard/ticketing", 
     icon: Ticket,
     badge: "18.7K",
-    badgeColor: "bg-blue-500/20 text-blue-400",
-    children: [
-      { label: "Sales Dashboard", href: "/admin/dashboard/ticketing/sales", icon: TrendingUp },
-      { label: "Pricing", href: "/admin/dashboard/ticketing/pricing", icon: DollarSign },
-      { label: "Distribution", href: "/admin/dashboard/ticketing/distribution", icon: Package }
-    ]
+    badgeColor: "bg-blue-500/20 text-blue-400"
   },
   { 
     label: "Staff & Crew", 
     href: "/admin/dashboard/staff", 
     icon: Users,
     badge: "28",
-    badgeColor: "bg-cyan-500/20 text-cyan-400",
-    children: [
-      { label: "Team Members", href: "/admin/dashboard/staff/team", icon: Users },
-      { label: "Contractors", href: "/admin/dashboard/staff/contractors", icon: Handshake },
-      { label: "Schedules", href: "/admin/dashboard/staff/schedules", icon: Calendar }
-    ]
+    badgeColor: "bg-cyan-500/20 text-cyan-400"
   },
   { 
     label: "Logistics", 
     href: "/admin/dashboard/logistics", 
     icon: Truck,
     badge: "Active",
-    badgeColor: "bg-yellow-500/20 text-yellow-400",
-    children: [
-      { label: "Transportation", href: "/admin/dashboard/logistics/transport", icon: Truck },
-      { label: "Equipment", href: "/admin/dashboard/logistics/equipment", icon: Package },
-      { label: "Catering", href: "/admin/dashboard/logistics/catering", icon: Coffee }
-    ]
+    badgeColor: "bg-yellow-500/20 text-yellow-400"
   },
   { 
     label: "Finances", 
     href: "/admin/dashboard/finances", 
     icon: DollarSign,
     badge: "$485K",
-    badgeColor: "bg-green-500/20 text-green-400",
-    children: [
-      { label: "Revenue", href: "/admin/dashboard/finances/revenue", icon: TrendingUp },
-      { label: "Expenses", href: "/admin/dashboard/finances/expenses", icon: DollarSign },
-      { label: "Budgets", href: "/admin/dashboard/finances/budgets", icon: Target }
-    ]
-  },
-  { 
-    label: "Inventory", 
-    href: "/admin/dashboard/inventory", 
-    icon: Package,
-    badge: "248",
-    badgeColor: "bg-indigo-500/20 text-indigo-400",
-    children: [
-      { label: "Equipment", href: "/admin/dashboard/inventory/equipment", icon: Headphones },
-      { label: "Supplies", href: "/admin/dashboard/inventory/supplies", icon: Package },
-      { label: "Maintenance", href: "/admin/dashboard/inventory/maintenance", icon: SettingsIcon }
-    ]
-  },
-  { 
-    label: "Communications", 
-    href: "/admin/dashboard/communications", 
-    icon: MessageSquare,
-    badge: "5",
-    badgeColor: "bg-purple-500/20 text-purple-400",
-    children: [
-      { label: "Messages", href: "/admin/dashboard/communications/messages", icon: MessageSquare },
-      { label: "Announcements", href: "/admin/dashboard/communications/announcements", icon: Bell },
-      { label: "Templates", href: "/admin/dashboard/communications/templates", icon: FileText }
-    ]
+    badgeColor: "bg-green-500/20 text-green-400"
   },
   { 
     label: "Analytics", 
     href: "/admin/dashboard/analytics", 
     icon: BarChart3,
     badge: "Reports",
-    badgeColor: "bg-cyan-500/20 text-cyan-400",
-    children: [
-      { label: "Performance", href: "/admin/dashboard/analytics/performance", icon: TrendingUp },
-      { label: "Audience", href: "/admin/dashboard/analytics/audience", icon: Eye },
-      { label: "Revenue", href: "/admin/dashboard/analytics/revenue", icon: DollarSign }
-    ]
+    badgeColor: "bg-cyan-500/20 text-cyan-400"
   },
   { 
     label: "Settings", 
     href: "/admin/dashboard/settings", 
-    icon: SettingsIcon,
-    children: [
-      { label: "General", href: "/admin/dashboard/settings/general", icon: SettingsIcon },
-      { label: "Security", href: "/admin/dashboard/settings/security", icon: Shield },
-      { label: "Integrations", href: "/admin/dashboard/settings/integrations", icon: Zap }
-    ]
+    icon: SettingsIcon
   }
 ]
 
@@ -251,15 +197,6 @@ export function Sidebar() {
       venue: 'Madison Square Garden',
       artist: 'Acoustic Soul',
       progress: 90
-    },
-    {
-      id: '3',
-      title: 'Electronic Showcase',
-      date: 'Jul 22',
-      status: 'upcoming',
-      venue: 'Brooklyn Warehouse',
-      artist: 'DJ Luna',
-      progress: 45
     }
   ])
 
@@ -297,17 +234,17 @@ export function Sidebar() {
   }
 
   return (
-    <div className={`flex flex-col h-screen bg-slate-950/95 backdrop-blur-sm border-r border-slate-800/50 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-80'}`}>
+    <div className={`flex flex-col h-screen bg-slate-950/95 backdrop-blur-sm border-r border-slate-800/50 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Header */}
-      <div className="p-4 border-b border-slate-800/50">
+      <div className="p-3 border-b border-slate-800/50">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
-                <Crown className="h-6 w-6 text-white" />
+            <div className="flex items-center space-x-2">
+              <div className="p-1.5 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
+                <Crown className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-white">Admin Panel</h2>
+                <h2 className="text-base font-bold text-white">Admin Panel</h2>
                 <p className="text-xs text-slate-400">Event Management</p>
               </div>
             </div>
@@ -316,7 +253,7 @@ export function Sidebar() {
             variant="ghost"
             size="sm"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="text-slate-400 hover:text-white"
+            className="text-slate-400 hover:text-white h-8 w-8 p-0"
           >
             {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
           </Button>
@@ -325,22 +262,22 @@ export function Sidebar() {
 
       {/* Search */}
       {!isCollapsed && (
-        <div className="p-4">
+        <div className="p-3">
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <Input
               placeholder="Search features..."
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-slate-900/50 border-slate-700/50 text-white placeholder:text-slate-400"
+              className="pl-10 h-9 bg-slate-900/50 border-slate-700/50 text-white placeholder:text-slate-400 text-sm"
             />
           </div>
         </div>
       )}
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <nav className="space-y-2">
+      <div className="flex-1 overflow-y-auto px-3 pb-3">
+        <nav className="space-y-1">
           {filteredNavItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
             const isExpanded = expandedItems.includes(item.href)
@@ -351,35 +288,24 @@ export function Sidebar() {
                 <div className="relative">
                   <Link
                     href={item.href}
-                    className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 group ${
+                    className={`flex items-center justify-between p-2.5 rounded-lg transition-all duration-200 group text-sm ${
                       isActive 
                         ? 'bg-gradient-to-r from-purple-600/20 to-blue-600/20 text-white border border-purple-500/30' 
                         : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <item.icon className={`h-5 w-5 ${isActive ? 'text-purple-400' : 'text-slate-400 group-hover:text-white'}`} />
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-purple-400' : 'text-slate-400 group-hover:text-white'}`} />
                       {!isCollapsed && (
-                        <span className="font-medium">{item.label}</span>
+                        <span className="font-medium truncate">{item.label}</span>
                       )}
                     </div>
                     
                     {!isCollapsed && (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1.5 flex-shrink-0">
                         {item.badge && (
-                          <Badge className={`text-xs ${item.badgeColor || 'bg-slate-700 text-slate-300'}`}>
+                          <Badge className={`text-xs px-1.5 py-0.5 ${item.badgeColor || 'bg-slate-700 text-slate-300'}`}>
                             {item.badge}
-                          </Badge>
-                        )}
-                        {item.isNew && (
-                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                            New
-                          </Badge>
-                        )}
-                        {item.isPro && (
-                          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">
-                            <Crown className="h-3 w-3 mr-1" />
-                            Pro
                           </Badge>
                         )}
                         {hasChildren && (
@@ -393,9 +319,9 @@ export function Sidebar() {
                             className="p-0 h-auto text-slate-400 hover:text-white"
                           >
                             {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
+                              <ChevronDown className="h-3 w-3" />
                             ) : (
-                              <ChevronRight className="h-4 w-4" />
+                              <ChevronRight className="h-3 w-3" />
                             )}
                           </Button>
                         )}
@@ -411,7 +337,7 @@ export function Sidebar() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="ml-4 mt-2 space-y-1"
+                      className="ml-3 mt-1 space-y-0.5"
                     >
                       {item.children?.map((child) => {
                         const isChildActive = pathname === child.href
@@ -419,14 +345,14 @@ export function Sidebar() {
                           <Link
                             key={child.href}
                             href={child.href}
-                            className={`flex items-center space-x-3 p-2 rounded-lg transition-all duration-200 ${
+                            className={`flex items-center space-x-2 p-2 rounded-lg transition-all duration-200 text-sm ${
                               isChildActive 
                                 ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30' 
                                 : 'hover:bg-slate-800/30 text-slate-400 hover:text-white'
                             }`}
                           >
-                            <child.icon className="h-4 w-4" />
-                            <span className="text-sm">{child.label}</span>
+                            <child.icon className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{child.label}</span>
                           </Link>
                         )
                       })}
@@ -439,44 +365,36 @@ export function Sidebar() {
         </nav>
       </div>
 
-      {/* Active Events */}
+      {/* Live Events - Compact */}
       {!isCollapsed && (
-        <div className="p-4 border-t border-slate-800/50">
-          <Suspense fallback={<div className="animate-pulse bg-slate-800 h-48 rounded-lg"></div>}>
+        <div className="p-3 border-t border-slate-800/50">
+          <Suspense fallback={<div className="h-20 bg-slate-800/30 rounded-lg animate-pulse" />}>
             <Card className="bg-slate-900/50 border-slate-700/50">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-white">Live Events</h3>
-                  <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-                    <Radio className="h-3 w-3 mr-1" />
-                    Live
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium text-white flex items-center">
+                    <Radio className="h-3 w-3 mr-1.5 text-red-400" />
+                    Live Events
+                  </h3>
+                  <Badge className="bg-red-500/20 text-red-400 text-xs px-1.5 py-0.5">
+                    {activeEvents.length}
                   </Badge>
                 </div>
-                <div className="space-y-3">
-                  {activeEvents.slice(0, 2).map((event) => (
-                    <div key={event.id} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <div className={`p-1 rounded-full ${getStatusColor(event.status)}`}>
-                            {getStatusIcon(event.status)}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium text-white truncate">
-                              {event.title}
-                            </p>
-                            <p className="text-xs text-slate-400">
-                              {event.venue}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-xs text-slate-500">
-                          {event.date}
-                        </span>
+                <div className="space-y-2">
+                  {activeEvents.slice(0, 1).map((event) => (
+                    <div key={event.id} className="bg-slate-800/50 rounded-lg p-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="text-xs font-medium text-white truncate">{event.title}</h4>
+                        <Badge className={`text-xs px-1.5 py-0.5 ${getStatusColor(event.status)}`}>
+                          {getStatusIcon(event.status)}
+                          <span className="ml-1 capitalize">{event.status}</span>
+                        </Badge>
                       </div>
+                      <p className="text-xs text-slate-400 mb-2">{event.venue}</p>
                       <div className="flex items-center space-x-2">
-                        <div className="flex-1 bg-slate-800 rounded-full h-1.5">
+                        <div className="flex-1 bg-slate-800 rounded-full h-1">
                           <div 
-                            className="bg-gradient-to-r from-purple-500 to-blue-500 h-1.5 rounded-full transition-all duration-500"
+                            className="bg-gradient-to-r from-purple-500 to-blue-500 h-1 rounded-full transition-all duration-500"
                             style={{ width: `${event.progress}%` }}
                           />
                         </div>
@@ -487,37 +405,29 @@ export function Sidebar() {
                     </div>
                   ))}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full mt-3 text-slate-400 hover:text-white"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  View All Events
-                </Button>
               </CardContent>
             </Card>
           </Suspense>
         </div>
       )}
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Compact */}
       {!isCollapsed && (
-        <div className="p-4">
-          <div className="flex space-x-2">
+        <div className="p-3">
+          <div className="flex space-x-1.5">
             <Button
               size="sm"
-              className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
+              className="flex-1 h-8 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0 text-xs"
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-3 w-3 mr-1" />
               Create
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800"
+              className="flex-1 h-8 border-slate-700 text-slate-300 hover:bg-slate-800 text-xs"
             >
-              <Settings className="h-4 w-4 mr-1" />
+              <Settings className="h-3 w-3 mr-1" />
               Settings
             </Button>
           </div>

@@ -410,7 +410,7 @@ export default function OptimizedArtistDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl relative overflow-hidden">
+          <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl relative overflow-hidden rounded-2xl">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5" />
             
             <CardHeader className="relative z-10">
@@ -476,7 +476,7 @@ export default function OptimizedArtistDashboard() {
             transition={{ duration: 0.5, delay: 0.6 }}
             className="lg:col-span-2"
           >
-            <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl relative overflow-hidden">
+            <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl relative overflow-hidden rounded-2xl">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5" />
               
               <CardHeader className="flex flex-row items-center justify-between relative z-10">
@@ -572,7 +572,7 @@ export default function OptimizedArtistDashboard() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.8 }}
           >
-            <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl relative overflow-hidden">
+            <Card className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 border border-slate-700/30 backdrop-blur-xl relative overflow-hidden rounded-2xl">
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-teal-500/5" />
               
               <CardHeader className="relative z-10">

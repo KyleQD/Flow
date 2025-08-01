@@ -6,10 +6,26 @@ const nextConfig = {
     parallelServerBuildTraces: true,
   },
   // Fix SVG image issue
-  images: {
-    dangerouslyAllowSVG: true,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-  },
+      images: {
+      dangerouslyAllowSVG: true,
+      contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+      domains: [
+        'via.placeholder.com', 
+        'dummyimage.com',
+        'www.billboard.com',
+        'pitchfork.com',
+        'www.rollingstone.com',
+        'www.nme.com',
+        'www.stereogum.com',
+        'consequence.net',
+        'cdn.billboard.com',
+        'media.pitchfork.com',
+        'www.rollingstone.com',
+        'www.nme.com',
+        'www.stereogum.com',
+        'consequence.net'
+      ],
+    },
   // Performance optimizations
   swcMinify: true,
   poweredByHeader: false,

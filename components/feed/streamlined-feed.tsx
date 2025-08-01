@@ -12,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/lib/database.types'
 import { useArtist } from '@/contexts/artist-context'
+import { normalizeMediaData, renderMediaContent } from '@/utils/media-utils'
 import Link from 'next/link'
 
 interface Post {
@@ -57,6 +58,7 @@ interface Post {
   posted_as_account_type?: string
   posted_as_profile_id?: string
   account_type?: string
+  is_liked?: boolean
 }
 
 // Helper function to generate profile URL based on account type and username
@@ -134,7 +136,8 @@ export function StreamlinedFeed() {
         // Preserve account context fields
         posted_as_account_type: post.posted_as_account_type,
         posted_as_profile_id: post.posted_as_profile_id,
-        account_type: post.account_type
+        account_type: post.account_type,
+        is_liked: post.is_liked || false
       }))
       
       console.log('📊 Transformed posts:', transformedPosts.length)
@@ -167,7 +170,8 @@ export function StreamlinedFeed() {
             avatar_url: null,
             is_verified: false
           },
-          isDemoPost: true
+          isDemoPost: true,
+          is_liked: false
         }
         setPosts([demoPost])
       }
@@ -354,35 +358,52 @@ export function StreamlinedFeed() {
   }
 
   const handleLike = async (postId: string) => {
-    // Optimistic update
-    setPosts(prev => prev.map(post => 
-      post.id === postId 
-        ? { ...post, likes_count: post.likes_count + 1 }
-        : post
-    ))
+    if (!user) return
 
-    // Try to update in database if connected
-    if (databaseConnected && user) {
-      try {
-        const { error } = await supabase
-          .from('post_likes')
-          .insert({
-            post_id: postId,
-            user_id: user.id
-          })
+    try {
+      const currentPost = posts.find(p => p.id === postId)
+      if (!currentPost) return
 
-        if (error) {
-          console.error('Error liking post:', error)
-          // Revert on error
-          setPosts(prev => prev.map(post => 
-            post.id === postId 
-              ? { ...post, likes_count: post.likes_count - 1 }
-              : post
-          ))
-        }
-      } catch (error) {
-        console.error('Error liking post:', error)
+      const isCurrentlyLiked = currentPost.is_liked
+      const action = isCurrentlyLiked ? 'unlike' : 'like'
+
+      // Optimistic update
+      setPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              is_liked: !post.is_liked,
+              likes_count: post.is_liked ? post.likes_count - 1 : post.likes_count + 1
+            }
+          : post
+      ))
+
+      const response = await fetch(`/api/posts/${postId}/likes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ action })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle like')
       }
+
+      console.log('✅ Successfully toggled like')
+    } catch (error) {
+      // Revert on error
+      setPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              is_liked: !post.is_liked,
+              likes_count: post.is_liked ? post.likes_count + 1 : post.likes_count - 1
+            }
+          : post
+      ))
+      console.error('Error toggling like:', error)
     }
   }
 
@@ -562,6 +583,12 @@ export function StreamlinedFeed() {
                     <p className="text-slate-200 leading-relaxed">
                       {post.content}
                     </p>
+
+                    {/* Media display */}
+                    {(() => {
+                      const mediaItems = normalizeMediaData(post)
+                      return renderMediaContent(mediaItems)
+                    })()}
 
                     {/* Hashtags */}
                     {post.hashtags && post.hashtags.length > 0 && (

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Calendar, ImageIcon, Loader2, MessageSquare, ThumbsUp, TrendingUp, Users, Video } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { normalizeMediaData, renderMediaContent } from '@/utils/media-utils'
 
 export default function FeedPage() {
   const [postType, setPostType] = useState("text")
@@ -376,11 +377,10 @@ export default function FeedPage() {
                       </Button>
                     </div>
                     <p className="mt-2 text-sm">{post.content}</p>
-                    {post.media && post.media.length > 0 && (
-                      <div className="mt-3 rounded-md overflow-hidden">
-                        <img src={post.media[0] || "/placeholder.svg"} alt="Post media" className="w-full h-auto" />
-                      </div>
-                    )}
+                    {(() => {
+                      const mediaItems = normalizeMediaData(post)
+                      return renderMediaContent(mediaItems)
+                    })()}
                     {"eventDetails" in post && (
                       <div className="mt-3 p-3 bg-gray-700 rounded-md">
                         <p className="font-medium">{(post as any).eventDetails.title}</p>

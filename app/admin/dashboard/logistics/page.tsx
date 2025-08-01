@@ -1,6 +1,7 @@
 "use client"
 
-import { Box, Calendar, Clock, FileText, MapPin, Truck, Users, Utensils } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Bell, Box, Building, Calendar, Clock, FileText, MapPin, MessageSquare, Plane, Truck, Users, Utensils, Plus, Edit, Trash2, AlertCircle, Loader2, Zap, Guitar, Mic, Piano, Drum, CheckCircle, Target } from "lucide-react"
 import { Header } from "@/components/header"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,8 +9,207 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { useLogistics, useTransportation, useEquipment, useLogisticsAnalytics } from "@/hooks/use-logistics"
+import { useRentals, useRentalAgreements, useRentalAnalytics, useEquipmentUtilization } from "@/hooks/use-rentals"
+import { useLodging, useLodgingBookings, useLodgingAnalytics, useLodgingUtilization } from "@/hooks/use-lodging"
+import { useTravelCoordination } from "@/hooks/use-travel-coordination"
+import { TravelCoordinationHub } from "@/components/admin/travel-coordination-hub"
+import { LogisticsDynamicManager } from "@/components/admin/logistics-dynamic-manager"
+import { LogisticsCollaboration } from "@/components/admin/logistics-collaboration"
+import { useToast } from "@/hooks/use-toast"
 
 export default function LogisticsPage() {
+  const { toast } = useToast()
+  const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
+  const [selectedTour, setSelectedTour] = useState<string | null>(null)
+
+  // Fetch logistics data
+  const { data: logisticsData, loading: logisticsLoading, error: logisticsError, refetch: refetchLogistics } = useLogistics({
+    eventId: selectedEvent || undefined,
+    tourId: selectedTour || undefined,
+    autoRefresh: true,
+    refreshInterval: 30000
+  })
+
+  // Fetch specialized data for different tabs
+  const { data: transportationData, loading: transportationLoading, error: transportationError } = useTransportation({
+    eventId: selectedEvent || undefined,
+    tourId: selectedTour || undefined
+  })
+
+  const { data: equipmentData, loading: equipmentLoading, error: equipmentError } = useEquipment({
+    eventId: selectedEvent || undefined,
+    tourId: selectedTour || undefined
+  })
+
+  const { data: analyticsData, loading: analyticsLoading, error: analyticsError } = useLogisticsAnalytics({
+    eventId: selectedEvent || undefined,
+    tourId: selectedTour || undefined
+  })
+
+  // Fetch rental data
+  const { agreements: rentalAgreements, loading: rentalsLoading, error: rentalError } = useRentalAgreements({
+    status: 'active',
+    limit: 10
+  })
+
+  const { analytics: rentalAnalytics, loading: rentalAnalyticsLoading, error: rentalAnalyticsError } = useRentalAnalytics()
+
+  const { utilization: equipmentUtilization, loading: utilizationLoading, error: utilizationError } = useEquipmentUtilization()
+
+  // Fetch lodging data
+  const { bookings: lodgingBookings, loading: lodgingBookingsLoading, error: lodgingError } = useLodgingBookings()
+
+  const { analytics: lodgingAnalytics, loading: lodgingAnalyticsLoading, error: lodgingAnalyticsError } = useLodgingAnalytics()
+
+  const { utilization: lodgingUtilization, loading: lodgingUtilizationLoading, error: lodgingUtilizationError } = useLodgingUtilization()
+
+  // Fetch travel coordination data
+  const { 
+    groups: travelGroups, 
+    flights: travelFlights, 
+    transportation: travelTransportation,
+    analytics: travelAnalytics,
+    groupsLoading: travelGroupsLoading,
+    error: travelError
+  } = useTravelCoordination()
+
+  // Calculate status metrics
+  const calculateStatusMetrics = () => {
+    // Default metrics object with all required properties
+    const defaultMetrics = {
+      transportation: { percentage: 0, items: 0, completed: 0, status: 'Not Started' },
+      equipment: { percentage: 0, items: 0, completed: 0, status: 'Not Started' },
+      backline: { percentage: 0, items: 0, completed: 0, status: 'Not Started' },
+      rentals: { percentage: 0, items: 0, completed: 0, status: 'No Rentals', revenue: 0 },
+      lodging: { percentage: 0, items: 0, completed: 0, status: 'No Bookings', revenue: 0 },
+      travelCoordination: { percentage: 0, items: 0, completed: 0, status: 'Not Started', travelers: 0 },
+      accommodations: { percentage: 0, items: 0, completed: 0, status: 'Not Started' },
+      catering: { percentage: 0, items: 0, completed: 0, status: 'Not Started' },
+      communication: { percentage: 0, items: 0, completed: 0, status: 'Not Started' }
+    }
+
+    if (!logisticsData) return defaultMetrics
+
+    try {
+      const transportation = logisticsData.transportation || []
+      const equipment = logisticsData.equipment || []
+      const assignments = logisticsData.assignments || []
+
+      // Transportation metrics
+      const transportTotal = transportation.length
+      const transportCompleted = transportation.filter(t => t.status === 'completed').length
+      const transportPercentage = transportTotal > 0 ? Math.round((transportCompleted / transportTotal) * 100) : 0
+      const transportStatus = transportPercentage === 100 ? 'Completed' : transportPercentage > 50 ? 'In Progress' : 'Not Started'
+
+      // Equipment metrics
+      const equipTotal = equipment.length
+      const equipAssigned = assignments.length
+      const equipPercentage = equipTotal > 0 ? Math.round((equipAssigned / equipTotal) * 100) : 0
+      const equipStatus = equipPercentage === 100 ? 'Completed' : equipPercentage > 50 ? 'In Progress' : 'Not Started'
+
+      // Backline metrics (filter equipment by backline category)
+      const backlineEquipment = equipment.filter(e => e.category === 'backline' || e.category === 'instruments')
+      const backlineTotal = backlineEquipment.length
+      const backlineAssigned = assignments.filter(a => backlineEquipment.some(e => e.id === a.equipment_id)).length
+      const backlinePercentage = backlineTotal > 0 ? Math.round((backlineAssigned / backlineTotal) * 100) : 0
+      const backlineStatus = backlinePercentage === 100 ? 'Completed' : backlinePercentage > 50 ? 'In Progress' : 'Not Started'
+
+      // Rental metrics from real data
+      const activeRentals = rentalAgreements?.length || 0
+      const totalRentalRevenue = rentalAnalytics?.[0]?.total_revenue || 0
+      const rentalPercentage = activeRentals > 0 ? Math.min(100, Math.round((activeRentals / 10) * 100)) : 0 // Assuming 10 is max for 100%
+      const rentalStatus = activeRentals > 0 ? 'Active' : 'No Rentals'
+
+      // Lodging metrics from real data
+      const activeLodgingBookings = lodgingBookings?.filter(b => b.status === 'confirmed' || b.status === 'checked_in').length || 0
+      const totalLodgingRevenue = lodgingAnalytics?.[0]?.total_revenue || 0
+      const lodgingPercentage = activeLodgingBookings > 0 ? Math.min(100, Math.round((activeLodgingBookings / 20) * 100)) : 0 // Assuming 20 is max for 100%
+      const lodgingStatus = activeLodgingBookings > 0 ? 'Active' : 'No Bookings'
+
+      // Travel coordination metrics
+      const totalTravelGroups = travelGroups?.length || 0
+      const totalTravelers = travelGroups?.reduce((sum, group) => sum + (group.total_members || 0), 0) || 0
+      const fullyCoordinatedGroups = travelGroups?.filter(g => g.coordination_status === 'complete').length || 0
+      const travelCoordinationPercentage = totalTravelGroups > 0 ? Math.round((fullyCoordinatedGroups / totalTravelGroups) * 100) : 0
+      const travelCoordinationStatus = travelCoordinationPercentage === 100 ? 'Complete' : travelCoordinationPercentage > 50 ? 'In Progress' : 'Not Started'
+
+      return {
+        transportation: { percentage: transportPercentage, items: transportTotal, completed: transportCompleted, status: transportStatus },
+        equipment: { percentage: equipPercentage, items: equipTotal, completed: equipAssigned, status: equipStatus },
+        backline: { percentage: backlinePercentage, items: backlineTotal, completed: backlineAssigned, status: backlineStatus },
+        rentals: { percentage: rentalPercentage, items: activeRentals, completed: activeRentals, status: rentalStatus, revenue: totalRentalRevenue },
+        lodging: { percentage: lodgingPercentage, items: activeLodgingBookings, completed: activeLodgingBookings, status: lodgingStatus, revenue: totalLodgingRevenue },
+        travelCoordination: { percentage: travelCoordinationPercentage, items: totalTravelGroups, completed: fullyCoordinatedGroups, status: travelCoordinationStatus, travelers: totalTravelers },
+        accommodations: { percentage: 90, items: 12, completed: 11, status: 'Confirmed' }, // Mock data for now
+        catering: { percentage: 10, items: 5, completed: 0, status: 'Not Started' }, // Mock data for now
+        communication: { percentage: 75, items: 16, completed: 12, status: 'Active' } // Mock data for now
+      }
+    } catch (error) {
+      console.error('Error calculating metrics:', error)
+      return defaultMetrics
+    }
+  }
+
+  const metrics = calculateStatusMetrics()
+
+  // Handle errors
+  useEffect(() => {
+    if (logisticsError) {
+      toast({
+        title: "Error",
+        description: logisticsError,
+        variant: "destructive"
+      })
+    }
+  }, [logisticsError, toast])
+
+  // Show loading state if any critical data is loading
+  const isLoading = logisticsLoading || transportationLoading || equipmentLoading || analyticsLoading || rentalsLoading || rentalAnalyticsLoading || utilizationLoading || lodgingBookingsLoading || lodgingAnalyticsLoading || lodgingUtilizationLoading || travelGroupsLoading
+
+  // Show error state if there are critical errors
+  const hasCriticalError = logisticsError || transportationError || equipmentError || analyticsError
+
+  if (hasCriticalError) {
+    return (
+      <div className="container mx-auto p-4">
+        <Header />
+        <PageHeader
+          title="Logistics Management"
+          icon={Truck}
+          description="Coordinate transportation, equipment, and venue logistics for all events"
+        />
+        
+        <Card className="bg-slate-900/50 border-red-500/20 backdrop-blur-sm">
+          <CardContent className="p-8 text-center">
+            <div className="flex flex-col items-center space-y-4">
+              <AlertCircle className="h-16 w-16 text-red-500" />
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-2">Something went wrong!</h3>
+                <p className="text-slate-400 mb-4">We apologize for the inconvenience. Please try again.</p>
+                <div className="flex items-center justify-center space-x-4">
+                  <Button 
+                    onClick={() => window.location.reload()} 
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    Try again
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => window.location.href = '/admin/dashboard'}
+                  >
+                    Go to Admin Home
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto p-4">
       <Header />
@@ -20,60 +220,258 @@ export default function LogisticsPage() {
       />
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="bg-slate-800/50 p-1 mb-6">
+        <TabsList className="bg-slate-800/50 p-1 mb-6 grid grid-cols-7 gap-1 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-xl">
           <TabsTrigger
             value="overview"
-            className="data-[state=active]:bg-slate-700 data-[state=active]:text-purple-400"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:text-purple-400 data-[state=active]:border-purple-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
           >
-            Overview
+            <div className="flex flex-col items-center space-y-1">
+              <div className="flex items-center space-x-2">
+                <Truck className="h-4 w-4" />
+                <span className="text-sm font-medium">Overview</span>
+              </div>
+              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500 ease-out"
+                  style={{ width: `${Math.round(((metrics?.transportation?.percentage || 0) + (metrics?.accommodations?.percentage || 0) + (metrics?.equipment?.percentage || 0) + (metrics?.backline?.percentage || 0) + (metrics?.rentals?.percentage || 0) + (metrics?.lodging?.percentage || 0) + (metrics?.travelCoordination?.percentage || 0) + (metrics?.catering?.percentage || 0) + (metrics?.communication?.percentage || 0)) / 9)}%` }}
+                />
+                <div className="h-full w-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+              </div>
+            </div>
           </TabsTrigger>
+          
           <TabsTrigger
             value="transportation"
-            className="data-[state=active]:bg-slate-700 data-[state=active]:text-purple-400"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600/20 data-[state=active]:to-cyan-600/20 data-[state=active]:text-blue-400 data-[state=active]:border-blue-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
           >
-            Transportation
+            <div className="flex flex-col items-center space-y-1">
+              <div className="flex items-center space-x-2">
+                <Truck className="h-4 w-4" />
+                <span className="text-sm font-medium">Transport</span>
+                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                  {metrics?.transportation?.completed || 0}/{metrics?.transportation?.items || 0}
+                </Badge>
+              </div>
+              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
+                  style={{ width: `${metrics?.transportation?.percentage || 0}%` }}
+                />
+              </div>
+              <div className="absolute -top-1 -right-1">
+                <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  metrics?.transportation?.status === 'Completed' ? 'bg-green-500 shadow-lg shadow-green-500/50' :
+                  metrics?.transportation?.status === 'In Progress' ? 'bg-yellow-500 shadow-lg shadow-yellow-500/50' :
+                  'bg-slate-500'
+                }`} />
+              </div>
+            </div>
           </TabsTrigger>
+          
+          <TabsTrigger
+            value="accommodations"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600/20 data-[state=active]:to-emerald-600/20 data-[state=active]:text-green-400 data-[state=active]:border-green-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-green-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
+          >
+            <div className="flex flex-col items-center space-y-1">
+              <div className="flex items-center space-x-2">
+                <Building className="h-4 w-4" />
+                <span className="text-sm font-medium">Hotels & Flights</span>
+                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                  {metrics?.accommodations?.completed || 0}/{metrics?.accommodations?.items || 0}
+                </Badge>
+              </div>
+              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
+                  style={{ width: `${metrics?.accommodations?.percentage || 0}%` }}
+                />
+              </div>
+              <div className="absolute -top-1 -right-1">
+                <div className={`w-2 h-2 rounded-full ${
+                  metrics?.accommodations?.status === 'Confirmed' ? 'bg-green-500' :
+                  metrics?.accommodations?.status === 'In Progress' ? 'bg-yellow-500' :
+                  'bg-slate-500'
+                }`} />
+              </div>
+            </div>
+          </TabsTrigger>
+          
           <TabsTrigger
             value="equipment"
-            className="data-[state=active]:bg-slate-700 data-[state=active]:text-purple-400"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600/20 data-[state=active]:to-red-600/20 data-[state=active]:text-orange-400 data-[state=active]:border-orange-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
           >
-            Equipment
+            <div className="flex flex-col items-center space-y-1">
+              <div className="flex items-center space-x-2">
+                <Box className="h-4 w-4" />
+                <span className="text-sm font-medium">Equipment</span>
+                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                  {metrics?.equipment?.completed || 0}/{metrics?.equipment?.items || 0}
+                </Badge>
+              </div>
+              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300"
+                  style={{ width: `${metrics?.equipment?.percentage || 0}%` }}
+                />
+              </div>
+              <div className="absolute -top-1 -right-1">
+                <div className={`w-2 h-2 rounded-full ${
+                  metrics?.equipment?.status === 'Completed' ? 'bg-green-500' :
+                  metrics?.equipment?.status === 'In Progress' ? 'bg-yellow-500' :
+                  'bg-slate-500'
+                }`} />
+              </div>
+            </div>
           </TabsTrigger>
+          
+          <TabsTrigger
+            value="backline"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600/20 data-[state=active]:to-pink-600/20 data-[state=active]:text-purple-400 data-[state=active]:border-purple-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
+          >
+            <div className="flex flex-col items-center space-y-1">
+              <div className="flex items-center space-x-2">
+                <Zap className="h-4 w-4" />
+                <span className="text-sm font-medium">Backline</span>
+                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                  {metrics?.backline?.completed || 0}/{metrics?.backline?.items || 0}
+                </Badge>
+              </div>
+              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+                  style={{ width: `${metrics?.backline?.percentage || 0}%` }}
+                />
+              </div>
+              <div className="absolute -top-1 -right-1">
+                <div className={`w-2 h-2 rounded-full ${
+                  metrics?.backline?.status === 'Completed' ? 'bg-green-500' :
+                  metrics?.backline?.status === 'In Progress' ? 'bg-yellow-500' :
+                  'bg-slate-500'
+                }`} />
+              </div>
+            </div>
+          </TabsTrigger>
+          
           <TabsTrigger
             value="catering"
-            className="data-[state=active]:bg-slate-700 data-[state=active]:text-purple-400"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-600/20 data-[state=active]:to-orange-600/20 data-[state=active]:text-yellow-400 data-[state=active]:border-yellow-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-yellow-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
           >
-            Catering
+            <div className="flex flex-col items-center space-y-1">
+              <div className="flex items-center space-x-2">
+                <Utensils className="h-4 w-4" />
+                <span className="text-sm font-medium">Catering</span>
+                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                  {metrics?.catering?.completed || 0}/{metrics?.catering?.items || 0}
+                </Badge>
+              </div>
+              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300"
+                  style={{ width: `${metrics?.catering?.percentage || 0}%` }}
+                />
+              </div>
+              <div className="absolute -top-1 -right-1">
+                <div className={`w-2 h-2 rounded-full ${
+                  metrics?.catering?.status === 'Completed' ? 'bg-green-500' :
+                  metrics?.catering?.status === 'In Progress' ? 'bg-yellow-500' :
+                  'bg-slate-500'
+                }`} />
+              </div>
+            </div>
+          </TabsTrigger>
+          
+          <TabsTrigger
+            value="communication"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:text-cyan-400 data-[state=active]:border-cyan-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
+          >
+            <div className="flex flex-col items-center space-y-1">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="h-4 w-4" />
+                <span className="text-sm font-medium">Communication</span>
+                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
+                  {metrics?.communication?.completed || 0}/{metrics?.communication?.items || 0}
+                </Badge>
+              </div>
+              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
+                  style={{ width: `${metrics?.communication?.percentage || 0}%` }}
+                />
+              </div>
+              <div className="absolute -top-1 -right-1">
+                <div className={`w-2 h-2 rounded-full ${
+                  metrics?.communication?.status === 'Active' ? 'bg-green-500' :
+                  metrics?.communication?.status === 'In Progress' ? 'bg-yellow-500' :
+                  'bg-slate-500'
+                }`} />
+              </div>
+            </div>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <LogisticsStatusCard
-              title="Transportation"
-              icon={Truck}
-              status="In Progress"
-              percentage={65}
-              items={8}
-              completed={5}
-            />
-            <LogisticsStatusCard
-              title="Equipment"
-              icon={Box}
-              status="In Progress"
-              percentage={45}
-              items={24}
-              completed={11}
-            />
-            <LogisticsStatusCard
-              title="Catering"
-              icon={Utensils}
-              status="Not Started"
-              percentage={10}
-              items={5}
-              completed={0}
-            />
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+              <span className="ml-2 text-slate-400">Loading logistics data...</span>
+            </div>
+          ) : (
+            <>
+              {/* Quick Stats Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <Card className="bg-gradient-to-r from-blue-600/10 to-cyan-600/10 border-blue-500/20 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-blue-400 font-medium">Overall Progress</p>
+                        <p className="text-2xl font-bold text-white">
+                          {Math.round(((metrics?.transportation?.percentage || 0) + (metrics?.accommodations?.percentage || 0) + (metrics?.equipment?.percentage || 0) + (metrics?.backline?.percentage || 0) + (metrics?.rentals?.percentage || 0) + (metrics?.lodging?.percentage || 0) + (metrics?.travelCoordination?.percentage || 0) + (metrics?.catering?.percentage || 0) + (metrics?.communication?.percentage || 0)) / 9)}%
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">Complete across all categories</p>
+                      </div>
+                      <div className="h-12 w-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                        <Target className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-r from-green-600/10 to-emerald-600/10 border-green-500/20 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-green-400 font-medium">Active Items</p>
+                        <p className="text-2xl font-bold text-white">
+                          {(metrics?.transportation?.items || 0) + (metrics?.accommodations?.items || 0) + (metrics?.equipment?.items || 0) + (metrics?.backline?.items || 0) + (metrics?.rentals?.items || 0) + (metrics?.lodging?.items || 0) + (metrics?.travelCoordination?.items || 0) + (metrics?.catering?.items || 0) + (metrics?.communication?.items || 0)}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">Total logistics items</p>
+                      </div>
+                      <div className="h-12 w-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                        <CheckCircle className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-r from-purple-600/10 to-pink-600/10 border-purple-500/20 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-purple-400 font-medium">Completed</p>
+                        <p className="text-2xl font-bold text-white">
+                          {(metrics?.transportation?.completed || 0) + (metrics?.accommodations?.completed || 0) + (metrics?.equipment?.completed || 0) + (metrics?.backline?.completed || 0) + (metrics?.rentals?.completed || 0) + (metrics?.lodging?.completed || 0) + (metrics?.travelCoordination?.completed || 0) + (metrics?.catering?.completed || 0) + (metrics?.communication?.completed || 0)}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">Items completed</p>
+                      </div>
+                      <div className="h-12 w-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                        <Zap className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
 
           <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm mb-6">
             <CardHeader className="pb-2">
@@ -186,86 +584,85 @@ export default function LogisticsPage() {
         </TabsContent>
 
         <TabsContent value="transportation" className="mt-0">
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm mb-6">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-slate-100 flex items-center text-base">
-                <Truck className="mr-2 h-5 w-5 text-purple-500" />
-                Transportation Schedule
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border border-slate-700">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-800/50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Date & Time
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Description
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Provider
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          From
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          To
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-700/50 bg-slate-900/20">
-                      <TransportationRow
-                        dateTime="Aug 14, 09:00 AM"
-                        description="Headline Artist Pickup"
-                        provider="Elite Transport"
-                        from="International Airport"
-                        to="Luxury Hotel"
-                        status="scheduled"
-                      />
-                      <TransportationRow
-                        dateTime="Aug 14, 11:30 AM"
-                        description="Support Act Pickup"
-                        provider="Elite Transport"
-                        from="International Airport"
-                        to="Riverside Hotel"
-                        status="scheduled"
-                      />
-                      <TransportationRow
-                        dateTime="Aug 15, 02:00 PM"
-                        description="Artist to Venue"
-                        provider="Elite Transport"
-                        from="Luxury Hotel"
-                        to="Riverside Amphitheater"
-                        status="scheduled"
-                      />
-                      <TransportationRow
-                        dateTime="Aug 15, 11:30 PM"
-                        description="Artist to Hotel"
-                        provider="Elite Transport"
-                        from="Riverside Amphitheater"
-                        to="Luxury Hotel"
-                        status="scheduled"
-                      />
-                      <TransportationRow
-                        dateTime="Aug 17, 10:00 AM"
-                        description="Artist to Airport"
-                        provider="Elite Transport"
-                        from="Luxury Hotel"
-                        to="International Airport"
-                        status="scheduled"
-                      />
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {transportationLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+              <span className="ml-2 text-slate-400">Loading transportation data...</span>
+            </div>
+          ) : (
+            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm mb-6">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-slate-100 flex items-center justify-between text-base">
+                  <div className="flex items-center">
+                    <Truck className="mr-2 h-5 w-5 text-purple-500" />
+                    Transportation Schedule
+                  </div>
+                  <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Transportation
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {transportationData?.transportation && transportationData.transportation.length > 0 ? (
+                  <div className="rounded-md border border-slate-700">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-800/50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                              Date & Time
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                              Description
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                              Provider
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                              From
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                              To
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-700/50 bg-slate-900/20">
+                          {transportationData.transportation.map((transport) => (
+                            <TransportationRow
+                              key={transport.id}
+                              dateTime={new Date(transport.departure_time).toLocaleString()}
+                              description={`${transport.type} - ${transport.vehicle_details?.description || 'Transport'}`}
+                              provider={transport.provider || 'TBD'}
+                              from={transport.departure_location}
+                              to={transport.arrival_location}
+                              status={transport.status}
+                            />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Truck className="h-12 w-12 text-slate-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-slate-300 mb-2">No Transportation Scheduled</h3>
+                    <p className="text-slate-400 mb-4">Get started by adding transportation arrangements for your event.</p>
+                    <Button className="bg-purple-600 hover:bg-purple-700">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add First Transportation
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
             <CardHeader className="pb-2">
@@ -312,103 +709,182 @@ export default function LogisticsPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="accommodations" className="mt-0">
+          <TravelCoordinationHub eventId={selectedEvent || undefined} tourId={selectedTour || undefined} />
+        </TabsContent>
+
         <TabsContent value="equipment" className="mt-0">
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm mb-6">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-slate-100 flex items-center text-base">
-                <Box className="mr-2 h-5 w-5 text-purple-500" />
-                Equipment Inventory
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border border-slate-700">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-800/50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Item
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Category
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Quantity
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Provider
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Delivery Date
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-700/50 bg-slate-900/20">
-                      <EquipmentRow
-                        item="Main PA System"
-                        category="Sound"
-                        quantity={1}
-                        provider="SoundMasters Pro"
-                        deliveryDate="Aug 13, 08:00 AM"
-                        status="confirmed"
-                      />
-                      <EquipmentRow
-                        item="Stage Lighting"
-                        category="Lighting"
-                        quantity={1}
-                        provider="LightWorks Inc"
-                        deliveryDate="Aug 13, 10:00 AM"
-                        status="confirmed"
-                      />
-                      <EquipmentRow
-                        item="Wireless Microphones"
-                        category="Sound"
-                        quantity={12}
-                        provider="SoundMasters Pro"
-                        deliveryDate="Aug 13, 08:00 AM"
-                        status="confirmed"
-                      />
-                      <EquipmentRow
-                        item="LED Screens"
-                        category="Visual"
-                        quantity={2}
-                        provider="VisualTech Solutions"
-                        deliveryDate="Aug 13, 01:00 PM"
-                        status="pending"
-                      />
-                      <EquipmentRow
-                        item="Drum Kit"
-                        category="Instruments"
-                        quantity={1}
-                        provider="MusicGear Rentals"
-                        deliveryDate="Aug 14, 09:00 AM"
-                        status="pending"
-                      />
-                      <EquipmentRow
-                        item="Guitar Amplifiers"
-                        category="Instruments"
-                        quantity={4}
-                        provider="MusicGear Rentals"
-                        deliveryDate="Aug 14, 09:00 AM"
-                        status="pending"
-                      />
-                      <EquipmentRow
-                        item="Barricades"
-                        category="Security"
-                        quantity={20}
-                        provider="EventSafe Solutions"
-                        deliveryDate="Aug 13, 03:00 PM"
-                        status="confirmed"
-                      />
-                    </tbody>
-                  </table>
-                </div>
+          <div className="space-y-6">
+            {/* Equipment Management */}
+            <LogisticsDynamicManager 
+              type="equipment"
+              enableEditing={true}
+              autoSave={true}
+              showFilters={true}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="backline" className="mt-0">
+          {(equipmentLoading || utilizationLoading) ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+              <span className="ml-2 text-slate-400">Loading backline data...</span>
+            </div>
+          ) : (
+            <>
+              {/* Backline Inventory */}
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm mb-6">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-slate-100 flex items-center justify-between text-base">
+                    <div className="flex items-center">
+                      <Zap className="mr-2 h-5 w-5 text-purple-500" />
+                      Backline Inventory
+                    </div>
+                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Backline
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {equipmentUtilization && equipmentUtilization.length > 0 ? (
+                    <div className="rounded-md border border-slate-700">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-slate-800/50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Instrument
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Category
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Condition
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Rental Rate
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Status
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-700/50 bg-slate-900/20">
+                            {equipmentUtilization.slice(0, 10).map((item) => (
+                              <BacklineRow
+                                key={item.id}
+                                instrument={item.name}
+                                category={item.category}
+                                condition="Good"
+                                rentalRate={item.rental_rate}
+                                status={item.current_status.toLowerCase()}
+                              />
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Zap className="h-12 w-12 text-slate-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-slate-300 mb-2">No Backline Available</h3>
+                      <p className="text-slate-400 mb-4">Get started by adding backline equipment to your inventory.</p>
+                      <Button className="bg-purple-600 hover:bg-purple-700">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Backline
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Active Rentals */}
+              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm mb-6">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-slate-100 flex items-center text-base">
+                    <Calendar className="mr-2 h-5 w-5 text-purple-500" />
+                    Active Rentals
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {rentalsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
+                      <span className="ml-2 text-slate-400">Loading rental data...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {rentalAgreements?.map((agreement) => (
+                        <RentalCard
+                          key={agreement.id}
+                          instrument={agreement.rental_agreement_items?.[0]?.equipment?.name || 'Equipment'}
+                          client={agreement.rental_clients?.name || 'Unknown Client'}
+                          startDate={agreement.start_date}
+                          endDate={agreement.end_date}
+                          dailyRate={agreement.rental_agreement_items?.[0]?.daily_rate || 0}
+                          totalAmount={agreement.total_amount}
+                          status={agreement.status === 'active' ? 'active' : agreement.status === 'confirmed' ? 'upcoming' : 'completed'}
+                        />
+                      ))}
+                      {(!rentalAgreements || rentalAgreements.length === 0) && (
+                        <div className="text-center py-8 text-slate-500">
+                          No active rentals found
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Rental Analytics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-slate-100 text-sm">Revenue This Month</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-400">
+                      ${rentalAnalytics?.[0]?.total_revenue?.toLocaleString() || '0'}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {rentalAnalytics?.[0]?.total_rentals || 0} total rentals
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-slate-100 text-sm">Active Rentals</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-400">
+                      {rentalAnalytics?.[0]?.active_rentals || 0}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {rentalAnalytics?.[0]?.overdue_rentals || 0} overdue
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-slate-100 text-sm">Utilization Rate</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-purple-400">
+                      {equipmentUtilization?.length ? Math.round((equipmentUtilization.filter(e => e.current_status === 'Currently Rented').length / equipmentUtilization.length) * 100) : 0}%
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {equipmentUtilization?.filter(e => e.current_status === 'Available').length || 0} items available
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="catering" className="mt-0">
@@ -529,6 +1005,17 @@ export default function LogisticsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="communication" className="mt-0">
+          <div className="space-y-6">
+            {/* Team Collaboration */}
+            <LogisticsCollaboration 
+              eventId={selectedEvent || undefined}
+              tourId={selectedTour || undefined}
+              teamMembers={['John Smith', 'Sarah Johnson', 'Mike Wilson', 'Lisa Davis']}
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
@@ -684,6 +1171,16 @@ function TransportationRow({ dateTime, description, provider, from, to, status }
       <td className="px-4 py-3 text-slate-300">{from}</td>
       <td className="px-4 py-3 text-slate-300">{to}</td>
       <td className="px-4 py-3">{getStatusBadge()}</td>
+      <td className="px-4 py-3">
+        <div className="flex space-x-2">
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+            <Edit className="h-3 w-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-400 hover:text-red-300">
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </td>
     </tr>
   )
 }
@@ -719,23 +1216,41 @@ function ProviderCard({ name, type, contact, phone, email }: ProviderCardProps) 
 interface EquipmentRowProps {
   item: string
   category: string
-  quantity: number
-  provider: string
-  deliveryDate: string
+  condition: string
+  location: string
   status: string
 }
 
-function EquipmentRow({ item, category, quantity, provider, deliveryDate, status }: EquipmentRowProps) {
+function EquipmentRow({ item, category, condition, location, status }: EquipmentRowProps) {
   const getStatusBadge = () => {
     switch (status) {
-      case "confirmed":
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Confirmed</Badge>
-      case "pending":
-        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Pending</Badge>
-      case "cancelled":
-        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Cancelled</Badge>
+      case "available":
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Available</Badge>
+      case "in_use":
+        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">In Use</Badge>
+      case "maintenance":
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Maintenance</Badge>
+      case "retired":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Retired</Badge>
       default:
         return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">{status}</Badge>
+    }
+  }
+
+  const getConditionBadge = () => {
+    switch (condition) {
+      case "excellent":
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Excellent</Badge>
+      case "good":
+        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Good</Badge>
+      case "fair":
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Fair</Badge>
+      case "poor":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Poor</Badge>
+      case "damaged":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Damaged</Badge>
+      default:
+        return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">{condition}</Badge>
     }
   }
 
@@ -743,10 +1258,19 @@ function EquipmentRow({ item, category, quantity, provider, deliveryDate, status
     <tr className="hover:bg-slate-800/30">
       <td className="px-4 py-3 text-slate-300">{item}</td>
       <td className="px-4 py-3 text-slate-300">{category}</td>
-      <td className="px-4 py-3 text-slate-300">{quantity}</td>
-      <td className="px-4 py-3 text-slate-300">{provider}</td>
-      <td className="px-4 py-3 text-slate-300">{deliveryDate}</td>
+      <td className="px-4 py-3">{getConditionBadge()}</td>
+      <td className="px-4 py-3 text-slate-300">{location}</td>
       <td className="px-4 py-3">{getStatusBadge()}</td>
+      <td className="px-4 py-3">
+        <div className="flex space-x-2">
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+            <Edit className="h-3 w-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-400 hover:text-red-300">
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </td>
     </tr>
   )
 }
@@ -783,6 +1307,434 @@ function CateringCard({ title, provider, servingTime, location, meals, specialRe
           <FileText className="h-3.5 w-3.5 text-slate-500 mt-0.5 mr-2" />
           <p className="text-xs text-slate-300">{specialRequests} special dietary requests</p>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// New component interfaces and implementations
+
+interface AccommodationCardProps {
+  hotel: string
+  checkIn: string
+  checkOut: string
+  rooms: number
+  guests: number
+  status: string
+  contact: string
+  phone: string
+}
+
+function AccommodationCard({ hotel, checkIn, checkOut, rooms, guests, status, contact, phone }: AccommodationCardProps) {
+  const getStatusBadge = () => {
+    switch (status) {
+      case "confirmed":
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Confirmed</Badge>
+      case "pending":
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Pending</Badge>
+      case "cancelled":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Cancelled</Badge>
+      default:
+        return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">{status}</Badge>
+    }
+  }
+
+  return (
+    <div className="bg-slate-800/50 rounded-md p-4 border border-slate-700/50">
+      <div className="flex items-start justify-between mb-3">
+        <h4 className="text-sm font-medium text-slate-200">{hotel}</h4>
+        {getStatusBadge()}
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-start">
+          <Calendar className="h-3.5 w-3.5 text-slate-500 mt-0.5 mr-2" />
+          <div className="text-xs text-slate-300">
+            <div>Check-in: {checkIn}</div>
+            <div>Check-out: {checkOut}</div>
+          </div>
+        </div>
+        <div className="flex items-start">
+          <Users className="h-3.5 w-3.5 text-slate-500 mt-0.5 mr-2" />
+          <div className="text-xs text-slate-300">
+            <div>{rooms} rooms • {guests} guests</div>
+          </div>
+        </div>
+        <div className="flex items-start">
+          <FileText className="h-3.5 w-3.5 text-slate-500 mt-0.5 mr-2" />
+          <div className="text-xs text-slate-300">
+            <div>Contact: {contact}</div>
+            <div>Phone: {phone}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface FlightCardProps {
+  flight: string
+  departure: string
+  date: string
+  passengers: number
+  status: string
+  airline: string
+}
+
+function FlightCard({ flight, departure, date, passengers, status, airline }: FlightCardProps) {
+  const getStatusBadge = () => {
+    switch (status) {
+      case "confirmed":
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Confirmed</Badge>
+      case "pending":
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Pending</Badge>
+      case "delayed":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Delayed</Badge>
+      default:
+        return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">{status}</Badge>
+    }
+  }
+
+  return (
+    <div className="bg-slate-800/50 rounded-md p-4 border border-slate-700/50">
+      <div className="flex items-start justify-between mb-3">
+        <h4 className="text-sm font-medium text-slate-200">{flight}</h4>
+        {getStatusBadge()}
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-start">
+          <Plane className="h-3.5 w-3.5 text-slate-500 mt-0.5 mr-2" />
+          <div className="text-xs text-slate-300">{departure}</div>
+        </div>
+        <div className="flex items-start">
+          <Calendar className="h-3.5 w-3.5 text-slate-500 mt-0.5 mr-2" />
+          <div className="text-xs text-slate-300">{date}</div>
+        </div>
+        <div className="flex items-start">
+          <Users className="h-3.5 w-3.5 text-slate-500 mt-0.5 mr-2" />
+          <div className="text-xs text-slate-300">{passengers} passengers</div>
+        </div>
+        <div className="flex items-start">
+          <FileText className="h-3.5 w-3.5 text-slate-500 mt-0.5 mr-2" />
+          <div className="text-xs text-slate-300">{airline}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface DocumentCardProps {
+  title: string
+  status: string
+  description: string
+  icon: string
+}
+
+function DocumentCard({ title, status, description, icon }: DocumentCardProps) {
+  const getStatusColor = () => {
+    switch (status) {
+      case "Completed":
+        return "bg-green-500/20 text-green-400 border-green-500/30"
+      case "Active":
+        return "bg-blue-500/20 text-blue-400 border-blue-500/30"
+      case "Updated":
+        return "bg-purple-500/20 text-purple-400 border-purple-500/30"
+      default:
+        return "bg-slate-500/20 text-slate-400 border-slate-500/30"
+    }
+  }
+
+  return (
+    <div className="bg-slate-800/50 rounded-md p-4 border border-slate-700/50">
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="text-sm font-medium text-slate-200">{title}</h4>
+        <Badge className={`${getStatusColor()} text-xs`}>{status}</Badge>
+      </div>
+      <p className="text-xs text-slate-400">{description}</p>
+    </div>
+  )
+}
+
+interface ChatMessageProps {
+  sender: string
+  message: string
+  time: string
+  unread: boolean
+}
+
+function ChatMessage({ sender, message, time, unread }: ChatMessageProps) {
+  return (
+    <div className={`p-3 rounded-md ${unread ? 'bg-purple-500/10 border border-purple-500/20' : 'bg-slate-800/30'}`}>
+      <div className="flex items-start justify-between mb-1">
+        <span className="text-sm font-medium text-slate-200">{sender}</span>
+        <span className="text-xs text-slate-500">{time}</span>
+      </div>
+      <p className="text-sm text-slate-300">{message}</p>
+      {unread && <div className="mt-2 h-2 w-2 rounded-full bg-purple-500"></div>}
+    </div>
+  )
+}
+
+interface NotificationItemProps {
+  title: string
+  message: string
+  time: string
+  type: 'info' | 'warning' | 'success' | 'error'
+}
+
+function NotificationItem({ title, message, time, type }: NotificationItemProps) {
+  const getTypeColor = () => {
+    switch (type) {
+      case 'info':
+        return 'border-blue-500/30 bg-blue-500/10'
+      case 'warning':
+        return 'border-amber-500/30 bg-amber-500/10'
+      case 'success':
+        return 'border-green-500/30 bg-green-500/10'
+      case 'error':
+        return 'border-red-500/30 bg-red-500/10'
+      default:
+        return 'border-slate-500/30 bg-slate-500/10'
+    }
+  }
+
+  return (
+    <div className={`p-3 rounded-md border ${getTypeColor()}`}>
+      <div className="flex items-start justify-between mb-1">
+        <span className="text-sm font-medium text-slate-200">{title}</span>
+        <span className="text-xs text-slate-500">{time}</span>
+      </div>
+      <p className="text-sm text-slate-300">{message}</p>
+    </div>
+  )
+}
+
+interface QuickActionButtonProps {
+  title: string
+  description: string
+  icon: string
+}
+
+function QuickActionButton({ title, description, icon }: QuickActionButtonProps) {
+  return (
+    <button className="w-full p-3 rounded-md bg-slate-800/50 border border-slate-700/50 hover:bg-slate-700/50 transition-colors text-left">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-sm font-medium text-slate-200">{title}</span>
+        <div className="h-6 w-6 rounded-md bg-purple-500/20 flex items-center justify-center">
+          <FileText className="h-3 w-3 text-purple-500" />
+        </div>
+      </div>
+      <p className="text-xs text-slate-400">{description}</p>
+    </button>
+  )
+}
+
+interface ContactCardProps {
+  name: string
+  role: string
+  phone: string
+  email: string
+  emergency: boolean
+}
+
+function ContactCard({ name, role, phone, email, emergency }: ContactCardProps) {
+  return (
+    <div className={`p-4 rounded-md border ${emergency ? 'bg-red-500/10 border-red-500/30' : 'bg-slate-800/50 border-slate-700/50'}`}>
+      <div className="flex items-start space-x-3">
+        <Avatar className="h-10 w-10">
+          <AvatarImage src="/placeholder.svg?height=40&width=40" alt={name} />
+          <AvatarFallback className={`${emergency ? 'bg-red-700 text-white' : 'bg-slate-700 text-purple-500'}`}>
+            {name.charAt(0)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <h4 className="text-sm font-medium text-slate-200">{name}</h4>
+          <p className={`text-xs ${emergency ? 'text-red-400' : 'text-purple-400'}`}>{role}</p>
+          <p className="text-xs text-slate-400 mt-1">{phone}</p>
+          <p className="text-xs text-slate-400">{email}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// BACKLINE & RENTALS COMPONENTS
+// =============================================================================
+
+interface BacklineRowProps {
+  instrument: string
+  category: string
+  condition: string
+  rentalRate: number
+  status: string
+}
+
+function BacklineRow({ instrument, category, condition, rentalRate, status }: BacklineRowProps) {
+  const getStatusBadge = () => {
+    switch (status) {
+      case "available":
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Available</Badge>
+      case "rented":
+        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Rented</Badge>
+      case "maintenance":
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Maintenance</Badge>
+      case "damaged":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Damaged</Badge>
+      default:
+        return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">{status}</Badge>
+    }
+  }
+
+  const getConditionBadge = () => {
+    switch (condition) {
+      case "excellent":
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Excellent</Badge>
+      case "good":
+        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Good</Badge>
+      case "fair":
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">Fair</Badge>
+      case "poor":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Poor</Badge>
+      case "damaged":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Damaged</Badge>
+      default:
+        return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">{condition}</Badge>
+    }
+  }
+
+  const getCategoryIcon = () => {
+    switch (category.toLowerCase()) {
+      case "guitar":
+      case "electric":
+      case "acoustic":
+        return <Guitar className="h-4 w-4 text-purple-400" />
+      case "drums":
+      case "percussion":
+        return <Drum className="h-4 w-4 text-purple-400" />
+      case "piano":
+      case "keyboard":
+        return <Piano className="h-4 w-4 text-purple-400" />
+      case "microphone":
+      case "vocal":
+        return <Mic className="h-4 w-4 text-purple-400" />
+      default:
+        return <Zap className="h-4 w-4 text-purple-400" />
+    }
+  }
+
+  return (
+    <tr className="hover:bg-slate-800/30">
+      <td className="px-4 py-3">
+        <div className="flex items-center">
+          {getCategoryIcon()}
+          <span className="ml-2 text-slate-300">{instrument}</span>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-slate-300 capitalize">{category}</td>
+      <td className="px-4 py-3">{getConditionBadge()}</td>
+      <td className="px-4 py-3 text-slate-300">${rentalRate}/day</td>
+      <td className="px-4 py-3">{getStatusBadge()}</td>
+      <td className="px-4 py-3">
+        <div className="flex space-x-2">
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+            <Edit className="h-3 w-3" />
+          </Button>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-400 hover:text-red-300">
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+interface RentalCardProps {
+  instrument: string
+  client: string
+  startDate: string
+  endDate: string
+  dailyRate: number
+  totalAmount: number
+  status: 'active' | 'upcoming' | 'completed' | 'overdue'
+}
+
+function RentalCard({ instrument, client, startDate, endDate, dailyRate, totalAmount, status }: RentalCardProps) {
+  const getStatusBadge = () => {
+    switch (status) {
+      case "active":
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Active</Badge>
+      case "upcoming":
+        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Upcoming</Badge>
+      case "completed":
+        return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">Completed</Badge>
+      case "overdue":
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Overdue</Badge>
+      default:
+        return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">{status}</Badge>
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  const daysRemaining = () => {
+    const end = new Date(endDate)
+    const today = new Date()
+    const diffTime = end.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  return (
+    <div className="p-4 rounded-lg border border-slate-700/50 bg-slate-800/30 hover:bg-slate-800/50 transition-colors">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center">
+          <Zap className="h-5 w-5 text-purple-500 mr-2" />
+          <h4 className="font-medium text-slate-200">{instrument}</h4>
+        </div>
+        {getStatusBadge()}
+      </div>
+      
+      <div className="space-y-2 text-sm">
+        <p className="text-slate-400">
+          <span className="text-slate-300 font-medium">Client:</span> {client}
+        </p>
+        <p className="text-slate-400">
+          <span className="text-slate-300 font-medium">Period:</span> {formatDate(startDate)} - {formatDate(endDate)}
+        </p>
+        <p className="text-slate-400">
+          <span className="text-slate-300 font-medium">Rate:</span> ${dailyRate}/day
+        </p>
+        <p className="text-slate-400">
+          <span className="text-slate-300 font-medium">Total:</span> ${totalAmount}
+        </p>
+        {status === 'active' && (
+          <p className="text-amber-400">
+            <span className="font-medium">Due in:</span> {daysRemaining()} days
+          </p>
+        )}
+      </div>
+      
+      <div className="flex space-x-2 mt-4">
+        <Button size="sm" variant="outline" className="flex-1">
+          <Edit className="h-3 w-3 mr-1" />
+          Edit
+        </Button>
+        <Button size="sm" variant="outline" className="flex-1">
+          <Calendar className="h-3 w-3 mr-1" />
+          Extend
+        </Button>
+        <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Return
+        </Button>
       </div>
     </div>
   )

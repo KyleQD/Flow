@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,98 +14,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   Plus, Upload, Link, Music, Image as ImageIcon, Newspaper, Mail, Globe, Save, X, 
   Eye, Sparkles, Palette, Layout, Copy, ExternalLink, Download, Share2, 
-  Camera, FileText, Calendar, Users, TrendingUp, Star, CheckCircle, Play
+  Camera, FileText, Calendar, Users, TrendingUp, Star, CheckCircle, Play, Loader2
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { useEPKSync } from "@/hooks/use-epk-sync"
+import { type EPKData } from "@/lib/services/epk.service"
 import EPKPreview from "@/components/epk/epk-preview"
 import MusicSection from "@/components/epk/music-section"
 import SocialSection from "@/components/epk/social-section"
 import ShowsSection from "@/components/epk/shows-section"
 import ContactSection from "@/components/epk/contact-section"
 
-interface EPKData {
-  artistName: string
-  bio: string
-  genre: string
-  location: string
-  avatarUrl: string
-  coverUrl: string
-  theme: string
-  template: string
-  isPublic: boolean
-  stats: {
-    followers: number
-    monthlyListeners: number
-    totalStreams: number
-    eventsPlayed: number
-  }
-  music: {
-    id: string
-    title: string
-    url: string
-    releaseDate: string
-    streams: number
-    coverArt: string
-    platform: string
-    featured?: boolean
-  }[]
-  photos: {
-    id: string
-    url: string
-    caption: string
-    isHero: boolean
-  }[]
-  press: {
-    id: string
-    title: string
-    url: string
-    date: string
-    outlet: string
-    excerpt: string
-  }[]
-  contact: {
-    email: string
-    phone: string
-    website: string
-    bookingEmail: string
-    managementEmail: string
-    address?: string
-    businessName?: string
-    timezone?: string
-    availability?: string
-    preferredContact?: 'email' | 'phone'
-    verified: {
-      email: boolean
-      phone: boolean
-      website: boolean
-    }
-  }
-  social: {
-    id: string
-    platform: string
-    url: string
-    username: string
-    verified?: boolean
-    followers?: number
-  }[]
-  upcomingShows: {
-    id: string
-    date: string
-    venue: string
-    location: string
-    ticketUrl: string
-    status: 'upcoming' | 'completed' | 'cancelled'
-    capacity?: number
-    attendance?: number
-    setLength?: number
-    notes?: string
-    poster?: string
-    featured?: boolean
-  }[]
-  customDomain: string
-  seoTitle: string
-  seoDescription: string
-}
+// EPKData interface is now imported from the service
 
 // Quick Action Sidebar Component
 function QuickActions({ onPreview, onShare, onDownload }: { 
@@ -699,62 +619,21 @@ function TemplatePreview({ template, epkData }: {
 
 export default function EPKPage() {
   const { toast } = useToast()
+  const { 
+    epkData, 
+    isLoading, 
+    isSaving, 
+    updateEPKData, 
+    saveEPKData, 
+    syncWithProfile 
+  } = useEPKSync()
+  
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [epkData, setEpkData] = useState<EPKData>({
-    artistName: "",
-    bio: "",
-    genre: "",
-    location: "",
-    avatarUrl: "",
-    coverUrl: "",
-    theme: "dark",
-    template: "modern",
-    isPublic: false,
-    stats: {
-      followers: 0,
-      monthlyListeners: 0,
-      totalStreams: 0,
-      eventsPlayed: 0,
-    },
-    music: [],
-    photos: [],
-    press: [],
-    contact: {
-      email: "",
-      phone: "",
-      website: "",
-      bookingEmail: "",
-      managementEmail: "",
-      verified: {
-        email: false,
-        phone: false,
-        website: false,
-      },
-    },
-    social: [],
-    upcomingShows: [],
-    customDomain: "",
-    seoTitle: "",
-    seoDescription: "",
-  })
-
   const [activeTab, setActiveTab] = useState("overview")
   const [previewMode, setPreviewMode] = useState(false)
 
   const handleSave = async () => {
-    try {
-      // TODO: Implement save to Supabase
-      toast({
-        title: "EPK saved successfully",
-        description: "Your EPK has been updated and is ready to share.",
-      })
-    } catch (error) {
-      toast({
-        title: "Error saving EPK",
-        description: "There was an error saving your EPK. Please try again.",
-        variant: "destructive",
-      })
-    }
+    await saveEPKData()
   }
 
   const handlePreview = () => {
@@ -762,6 +641,8 @@ export default function EPKPage() {
   }
 
   const handleShare = () => {
+    if (!epkData?.artistName) return
+    
     const url = `${window.location.origin}/epk/${epkData.artistName.toLowerCase().replace(/\s+/g, '-')}`
     navigator.clipboard.writeText(url)
     toast({
@@ -780,15 +661,15 @@ export default function EPKPage() {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'cover' | 'photos') => {
     const files = e.target.files
-    if (!files) return
+    if (!files || !epkData) return
 
     // TODO: Replace with Supabase upload
     if (type === 'avatar' && files[0]) {
       const url = URL.createObjectURL(files[0])
-      setEpkData(prev => ({ ...prev, avatarUrl: url }))
+      updateEPKData({ avatarUrl: url })
     } else if (type === 'cover' && files[0]) {
       const url = URL.createObjectURL(files[0])
-      setEpkData(prev => ({ ...prev, coverUrl: url }))
+      updateEPKData({ coverUrl: url })
     } else if (type === 'photos') {
       const urls = Array.from(files).map(file => ({
         id: Date.now().toString() + Math.random(),
@@ -796,8 +677,21 @@ export default function EPKPage() {
         caption: "",
         isHero: false
       }))
-      setEpkData(prev => ({ ...prev, photos: [...prev.photos, ...urls] }))
+      updateEPKData({ photos: [...epkData.photos, ...urls] })
     }
+  }
+
+  // Show loading state
+  if (isLoading || !epkData) {
+    return (
+      <div className="min-h-screen bg-[#181b23] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 mx-auto text-purple-500 animate-spin mb-4" />
+          <h2 className="text-xl font-semibold text-white mb-2">Loading your EPK...</h2>
+          <p className="text-gray-400">This might take a moment</p>
+        </div>
+      </div>
+    )
   }
 
   if (previewMode) {
@@ -836,6 +730,10 @@ export default function EPKPage() {
             <p className="text-gray-400 mt-1">Create a stunning EPK to showcase your artistry</p>
           </div>
           <div className="flex gap-3">
+            <Button onClick={syncWithProfile} variant="outline" className="border-gray-700 text-white">
+              <Link className="h-4 w-4 mr-2" />
+              Sync with Profile
+            </Button>
             <Button variant="outline" onClick={handleSave} className="border-gray-700 text-white">
               <Save className="h-4 w-4 mr-2" />
               Save Changes
@@ -858,7 +756,7 @@ export default function EPKPage() {
                 </div>
                 <Switch 
                   checked={epkData.isPublic}
-                  onCheckedChange={(checked) => setEpkData(prev => ({ ...prev, isPublic: checked }))}
+                  onCheckedChange={(checked) => updateEPKData({ isPublic: checked })}
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -950,20 +848,20 @@ export default function EPKPage() {
                         <Input
                           placeholder="Artist Name"
                           value={epkData.artistName}
-                          onChange={(e) => setEpkData(prev => ({ ...prev, artistName: e.target.value }))}
+                          onChange={(e) => updateEPKData({ artistName: e.target.value })}
                           className="bg-[#23263a] border-0 text-white text-xl font-semibold"
                         />
                         <div className="flex gap-2">
                           <Input
                             placeholder="Genre"
                             value={epkData.genre}
-                            onChange={(e) => setEpkData(prev => ({ ...prev, genre: e.target.value }))}
+                            onChange={(e) => updateEPKData({ genre: e.target.value })}
                             className="bg-[#23263a] border-0 text-white text-sm"
                           />
                           <Input
                             placeholder="Location"
                             value={epkData.location}
-                            onChange={(e) => setEpkData(prev => ({ ...prev, location: e.target.value }))}
+                            onChange={(e) => updateEPKData({ location: e.target.value })}
                             className="bg-[#23263a] border-0 text-white text-sm"
                           />
                         </div>
@@ -987,7 +885,7 @@ export default function EPKPage() {
                     <Textarea
                       placeholder="Write your artist biography here... Share your musical journey, influences, achievements, and what makes your sound unique."
                       value={epkData.bio}
-                      onChange={(e) => setEpkData(prev => ({ ...prev, bio: e.target.value }))}
+                      onChange={(e) => updateEPKData({ bio: e.target.value })}
                       className="min-h-[200px] bg-[#23263a] border-0 text-white resize-none focus:ring-2 focus:ring-purple-500"
                     />
                     <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
@@ -1002,7 +900,7 @@ export default function EPKPage() {
                 <StatsOverview stats={epkData.stats} epkData={epkData} />
                 <TemplateSelector 
                   selectedTemplate={epkData.template}
-                  onTemplateChange={(template) => setEpkData(prev => ({ ...prev, template }))}
+                  onTemplateChange={(template) => updateEPKData({ template })}
                   epkData={epkData}
                 />
               </div>
@@ -1012,21 +910,21 @@ export default function EPKPage() {
           <TabsContent value="music">
             <MusicSection
               tracks={epkData.music}
-              onTracksChange={(tracks) => setEpkData(prev => ({ ...prev, music: tracks }))}
+              onTracksChange={(tracks) => updateEPKData({ music: tracks })}
             />
           </TabsContent>
 
           <TabsContent value="shows">
             <ShowsSection
               shows={epkData.upcomingShows}
-              onShowsChange={(shows) => setEpkData(prev => ({ ...prev, upcomingShows: shows }))}
+              onShowsChange={(shows) => updateEPKData({ upcomingShows: shows })}
             />
           </TabsContent>
 
           <TabsContent value="social">
             <SocialSection
               socialLinks={epkData.social}
-              onSocialLinksChange={(social) => setEpkData(prev => ({ ...prev, social }))}
+              onSocialLinksChange={(social) => updateEPKData({ social })}
             />
           </TabsContent>
 
@@ -1047,7 +945,7 @@ export default function EPKPage() {
           <TabsContent value="contact">
             <ContactSection
               contact={epkData.contact}
-              onContactChange={(contact) => setEpkData(prev => ({ ...prev, contact }))}
+              onContactChange={(contact) => updateEPKData({ contact })}
             />
           </TabsContent>
 

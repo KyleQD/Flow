@@ -1,8 +1,6 @@
 import type React from "react"
-import { EnhancedNavigationLayout } from "@/components/admin/enhanced-navigation-layout"
-import { ErrorBoundary } from "@/components/admin/error-boundary"
-import { Toaster } from "@/components/ui/toaster"
-import { TourEventProvider } from "./components/tour-event-provider"
+import { OptimizedSidebar } from "./components/optimized-sidebar"
+import { Breadcrumbs } from "./components/breadcrumbs"
 
 export default function DashboardLayout({
   children,
@@ -10,21 +8,20 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <ErrorBoundary>
-      <TourEventProvider>
-        <EnhancedNavigationLayout
-          showContextualNav={true}
-          showActivityFeed={true}
-          showTourSelector={true}
-          defaultSidebarCollapsed={false}
-          className="min-h-screen"
-        >
-          <ErrorBoundary>
+    <div className="min-h-screen bg-slate-900 flex">
+      {/* Optimized Sidebar Navigation */}
+      <OptimizedSidebar />
+      
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Page Content with Breadcrumbs */}
+        <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950/20">
+          <div className="p-6">
+            <Breadcrumbs />
             {children}
-          </ErrorBoundary>
-        </EnhancedNavigationLayout>
-      </TourEventProvider>
-      <Toaster />
-    </ErrorBoundary>
+          </div>
+        </main>
+      </div>
+    </div>
   )
 }

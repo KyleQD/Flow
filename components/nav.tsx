@@ -28,7 +28,9 @@ import {
   Grid3x3,
   ChevronDown,
   Zap,
-  Activity
+  Activity,
+  Sparkles,
+  Briefcase
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useProfile } from "@/hooks/use-profile"
@@ -36,13 +38,64 @@ import { useMultiAccount } from "@/hooks/use-multi-account"
 import { AccountSwitcher } from "@/components/account-switcher"
 import { TourifyLogo } from "@/components/tourify-logo"
 import { supabase } from "@/lib/supabase"
+import { EnhancedNotificationCenter } from "@/components/notifications/enhanced-notification-center"
 
 export function Nav() {
   const router = useRouter()
   const pathname = usePathname()
   const { user, signOut } = useAuth()
   const { profileData } = useProfile()
+  const { currentAccount } = useMultiAccount()
   const [notifications, setNotifications] = useState(0)
+  const [primaryProfile, setPrimaryProfile] = useState<any>(null)
+
+  // Load primary profile data directly for nav display
+  useEffect(() => {
+    async function loadPrimaryProfile() {
+      if (!user?.id) return
+      
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, username, avatar_url, is_verified')
+          .eq('id', user.id)
+          .single()
+        
+        if (!error && profile) {
+          console.log('✅ Nav: Loaded primary profile:', profile.full_name)
+          setPrimaryProfile(profile)
+        } else {
+          console.log('❌ Nav: Failed to load primary profile:', error)
+        }
+      } catch (error) {
+        console.error('Nav: Error loading primary profile:', error)
+      }
+    }
+    
+    loadPrimaryProfile()
+  }, [user?.id])
+
+  // Smart home navigation based on current account
+  const getHomeRoute = () => {
+    if (!currentAccount) return '/dashboard'
+    
+    switch (currentAccount.account_type) {
+      case 'artist':
+        return '/artist'
+      case 'venue':
+        return '/venue'
+      case 'admin':
+        return '/admin/dashboard'
+      default:
+        return '/dashboard'
+    }
+  }
+
+  // Smart home button click handler
+  const handleHomeClick = () => {
+    const homeRoute = getHomeRoute()
+    router.push(homeRoute)
+  }
 
   // Don't show nav on auth pages or onboarding
   const hideNav = pathname.startsWith('/auth') || 
@@ -68,7 +121,10 @@ export function Nav() {
       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-pink-500/5"></div>
       <div className="relative container flex h-16 items-center justify-between">
         {/* Logo - Home Button */}
-        <Link href="/dashboard" className="flex items-center space-x-3 group hover:scale-105 transition-all duration-300 ease-in-out cursor-pointer">
+        <div 
+          className="flex items-center space-x-3 group hover:scale-105 transition-all duration-300 ease-in-out cursor-pointer"
+          onClick={handleHomeClick}
+        >
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
             <TourifyLogo
@@ -77,7 +133,7 @@ export function Nav() {
               className="h-12 w-auto relative z-10 group-hover:brightness-110 transition-all duration-300"
             />
           </div>
-        </Link>
+        </div>
 
         {/* Center Navigation */}
         <div className="hidden md:flex items-center space-x-2 bg-slate-800/50 backdrop-blur-sm rounded-full p-1 border border-purple-400/20">
@@ -85,11 +141,11 @@ export function Nav() {
             variant="ghost" 
             size="sm" 
             className={`rounded-full transition-all duration-300 ${
-              pathname === '/dashboard' 
+              pathname === '/dashboard' || pathname === '/artist' || pathname === '/venue' || pathname === '/admin/dashboard'
                 ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
-            onClick={() => router.push('/dashboard')}
+            onClick={handleHomeClick}
           >
             <Home className="h-4 w-4 mr-2" />
             Home
@@ -104,8 +160,8 @@ export function Nav() {
             }`}
             onClick={() => router.push('/feed')}
           >
-            <Grid3x3 className="h-4 w-4 mr-2" />
-            Feed
+            <Sparkles className="h-4 w-4 mr-2" />
+            For You
           </Button>
           <Button
             variant="ghost"
@@ -120,23 +176,25 @@ export function Nav() {
             <Search className="h-4 w-4 mr-2" />
             Discover
           </Button>
+          <Button
+            variant="ghost"
+            size="sm" 
+            className={`rounded-full transition-all duration-300 ${
+              pathname === '/jobs' 
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg' 
+                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+            }`}
+            onClick={() => router.push('/jobs')}
+          >
+            <Briefcase className="h-4 w-4 mr-2" />
+            Jobs
+          </Button>
         </div>
 
         {/* Right Navigation */}
         <div className="flex items-center space-x-4">
           {/* Notifications */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="relative text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-full transition-all duration-300"
-          >
-            <Bell className="h-5 w-5" />
-            {notifications > 0 && (
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs bg-gradient-to-r from-red-500 to-pink-500 border-0 animate-pulse">
-                {notifications}
-              </Badge>
-            )}
-          </Button>
+          <EnhancedNotificationCenter />
 
           {/* Create Button */}
             <Button
@@ -158,9 +216,9 @@ export function Nav() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full ring-2 ring-purple-400/30 hover:ring-purple-400/50 transition-all duration-300">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={profileData?.profile?.avatar_url || ""} alt="Profile" />
+                  <AvatarImage src={primaryProfile?.avatar_url || ""} alt="Profile" />
                   <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white font-bold">
-                    {profileData?.profile?.full_name?.[0] || user?.email?.[0]?.toUpperCase()}
+                    {primaryProfile?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full border-2 border-slate-900"></div>
@@ -171,55 +229,45 @@ export function Nav() {
               className="w-64 bg-slate-800/95 backdrop-blur-xl border border-purple-400/20 shadow-xl shadow-purple-500/10"
             >
               <DropdownMenuLabel className="space-y-1">
-                <div className="flex items-center space-x-3">
-          <Avatar className="h-8 w-8">
-                    <AvatarImage src={profileData?.profile?.avatar_url || ""} />
+                <div className="flex items-center space-x-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={primaryProfile?.avatar_url || ""} alt="Profile" />
                     <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-sm">
-                      {profileData?.profile?.full_name?.[0] || user?.email?.[0]?.toUpperCase()}
+                      {primaryProfile?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
-          </Avatar>
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      {profileData?.profile?.full_name || "User"}
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">
+                      {primaryProfile?.full_name || user?.email}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-400 truncate">
                       {user?.email}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2 pt-2">
-                  <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs border-0">
-                    <User className="h-3 w-3 mr-1" />
-                    General
-                  </Badge>
-                  <Badge variant="outline" className="border-green-400/50 text-green-400 text-xs">
-                    <Zap className="h-3 w-3 mr-1" />
-                    Free
-                  </Badge>
-                </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-purple-400/20" />
+              <DropdownMenuSeparator className="bg-slate-700" />
               <DropdownMenuItem 
-                onClick={() => router.push('/settings')}
-                className="cursor-pointer hover:bg-slate-700/50 focus:bg-slate-700/50 transition-colors"
-              >
-                <User className="mr-3 h-4 w-4 text-purple-400" />
-                <span className="text-slate-200">Profile Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem 
+                className="text-slate-200 hover:bg-slate-700/50 cursor-pointer"
                 onClick={() => router.push('/profile')}
-                className="cursor-pointer hover:bg-slate-700/50 focus:bg-slate-700/50 transition-colors"
               >
-                <Settings className="mr-3 h-4 w-4 text-blue-400" />
-                <span className="text-slate-200">Account Management</span>
+                <User className="mr-2 h-4 w-4" />
+                Profile
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-purple-400/20" />
               <DropdownMenuItem 
-                onClick={handleSignOut}
-                className="cursor-pointer hover:bg-red-500/20 focus:bg-red-500/20 transition-colors"
+                className="text-slate-200 hover:bg-slate-700/50 cursor-pointer"
+                onClick={() => router.push('/settings')}
               >
-                <LogOut className="mr-3 h-4 w-4 text-red-400" />
-                <span className="text-slate-200">Sign Out</span>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-slate-700" />
+              <DropdownMenuItem 
+                className="text-red-400 hover:bg-red-500/10 cursor-pointer"
+                onClick={handleSignOut}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

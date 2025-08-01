@@ -20,6 +20,7 @@ import { Bell, Menu, Search, Settings, LogOut, User, HelpCircle, Command, Messag
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { TourifyLogo } from "@/components/tourify-logo"
+import { EnhancedNotificationCenter } from "@/components/notifications/enhanced-notification-center"
 
 interface TopNavigationProps {
   onSidebarOpen: () => void
@@ -87,56 +88,7 @@ export function TopNavigation({ onSidebarOpen, onCommandOpen }: TopNavigationPro
         </Button>
 
         {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 flex items-center justify-center">
-                3
-              </Badge>
-              <span className="sr-only">Notifications</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {[
-              {
-                title: "New booking request",
-                description: "You have a new booking request for Jazz Night",
-                time: "5 minutes ago",
-                icon: <Calendar className="h-4 w-4 text-blue-500" />,
-              },
-              {
-                title: "Message from Alex",
-                description: "Hey, can we discuss the upcoming event?",
-                time: "1 hour ago",
-                icon: <MessageSquare className="h-4 w-4 text-green-500" />,
-              },
-              {
-                title: "Equipment update",
-                description: "New equipment has been added to inventory",
-                time: "3 hours ago",
-                icon: <Settings className="h-4 w-4 text-amber-500" />,
-              },
-            ].map((notification, i) => (
-              <DropdownMenuItem key={i} className="flex flex-col items-start p-4">
-                <div className="flex w-full">
-                  <div className="mr-2 mt-0.5">{notification.icon}</div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">{notification.title}</p>
-                    <p className="text-sm text-muted-foreground">{notification.description}</p>
-                    <p className="text-xs text-muted-foreground">{notification.time}</p>
-                  </div>
-                </div>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="justify-center" onClick={() => handleNavigation("/notifications")}>
-              View all notifications
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <EnhancedNotificationCenter />
 
         {/* User menu */}
         <DropdownMenu>

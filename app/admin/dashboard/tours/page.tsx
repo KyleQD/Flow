@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { CreateTourForm } from "@/components/admin/create-tour-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "@/hooks/use-toast"
 import {
   Calendar as CalendarIcon,
   MapPin,
@@ -76,6 +78,8 @@ import {
   MapPin as LocationIcon,
   Receipt
 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 interface Tour {
   id: string
@@ -118,6 +122,8 @@ interface Tour {
 }
 
 export default function ToursPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedTour, setSelectedTour] = useState<Tour | null>(null)
   const [isCreateTourOpen, setIsCreateTourOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>('grid')
@@ -125,6 +131,19 @@ export default function ToursPage() {
   const [sortBy, setSortBy] = useState('date')
   const [tours, setTours] = useState<Tour[]>([])
   const [isLoading, setIsLoading] = useState(true)
+
+  // Check for success message from tour planner
+  useEffect(() => {
+    const published = searchParams.get('published')
+    if (published === 'true') {
+      toast({
+        title: "🎉 Tour Published Successfully!",
+        description: "Your tour is now live and ready to go!",
+      })
+      // Clean up the URL
+      router.replace('/admin/dashboard/tours')
+    }
+  }, [searchParams, router])
 
   // Fetch tours from API
   const fetchTours = async () => {
@@ -348,11 +367,83 @@ export default function ToursPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <PlayCircle className="h-4 w-4" />
-      case 'planning': return <Clock className="h-4 w-4" />
       case 'completed': return <CheckCircle className="h-4 w-4" />
-      case 'cancelled': return <StopCircle className="h-4 w-4" />
+      case 'cancelled': return <AlertTriangle className="h-4 w-4" />
       default: return <Clock className="h-4 w-4" />
     }
+  }
+
+  // Logistics status component for tours
+  const TourLogisticsStatus = ({ tour }: { tour: any }) => {
+    const calculateLogisticsProgress = () => {
+      const logistics = tour.logistics || {}
+      let completed = 0
+      let total = 0
+      
+      if (logistics.transportation) { total++; if (logistics.transportation !== 'pending') completed++ }
+      if (logistics.accommodation) { total++; if (logistics.accommodation !== 'pending') completed++ }
+      if (logistics.equipment) { total++; if (logistics.equipment !== 'pending') completed++ }
+      if (logistics.crew) { total++; if (logistics.crew > 0) completed++ }
+      
+      return total > 0 ? Math.round((completed / total) * 100) : 0
+    }
+
+    const progress = calculateLogisticsProgress()
+    const status = progress === 100 ? 'Complete' : progress > 50 ? 'In Progress' : 'Not Started'
+
+    return (
+      <div className="mt-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-slate-300">Logistics Status</span>
+          <span className="text-sm font-bold text-white">{progress}%</span>
+        </div>
+        <div className="w-full bg-slate-700 rounded-full h-2">
+          <div 
+            className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-slate-400">{status}</span>
+          <Link href={`/admin/dashboard/logistics?tourId=${tour.id}`}>
+            <Button variant="outline" size="sm" className="h-7 px-3 text-xs">
+              <Target className="h-3 w-3 mr-1" />
+              Manage
+            </Button>
+          </Link>
+        </div>
+        
+        {/* Logistics breakdown */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center space-x-2">
+            <Truck className="h-3 w-3 text-blue-400" />
+            <span className="text-slate-400">Transport</span>
+            <span className={`${tour.logistics?.transportation === 'confirmed' ? 'text-green-400' : 'text-slate-500'}`}>
+              {tour.logistics?.transportation || 'Pending'}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Hotel className="h-3 w-3 text-green-400" />
+            <span className="text-slate-400">Accommodation</span>
+            <span className={`${tour.logistics?.accommodation === 'confirmed' ? 'text-green-400' : 'text-slate-500'}`}>
+              {tour.logistics?.accommodation || 'Pending'}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Headphones className="h-3 w-3 text-purple-400" />
+            <span className="text-slate-400">Equipment</span>
+            <span className={`${tour.logistics?.equipment === 'confirmed' ? 'text-green-400' : 'text-slate-500'}`}>
+              {tour.logistics?.equipment || 'Pending'}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Users className="h-3 w-3 text-orange-400" />
+            <span className="text-slate-400">Crew</span>
+            <span className="text-white">{tour.logistics?.crew || 0}</span>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Use real tours data, fallback to mock for empty state
@@ -361,372 +452,346 @@ export default function ToursPage() {
     filterStatus === 'all' || tour.status === filterStatus
   )
 
-  const TourCard = ({ tour }: { tour: Tour }) => (
-    <Card className="bg-slate-900/50 border-slate-700/50 hover:bg-slate-900/70 transition-all duration-300 cursor-pointer">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-lg text-white">{tour.name}</CardTitle>
-            <p className="text-sm text-slate-400">{tour.artist}</p>
-          </div>
-          <Badge className={getStatusColor(tour.status)}>
-            {getStatusIcon(tour.status)}
-            <span className="ml-1 capitalize">{tour.status}</span>
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className="text-xs text-slate-500">Duration</p>
-            <p className="text-sm text-white">
-              {new Date(tour.startDate).toLocaleDateString()} - {new Date(tour.endDate).toLocaleDateString()}
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-slate-500">Shows</p>
-            <p className="text-sm text-white">{tour.completedShows}/{tour.totalShows}</p>
-          </div>
-        </div>
+  const TourCard = ({ tour }: { tour: any }) => {
+    // Safely extract values with fallbacks
+    const revenue = tour.revenue || tour.expected_revenue || 0
+    const expenses = tour.expenses || 0
+    const profit = revenue - expenses
+    const totalShows = tour.total_shows || tour.totalShows || 0
+    const completedShows = tour.completed_shows || tour.completedShows || 0
+    const crewSize = tour.crew_size || tour.logistics?.crew || 0
+    const startDate = tour.start_date || tour.startDate
+    const endDate = tour.end_date || tour.endDate
+    const artist = tour.artist || tour.main_artist || 'Unknown Artist'
+    const status = tour.status || 'planning'
 
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-slate-500">Progress</span>
-            <span className="text-xs text-white">{Math.round((tour.completedShows / tour.totalShows) * 100)}%</span>
-          </div>
-          <div className="w-full bg-slate-800 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(tour.completedShows / tour.totalShows) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 pt-2">
-          <div className="text-center">
-            <p className="text-xs text-slate-500">Revenue</p>
-            <p className="text-sm font-semibold text-green-400">${tour.revenue.toLocaleString()}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-slate-500">Expenses</p>
-            <p className="text-sm font-semibold text-red-400">${tour.expenses.toLocaleString()}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-slate-500">Profit</p>
-            <p className={`text-sm font-semibold ${tour.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              ${tour.profit.toLocaleString()}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex justify-between items-center pt-2">
-          <div className="flex items-center space-x-2">
-            <Users className="h-4 w-4 text-slate-400" />
-            <span className="text-xs text-slate-400">{tour.logistics.crew} crew</span>
-          </div>
-          <div className="flex space-x-2">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setSelectedTour(tour)}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <Edit className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-
-  const TourDetailModal = ({ tour, onClose }: { tour: Tour; onClose: () => void }) => (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-slate-900 border-slate-700">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-2xl text-white">{tour.name}</DialogTitle>
-              <p className="text-slate-400">{tour.artist}</p>
+    return (
+      <Card className="bg-slate-900/50 border-slate-700/50 hover:bg-slate-900/70 transition-all duration-300 cursor-pointer">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-lg text-white">{tour.name}</CardTitle>
+              <p className="text-sm text-slate-400">{artist}</p>
             </div>
-            <Badge className={getStatusColor(tour.status)}>
-              {getStatusIcon(tour.status)}
-              <span className="ml-1 capitalize">{tour.status}</span>
+            <Badge className={getStatusColor(status)}>
+              {getStatusIcon(status)}
+              <span className="ml-1 capitalize">{status}</span>
             </Badge>
           </div>
-        </DialogHeader>
-
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="bg-slate-800/50 p-1 grid grid-cols-5 w-full">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="schedule">Schedule</TabsTrigger>
-            <TabsTrigger value="logistics">Logistics</TabsTrigger>
-            <TabsTrigger value="team">Team</TabsTrigger>
-            <TabsTrigger value="finances">Finances</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-slate-800/50 border-slate-700/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <CalendarIcon className="h-8 w-8 text-blue-400" />
-                    <div>
-                      <p className="text-sm text-slate-400">Duration</p>
-                      <p className="text-lg font-semibold text-white">
-                        {Math.ceil((new Date(tour.endDate).getTime() - new Date(tour.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-slate-700/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <MapPin className="h-8 w-8 text-purple-400" />
-                    <div>
-                      <p className="text-sm text-slate-400">Cities</p>
-                      <p className="text-lg font-semibold text-white">
-                        {new Set(tour.venues.map(v => v.city)).size}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-slate-700/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <Users className="h-8 w-8 text-green-400" />
-                    <div>
-                      <p className="text-sm text-slate-400">Total Capacity</p>
-                      <p className="text-lg font-semibold text-white">
-                        {tour.venues.reduce((sum, venue) => sum + venue.capacity, 0).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-xs text-slate-500">Duration</p>
+              <p className="text-sm text-white">
+                {startDate ? new Date(startDate).toLocaleDateString() : 'TBD'} - {endDate ? new Date(endDate).toLocaleDateString() : 'TBD'}
+              </p>
             </div>
+            <div className="space-y-1">
+              <p className="text-xs text-slate-500">Shows</p>
+              <p className="text-sm text-white">{completedShows}/{totalShows}</p>
+            </div>
+          </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">Recent Shows</h3>
-              {tour.venues.slice(0, 3).map((venue) => (
-                <Card key={venue.id} className="bg-slate-800/50 border-slate-700/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                          <Building className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-white">{venue.name}</h4>
-                          <p className="text-sm text-slate-400">{venue.city}, {venue.state} • {new Date(venue.date).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={getStatusColor(venue.status)}>
-                          {venue.status}
-                        </Badge>
-                        <p className="text-sm text-slate-400 mt-1">
-                          {venue.ticketsSold.toLocaleString()} / {venue.capacity.toLocaleString()} tickets
-                        </p>
-                      </div>
-                    </div>
+          {totalShows > 0 && (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-slate-500">Progress</span>
+                <span className="text-xs text-white">{Math.round((completedShows / totalShows) * 100)}%</span>
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(completedShows / totalShows) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-3 gap-4 pt-2">
+            <div className="text-center">
+              <p className="text-xs text-slate-500">Revenue</p>
+              <p className="text-sm font-semibold text-green-400">${revenue.toLocaleString()}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-slate-500">Expenses</p>
+              <p className="text-sm font-semibold text-red-400">${expenses.toLocaleString()}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-slate-500">Profit</p>
+              <p className={`text-sm font-semibold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                ${profit.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center pt-2">
+            <div className="flex items-center space-x-2">
+              <Users className="h-4 w-4 text-slate-400" />
+              <span className="text-xs text-slate-400">{crewSize} crew</span>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => router.push(`/admin/dashboard/tours/${tour.id}`)}
+                className="text-slate-400 hover:text-white"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Manage Tour
+              </Button>
+              <Button variant="ghost" size="sm">
+                <Edit className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Logistics Status */}
+          <TourLogisticsStatus tour={tour} />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const TourDetailModal = ({ tour, onClose }: { tour: any; onClose: () => void }) => {
+    // Safely extract values with fallbacks
+    const revenue = tour.revenue || tour.expected_revenue || 0
+    const expenses = tour.expenses || 0
+    const profit = revenue - expenses
+    const totalShows = tour.total_shows || tour.totalShows || 0
+    const completedShows = tour.completed_shows || tour.completedShows || 0
+    const crewSize = tour.crew_size || tour.logistics?.crew || 0
+    const startDate = tour.start_date || tour.startDate
+    const endDate = tour.end_date || tour.endDate
+    const artist = tour.artist || tour.main_artist || 'Unknown Artist'
+    const status = tour.status || 'planning'
+    const venues = tour.venues || tour.events || []
+    const team = tour.team || []
+    const logistics = tour.logistics || {
+      transportation: tour.transportation || 'TBD',
+      accommodation: tour.accommodation || 'TBD',
+      equipment: tour.equipment_requirements || 'TBD',
+      crew: crewSize,
+      budget: tour.budget || 0,
+      spent: expenses
+    }
+
+    return (
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-slate-900 border-slate-700">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-2xl text-white">{tour.name}</DialogTitle>
+                <p className="text-slate-400">{artist}</p>
+              </div>
+              <Badge className={getStatusColor(status)}>
+                {getStatusIcon(status)}
+                <span className="ml-1 capitalize">{status}</span>
+              </Badge>
+            </div>
+          </DialogHeader>
+
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="bg-slate-800/50 p-1 grid grid-cols-5 w-full">
+              <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+              <TabsTrigger value="venues" className="text-xs">Venues ({venues.length})</TabsTrigger>
+              <TabsTrigger value="logistics" className="text-xs">Logistics</TabsTrigger>
+              <TabsTrigger value="team" className="text-xs">Team ({team.length})</TabsTrigger>
+              <TabsTrigger value="finances" className="text-xs">Finances</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardContent className="p-4 text-center">
+                    <CalendarIcon className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-400">Duration</p>
+                    <p className="text-lg font-semibold text-white">
+                      {startDate ? new Date(startDate).toLocaleDateString() : 'TBD'} - {endDate ? new Date(endDate).toLocaleDateString() : 'TBD'}
+                    </p>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          </TabsContent>
 
-          <TabsContent value="schedule" className="space-y-6">
-            <div className="space-y-4">
-              {tour.venues.map((venue) => (
-                <Card key={venue.id} className="bg-slate-800/50 border-slate-700/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="text-center">
-                          <p className="text-sm text-slate-400">{new Date(venue.date).toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                          <p className="text-lg font-bold text-white">{new Date(venue.date).getDate()}</p>
-                          <p className="text-sm text-slate-400">{new Date(venue.date).toLocaleDateString('en-US', { month: 'short' })}</p>
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-white">{venue.name}</h4>
-                          <p className="text-sm text-slate-400">{venue.city}, {venue.state}</p>
-                          <div className="flex items-center space-x-4 mt-1">
-                            <span className="text-xs text-slate-500">{venue.capacity.toLocaleString()} capacity</span>
-                            <span className="text-xs text-slate-500">{venue.ticketsSold.toLocaleString()} sold</span>
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardContent className="p-4 text-center">
+                    <Music className="h-8 w-8 text-purple-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-400">Shows</p>
+                    <p className="text-lg font-semibold text-white">{completedShows}/{totalShows}</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardContent className="p-4 text-center">
+                    <Users className="h-8 w-8 text-green-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-400">Crew</p>
+                    <p className="text-lg font-semibold text-white">{crewSize}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {tour.description && (
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardHeader>
+                    <CardTitle className="text-white">Description</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-slate-300">{tour.description}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="venues" className="space-y-6">
+              <div className="space-y-4">
+                {venues.length > 0 ? venues.map((venue: any) => (
+                  <Card key={venue.id} className="bg-slate-800/50 border-slate-700/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                            <MapPin className="h-6 w-6 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-white">{venue.name || venue.venue_name}</h4>
+                            <p className="text-sm text-slate-400">{venue.city || venue.venue_address}</p>
+                            <p className="text-sm text-slate-500">{venue.date || venue.event_date}</p>
                           </div>
                         </div>
+                        <div className="text-right">
+                          <Badge className={getStatusColor(venue.status || 'scheduled')}>
+                            {venue.status || 'scheduled'}
+                          </Badge>
+                          {venue.revenue && (
+                            <p className="text-sm text-green-400 mt-1">${venue.revenue.toLocaleString()}</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <Badge className={getStatusColor(venue.status)}>
-                          {venue.status}
-                        </Badge>
-                        <p className="text-sm text-green-400 mt-1">${venue.revenue.toLocaleString()}</p>
-                      </div>
-                    </div>
+                    </CardContent>
+                  </Card>
+                )) : (
+                  <div className="text-center py-8">
+                    <p className="text-slate-400">No venues added yet</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="logistics" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardHeader>
+                    <CardTitle className="text-white">Transportation</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-slate-300">{logistics.transportation}</p>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          </TabsContent>
 
-          <TabsContent value="logistics" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-slate-800/50 border-slate-700/50">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <Truck className="h-5 w-5 mr-2 text-blue-400" />
-                    Transportation
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-300">{tour.logistics.transportation}</p>
-                </CardContent>
-              </Card>
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardHeader>
+                    <CardTitle className="text-white">Accommodation</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-slate-300">{logistics.accommodation}</p>
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-slate-800/50 border-slate-700/50">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <Hotel className="h-5 w-5 mr-2 text-purple-400" />
-                    Accommodation
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-300">{tour.logistics.accommodation}</p>
-                </CardContent>
-              </Card>
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardHeader>
+                    <CardTitle className="text-white">Equipment</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-slate-300">{logistics.equipment}</p>
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-slate-800/50 border-slate-700/50">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <Headphones className="h-5 w-5 mr-2 text-green-400" />
-                    Equipment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-300">{tour.logistics.equipment}</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-slate-700/50">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <DollarSign className="h-5 w-5 mr-2 text-yellow-400" />
-                    Budget
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardHeader>
+                    <CardTitle className="text-white">Budget Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-slate-400">Total Budget</span>
-                      <span className="text-white">${tour.logistics.budget.toLocaleString()}</span>
+                      <span className="text-white">${logistics.budget.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Spent</span>
-                      <span className="text-white">${tour.logistics.spent.toLocaleString()}</span>
+                      <span className="text-red-400">${logistics.spent.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Remaining</span>
-                      <span className="text-green-400">${(tour.logistics.budget - tour.logistics.spent).toLocaleString()}</span>
-                    </div>
-                  </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-green-500 to-yellow-500 h-2 rounded-full"
-                      style={{ width: `${(tour.logistics.spent / tour.logistics.budget) * 100}%` }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="team" className="space-y-6">
-            <div className="space-y-4">
-              {tour.team.map((member) => (
-                <Card key={member.id} className="bg-slate-800/50 border-slate-700/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                          <Users className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-white">{member.name}</h4>
-                          <p className="text-sm text-slate-400">{member.role}</p>
-                          <p className="text-sm text-slate-500">{member.contact}</p>
-                        </div>
-                      </div>
-                      <Badge className={getStatusColor(member.status)}>
-                        {member.status}
-                      </Badge>
+                      <span className="text-green-400">${(logistics.budget - logistics.spent).toLocaleString()}</span>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          </TabsContent>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="finances" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-slate-800/50 border-slate-700/50">
-                <CardContent className="p-4 text-center">
-                  <DollarSign className="h-8 w-8 text-green-400 mx-auto mb-2" />
-                  <p className="text-sm text-slate-400">Revenue</p>
-                  <p className="text-2xl font-bold text-green-400">${tour.revenue.toLocaleString()}</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-slate-700/50">
-                <CardContent className="p-4 text-center">
-                  <Receipt className="h-8 w-8 text-red-400 mx-auto mb-2" />
-                  <p className="text-sm text-slate-400">Expenses</p>
-                  <p className="text-2xl font-bold text-red-400">${tour.expenses.toLocaleString()}</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-800/50 border-slate-700/50">
-                <CardContent className="p-4 text-center">
-                  <Target className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                  <p className="text-sm text-slate-400">Profit</p>
-                  <p className={`text-2xl font-bold ${tour.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    ${tour.profit.toLocaleString()}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="bg-slate-800/50 border-slate-700/50">
-              <CardHeader>
-                <CardTitle className="text-white">Revenue by Show</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {tour.venues.filter(v => v.revenue > 0).map((venue) => (
-                    <div key={venue.id} className="flex justify-between items-center">
-                      <div>
-                        <p className="text-white">{venue.name}</p>
-                        <p className="text-sm text-slate-400">{venue.city}, {venue.state}</p>
+            <TabsContent value="team" className="space-y-6">
+              <div className="space-y-4">
+                {team.length > 0 ? team.map((member: any) => (
+                  <Card key={member.id} className="bg-slate-800/50 border-slate-700/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                            <Users className="h-6 w-6 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-white">{member.name || member.contact_email}</h4>
+                            <p className="text-sm text-slate-400">{member.role}</p>
+                            <p className="text-sm text-slate-500">{member.contact || member.contact_email}</p>
+                          </div>
+                        </div>
+                        <Badge className={getStatusColor(member.status || 'pending')}>
+                          {member.status || 'pending'}
+                        </Badge>
                       </div>
-                      <div className="text-right">
-                        <p className="text-green-400 font-semibold">${venue.revenue.toLocaleString()}</p>
-                        <p className="text-sm text-slate-400">{venue.ticketsSold.toLocaleString()} tickets</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
-  )
+                    </CardContent>
+                  </Card>
+                )) : (
+                  <div className="text-center py-8">
+                    <p className="text-slate-400">No team members added yet</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="finances" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardContent className="p-4 text-center">
+                    <DollarSign className="h-8 w-8 text-green-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-400">Revenue</p>
+                    <p className="text-2xl font-bold text-green-400">${revenue.toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardContent className="p-4 text-center">
+                    <Receipt className="h-8 w-8 text-red-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-400">Expenses</p>
+                    <p className="text-2xl font-bold text-red-400">${expenses.toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-slate-800/50 border-slate-700/50">
+                  <CardContent className="p-4 text-center">
+                    <Target className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-400">Profit</p>
+                    <p className={`text-2xl font-bold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      ${profit.toLocaleString()}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-purple-950/20 p-6">
@@ -777,7 +842,7 @@ export default function ToursPage() {
               </Button>
             </div>
             <Button 
-              onClick={() => setIsCreateTourOpen(true)}
+              onClick={() => router.push("/admin/dashboard/tours/planner")}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -908,7 +973,7 @@ export default function ToursPage() {
                 }
               </p>
               <Button 
-                onClick={() => setIsCreateTourOpen(true)}
+                onClick={() => router.push("/admin/dashboard/tours/planner")}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0"
               >
                 <Plus className="h-4 w-4 mr-2" />

@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
+import { useCurrentVenue } from "@/hooks/use-venue"
 import StaffOnboardingSystem from "./components/staff-onboarding-system"
 import EnhancedStaffOnboarding from "./components/enhanced-staff-onboarding"
 import JobBoardIntegration from "./components/job-board-integration"
@@ -108,6 +109,7 @@ interface Role {
 
 export default function FuturisticStaffManagement() {
   const { toast } = useToast()
+  const { venue, loading: venueLoading } = useCurrentVenue()
   const [activeTab, setActiveTab] = useState("overview")
   const [searchQuery, setSearchQuery] = useState("")
   const [departmentFilter, setDepartmentFilter] = useState("all")
@@ -840,7 +842,20 @@ export default function FuturisticStaffManagement() {
 
         {/* Onboarding Tab */}
         <TabsContent value="onboarding" className="space-y-6">
-          <StaffOnboardingSystem />
+          {venueLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-4"></div>
+                <p className="text-slate-400">Loading venue data...</p>
+              </div>
+            </div>
+          ) : venue ? (
+            <StaffOnboardingSystem venueId={venue.id} />
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-slate-400">No venue found. Please create a venue first.</p>
+            </div>
+          )}
         </TabsContent>
 
         {/* Job Board Tab */}

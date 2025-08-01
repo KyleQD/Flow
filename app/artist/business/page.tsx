@@ -533,7 +533,7 @@ export default function BusinessDashboard() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ y: -5, scale: 1.02 }}
             >
-              <Card className="bg-slate-900/50 border-slate-700/50">
+              <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
@@ -560,7 +560,7 @@ export default function BusinessDashboard() {
         {/* Business Features */}
         <div className="lg:col-span-2 space-y-6">
           {/* Category Filters */}
-          <Card className="bg-slate-900/50 border-slate-700/50">
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
             <CardHeader>
               <CardTitle className="text-slate-200 flex items-center">
                 <Filter className="h-5 w-5 mr-2 text-purple-400" />
@@ -631,7 +631,7 @@ export default function BusinessDashboard() {
         {/* Recent Transactions & Quick Actions */}
         <div className="space-y-6">
           {/* Recent Transactions */}
-          <Card className="bg-slate-900/50 border-slate-700/50">
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
             <CardHeader>
               <CardTitle className="text-slate-200 flex items-center">
                 <CreditCard className="h-5 w-5 mr-2 text-green-400" />
@@ -695,7 +695,7 @@ export default function BusinessDashboard() {
           </Card>
 
           {/* Quick Actions */}
-          <Card className="bg-slate-900/50 border-slate-700/50">
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
             <CardHeader>
               <CardTitle className="text-slate-200 flex items-center">
                 <Zap className="h-5 w-5 mr-2 text-yellow-400" />

@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
+import { StaffOnboardingService, StaffOnboardingData } from "@/lib/services/staff-onboarding.service"
 import {
   Plus,
   Save,
@@ -39,7 +40,9 @@ import {
   ChevronDown,
   Play,
   Pause,
-  RotateCcw
+  RotateCcw,
+  UserPlus,
+  Key
 } from "lucide-react"
 
 interface OnboardingStep {
@@ -80,10 +83,15 @@ interface OnboardingCandidate {
   id: string
   name: string
   email: string
+  phone?: string
   position: string
   department: string
   avatar?: string
   startDate: string
+  salary?: number
+  skills?: string[]
+  notes?: string
+  venueId?: string
 }
 
 export default function OnboardingWizard({ 
@@ -120,6 +128,9 @@ export default function OnboardingWizard({
   const [showWelcomeEmailDialog, setShowWelcomeEmailDialog] = useState(false)
   const [showSchedulingDialog, setShowSchedulingDialog] = useState(false)
   const [showAccessSetupDialog, setShowAccessSetupDialog] = useState(false)
+  const [showAccountCreationDialog, setShowAccountCreationDialog] = useState(false)
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false)
+  const [accountCreationResult, setAccountCreationResult] = useState<any>(null)
   const [emailTemplate, setEmailTemplate] = useState({
     subject: "",
     body: "",
@@ -717,6 +728,56 @@ The Management Team`,
     setShowAccessSetupDialog(false)
   }
 
+  const createStaffAccount = async () => {
+    if (!candidate) return
+
+    setIsCreatingAccount(true)
+    try {
+      const staffData: StaffOnboardingData = {
+        name: candidate.name,
+        email: candidate.email,
+        phone: candidate.phone || '',
+        position: candidate.position,
+        department: candidate.department,
+        employment_type: 'full_time',
+        start_date: candidate.startDate,
+        hourly_rate: candidate.salary ? candidate.salary / 2080 : undefined, // Convert annual to hourly
+        skills: candidate.skills || [],
+        notes: candidate.notes || '',
+        venue_id: candidate.venueId || '', // You'll need to add this to the candidate interface
+        onboarding_template_id: selectedTemplate?.id,
+        permissions: {
+          manage_bookings: false,
+          manage_events: false,
+          view_analytics: false,
+          manage_team: false,
+          manage_documents: false
+        }
+      }
+
+      const result = await StaffOnboardingService.createStaffMember(staffData)
+      setAccountCreationResult(result)
+      
+      addActivity(`Staff account created for ${candidate.name}`, 'success')
+      toast({
+        title: "Account Created",
+        description: `Staff account created successfully for ${candidate.name}`,
+      })
+
+      setShowAccountCreationDialog(true)
+    } catch (error) {
+      console.error('Error creating staff account:', error)
+      addActivity(`Failed to create staff account for ${candidate.name}`, 'warning')
+      toast({
+        title: "Account Creation Failed",
+        description: error instanceof Error ? error.message : 'Failed to create staff account',
+        variant: "destructive"
+      })
+    } finally {
+      setIsCreatingAccount(false)
+    }
+  }
+
   const startOnboardingProcess = () => {
     if (!selectedTemplate) {
       toast({
@@ -767,6 +828,14 @@ The Management Team`,
               <Button onClick={saveProgress} variant="outline" className="border-slate-600">
                 <Save className="h-4 w-4 mr-2" />
                 Save Progress
+              </Button>
+              <Button 
+                onClick={createStaffAccount} 
+                disabled={isCreatingAccount}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                {isCreatingAccount ? 'Creating Account...' : 'Create Staff Account'}
               </Button>
               <Button onClick={startOnboardingProcess} className="bg-green-600 hover:bg-green-700">
                 <Play className="h-4 w-4 mr-2" />
@@ -1799,6 +1868,98 @@ The Management Team`,
                <Button onClick={setupAccess} className="bg-purple-600 hover:bg-purple-700">
                  <Settings className="h-4 w-4 mr-2" />
                  Setup Access
+               </Button>
+             </div>
+           </div>
+         </DialogContent>
+       </Dialog>
+
+       {/* Account Creation Result Dialog */}
+       <Dialog open={showAccountCreationDialog} onOpenChange={setShowAccountCreationDialog}>
+         <DialogContent className="max-w-2xl bg-slate-900 border-slate-700">
+           <DialogHeader>
+             <DialogTitle className="text-green-400 flex items-center">
+               <CheckCircle className="h-5 w-5 mr-2" />
+               Staff Account Created Successfully
+             </DialogTitle>
+           </DialogHeader>
+           <div className="space-y-6">
+             {accountCreationResult && (
+               <div className="space-y-4">
+                 <div className="bg-slate-800/50 rounded-lg p-4">
+                   <h4 className="text-white font-medium mb-3">Account Details</h4>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                     <div>
+                       <span className="text-slate-400">Name:</span>
+                       <span className="text-white ml-2">{accountCreationResult.staff_profile.name}</span>
+                     </div>
+                     <div>
+                       <span className="text-slate-400">Email:</span>
+                       <span className="text-white ml-2">{accountCreationResult.user_account.email}</span>
+                     </div>
+                     <div>
+                       <span className="text-slate-400">Position:</span>
+                       <span className="text-white ml-2">{accountCreationResult.staff_profile.role}</span>
+                     </div>
+                     <div>
+                       <span className="text-slate-400">Department:</span>
+                       <span className="text-white ml-2">{accountCreationResult.staff_profile.department}</span>
+                     </div>
+                     <div>
+                       <span className="text-slate-400">Account Type:</span>
+                       <span className="text-white ml-2">
+                         {accountCreationResult.user_account.existing_user ? 'Existing User' : 'New User'}
+                       </span>
+                     </div>
+                     {!accountCreationResult.user_account.existing_user && accountCreationResult.user_account.temp_password && (
+                       <div className="col-span-2">
+                         <span className="text-slate-400">Temporary Password:</span>
+                         <div className="flex items-center space-x-2 mt-1">
+                           <code className="bg-slate-700 px-2 py-1 rounded text-green-400 font-mono">
+                             {accountCreationResult.user_account.temp_password}
+                           </code>
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => navigator.clipboard.writeText(accountCreationResult.user_account.temp_password)}
+                             className="border-slate-600"
+                           >
+                             <Copy className="h-3 w-3" />
+                           </Button>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 </div>
+
+                 <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+                   <h4 className="text-blue-400 font-medium mb-2 flex items-center">
+                     <Mail className="h-4 w-4 mr-2" />
+                     Next Steps
+                   </h4>
+                   <ul className="text-slate-300 text-sm space-y-1">
+                     <li>• Welcome email sent to {accountCreationResult.user_account.email}</li>
+                     <li>• Staff member can now log in to the platform</li>
+                     <li>• Complete the onboarding process to grant full access</li>
+                     <li>• Review and adjust permissions as needed</li>
+                   </ul>
+                 </div>
+               </div>
+             )}
+             
+             <div className="flex justify-end space-x-3">
+               <Button variant="outline" onClick={() => setShowAccountCreationDialog(false)}>
+                 Close
+               </Button>
+               <Button 
+                 onClick={() => {
+                   setShowAccountCreationDialog(false)
+                   startOnboardingProcess()
+                 }}
+                 className="bg-green-600 hover:bg-green-700"
+               >
+                 <Play className="h-4 w-4 mr-2" />
+                 Start Onboarding Process
                </Button>
              </div>
            </div>
