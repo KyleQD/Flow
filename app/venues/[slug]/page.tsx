@@ -17,7 +17,7 @@ import {
   Instagram, 
   Facebook, 
   Twitter,
-  TikTok,
+  Video,
   Youtube,
   Linkedin,
   Users,

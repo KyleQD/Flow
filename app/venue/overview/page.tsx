@@ -57,7 +57,7 @@ import {
   Grid,
   List,
   MoreHorizontal,
-  Warning,
+  AlertTriangle,
   Info,
   Sparkles,
   ChevronRight,
@@ -500,7 +500,7 @@ export default function VenueOverviewPage() {
             }`}>
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-2">
-                  {alert.type === 'warning' && <Warning className="h-4 w-4 text-yellow-500 mt-0.5" />}
+                  {alert.type === 'warning' && <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />}
                   {alert.type === 'error' && <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />}
                   {alert.type === 'success' && <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />}
                   {alert.type === 'info' && <Info className="h-4 w-4 text-blue-500 mt-0.5" />}

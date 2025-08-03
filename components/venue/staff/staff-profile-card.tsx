@@ -50,7 +50,7 @@ import {
   MessageSquare,
   Bell,
   BookOpen,
-  Certificate,
+  Award,
   FileCheck,
   CalendarDays,
   Clock4,
@@ -560,7 +560,7 @@ export function StaffProfileCard({ staff, onEdit, onView, isAdmin = false }: Sta
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-2">
-                                <Certificate className="h-5 w-5 text-blue-400" />
+                                <Award className="h-5 w-5 text-blue-400" />
                                 <h4 className="text-white font-semibold">{cert.certification_name}</h4>
                                 <Badge 
                                   variant="outline" 
@@ -614,7 +614,7 @@ export function StaffProfileCard({ staff, onEdit, onView, isAdmin = false }: Sta
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Certificate className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                    <Award className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                     <p className="text-gray-400">No certifications added yet</p>
                     <Button size="sm" className="mt-4 bg-blue-600 hover:bg-blue-700">
                       <Plus className="h-4 w-4 mr-1" />

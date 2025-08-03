@@ -57,9 +57,9 @@ import {
   Settings,
   HelpCircle,
   Info,
-  Warning,
-  Success,
-  Error
+  AlertTriangle,
+  CheckCircle,
+  XCircle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
