@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
         total: filteredAnnouncements.length,
         limit: params.limit,
         offset: params.offset,
-        hasMore: filteredAnnouncements.length === params.limit
+        hasMore: filteredAnnouncements.length === resolvedParams.limit
       }
     })
 

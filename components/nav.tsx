@@ -39,7 +39,8 @@ import { AccountSwitcher } from "@/components/account-switcher"
 import { TourifyLogo } from "@/components/tourify-logo"
 import { supabase } from "@/lib/supabase"
 import { EnhancedNotificationCenter } from "@/components/notifications/enhanced-notification-center"
-import { AccountSearch } from "@/components/search/account-search"
+import { EnhancedAccountSearch } from "@/components/search/enhanced-account-search"
+import { MobileSearchModal } from "@/components/search/mobile-search-modal"
 
 export function Nav() {
   const router = useRouter()
@@ -49,6 +50,7 @@ export function Nav() {
   const { currentAccount } = useMultiAccount()
   const [notifications, setNotifications] = useState(0)
   const [primaryProfile, setPrimaryProfile] = useState<any>(null)
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
 
   // Load primary profile data directly for nav display
   useEffect(() => {
@@ -193,22 +195,26 @@ export function Nav() {
         </div>
 
         {/* Search */}
-        <div className="hidden lg:flex flex-1 max-w-md mx-8">
-          <AccountSearch 
-            placeholder="Search accounts..." 
+        <div className="hidden lg:flex flex-1 max-w-lg mx-8">
+          <EnhancedAccountSearch 
+            placeholder="Search artists, venues, and users..." 
             className="w-full"
+            showRecentSearches={true}
+            showTrendingSearches={true}
           />
         </div>
 
         {/* Right Navigation */}
         <div className="flex items-center space-x-4">
           {/* Mobile Search Button */}
-          <div className="lg:hidden">
-            <AccountSearch 
-              placeholder="Search..." 
-              className="w-8"
-            />
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowMobileSearch(true)}
+            className="lg:hidden relative p-2 hover:bg-slate-800/50 rounded-full"
+          >
+            <Search className="h-5 w-5 text-slate-300" />
+          </Button>
 
           {/* Notifications */}
           <EnhancedNotificationCenter />
@@ -290,6 +296,12 @@ export function Nav() {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Mobile Search Modal */}
+      <MobileSearchModal 
+        isOpen={showMobileSearch} 
+        onClose={() => setShowMobileSearch(false)} 
+      />
     </nav>
   )
 } 

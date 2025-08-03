@@ -18,7 +18,7 @@ function parseAuthFromCookies(request: NextRequest) {
 // GET /api/events/[id]/page - Get event page data
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createServiceRoleClient()
@@ -219,11 +219,12 @@ export async function GET(
 // PUT /api/events/[id]/page - Update event page settings
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createServiceRoleClient()
-    const eventId = params.id
+  const resolvedParams = await params
+    const eventId = resolvedParams.id
     const auth = parseAuthFromCookies(request)
 
     if (!auth) {

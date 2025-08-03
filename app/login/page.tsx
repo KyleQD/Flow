@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AuthErrorDisplay } from "@/components/ui/auth-error-display"
 import { mapAuthError, AuthErrorInfo } from "@/lib/auth-errors"
-import { Music, Building, Users, Star, ArrowRight, Loader2, Eye, EyeOff, Sparkles, Zap, Globe, Shield, CheckCircle } from "lucide-react"
+import { Building, Users, Star, ArrowRight, Loader2, Eye, EyeOff, Sparkles, Zap, Globe, Shield, CheckCircle } from "lucide-react"
 import Link from "next/link"
+import { TourifyLogo } from "@/components/tourify-logo"
 
 export default function LoginPage() {
   const { user, loading, isAuthenticated, signIn, signUp } = useAuth()
@@ -182,104 +183,82 @@ export default function LoginPage() {
           {/* Left Side - Branding & Info */}
           <div className="text-center lg:text-left space-y-8">
             {/* Logo */}
-            <div className="flex items-center justify-center lg:justify-start space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl">
-                  <Music className="h-8 w-8 text-white" />
-                </div>
-                <div className="absolute -inset-1 bg-gradient-to-br from-purple-500 via-blue-500 to-indigo-600 rounded-2xl blur opacity-30 animate-pulse"></div>
-              </div>
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                Tourify
+            <div className="flex justify-center lg:justify-start">
+              <TourifyLogo 
+                variant="white" 
+                size="6xl"
+                className="filter drop-shadow-2xl" 
+              />
+            </div>
+            
+            {/* Tagline */}
+            <div>
+              <h1 className="text-3xl lg:text-4xl font-bold text-gray-200">
+                Connect. Create. Tour. Succeed.
               </h1>
             </div>
             
             {/* Hero Text */}
             <div className="space-y-6">
-              <h2 className="text-5xl lg:text-7xl font-bold leading-tight">
-                <span className="bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent">
-                  Connect.
-                </span>
-                <br />
-                <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                  Create.
-                </span>
-                <br />
-                <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                  Tour.
-                </span>
-              </h2>
+              <p className="text-xl lg:text-2xl text-white font-medium leading-relaxed max-w-2xl">
+                Tourify is revolutionizing how artists, venues, and industry professionals collaborate.
+              </p>
               
-              <p className="text-xl text-gray-300 leading-relaxed max-w-2xl">
-                The ultimate platform for artists, venues, and music industry professionals. 
-                Build your network, showcase your talent, and discover opportunities that transform your career.
+              <p className="text-lg text-gray-300 leading-relaxed max-w-2xl">
+                From discovering your next venue to booking world-class talent, managing tours to building 
+                lasting industry relationships — Tourify powers every aspect of your music career with 
+                cutting-edge technology and real-time insights.
               </p>
             </div>
             
             {/* Features Grid */}
             <div className="hidden lg:grid grid-cols-2 gap-6">
-              <div className="group p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Music className="h-5 w-5 text-white" />
+              <div className="group p-6 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Star className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">Professional EPKs</h3>
-                    <p className="text-sm text-gray-400">Showcase your music</p>
+                    <h3 className="font-bold text-white text-lg">Professional EPKs</h3>
+                    <p className="text-sm text-gray-300">Create stunning press kits that get you booked</p>
                   </div>
                 </div>
               </div>
               
-              <div className="group p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Building className="h-5 w-5 text-white" />
+              <div className="group p-6 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Building className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">Venue Discovery</h3>
-                    <p className="text-sm text-gray-400">Book amazing spaces</p>
+                    <h3 className="font-bold text-white text-lg">Smart Venue Matching</h3>
+                    <p className="text-sm text-gray-300">AI-powered venue discovery for perfect shows</p>
                   </div>
                 </div>
               </div>
               
-              <div className="group p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Users className="h-5 w-5 text-white" />
+              <div className="group p-6 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Users className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">Industry Network</h3>
-                    <p className="text-sm text-gray-400">Connect with pros</p>
+                    <h3 className="font-bold text-white text-lg">Industry Network</h3>
+                    <p className="text-sm text-gray-300">Connect with 50K+ verified music professionals</p>
                   </div>
                 </div>
               </div>
               
-              <div className="group p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Zap className="h-5 w-5 text-white" />
+              <div className="group p-6 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300">
+                <div className="space-y-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Zap className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">Real-time Analytics</h3>
-                    <p className="text-sm text-gray-400">Track your growth</p>
+                    <h3 className="font-bold text-white text-lg">Tour Management</h3>
+                    <p className="text-sm text-gray-300">End-to-end tour planning and real-time analytics</p>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="hidden lg:flex items-center space-x-8 pt-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">10K+</div>
-                <div className="text-sm text-gray-400">Active Artists</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">500+</div>
-                <div className="text-sm text-gray-400">Venues</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">50K+</div>
-                <div className="text-sm text-gray-400">Connections Made</div>
               </div>
             </div>
           </div>

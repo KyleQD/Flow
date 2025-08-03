@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
         total: count || 0,
         limit: params.limit,
         offset: params.offset,
-        hasMore: (messages?.length || 0) === params.limit
+        hasMore: (messages?.length || 0) === resolvedParams.limit
       }
     })
 

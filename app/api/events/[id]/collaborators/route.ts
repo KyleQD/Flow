@@ -17,11 +17,12 @@ function parseAuthFromCookies(request: NextRequest) {
 // GET /api/events/[id]/collaborators - Get event collaborators
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createServiceRoleClient()
-    const eventId = params.id
+  const resolvedParams = await params
+    const eventId = resolvedParams.id
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') // 'pending', 'accepted', 'declined'
 
@@ -127,11 +128,12 @@ export async function GET(
 // POST /api/events/[id]/collaborators - Invite new collaborator
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createServiceRoleClient()
-    const eventId = params.id
+  const resolvedParams = await params
+    const eventId = resolvedParams.id
     const auth = parseAuthFromCookies(request)
 
     if (!auth) {
@@ -284,11 +286,12 @@ export async function POST(
 // PUT /api/events/[id]/collaborators/[collaboratorId] - Update collaborator (accept/decline/update permissions)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createServiceRoleClient()
-    const eventId = params.id
+  const resolvedParams = await params
+    const eventId = resolvedParams.id
     const auth = parseAuthFromCookies(request)
 
     if (!auth) {
@@ -418,11 +421,12 @@ export async function PUT(
 // DELETE /api/events/[id]/collaborators/[collaboratorId] - Remove collaborator
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = createServiceRoleClient()
-    const eventId = params.id
+  const resolvedParams = await params
+    const eventId = resolvedParams.id
     const { searchParams } = new URL(request.url)
     const collaboratorId = searchParams.get('collaborator_id')
     const auth = parseAuthFromCookies(request)

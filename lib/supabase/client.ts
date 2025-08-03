@@ -176,4 +176,9 @@ export async function getVenueProfile(userId: string) {
   
   if (error) throw new Error(`Failed to fetch venue profile: ${error.message}`)
   return data
+}
+
+// Re-export createClient function
+export function createClient() {
+  return supabase
 } 

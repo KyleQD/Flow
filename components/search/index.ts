@@ -1,2 +1,6 @@
 export { AccountSearch } from './account-search'
-export type { SearchResult } from '@/hooks/use-account-search'
+export { EnhancedAccountSearch } from './enhanced-account-search'
+export { MobileSearchModal } from './mobile-search-modal'
+export { SearchResultItem } from './search-result-item'
+export { SearchSuggestions } from './search-suggestions'
+export type { SearchResult } from '@/hooks/use-enhanced-search'

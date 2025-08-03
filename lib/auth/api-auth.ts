@@ -247,4 +247,7 @@ export async function checkAuth(request: NextRequest): Promise<{ user: any; supa
     console.error('[API Auth] Auth check failed:', error)
     return null
   }
-} 
+}
+
+// Alias for backward compatibility
+export { authenticateApiRequest as parseAuthFromCookies } 

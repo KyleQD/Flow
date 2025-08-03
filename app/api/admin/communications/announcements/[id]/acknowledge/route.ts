@@ -6,10 +6,11 @@ import { NextRequest, NextResponse } from 'next/server'
 // Acknowledge an announcement
 // =============================================================================
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createClient()
-    const announcementId = params.id
+    const resolvedParams = await params
+    const announcementId = resolvedParams.id
 
     if (!announcementId) {
       return NextResponse.json({ error: 'Announcement ID is required' }, { status: 400 })

@@ -41,7 +41,7 @@ import { TourifyLogo } from "@/components/tourify-logo"
 import { supabase } from "@/lib/supabase"
 import { motion } from "framer-motion"
 import { EnhancedNotificationCenter } from "@/components/notifications/enhanced-notification-center"
-import { AccountSearch } from "@/components/search/account-search"
+import { EnhancedAccountSearch } from "@/components/search/enhanced-account-search"
 
 interface UnifiedNavigationProps {
   variant?: 'header' | 'sidebar' | 'mobile'
@@ -255,10 +255,12 @@ export function UnifiedNavigation({ variant = 'header', className = '' }: Unifie
             </div>
 
             {/* Search */}
-            <div className="hidden lg:flex flex-1 max-w-md mx-8">
-              <AccountSearch 
-                placeholder="Search accounts..." 
+            <div className="hidden lg:flex flex-1 max-w-lg mx-8">
+              <EnhancedAccountSearch 
+                placeholder="Search artists, venues, and users..." 
                 className="w-full"
+                showRecentSearches={true}
+                showTrendingSearches={true}
               />
             </div>
 
@@ -266,9 +268,11 @@ export function UnifiedNavigation({ variant = 'header', className = '' }: Unifie
             <div className="flex items-center space-x-4">
               {/* Mobile Search Button */}
               <div className="lg:hidden">
-                <AccountSearch 
+                <EnhancedAccountSearch 
                   placeholder="Search..." 
-                  className="w-8"
+                  className="w-full max-w-xs"
+                  showRecentSearches={true}
+                  showTrendingSearches={false}
                 />
               </div>
 

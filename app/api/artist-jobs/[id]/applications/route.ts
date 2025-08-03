@@ -5,7 +5,7 @@ import { CreateApplicationFormData } from '@/types/artist-jobs'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -42,7 +42,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -62,7 +62,7 @@ export async function POST(
     const applicationData: CreateApplicationFormData = await request.json()
     
     // Ensure job_id matches the route parameter
-    applicationData.job_id = params.id
+    applicationData.job_id = resolvedParams.id
 
     // Validate required fields
     if (!applicationData.contact_email) {
