@@ -13,6 +13,8 @@ import { toast } from "sonner"
 import { PublicProfileView } from "@/components/profile/public-profile-view"
 import socialInteractionsService from "@/lib/services/social-interactions.service"
 import { useAuth } from "@/contexts/auth-context"
+import { AccountSearch } from "@/components/search/account-search"
+import type { SearchResult } from "@/hooks/use-account-search"
 
 interface DemoProfile {
   id: string
@@ -47,6 +49,7 @@ export default function DiscoverPage() {
   const [followedProfiles, setFollowedProfiles] = useState<Set<string>>(new Set())
   const [selectedProfile, setSelectedProfile] = useState<DemoProfile | null>(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [useAdvancedSearch, setUseAdvancedSearch] = useState(false)
   const { user, isAuthenticated } = useAuth()
 
   const accountTypes = [
@@ -73,11 +76,33 @@ export default function DiscoverPage() {
       if (selectedType) params.append('type', selectedType)
       if (selectedLocation) params.append('location', selectedLocation)
       
-      const response = await fetch(`/api/demo-accounts?${params.toString()}`)
-      const data = await response.json()
+      // Try unified search first, fallback to demo accounts
+      let response = await fetch(`/api/search/unified?${params.toString()}`)
+      let data = await response.json()
       
-      if (data.profiles) {
-        setProfiles(data.profiles)
+      console.log('🔍 API Response:', {
+        url: `/api/search/unified?${params.toString()}`,
+        success: response.ok,
+        hasUnifiedResults: !!data.unified_results,
+        unifiedResultsLength: data.unified_results?.length,
+        hasResults: !!data.results,
+        resultsLength: data.results ? Object.keys(data.results).length : 0
+      })
+      
+      if (response.ok && data.unified_results) {
+        // Use unified search results
+        console.log('✅ Using unified results:', data.unified_results.length)
+        setProfiles(data.unified_results)
+      } else {
+        // Fallback to demo accounts API
+        console.log('⚠️ Falling back to demo accounts API')
+        response = await fetch(`/api/demo-accounts?${params.toString()}`)
+        data = await response.json()
+        
+        if (data.profiles) {
+          console.log('✅ Using demo profiles:', data.profiles.length)
+          setProfiles(data.profiles)
+        }
       }
     } catch (error) {
       console.error('Error fetching profiles:', error)
@@ -166,6 +191,10 @@ export default function DiscoverPage() {
     window.location.href = `/profile/${username}`
   }
 
+  const handleAccountSearchResult = (result: SearchResult) => {
+    navigateToProfile(result.username)
+  }
+
   const filteredProfiles = profiles.filter(profile => {
     const matchesSearch = !searchQuery || 
       getDisplayName(profile).toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -176,6 +205,20 @@ export default function DiscoverPage() {
     const matchesLocation = !selectedLocation || profile.location?.includes(selectedLocation)
 
     return matchesSearch && matchesType && matchesLocation
+  })
+
+  // Debug logging
+  console.log('🔍 Discover Debug:', {
+    totalProfiles: profiles.length,
+    selectedType,
+    searchQuery,
+    selectedLocation,
+    filteredCount: filteredProfiles.length,
+    sampleProfiles: profiles.slice(0, 3).map(p => ({ 
+      username: p.username, 
+      account_type: p.account_type,
+      name: getDisplayName(p)
+    }))
   })
 
   return (
@@ -210,14 +253,39 @@ export default function DiscoverPage() {
         <CardContent className="p-6">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search profiles, artists, venues..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-gray-400 h-12"
-              />
+            <div className="flex-1 flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <AccountSearch
+                    placeholder="Search artists, venues, events, or digital..."
+                    onResultSelect={handleAccountSearchResult}
+                    className="w-full"
+                  />
+                </div>
+                <Button
+                  variant={useAdvancedSearch ? "default" : "outline"}
+                  onClick={() => setUseAdvancedSearch(!useAdvancedSearch)}
+                  className="h-12 bg-purple-600 hover:bg-purple-700 border-purple-500"
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  {useAdvancedSearch ? 'Simple' : 'Advanced'}
+                </Button>
+              </div>
+              
+              {useAdvancedSearch && (
+                <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <p className="text-sm text-gray-400 mb-3">Advanced Search - Filter current results by:</p>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Filter by name, bio, location..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-gray-400 h-12"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Account Type Filter */}
@@ -281,6 +349,20 @@ export default function DiscoverPage() {
           <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1">
             Live Community
           </Badge>
+        </div>
+
+        {/* Debug Info */}
+        <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 mb-4">
+          <h3 className="text-red-400 font-bold mb-2">Debug Info</h3>
+          <div className="text-sm text-gray-300 space-y-1">
+            <div>Total Profiles: {profiles.length}</div>
+            <div>Selected Type: {selectedType || 'null'}</div>
+            <div>Search Query: "{searchQuery}"</div>
+            <div>Selected Location: {selectedLocation || 'null'}</div>
+            <div>Filtered Count: {filteredProfiles.length}</div>
+            <div>Sample Profile Types: {profiles.slice(0, 3).map(p => p.account_type).join(', ')}</div>
+            <div>Loading: {isLoading ? 'YES' : 'NO'}</div>
+          </div>
         </div>
 
         {/* Profile Grid */}

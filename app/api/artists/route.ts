@@ -143,18 +143,45 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createArtistSchema.parse(body)
 
+    // Generate username from display name
+    const generateUsername = (displayName: string) => {
+      return displayName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 30)
+    }
+
+    let username = generateUsername(validatedData.display_name)
+    let usernameCounter = 0
+
+    // Ensure unique username
+    while (true) {
+      const testUsername = usernameCounter === 0 ? username : `${username}-${usernameCounter}`
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', testUsername)
+        .single()
+
+      if (!existingUser) {
+        username = testUsername
+        break
+      }
+      usernameCounter++
+    }
+
     // Start a transaction to create both profile and artist_profile
     const { data: profile, error: profileError } = await (supabase
       .from('profiles') as any)
       .insert({
-        display_name: validatedData.display_name,
+        id: user.id, // Use the authenticated user's ID
+        name: validatedData.display_name,
+        username: username,
         bio: validatedData.bio,
-        location: validatedData.location,
-        role: 'artist',
-        primary_genres: validatedData.primary_genres,
         avatar_url: validatedData.avatar_url,
       })
-      .select('id')
+      .select('*')
       .single()
 
     if (profileError) {
@@ -165,12 +192,13 @@ export async function POST(request: NextRequest) {
     const { data: artistProfile, error: artistError } = await (supabase
       .from('artist_profiles') as any)
       .insert({
-        id: profile.id,
-        verification_status: validatedData.verification_status,
-        account_tier: validatedData.account_tier,
+        user_id: user.id,
+        artist_name: validatedData.display_name,
+        bio: validatedData.bio,
+        genres: validatedData.primary_genres || [],
+        verification_status: validatedData.verification_status || 'unverified',
+        account_tier: validatedData.account_tier || 'basic',
         social_links: validatedData.social_links || {},
-        contact_email: validatedData.contact_email,
-        contact_phone: validatedData.contact_phone,
       })
       .select('*')
       .single()

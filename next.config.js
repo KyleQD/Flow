@@ -27,7 +27,6 @@ const nextConfig = {
       ],
     },
   // Performance optimizations
-  swcMinify: true,
   poweredByHeader: false,
   compress: true,
   // Bundle optimization

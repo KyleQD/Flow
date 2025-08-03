@@ -41,6 +41,7 @@ import { TourifyLogo } from "@/components/tourify-logo"
 import { supabase } from "@/lib/supabase"
 import { motion } from "framer-motion"
 import { EnhancedNotificationCenter } from "@/components/notifications/enhanced-notification-center"
+import { AccountSearch } from "@/components/search/account-search"
 
 interface UnifiedNavigationProps {
   variant?: 'header' | 'sidebar' | 'mobile'
@@ -162,7 +163,7 @@ export function UnifiedNavigation({ variant = 'header', className = '' }: Unifie
     const baseItems = [
       { name: 'Home', href: getHomeRoute(), icon: Home, onClick: handleHomeClick },
       { name: 'For You', href: '/feed', icon: Sparkles },
-      { name: 'Discover', href: '/search', icon: Search },
+      { name: 'Discover', href: '/discover', icon: Search },
       { name: 'Jobs', href: '/jobs', icon: Briefcase },
     ]
 
@@ -253,8 +254,24 @@ export function UnifiedNavigation({ variant = 'header', className = '' }: Unifie
               ))}
             </div>
 
+            {/* Search */}
+            <div className="hidden lg:flex flex-1 max-w-md mx-8">
+              <AccountSearch 
+                placeholder="Search accounts..." 
+                className="w-full"
+              />
+            </div>
+
             {/* Right Navigation */}
             <div className="flex items-center space-x-4">
+              {/* Mobile Search Button */}
+              <div className="lg:hidden">
+                <AccountSearch 
+                  placeholder="Search..." 
+                  className="w-8"
+                />
+              </div>
+
               {/* Notifications */}
               <EnhancedNotificationCenter />
 

@@ -1,150 +1,133 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Create service role client for database operations
-function createServiceRoleClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Missing Supabase environment variables for service role')
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  })
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ username: string }> }
+  { params }: { params: { username: string } }
 ) {
   try {
-    const resolvedParams = await params
-    const supabase = createServiceRoleClient()
-    const username = resolvedParams.username
-    
+    const username = params.username
+
     if (!username) {
       return NextResponse.json({ error: 'Username is required' }, { status: 400 })
     }
 
-    console.log('🔍 Looking up profile for username:', username)
-
-    // Get profile by username
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
+    // First, try to find in demo profiles
+    const { data: demoProfile, error: demoError } = await supabase
+      .from('demo_profiles')
       .select('*')
       .eq('username', username)
       .single()
 
-    if (profileError) {
-      if (profileError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+    if (!demoError && demoProfile) {
+      return NextResponse.json({
+        success: true,
+        profile: {
+          ...demoProfile,
+          is_demo: true
+        }
+      })
+    }
+
+    // Next, try to find in real profiles by joining with auth users
+    const { data: realProfile, error: realError } = await supabase
+      .from('profiles')
+      .select(`
+        id,
+        name,
+        username,
+        bio,
+        avatar_url,
+        created_at,
+        updated_at
+      `)
+      .eq('username', username)
+      .single()
+
+    if (!realError && realProfile) {
+      // Check if this user has an artist profile
+      const { data: artistProfile } = await supabase
+        .from('artist_profiles')
+        .select('*')
+        .eq('user_id', realProfile.id)
+        .single()
+
+      // Check if this user has a venue profile
+      const { data: venueProfile } = await supabase
+        .from('venue_profiles')
+        .select('*')
+        .eq('user_id', realProfile.id)
+        .single()
+
+      // Determine account type and format profile data
+      let profileData: any = {
+        id: realProfile.id,
+        username: realProfile.username,
+        account_type: 'general',
+        profile_data: {
+          name: realProfile.name
+        },
+        avatar_url: realProfile.avatar_url,
+        verified: false,
+        bio: realProfile.bio,
+        stats: {
+          followers: 0,
+          following: 0,
+          posts: 0,
+          likes: 0,
+          views: 0
+        },
+        created_at: realProfile.created_at,
+        is_demo: false
       }
-      console.error('Error fetching profile:', profileError)
-      return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 })
-    }
 
-    // Get user's posts
-    const { data: posts, error: postsError } = await supabase
-      .from('posts')
-      .select('*')
-      .eq('user_id', profile.id)
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    // Get user's post stats
-    const { count: totalPosts } = await supabase
-      .from('posts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', profile.id)
-
-    // Get followers/following counts (if tables exist)
-    let followersCount = 0
-    try {
-      const { count } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('following_id', profile.id)
-      followersCount = count || 0
-    } catch (error) {
-      console.log('Follows table not available, using 0 followers')
-    }
-
-    let followingCount = 0
-    try {
-      const { count } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('follower_id', profile.id)
-      followingCount = count || 0
-    } catch (error) {
-      console.log('Follows table not available, using 0 following')
-    }
-
-    // Calculate total likes across all user's posts
-    let totalLikes = 0
-    if (posts && posts.length > 0) {
-      try {
-        const { count } = await supabase
-          .from('post_likes')
-          .select('*', { count: 'exact', head: true })
-          .in('post_id', posts.map((p: any) => p.id))
-        totalLikes = count || 0
-      } catch (error) {
-        console.log('Post likes table not available, using 0 likes')
+      if (artistProfile) {
+        profileData.account_type = 'artist'
+        profileData.profile_data = {
+          artist_name: artistProfile.artist_name,
+          name: artistProfile.artist_name,
+          genres: artistProfile.genres
+        }
+        profileData.verified = artistProfile.verification_status === 'verified'
+        profileData.bio = artistProfile.bio || realProfile.bio
+        profileData.social_links = artistProfile.social_links
+      } else if (venueProfile) {
+        profileData.account_type = 'venue'
+        profileData.profile_data = {
+          venue_name: venueProfile.venue_name,
+          name: venueProfile.venue_name,
+          capacity: venueProfile.capacity,
+          venue_types: venueProfile.venue_types
+        }
+        profileData.verified = venueProfile.verification_status === 'verified'
+        profileData.bio = venueProfile.description || realProfile.bio
+        profileData.location = venueProfile.city && venueProfile.state ? 
+          `${venueProfile.city}, ${venueProfile.state}` : 
+          venueProfile.city || venueProfile.state
       }
+
+      return NextResponse.json({
+        success: true,
+        profile: profileData
+      })
     }
 
-    // Transform to PublicProfileView format
-    const displayName = profile.metadata?.full_name || profile.full_name || profile.username || 'User'
-    const profileUsername = profile.metadata?.username || profile.username || username
-    const bio = profile.metadata?.bio || profile.bio || 'Welcome to my profile! 👋'
-
-    const transformedProfile = {
-      id: profile.id,
-      username: profileUsername,
-      account_type: 'general' as const,
-      profile_data: {
-        name: displayName,
-        bio: bio,
-        location: profile.metadata?.location || '',
-        website: profile.metadata?.website || '',
-        phone: profile.metadata?.phone || ''
-      },
-      avatar_url: profile.avatar_url || '',
-      cover_image: null,
-      verified: profile.is_verified || false,
-      bio: bio,
-      location: profile.metadata?.location || '',
-      social_links: {
-        instagram: profile.metadata?.instagram || '',
-        twitter: profile.metadata?.twitter || '',
-        website: profile.metadata?.website || '',
-        spotify: ''
-      },
-      stats: {
-        followers: followersCount || 0,
-        following: followingCount || 0,
-        posts: totalPosts || 0,
-        likes: totalLikes,
-        views: Math.floor(Math.random() * 100) + 50
-      },
-      created_at: profile.created_at || new Date().toISOString(),
-      posts: posts || []
-    }
-
-    console.log('✅ Successfully found profile:', transformedProfile.username)
-    return NextResponse.json({ profile: transformedProfile })
+    // Profile not found
+    return NextResponse.json(
+      { error: 'Profile not found' },
+      { status: 404 }
+    )
 
   } catch (error) {
-    console.error('💥 Profile API error:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    console.error('Profile API error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
-} 
+}

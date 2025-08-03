@@ -218,6 +218,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User already has a venue profile' }, { status: 400 })
     }
 
+    // Generate username from venue name
+    const generateUsername = (venueName: string) => {
+      return venueName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 30)
+    }
+
+    let username = generateUsername(venueData.venue_name)
+    let usernameCounter = 0
+
+    // Ensure unique username
+    while (true) {
+      const testUsername = usernameCounter === 0 ? username : `${username}-${usernameCounter}`
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', testUsername)
+        .single()
+
+      if (!existingUser) {
+        username = testUsername
+        break
+      }
+      usernameCounter++
+    }
+
     // Generate URL slug
     const generateSlug = (name: string) => {
       return name
@@ -244,6 +272,16 @@ export async function POST(request: NextRequest) {
       }
       slugCounter++
     }
+
+    // Create or update the user's main profile with username
+    await supabase
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        username: username,
+        name: venueData.venue_name,
+        updated_at: new Date().toISOString()
+      })
 
     // Create venue profile
     const { data: newVenue, error: createError } = await supabase

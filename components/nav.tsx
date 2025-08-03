@@ -39,6 +39,7 @@ import { AccountSwitcher } from "@/components/account-switcher"
 import { TourifyLogo } from "@/components/tourify-logo"
 import { supabase } from "@/lib/supabase"
 import { EnhancedNotificationCenter } from "@/components/notifications/enhanced-notification-center"
+import { AccountSearch } from "@/components/search/account-search"
 
 export function Nav() {
   const router = useRouter()
@@ -167,11 +168,11 @@ export function Nav() {
             variant="ghost"
             size="sm" 
             className={`rounded-full transition-all duration-300 ${
-              pathname === '/search' 
+              pathname === '/discover' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
             }`}
-            onClick={() => router.push('/search')}
+            onClick={() => router.push('/discover')}
           >
             <Search className="h-4 w-4 mr-2" />
             Discover
@@ -191,8 +192,24 @@ export function Nav() {
           </Button>
         </div>
 
+        {/* Search */}
+        <div className="hidden lg:flex flex-1 max-w-md mx-8">
+          <AccountSearch 
+            placeholder="Search accounts..." 
+            className="w-full"
+          />
+        </div>
+
         {/* Right Navigation */}
         <div className="flex items-center space-x-4">
+          {/* Mobile Search Button */}
+          <div className="lg:hidden">
+            <AccountSearch 
+              placeholder="Search..." 
+              className="w-8"
+            />
+          </div>
+
           {/* Notifications */}
           <EnhancedNotificationCenter />
 

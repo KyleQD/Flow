@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -191,7 +191,7 @@ export default function OnboardingCompletePage() {
           <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-white flex items-center">
-                {steps[currentStep - 1].icon && <steps[currentStep - 1].icon className="h-5 w-5 mr-2" />}
+                {steps[currentStep - 1].icon && React.createElement(steps[currentStep - 1].icon, { className: "h-5 w-5 mr-2" })}
                 {steps[currentStep - 1].title}
               </CardTitle>
               <CardDescription className="text-slate-400">

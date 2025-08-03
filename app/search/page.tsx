@@ -66,13 +66,32 @@ export default function SearchPage() {
       if (selectedGenre) params.append('genre', selectedGenre)
       if (showVerifiedOnly) params.append('verified', 'true')
       
-      const response = await fetch(`/api/search?${params.toString()}`)
-      const data = await response.json()
+      // Try unified search first, fallback to original search
+      let response = await fetch(`/api/search/unified?${params.toString()}`)
+      let data = await response.json()
       
-      if (data.success) {
-        setSearchResults(data.results)
+      if (response.ok && data.unified_results) {
+        // Convert unified results to the expected format
+        const convertedResults = {
+          artists: data.unified_results.filter((p: any) => p.account_type === 'artist'),
+          venues: data.unified_results.filter((p: any) => p.account_type === 'venue'),
+          users: data.unified_results.filter((p: any) => p.account_type === 'general'),
+          events: data.results?.events || [],
+          music: data.results?.music || [],
+          posts: data.results?.posts || [],
+          total: data.unified_results.length
+        }
+        setSearchResults(convertedResults)
       } else {
-        toast.error('Failed to load search results')
+        // Fallback to original search API
+        response = await fetch(`/api/search?${params.toString()}`)
+        data = await response.json()
+        
+        if (data.success) {
+          setSearchResults(data.results)
+        } else {
+          toast.error('Failed to load search results')
+        }
       }
     } catch (error) {
       console.error('Error fetching search results:', error)

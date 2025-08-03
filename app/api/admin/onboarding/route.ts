@@ -24,21 +24,21 @@ export async function GET(request: NextRequest) {
 
     switch (action) {
       case 'roles':
-        const roles = await AdminOnboardingService.getAdminRoles()
-        return NextResponse.json({ roles })
+        const adminRoles = await AdminOnboardingService.getAdminRoles()
+        return NextResponse.json({ roles: adminRoles })
 
       case 'steps':
-        const steps = await AdminOnboardingService.getOnboardingSteps()
-        return NextResponse.json({ steps })
+        const onboardingSteps = await AdminOnboardingService.getOnboardingSteps()
+        return NextResponse.json({ steps: onboardingSteps })
 
       case 'progress':
-        const progress = await AdminOnboardingService.getOnboardingProgress()
-        return NextResponse.json({ progress })
+        const onboardingProgress = await AdminOnboardingService.getOnboardingProgress()
+        return NextResponse.json({ progress: onboardingProgress })
 
       case 'status':
-        const onboarding = await AdminOnboardingService.getUserOnboarding()
-        const needsOnboarding = await AdminOnboardingService.needsOnboarding()
-        return NextResponse.json({ onboarding, needsOnboarding })
+        const userOnboarding = await AdminOnboardingService.getUserOnboarding()
+        const userNeedsOnboarding = await AdminOnboardingService.needsOnboarding()
+        return NextResponse.json({ onboarding: userOnboarding, needsOnboarding: userNeedsOnboarding })
 
       case 'stats':
         const stats = await AdminOnboardingService.getOnboardingStats()

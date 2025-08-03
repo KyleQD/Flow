@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
         const existingQuantity = existingSales?.reduce((sum: number, sale: any) => sum + sale.quantity, 0) || 0
         if (existingQuantity + validatedData.quantity > ticketType.max_per_customer) {
           return NextResponse.json({ error: 'Exceeds maximum tickets per customer' }, { status: 400 })
+        }
       }
 
       // Calculate total amount
