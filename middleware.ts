@@ -12,7 +12,6 @@ export async function middleware(request: NextRequest) {
 
   // Define route categories
   const publicRoutes = [
-    '/',
     '/login',
     '/signup', 
     '/auth/callback',
@@ -55,8 +54,22 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.includes(pathname)
   const isAuthRoute = authRoutes.includes(pathname)
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+  const isRootRoute = pathname === '/'
 
-  console.log(`[Main Middleware] Route type - Public: ${isPublicRoute}, Auth: ${isAuthRoute}, Protected: ${isProtectedRoute}`)
+  console.log(`[Main Middleware] Route type - Public: ${isPublicRoute}, Auth: ${isAuthRoute}, Protected: ${isProtectedRoute}, Root: ${isRootRoute}`)
+
+  // Handle root route redirects
+  if (isRootRoute) {
+    if (user) {
+      console.log(`[Main Middleware] Authenticated user accessing root, redirecting to dashboard`)
+      const redirectUrl = new URL('/dashboard', request.url)
+      return NextResponse.redirect(redirectUrl)
+    } else {
+      console.log(`[Main Middleware] Unauthenticated user accessing root, redirecting to login`)
+      const redirectUrl = new URL('/login', request.url)
+      return NextResponse.redirect(redirectUrl)
+    }
+  }
 
   // Redirect authenticated users away from auth pages
   if (user && isAuthRoute) {

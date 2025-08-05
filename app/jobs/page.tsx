@@ -29,7 +29,8 @@ import {
   Loader2,
   Building2,
   Music,
-  Mic
+  Mic,
+  MessageCircle
 } from 'lucide-react'
 import { 
   ArtistJob, 
@@ -45,6 +46,7 @@ export default function JobsPage() {
   const { user } = useAuth()
   const { currentAccount } = useMultiAccount()
   const [jobs, setJobs] = useState<ArtistJob[]>([])
+  const [collaborations, setCollaborations] = useState<ArtistJob[]>([])
   const [categories, setCategories] = useState<ArtistJobCategory[]>([])
   const [savedJobs, setSavedJobs] = useState<ArtistJob[]>([])
   const [userApplications, setUserApplications] = useState<ArtistJob[]>([])
@@ -70,6 +72,8 @@ export default function JobsPage() {
   useEffect(() => {
     if (activeTab === 'all') {
       fetchJobs()
+    } else if (activeTab === 'collaborations') {
+      fetchCollaborations()
     } else if (activeTab === 'saved') {
       fetchSavedJobs()
     } else if (activeTab === 'applications') {
@@ -127,6 +131,34 @@ export default function JobsPage() {
       }
     } catch (error) {
       console.error('Error fetching saved jobs:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchCollaborations = async () => {
+    setIsLoading(true)
+    try {
+      const queryParams = new URLSearchParams()
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (Array.isArray(value)) {
+            queryParams.set(key, value.join(','))
+          } else {
+            queryParams.set(key, value.toString())
+          }
+        }
+      })
+      // Add collaboration filter
+      queryParams.set('job_type', 'collaboration')
+
+      const response = await fetch(`/api/artist-jobs?${queryParams}`)
+      const data = await response.json()
+      if (data.success) {
+        setCollaborations(data.data.jobs)
+      }
+    } catch (error) {
+      console.error('Error fetching collaborations:', error)
     } finally {
       setIsLoading(false)
     }
@@ -248,6 +280,8 @@ export default function JobsPage() {
 
   const getDisplayJobs = () => {
     switch (activeTab) {
+      case 'collaborations':
+        return collaborations
       case 'saved':
         return savedJobs
       case 'applications':
@@ -265,6 +299,12 @@ export default function JobsPage() {
       color: "from-blue-500 to-cyan-500"
     },
     {
+      label: "Collaborations",
+      value: collaborations.length,
+      icon: Users,
+      color: "from-purple-500 to-blue-500"
+    },
+    {
       label: "Featured",
       value: featuredJobs.length,
       icon: Star,
@@ -275,12 +315,6 @@ export default function JobsPage() {
       value: savedJobs.length,
       icon: Bookmark,
       color: "from-purple-500 to-pink-500"
-    },
-    {
-      label: "Applications",
-      value: userApplications.length,
-      icon: Users,
-      color: "from-green-500 to-emerald-500"
     }
   ]
 
@@ -450,13 +484,20 @@ export default function JobsPage() {
             transition={{ duration: 0.5, delay: 0.6 }}
           >
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-800/50 backdrop-blur-xl border border-slate-700/30 rounded-xl p-1">
+              <TabsList className="grid w-full grid-cols-4 mb-6 bg-slate-800/50 backdrop-blur-xl border border-slate-700/30 rounded-xl p-1">
                 <TabsTrigger 
                   value="all" 
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300"
                 >
                   <Briefcase className="h-4 w-4 mr-2" />
                   All Jobs
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="collaborations" 
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Collaborations
                 </TabsTrigger>
                 <TabsTrigger 
                   value="saved" 
@@ -469,7 +510,7 @@ export default function JobsPage() {
                   value="applications" 
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300"
                 >
-                  <Users className="h-4 w-4 mr-2" />
+                  <MessageCircle className="h-4 w-4 mr-2" />
                   Applications
                 </TabsTrigger>
               </TabsList>
@@ -532,11 +573,13 @@ export default function JobsPage() {
                         <h3 className="text-xl font-semibold text-white mb-2">
                           {activeTab === 'saved' ? 'No Saved Jobs' : 
                            activeTab === 'applications' ? 'No Applications' : 
+                           activeTab === 'collaborations' ? 'No Collaborations Found' :
                            'No Jobs Found'}
                         </h3>
                         <p className="text-slate-400 mb-6">
                           {activeTab === 'saved' ? 'Jobs you save will appear here' : 
                            activeTab === 'applications' ? 'Your job applications will appear here' : 
+                           activeTab === 'collaborations' ? 'No collaboration opportunities available. Check back later or post your own!' :
                            'Try adjusting your filters or check back later for new opportunities'}
                         </p>
                         {activeTab === 'all' && (

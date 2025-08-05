@@ -1,6 +1,6 @@
 "use client"
 
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { useEffect, useState, createContext, useContext } from 'react'
 
 // =============================================================================
@@ -166,7 +166,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     permissions: []
   })
 
-  const supabase = createClient()
+  // Using imported supabase instance
 
   // =============================================================================
   // UTILITY FUNCTIONS

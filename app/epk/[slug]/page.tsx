@@ -54,15 +54,20 @@ interface EPKData {
   avatarUrl?: string
 }
 
-export default function PublicEPKPage({ params }: { params: { slug: string } }) {
+export default function PublicEPKPage({ params }: { params: Promise<{ slug: string }> }) {
   // TODO: Fetch EPK data from Supabase based on slug
   const [epkData, setEpkData] = React.useState<EPKData | null>(null)
   const [loading, setLoading] = React.useState(true)
+  const [slug, setSlug] = React.useState<string>("")
 
   React.useEffect(() => {
-    // TODO: Implement data fetching
-    setLoading(false)
-  }, [params.slug])
+    // Get the slug from params
+    params.then(({ slug }) => {
+      setSlug(slug)
+      // TODO: Implement data fetching
+      setLoading(false)
+    })
+  }, [params])
 
   if (loading) {
     return (

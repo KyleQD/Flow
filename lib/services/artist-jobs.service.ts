@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import {
   ArtistJob,
   ArtistJobApplication,
@@ -8,10 +8,11 @@ import {
   JobSearchResults,
   CreateJobFormData,
   CreateApplicationFormData,
+  CollaborationApplication,
+  CreateCollaborationApplicationFormData,
+  CollaborationFilters,
   ApiResponse
 } from '@/types/artist-jobs'
-
-const supabase = createClient()
 
 export class ArtistJobsService {
   // =============================================================================
@@ -634,6 +635,298 @@ export class ArtistJobsService {
 
     if (error) {
       console.error('Error fetching featured jobs:', error)
+      return []
+    }
+
+    return data || []
+  }
+
+  // =============================================================================
+  // COLLABORATION-SPECIFIC METHODS
+  // =============================================================================
+
+  static async searchCollaborations(filters: CollaborationFilters = {}): Promise<JobSearchResults> {
+    // Use the base search method but filter for collaboration type
+    const collaborationFilters: JobSearchFilters = {
+      ...filters,
+      job_type: ['collaboration']
+    }
+    
+    return this.searchJobs(collaborationFilters)
+  }
+
+  static async createCollaboration(collaborationData: CreateJobFormData, userId: string): Promise<ArtistJob> {
+    // Ensure the job type is collaboration
+    const jobData = {
+      ...collaborationData,
+      job_type: 'collaboration' as const,
+      posted_by_type: 'artist' as const
+    }
+
+    return this.createJob(jobData, userId)
+  }
+
+  static async applyToCollaboration(
+    applicationData: CreateCollaborationApplicationFormData, 
+    userId: string
+  ): Promise<CollaborationApplication> {
+    const { data, error } = await supabase
+      .from('collaboration_applications')
+      .insert({
+        ...applicationData,
+        applicant_id: userId
+      })
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('Error applying to collaboration:', error)
+      throw new Error('Failed to apply to collaboration')
+    }
+
+    return data as CollaborationApplication
+  }
+
+  static async getCollaborationApplications(
+    jobId: string, 
+    userId: string
+  ): Promise<CollaborationApplication[]> {
+    // Verify user owns the collaboration job
+    const { data: job } = await supabase
+      .from('artist_jobs')
+      .select('posted_by')
+      .eq('id', jobId)
+      .eq('posted_by', userId)
+      .eq('job_type', 'collaboration')
+      .single()
+
+    if (!job) {
+      throw new Error('Unauthorized: You can only view applications for your own collaboration jobs')
+    }
+
+    const { data, error } = await supabase
+      .from('collaboration_applications')
+      .select('*')
+      .eq('job_id', jobId)
+      .order('applied_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching collaboration applications:', error)
+      throw new Error('Failed to fetch collaboration applications')
+    }
+
+    return data || []
+  }
+
+  static async getUserCollaborationApplications(userId: string): Promise<CollaborationApplication[]> {
+    const { data, error } = await supabase
+      .from('collaboration_applications')
+      .select(`
+        *,
+        job:artist_jobs(
+          title,
+          category:artist_job_categories(name)
+        )
+      `)
+      .eq('applicant_id', userId)
+      .order('applied_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching user collaboration applications:', error)
+      throw new Error('Failed to fetch user collaboration applications')
+    }
+
+    return data || []
+  }
+
+  static async updateCollaborationApplicationStatus(
+    applicationId: string,
+    status: CollaborationApplication['status'],
+    userId: string,
+    responseMessage?: string
+  ): Promise<CollaborationApplication> {
+    const { data, error } = await supabase
+      .from('collaboration_applications')
+      .update({
+        status,
+        response_message: responseMessage,
+        reviewed_at: new Date().toISOString(),
+        responded_at: ['accepted', 'rejected'].includes(status) ? new Date().toISOString() : undefined
+      })
+      .eq('id', applicationId)
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('Error updating collaboration application status:', error)
+      throw new Error('Failed to update collaboration application status')
+    }
+
+    return data as CollaborationApplication
+  }
+
+  static async withdrawCollaborationApplication(applicationId: string, userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('collaboration_applications')
+      .update({ status: 'withdrawn' })
+      .eq('id', applicationId)
+      .eq('applicant_id', userId)
+
+    if (error) {
+      console.error('Error withdrawing collaboration application:', error)
+      throw new Error('Failed to withdraw collaboration application')
+    }
+  }
+
+  static async getUserCollaborations(userId: string): Promise<ArtistJob[]> {
+    const { data, error } = await supabase
+      .from('artist_jobs')
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .eq('posted_by', userId)
+      .eq('job_type', 'collaboration')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching user collaborations:', error)
+      throw new Error('Failed to fetch user collaborations')
+    }
+
+    return data || []
+  }
+
+  static async getCollaborationStats(userId: string): Promise<{
+    posted: number
+    active: number
+    applications_received: number
+    applications_sent: number
+  }> {
+    const [
+      postedResult,
+      activeResult,
+      receivedResult,
+      sentResult
+    ] = await Promise.all([
+      supabase
+        .from('artist_jobs')
+        .select('id', { count: 'exact' })
+        .eq('posted_by', userId)
+        .eq('job_type', 'collaboration'),
+      
+      supabase
+        .from('artist_jobs')
+        .select('id', { count: 'exact' })
+        .eq('posted_by', userId)
+        .eq('job_type', 'collaboration')
+        .eq('status', 'open'),
+      
+      supabase
+        .from('collaboration_applications')
+        .select('id', { count: 'exact' })
+        .in('job_id', 
+          await supabase
+            .from('artist_jobs')
+            .select('id')
+            .eq('posted_by', userId)
+            .eq('job_type', 'collaboration')
+            .then(result => result.data?.map(job => job.id) || [])
+        ),
+      
+      supabase
+        .from('collaboration_applications')
+        .select('id', { count: 'exact' })
+        .eq('applicant_id', userId)
+    ])
+
+    return {
+      posted: postedResult.count || 0,
+      active: activeResult.count || 0,
+      applications_received: receivedResult.count || 0,
+      applications_sent: sentResult.count || 0
+    }
+  }
+
+  static async getRecommendedCollaborations(userId: string, limit = 10): Promise<ArtistJob[]> {
+    // Get user's collaboration application history to understand preferences
+    const { data: userApplications } = await supabase
+      .from('collaboration_applications')
+      .select(`
+        job:artist_jobs(
+          category_id,
+          genre,
+          instruments_needed,
+          required_genres,
+          payment_type,
+          location_type
+        )
+      `)
+      .eq('applicant_id', userId)
+      .limit(20)
+
+    if (!userApplications?.length) {
+      // If no collaboration history, return recent collaborations
+      return this.getRecentCollaborations(limit)
+    }
+
+    // Extract preferences from collaboration application history
+    const categories = new Set()
+    const genres = new Set()
+    const instruments = new Set()
+    const paymentTypes = new Set()
+
+    userApplications.forEach(app => {
+      if (app.job) {
+        categories.add(app.job.category_id)
+        if (app.job.genre) genres.add(app.job.genre)
+        app.job.instruments_needed?.forEach(instrument => instruments.add(instrument))
+        app.job.required_genres?.forEach(genre => genres.add(genre))
+        paymentTypes.add(app.job.payment_type)
+      }
+    })
+
+    // Build recommendation query
+    let queryBuilder = supabase
+      .from('artist_jobs')
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .eq('status', 'open')
+      .eq('job_type', 'collaboration')
+      .neq('posted_by', userId) // Don't recommend user's own collaborations
+
+    if (categories.size > 0) {
+      queryBuilder = queryBuilder.in('category_id', Array.from(categories))
+    }
+
+    const { data, error } = await queryBuilder
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error fetching recommended collaborations:', error)
+      return this.getRecentCollaborations(limit)
+    }
+
+    return data || []
+  }
+
+  static async getRecentCollaborations(limit = 10): Promise<ArtistJob[]> {
+    const { data, error } = await supabase
+      .from('artist_jobs')
+      .select(`
+        *,
+        category:artist_job_categories(*)
+      `)
+      .eq('status', 'open')
+      .eq('job_type', 'collaboration')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error fetching recent collaborations:', error)
       return []
     }
 

@@ -45,6 +45,37 @@ import { useMultiAccount } from "@/hooks/use-multi-account"
 import { useEffect, useState } from "react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
+// View Profile Button Component
+function ViewProfileButton() {
+  const { currentAccount } = useMultiAccount()
+  
+  const getUsername = () => {
+    if (currentAccount?.account_type === 'artist') {
+      return currentAccount.profile_data?.artist_name?.toLowerCase().replace(/\s+/g, '') || 
+             currentAccount.profile_data?.stage_name?.toLowerCase().replace(/\s+/g, '') || 
+             currentAccount.username || 
+             'neon_pulse_official' // Fallback to demo artist for testing
+    }
+    return currentAccount?.username || 'neon_pulse_official' // Fallback to demo artist for testing
+  }
+
+  const username = getUsername()
+
+  return (
+    <Button
+      asChild
+      variant="outline"
+      size="sm"
+      className="w-full border-purple-500/30 text-purple-300 hover:text-white hover:border-purple-500/50 hover:bg-purple-500/10 transition-all duration-300"
+    >
+      <Link href={`/artist/${username}`}>
+        <User className="h-4 w-4 mr-2" />
+        View Profile
+      </Link>
+    </Button>
+  )
+}
+
 // Profile Card Component
 function ProfileCard() {
   const { user } = useAuth()
@@ -234,6 +265,18 @@ export function AppSidebar() {
               <Sparkles className="h-4 w-4 text-purple-400" />
             </motion.div>
             <span className="text-xs font-medium text-purple-300">Artist Mode</span>
+          </motion.div>
+        )}
+
+        {/* View Profile Button */}
+        {isArtistPage && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-4"
+          >
+            <ViewProfileButton />
           </motion.div>
         )}
 

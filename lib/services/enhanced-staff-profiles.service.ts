@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client"
 import { 
   VenueTeamMember, 
   StaffCertification, 
@@ -9,7 +9,7 @@ import {
   StaffTimeOffRequest 
 } from "@/types/database.types"
 
-const supabase = createClient()
+// supabase imported directly above
 
 export interface StaffProfileData extends VenueTeamMember {
   certifications?: StaffCertification[]

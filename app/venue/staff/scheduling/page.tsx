@@ -21,11 +21,11 @@ import { ShiftAnalytics } from '@/components/venue/staff/shift-analytics'
 import { ShiftRequests } from '@/components/venue/staff/shift-requests'
 
 interface SchedulingPageProps {
-  searchParams: { venueId?: string }
+  searchParams: Promise<{ venueId?: string }>
 }
 
-export default function SchedulingPage({ searchParams }: SchedulingPageProps) {
-  const venueId = searchParams.venueId
+export default async function SchedulingPage({ searchParams }: SchedulingPageProps) {
+  const { venueId } = await searchParams
 
   if (!venueId) {
     return (

@@ -7,26 +7,33 @@ import EventTabs from "../components/event-details/event-tabs"
 import { useVenueEvents } from "../lib/hooks/use-venue-events"
 
 interface EventDetailsPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function EventDetailsPage({ params }: EventDetailsPageProps) {
   const { events, isLoading } = useVenueEvents()
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [eventId, setEventId] = useState<string>("")
 
   useEffect(() => {
-    if (events && events.length > 0) {
+    params.then(({ id }) => {
+      setEventId(id)
+    })
+  }, [params])
+
+  useEffect(() => {
+    if (events && events.length > 0 && eventId) {
       // Find the event that matches the ID from params
-      const event = events.find((e: any) => e.id === params.id)
+      const event = events.find((e: any) => e.id === eventId)
       if (event) {
         setSelectedEvent(event)
       } else {
         notFound()
       }
     }
-  }, [events, params.id])
+  }, [events, eventId])
 
   if (isLoading) {
     return (

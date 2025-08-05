@@ -1,59 +1,75 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
-import { useMultiAccount } from "@/hooks/use-multi-account"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CrossAccountHub } from "@/components/dashboard/cross-account-hub"
-import { LocalDiscovery } from "@/components/dashboard/local-discovery"
-import { PlatformFeaturesHub } from "@/components/dashboard/platform-features-hub"
-import { QuickPostCreator } from "@/components/dashboard/quick-post-creator"
-
-import { EnhancedAccountCards } from "@/components/dashboard/enhanced-account-cards"
-import { UnifiedActivityFeed } from "@/components/dashboard/unified-activity-feed"
-import { EnhancedQuickActions } from "@/components/dashboard/enhanced-quick-actions"
-import { DashboardFeed } from "@/components/dashboard/dashboard-feed"
-import { DashboardService } from "@/lib/services/dashboard.service"
-import { 
-  Music, 
-  Calendar, 
-  Users, 
-  BarChart3, 
-  Plus, 
-  Heart, 
-  MessageCircle, 
-  Share, 
-  TrendingUp,
-  Sparkles,
-  Activity,
-  Award,
-  Zap,
-  Eye,
-  Globe,
-  Play,
-  Star,
-  Clock,
-  CheckCircle,
-  Building,
-  Mic,
-  Target,
-  ArrowRight,
-  ChevronRight,
-  ExternalLink,
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
+import { useMultiAccount } from '@/hooks/use-multi-account'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { EnhancedAccountCards } from '@/components/dashboard/enhanced-account-cards'
+import { DashboardFeed } from '@/components/dashboard/dashboard-feed'
+import { QuickActions } from '@/components/dashboard/quick-actions'
+import { RecentActivity } from '@/components/dashboard/recent-activity'
+import { EnhancedAccountStatusBar } from '@/components/dashboard/enhanced-account-status-bar'
+import { QuickPostCreator } from '@/components/dashboard/quick-post-creator'
+import { UnifiedActivityFeed } from '@/components/dashboard/unified-activity-feed'
+import { EnhancedQuickActions } from '@/components/dashboard/enhanced-quick-actions'
+import { getProfileUsername } from '@/lib/utils/profile-utils'
+import { DashboardService } from '@/lib/services/dashboard.service'
+import {
   User,
-  Bell,
+  MapPin,
+  Calendar,
+  Briefcase,
+  Award,
+  Users,
+  Mail,
+  Phone,
+  Globe,
+  Star,
+  CheckCircle,
+  ExternalLink,
+  Share2,
+  Share,
+  BookOpen,
+  GraduationCap,
+  Target,
+  TrendingUp,
+  Camera,
+  FileText,
+  Code,
+  Palette,
+  Music,
+  Video,
+  Building,
+  Clock,
+  ThumbsUp,
+  MessageCircle,
+  Network,
+  Play,
+  Pause,
+  Eye,
+  Heart,
+  Download,
+  Disc3,
+  Radio,
+  Headphones,
+  Volume2,
+  Plus,
+  Edit,
   Settings,
-  Compass
-} from "lucide-react"
+  BarChart3,
+  ArrowRight,
+  Activity,
+  ChevronRight
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface DashboardData {
   stats: {
@@ -114,6 +130,8 @@ export default function DashboardPage() {
   const isNewUser = searchParams.get('welcome') === 'true'
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [isLoadingData, setIsLoadingData] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const supabase = createClientComponentClient()
 
   // Force load state for handling redirect scenarios
@@ -128,20 +146,7 @@ export default function DashboardPage() {
 
   // Get the username for profile viewing
   const getUserUsername = () => {
-    // Try multiple sources for username
-    if (userProfile?.metadata?.username) {
-      return userProfile.metadata.username
-    }
-    if (userProfile?.username) {
-      return userProfile.username
-    }
-    // Fallback to email prefix
-    const emailUsername = user?.email?.split('@')[0]
-    if (emailUsername) {
-      return emailUsername
-    }
-    // Last resort fallback
-    return 'user'
+    return getProfileUsername(userProfile)
   }
 
   // Get the display name from profile or fallback to user metadata
@@ -251,6 +256,9 @@ export default function DashboardPage() {
     // Load real dashboard data
     const loadDashboardData = async () => {
       try {
+        setIsLoadingData(true)
+        setError(null)
+        
         if (!dashboardUser?.id) return
         
         // Add timeout to prevent hanging
@@ -330,6 +338,7 @@ export default function DashboardPage() {
       })
     } catch (error) {
       console.error('Error loading dashboard data:', error)
+      setError('Failed to load dashboard data')
       // Set fallback dashboard data to prevent hanging
       setDashboardData({
         stats: {
@@ -385,6 +394,8 @@ export default function DashboardPage() {
           }
         ]
       })
+    } finally {
+      setIsLoadingData(false)
     }
   }
 
@@ -519,7 +530,16 @@ export default function DashboardPage() {
           </div>
         )}
 
-
+        {/* Error Alert */}
+        {error && (
+          <div className="container mx-auto px-4 sm:px-6 py-6 max-w-7xl">
+            <Alert className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border-red-500/50 backdrop-blur-sm">
+              <AlertDescription className="text-red-200">
+                ⚠️ {error} - Showing fallback data. Some features may be limited.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="container mx-auto px-4 sm:px-6 py-8 max-w-7xl">
@@ -598,8 +618,6 @@ export default function DashboardPage() {
 
               {/* Unified Activity Feed */}
               <UnifiedActivityFeed />
-
-
 
               {/* Content Tabs */}
               <Tabs defaultValue="overview" className="w-full">

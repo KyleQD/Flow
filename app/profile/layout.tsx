@@ -13,7 +13,6 @@ export default function ProfileLayout({
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950">
       <div className="container py-6">
-        <h1 className="text-3xl font-bold text-slate-100 mb-6">Profile</h1>
         {children}
       </div>
     </div>

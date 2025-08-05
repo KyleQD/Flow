@@ -38,7 +38,7 @@ export function TaskCard({ task, eventId, eventName, onEdit, onDelete, onStatusC
         ) {
           const statusText =
             status === "completed" ? "completed" : status === "in-progress" ? "in progress" : "not started"
-          await SlackService.sendTaskNotification(config.channelId, task.name, statusText, eventName)
+          await SlackService.sendTaskNotification(task.id, statusText)
         }
       }
     } catch (error) {

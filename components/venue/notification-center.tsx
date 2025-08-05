@@ -116,6 +116,7 @@ export function NotificationCenter({ trigger }: NotificationCenterProps) {
 
   // Handle notification click
   const handleNotificationClick = (notification: any) => {
+    // Mark as read
     markAsRead(notification.id)
 
     // Navigate based on notification type
@@ -125,7 +126,10 @@ export function NotificationCenter({ trigger }: NotificationCenterProps) {
         router.push(`/posts/${notification.id}`)
         break
       case "follow":
-        router.push(`/profile/${notification.user.name.toLowerCase().replace(" ", "")}`)
+        // Use username if available, otherwise fallback to name processing
+        const profileUsername = notification.user.username || 
+          notification.user.name?.toLowerCase().replace(/\s+/g, "")
+        router.push(`/profile/${profileUsername}`)
         break
       case "ticket":
       case "event":

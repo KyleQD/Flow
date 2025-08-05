@@ -1,52 +1,74 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
-import { useMultiAccount } from "@/hooks/use-multi-account"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
-import { QuickPostCreator } from "@/components/dashboard/quick-post-creator"
-import { EnhancedAccountStatusBar } from "@/components/dashboard/enhanced-account-status-bar"
-import { EnhancedAccountCards } from "@/components/dashboard/enhanced-account-cards"
-import { UnifiedActivityFeed } from "@/components/dashboard/unified-activity-feed"
-import { EnhancedQuickActions } from "@/components/dashboard/enhanced-quick-actions"
-import { 
-  Music, 
-  Calendar, 
-  Users, 
-  BarChart3, 
-  Plus, 
-  Heart, 
-  MessageCircle, 
-  Share, 
-  TrendingUp,
-  Sparkles,
-  Activity,
-  Award,
-  Zap,
-  Eye,
-  Globe,
-  Play,
-  Star,
-  Clock,
-  CheckCircle,
-  Building,
-  Mic,
-  Target,
-  ArrowRight,
-  ChevronRight,
-  ExternalLink,
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
+import { useMultiAccount } from '@/hooks/use-multi-account'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { EnhancedAccountCards } from '@/components/dashboard/enhanced-account-cards'
+import { DashboardFeed } from '@/components/dashboard/dashboard-feed'
+import { QuickActions } from '@/components/dashboard/quick-actions'
+import { RecentActivity } from '@/components/dashboard/recent-activity'
+import { EnhancedAccountStatusBar } from '@/components/dashboard/enhanced-account-status-bar'
+import { QuickPostCreator } from '@/components/dashboard/quick-post-creator'
+import { UnifiedActivityFeed } from '@/components/dashboard/unified-activity-feed'
+import { EnhancedQuickActions } from '@/components/dashboard/enhanced-quick-actions'
+import { getProfileUsername } from '@/lib/utils/profile-utils'
+import { DashboardService } from '@/lib/services/dashboard.service'
+import {
   User,
-  Bell,
+  MapPin,
+  Calendar,
+  Briefcase,
+  Award,
+  Users,
+  Mail,
+  Phone,
+  Globe,
+  Star,
+  CheckCircle,
+  ExternalLink,
+  Share2,
+  Share,
+  BookOpen,
+  GraduationCap,
+  Target,
+  TrendingUp,
+  Camera,
+  FileText,
+  Code,
+  Palette,
+  Music,
+  Video,
+  Building,
+  Clock,
+  ThumbsUp,
+  MessageCircle,
+  Network,
+  Play,
+  Pause,
+  Eye,
+  Heart,
+  Download,
+  Disc3,
+  Radio,
+  Headphones,
+  Volume2,
+  Plus,
+  Edit,
   Settings,
-  Compass
-} from "lucide-react"
+  BarChart3,
+  ArrowRight,
+  Activity,
+  ChevronRight
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface DashboardData {
   stats: {
@@ -110,11 +132,7 @@ export default function OptimizedDashboard() {
   const supabase = createClientComponentClient()
 
   const getUserUsername = () => {
-    return userProfile?.username || 
-           userProfile?.metadata?.username || 
-           user?.user_metadata?.username || 
-           user?.email?.split('@')[0] || 
-           'user'
+    return getProfileUsername(userProfile)
   }
 
   const getDisplayName = () => {

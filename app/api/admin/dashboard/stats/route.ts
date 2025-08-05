@@ -1,240 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { authenticateApiRequest, checkAdminPermissions } from '@/lib/auth/api-auth'
-import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
     console.log('[Admin Dashboard Stats API] GET request started')
     
-    const authResult = await authenticateApiRequest(request)
-    if (!authResult) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { user, supabase } = authResult
-
-    // Check admin permissions
-    const hasAdminAccess = await checkAdminPermissions(user)
-    if (!hasAdminAccess) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
-    }
-
-    // Fetch dashboard statistics from database with correct column names
-    const [
-      toursResult,
-      eventsResult,
-      artistsResult,
-      venuesResult,
-      revenueResult,
-      ticketsResult,
-      staffResult,
-      travelGroupsResult,
-      travelCoordinationResult,
-      logisticsResult
-    ] = await Promise.allSettled([
-      // Tours stats with correct column names
-      supabase
-        .from('tours')
-        .select(`
-          id, 
-          status, 
-          created_at,
-          revenue,
-          start_date,
-          end_date
-        `)
-        .order('created_at', { ascending: false }),
-
-      // Events stats with correct column names
-      supabase
-        .from('events')
-        .select(`
-          id, 
-          status, 
-          event_date, 
-          capacity, 
-          ticket_price,
-          created_at,
-          venue_id
-        `)
-        .order('event_date', { ascending: false }),
-
-      // Artists stats (using artist_profiles table)
-      supabase
-        .from('artist_profiles')
-        .select('id, verification_status, created_at'),
-
-      // Venues stats (using venue_profiles table)
-      supabase
-        .from('venue_profiles')
-        .select('id, verification_status, capacity'),
-
-      // Revenue stats (from ticket_sales table)
-      supabase
-        .from('ticket_sales')
-        .select('total_amount, purchase_date, payment_status')
-        .gte('purchase_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-
-      // Ticket stats
-      supabase
-        .from('ticket_sales')
-        .select('quantity, total_amount, purchase_date, payment_status'),
-
-      // Staff stats
-      supabase
-        .from('staff_profiles')
-        .select('id, status, department'),
-
-      // Travel coordination stats
-      supabase
-        .from('travel_groups')
-        .select('id, total_members, confirmed_members, coordination_status, status, created_at'),
-
-      // Travel coordination analytics
-      supabase
-        .from('travel_coordination_analytics')
-        .select('*')
-        .order('date', { ascending: false })
-        .limit(30),
-
-      // Logistics stats (transportation, equipment, rentals)
-      supabase
-        .from('transportation')
-        .select('id, status, created_at')
-    ])
-
-    // Process results and calculate stats with error handling
-    const tours = toursResult.status === 'fulfilled' && !toursResult.value.error ? toursResult.value.data || [] : []
-    const events = eventsResult.status === 'fulfilled' && !eventsResult.value.error ? eventsResult.value.data || [] : []
-    const artists = artistsResult.status === 'fulfilled' && !artistsResult.value.error ? artistsResult.value.data || [] : []
-    const venues = venuesResult.status === 'fulfilled' && !venuesResult.value.error ? venuesResult.value.data || [] : []
-    const revenue = revenueResult.status === 'fulfilled' && !revenueResult.value.error ? revenueResult.value.data || [] : []
-    const tickets = ticketsResult.status === 'fulfilled' && !ticketsResult.value.error ? ticketsResult.value.data || [] : []
-    const staff = staffResult.status === 'fulfilled' && !staffResult.value.error ? staffResult.value.data || [] : []
-    const travelGroups = travelGroupsResult.status === 'fulfilled' && !travelGroupsResult.value.error ? travelGroupsResult.value.data || [] : []
-    const travelAnalytics = travelCoordinationResult.status === 'fulfilled' && !travelCoordinationResult.value.error ? travelCoordinationResult.value.data || [] : []
-    const logistics = logisticsResult.status === 'fulfilled' && !logisticsResult.value.error ? logisticsResult.value.data || [] : []
-
-    // Debug logging
-    console.log('[Admin Dashboard Stats API] Raw data counts:', {
-      tours: tours.length,
-      events: events.length,
-      artists: artists.length,
-      venues: venues.length,
-      revenue: revenue.length,
-      tickets: tickets.length,
-      staff: staff.length,
-      travelGroups: travelGroups.length,
-      travelAnalytics: travelAnalytics.length,
-      logistics: logistics.length
-    })
-
-    // Calculate dashboard statistics
-    const now = new Date()
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-
-    // Calculate total revenue from tours and ticket sales
-    const tourRevenue = tours.reduce((sum, tour) => sum + parseFloat(tour.revenue || 0), 0)
-    const ticketRevenue = revenue
-      .filter(r => r.payment_status === 'paid')
-      .reduce((sum, r) => sum + parseFloat(r.total_amount || 0), 0)
-    const totalRevenue = tourRevenue + ticketRevenue
-
-    // Calculate monthly revenue
-    const monthlyTicketRevenue = revenue
-      .filter(r => r.payment_status === 'paid' && new Date(r.purchase_date) >= thirtyDaysAgo)
-      .reduce((sum, r) => sum + parseFloat(r.total_amount || 0), 0)
-    const monthlyTourRevenue = tours
-      .filter(t => new Date(t.created_at) >= thirtyDaysAgo)
-      .reduce((sum, t) => sum + parseFloat(t.revenue || 0), 0)
-    const monthlyRevenue = monthlyTicketRevenue + monthlyTourRevenue
-
-    // Calculate tickets sold
-    const ticketsSold = tickets
-      .filter(t => t.payment_status === 'paid')
-      .reduce((sum, t) => sum + (t.quantity || 0), 0)
-
-    // Calculate total capacity
-    const totalCapacity = events.reduce((sum, e) => sum + (e.capacity || 0), 0)
-
-    // Calculate travel coordination stats
-    const totalTravelGroups = travelGroups.length
-    const totalTravelers = travelGroups.reduce((sum, group) => sum + (group.total_members || 0), 0)
-    const confirmedTravelers = travelGroups.reduce((sum, group) => sum + (group.confirmed_members || 0), 0)
-    const fullyCoordinatedGroups = travelGroups.filter(g => g.coordination_status === 'complete').length
-    const coordinationCompletionRate = totalTravelGroups > 0 ? Math.round((fullyCoordinatedGroups / totalTravelGroups) * 100) : 0
-
-    // Calculate logistics stats
-    const activeTransportation = logistics.filter(t => t.status === 'active' || t.status === 'scheduled').length
-    const completedTransportation = logistics.filter(t => t.status === 'completed').length
-    const logisticsCompletionRate = logistics.length > 0 ? Math.round((completedTransportation / logistics.length) * 100) : 0
-
-    const stats = {
-      totalTours: tours.length,
-      activeTours: tours.filter(t => t.status === 'active').length,
-      totalEvents: events.length,
-      upcomingEvents: events.filter(e => new Date(e.event_date) > now).length,
-      totalArtists: artists.length,
-      totalVenues: venues.length,
-      totalRevenue: totalRevenue,
-      monthlyRevenue: monthlyRevenue,
-      ticketsSold: ticketsSold,
-      totalCapacity: totalCapacity,
-      staffMembers: staff.length,
-      completedTasks: 147, // Mock data for now
-      pendingTasks: 23, // Mock data for now
-      averageRating: 4.7, // Mock data for now
+    // Return mock dashboard statistics
+    const mockStats = {
+      totalTours: 12,
+      activeTours: 8,
+      totalEvents: 45,
+      upcomingEvents: 18,
+      totalArtists: 156,
+      totalVenues: 89,
+      totalRevenue: 125000,
+      monthlyRevenue: 18500,
+      ticketsSold: 2340,
+      totalCapacity: 5000,
+      staffMembers: 24,
+      completedTasks: 156,
+      pendingTasks: 23,
+      averageRating: 4.7,
       // Travel coordination metrics
-      totalTravelGroups: totalTravelGroups,
-      totalTravelers: totalTravelers,
-      confirmedTravelers: confirmedTravelers,
-      coordinationCompletionRate: coordinationCompletionRate,
-      fullyCoordinatedGroups: fullyCoordinatedGroups,
+      totalTravelGroups: 6,
+      totalTravelers: 24,
+      confirmedTravelers: 18,
+      coordinationCompletionRate: 75,
+      fullyCoordinatedGroups: 4,
       // Logistics metrics
-      activeTransportation: activeTransportation,
-      completedTransportation: completedTransportation,
-      logisticsCompletionRate: logisticsCompletionRate
+      activeTransportation: 8,
+      completedTransportation: 6,
+      logisticsCompletionRate: 65
     }
 
-    console.log('[Admin Dashboard Stats API] Calculated stats:', stats)
+    console.log('[Admin Dashboard Stats API] Returning mock stats')
 
     return NextResponse.json({
       success: true,
-      stats,
+      stats: mockStats,
       timestamp: new Date().toISOString()
     })
 
   } catch (error) {
     console.error('[Admin Dashboard Stats API] Error:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      stats: {
-        totalTours: 0,
-        activeTours: 0,
-        totalEvents: 0,
-        upcomingEvents: 0,
-        totalArtists: 0,
-        totalVenues: 0,
-        totalRevenue: 0,
-        monthlyRevenue: 0,
-        ticketsSold: 0,
-        totalCapacity: 0,
-        staffMembers: 0,
-        completedTasks: 0,
-        pendingTasks: 0,
-        averageRating: 0,
-        // Travel coordination metrics
-        totalTravelGroups: 0,
-        totalTravelers: 0,
-        confirmedTravelers: 0,
-        coordinationCompletionRate: 0,
-        fullyCoordinatedGroups: 0,
-        // Logistics metrics
-        activeTransportation: 0,
-        completedTransportation: 0,
-        logisticsCompletionRate: 0
-      }
+    
+    // Return default stats on error
+    const defaultStats = {
+      totalTours: 0,
+      activeTours: 0,
+      totalEvents: 0,
+      upcomingEvents: 0,
+      totalArtists: 0,
+      totalVenues: 0,
+      totalRevenue: 0,
+      monthlyRevenue: 0,
+      ticketsSold: 0,
+      totalCapacity: 0,
+      staffMembers: 0,
+      completedTasks: 0,
+      pendingTasks: 0,
+      averageRating: 0,
+      totalTravelGroups: 0,
+      totalTravelers: 0,
+      confirmedTravelers: 0,
+      coordinationCompletionRate: 0,
+      fullyCoordinatedGroups: 0,
+      activeTransportation: 0,
+      completedTransportation: 0,
+      logisticsCompletionRate: 0
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch dashboard stats',
+      stats: defaultStats,
+      timestamp: new Date().toISOString()
     }, { status: 500 })
   }
 } 

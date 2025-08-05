@@ -178,7 +178,5 @@ export async function getVenueProfile(userId: string) {
   return data
 }
 
-// Re-export createClient function
-export function createClient() {
-  return supabase
-} 
+// Export the supabase instance directly - no circular dependency
+export default supabase 

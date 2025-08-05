@@ -156,7 +156,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       const errorReport: ErrorReport = {
         error: error.message,
         stack: error.stack || '',
-        componentStack: errorInfo.componentStack,
+        componentStack: errorInfo.componentStack || '',
         url: window.location.href,
         userAgent: navigator.userAgent,
         timestamp: Date.now(),

@@ -3,180 +3,125 @@ import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    // Use the new authentication method that matches middleware
-    const auth = await authenticateApiRequest(request)
+    console.log('[Profile Current API] GET request started')
     
-    if (!auth) {
-      console.error('❌ Authentication failed')
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { user, supabase } = auth
-    console.log('✅ Successfully authenticated user:', user.id)
+    const { user, supabase } = authResult
 
-    // Get or create user profile
-    let { data: profile, error: profileError } = await supabase
+    console.log('[Profile Current API] User authenticated:', user.id)
+
+    // Get the user's profile with the correct field names
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('*')
+      .select(`
+        id,
+        username,
+        full_name,
+        bio,
+        avatar_url,
+        location,
+        website,
+        is_verified,
+        followers_count,
+        following_count,
+        posts_count,
+        created_at,
+        updated_at
+      `)
       .eq('id', user.id)
       .single()
 
-    // Create profile if it doesn't exist
-    if (profileError?.code === 'PGRST116' || !profile) {
-      console.log('🔨 Creating new profile for user:', user.id)
-      
-      const defaultUsername = user.email?.split('@')[0] || `user_${user.id.slice(0, 8)}`
-      const defaultName = user.user_metadata?.full_name || user.user_metadata?.name || 'Anonymous User'
-      
-      // Generate a unique custom URL
-      const customUrl = `user-${user.id.slice(0, 8)}`
-      
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert({
-          id: user.id,
-          username: defaultUsername,
-          full_name: defaultName,
-          bio: 'Welcome to my profile! 👋',
-          avatar_url: user.user_metadata?.avatar_url || null,
-          custom_url: customUrl,
-          metadata: {
-            username: defaultUsername,
-            full_name: defaultName,
-            bio: 'Welcome to my profile! 👋',
-            show_email: false,
-            show_phone: false,
-            show_location: true,
-            custom_url: customUrl
-          },
-          is_verified: false,
-          followers_count: 0,
-          following_count: 0,
-          posts_count: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single()
-
-      if (createError) {
-        console.error('❌ Failed to create profile:', createError)
-        return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
-      }
-
-      profile = newProfile
-      console.log('✅ Successfully created profile:', profile.id)
+    if (profileError || !profile) {
+      console.log('[Profile Current API] Profile not found for user:', user.id)
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      )
     }
 
-    // Get user's posts
-    const { data: posts, error: postsError } = await supabase
-      .from('posts')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20)
+    console.log('[Profile Current API] Profile found:', profile.username)
 
-    console.log(`📝 Found ${posts?.length || 0} posts for user`)
+    // Get stats based on available data
+    let stats = {
+      followers: profile.followers_count || 0,
+      following: profile.following_count || 0,
+      posts: profile.posts_count || 0,
+      likes: 0,
+      views: 0,
+      streams: 0,
+      events: 0,
+      monthly_listeners: 0,
+      total_revenue: 0,
+      engagement_rate: 0
+    }
 
-    // Get user's post stats
-    const { count: totalPosts } = await supabase
-      .from('posts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-
-    // Get followers/following counts (if tables exist)
-    let followersCount = 0
+    // Try to get additional stats from posts table if it exists
     try {
-      const { count } = await supabase
-        .from('follows')
+      const { count: postCount } = await supabase
+        .from('posts')
         .select('*', { count: 'exact', head: true })
-        .eq('following_id', user.id)
-      followersCount = count || 0
-    } catch (error) {
-      console.log('Follows table not available, using 0 followers')
-    }
+        .eq('user_id', profile.id)
 
-    let followingCount = 0
-    try {
-      const { count } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('follower_id', user.id)
-      followingCount = count || 0
-    } catch (error) {
-      console.log('Follows table not available, using 0 following')
-    }
-
-    // Calculate total likes across all user's posts
-    let totalLikes = 0
-    if (posts && posts.length > 0) {
-      try {
-        const { count } = await supabase
-          .from('post_likes')
-          .select('*', { count: 'exact', head: true })
-          .in('post_id', posts.map((p: any) => p.id))
-        totalLikes = count || 0
-      } catch (error) {
-        console.log('Post likes table not available, using 0 likes')
+      if (postCount !== null) {
+        stats.posts = postCount
       }
+    } catch (error) {
+      console.log('[Profile Current API] Posts table not available, using profile data')
     }
 
-    // Transform to PublicProfileView format
-    const defaultUsername = user.email?.split('@')[0] || `user_${user.id.slice(0, 8)}`
-    const defaultName = user.user_metadata?.full_name || user.user_metadata?.name || 'Anonymous User'
-    const displayName = profile.metadata?.full_name || profile.full_name || defaultName
-    const username = profile.metadata?.username || profile.username || defaultUsername
-    const bio = profile.metadata?.bio || profile.bio || 'Welcome to my profile! 👋'
-    const customUrl = profile.custom_url || profile.metadata?.custom_url || `user-${user.id.slice(0, 8)}`
+    // Get like count (sum of likes on posts) if posts table exists
+    try {
+      const { data: posts } = await supabase
+        .from('posts')
+        .select('likes_count')
+        .eq('user_id', profile.id)
 
-    const transformedProfile = {
+      stats.likes = posts?.reduce((sum, post) => sum + (post.likes_count || 0), 0) || 0
+    } catch (error) {
+      console.log('[Profile Current API] Could not fetch likes data')
+    }
+
+    // Get view count (mock data for now)
+    stats.views = Math.floor(Math.random() * 10000) + 1000
+
+    // Transform the profile to match the expected format
+    const profileWithStats = {
       id: profile.id,
-      username: username,
-      custom_url: customUrl,
+      username: profile.username,
       account_type: 'general' as const,
       profile_data: {
-        name: displayName,
-        bio: bio,
-        location: profile.metadata?.location || '',
-        website: profile.metadata?.website || '',
-        phone: profile.metadata?.phone || ''
+        name: profile.full_name,
+        bio: profile.bio,
+        location: profile.location,
+        website: profile.website
       },
-      avatar_url: profile.avatar_url || '',
+      avatar_url: profile.avatar_url,
       cover_image: null,
-      verified: profile.is_verified || false,
-      bio: bio,
-      location: profile.metadata?.location || '',
+      verified: profile.is_verified,
+      bio: profile.bio,
+      location: profile.location,
       social_links: {
-        instagram: profile.metadata?.instagram || '',
-        twitter: profile.metadata?.twitter || '',
-        website: profile.metadata?.website || '',
-        spotify: ''
+        website: profile.website,
+        instagram: null,
+        twitter: null
       },
-      stats: {
-        followers: followersCount || 0,
-        following: followingCount || 0,
-        posts: totalPosts || 0,
-        likes: totalLikes,
-        views: Math.floor(Math.random() * 100) + 50 // Realistic view count
-      },
-      created_at: profile.created_at || new Date().toISOString(),
-      posts: posts || [] // Include posts data
+      stats,
+      created_at: profile.created_at,
+      updated_at: profile.updated_at
     }
 
-    console.log('✅ Successfully transformed profile with stats:', {
-      username: transformedProfile.username,
-      custom_url: transformedProfile.custom_url,
-      posts: transformedProfile.stats.posts,
-      likes: transformedProfile.stats.likes,
-      followers: transformedProfile.stats.followers
-    })
+    console.log('[Profile Current API] Returning profile with stats')
 
-    return NextResponse.json({ profile: transformedProfile })
+    return NextResponse.json({ profile: profileWithStats })
   } catch (error) {
-    console.error('💥 Profile API error:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    console.error('[Profile Current API] Error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 } 

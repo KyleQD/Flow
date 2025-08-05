@@ -19,12 +19,7 @@ export const createClient = () => {
       supabaseUrl,
       supabaseKey: supabaseAnonKey,
       options: {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-          flowType: "pkce",
-        },
+        // Removed invalid 'auth' property
       },
     })
   } catch (error) {

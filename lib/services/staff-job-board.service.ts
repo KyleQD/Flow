@@ -1,6 +1,4 @@
-import { createClient } from "@/lib/supabase/client"
-
-const supabase = createClient()
+import { supabase } from "@/lib/supabase/client"
 
 // Types matching our database schema
 export interface JobPosting {

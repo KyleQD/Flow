@@ -1,84 +1,111 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    console.log('[Settings Profile API] GET request started')
     
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    console.log('Update request body:', body)
+    const { user, supabase } = authResult
 
-    // Get current profile first
-    const { data: currentProfile, error: fetchError } = await supabase
+    console.log('[Settings Profile API] User authenticated:', user.id)
+
+    // Get the user's profile
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('*')
+      .select(`
+        id,
+        username,
+        account_type,
+        profile_data,
+        avatar_url,
+        cover_image,
+        verified,
+        bio,
+        location,
+        social_links,
+        created_at
+      `)
       .eq('id', user.id)
       .single()
 
-    console.log('Current profile:', currentProfile, 'Error:', fetchError)
-
-    const updatedMetadata = {
-      ...currentProfile?.metadata,
-      full_name: body.full_name,
-      username: body.username,
-      bio: body.bio,
-      phone: body.phone,
-      location: body.location,
-      website: body.website,
-      instagram: body.instagram,
-      twitter: body.twitter,
-      show_email: body.showEmail,
-      show_phone: body.showPhone,
-      show_location: body.showLocation,
+    if (profileError || !profile) {
+      console.log('[Settings Profile API] Profile not found for user:', user.id)
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      )
     }
 
-    console.log('Updated metadata:', updatedMetadata)
+    console.log('[Settings Profile API] Profile found:', profile.username)
 
-    // Use upsert to handle both create and update cases
-    // IMPORTANT: Preserve existing avatar_url if it exists
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: user.id,
-        metadata: updatedMetadata,
-        updated_at: new Date().toISOString(),
-        // Preserve existing avatar_url to prevent overwrites from profile form saves
-        ...(currentProfile?.avatar_url && { avatar_url: currentProfile.avatar_url }),
-      })
-      .select()
-
-    console.log('Upsert result:', { data, error })
-
-    if (error) {
-      console.error('Database error:', error)
-      return NextResponse.json({ 
-        error: error.message,
-        success: false 
-      }, { status: 400 })
-    }
-
-    if (!data || data.length === 0) {
-      return NextResponse.json({ 
-        error: 'No data returned from database operation',
-        success: false 
-      }, { status: 500 })
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      data: data[0],
-      message: 'Profile updated successfully!' 
-    })
-
+    return NextResponse.json({ profile })
   } catch (error) {
-    console.error('Profile update error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[Settings Profile API] Error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    console.log('[Settings Profile API] PUT request started')
+    
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { user, supabase } = authResult
+    const body = await request.json()
+
+    console.log('[Settings Profile API] Updating profile for user:', user.id)
+
+    // Update the user's profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        username: body.username,
+        bio: body.bio,
+        location: body.location,
+        profile_data: {
+          name: body.full_name,
+          phone: body.phone,
+          website: body.website
+        },
+        social_links: {
+          instagram: body.instagram,
+          twitter: body.twitter,
+          website: body.website
+        },
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id)
+      .select()
+      .single()
+
+    if (profileError) {
+      console.error('[Settings Profile API] Error updating profile:', profileError)
+      return NextResponse.json(
+        { error: 'Failed to update profile' },
+        { status: 500 }
+      )
+    }
+
+    console.log('[Settings Profile API] Profile updated successfully')
+
+    return NextResponse.json({ profile })
+  } catch (error) {
+    console.error('[Settings Profile API] Error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 } 

@@ -35,7 +35,6 @@ import {
   MapPin,
   BarChart,
   LineChart,
-  Scatter,
   AreaChart,
   PieChart as PieChartIcon,
   BarChart as BarChartIcon,
@@ -112,7 +111,7 @@ interface ChartData {
   datasets: Array<{
     label: string
     data: number[]
-    backgroundColor?: string
+    backgroundColor?: string | string[]
     borderColor?: string
     fill?: boolean
   }>
@@ -156,36 +155,36 @@ export default function AnalyticsDashboard() {
 
     // Calculate event metrics
     const totalEvents = events.length
-    const upcomingEvents = events.filter(e => e.status === 'scheduled' || e.status === 'confirmed').length
-    const completedEvents = events.filter(e => e.status === 'completed').length
-    const cancelledEvents = events.filter(e => e.status === 'cancelled').length
-    const totalAttendance = events.reduce((sum, e) => sum + (e.tickets_sold || 0), 0)
-    const totalCapacity = events.reduce((sum, e) => sum + (e.capacity || 0), 0)
+    const upcomingEvents = events.filter((e: any) => e.status === 'scheduled' || e.status === 'confirmed').length
+    const completedEvents = events.filter((e: any) => e.status === 'completed').length
+    const cancelledEvents = events.filter((e: any) => e.status === 'cancelled').length
+    const totalAttendance = events.reduce((sum: number, e: any) => sum + (e.tickets_sold || 0), 0)
+    const totalCapacity = events.reduce((sum: number, e: any) => sum + (e.capacity || 0), 0)
     const utilization = totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0
 
     // Calculate tour metrics
     const totalTours = tours.length
-    const activeTours = tours.filter(t => t.status === 'active').length
-    const completedTours = tours.filter(t => t.status === 'completed').length
-    const planningTours = tours.filter(t => t.status === 'planning').length
+    const activeTours = tours.filter((t: any) => t.status === 'active').length
+    const completedTours = tours.filter((t: any) => t.status === 'completed').length
+    const planningTours = tours.filter((t: any) => t.status === 'planning').length
     const successRate = totalTours > 0 ? (completedTours / totalTours) * 100 : 0
 
     // Calculate artist metrics
     const totalArtists = artists.length
-    const activeArtists = artists.filter(a => a.status === 'active').length
+    const activeArtists = artists.filter((a: any) => a.status === 'active').length
     const topPerformingArtists = artists
-      .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
+      .sort((a: any, b: any) => (b.revenue || 0) - (a.revenue || 0))
       .slice(0, 5)
-      .map(a => ({ name: a.name, revenue: a.revenue || 0, events: a.events_count || 0 }))
+      .map((a: any) => ({ name: a.name, revenue: a.revenue || 0, events: a.events_count || 0 }))
 
     // Calculate venue metrics
     const totalVenues = venues.length
-    const activeVenues = venues.filter(v => v.status === 'active').length
-    const averageCapacity = venues.length > 0 ? venues.reduce((sum, v) => sum + (v.capacity || 0), 0) / venues.length : 0
+    const activeVenues = venues.filter((v: any) => v.status === 'active').length
+    const averageCapacity = venues.length > 0 ? venues.reduce((sum: number, v: any) => sum + (v.capacity || 0), 0) / venues.length : 0
     const topVenues = venues
-      .sort((a, b) => (b.events_count || 0) - (a.events_count || 0))
+      .sort((a: any, b: any) => (b.events_count || 0) - (a.events_count || 0))
       .slice(0, 5)
-      .map(v => ({ name: v.name, events: v.events_count || 0, revenue: v.revenue || 0 }))
+      .map((v: any) => ({ name: v.name, events: v.events_count || 0, revenue: v.revenue || 0 }))
 
     // Generate mock history data
     const history = Array.from({ length: 30 }, (_, i) => ({

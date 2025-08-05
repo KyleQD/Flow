@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { PublicProfileView } from "@/components/profile/public-profile-view"
+import { EnhancedPublicProfileView } from "@/components/profile/enhanced-public-profile-view"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -227,7 +227,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Profile View */}
-      <PublicProfileView
+      <EnhancedPublicProfileView
         profile={profile}
         isOwnProfile={isOwnProfile}
         onFollow={handleFollow}

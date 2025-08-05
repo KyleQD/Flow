@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 // =============================================================================
@@ -111,7 +111,7 @@ export function useRealTimeCommunications(options: UseRealTimeCommunicationsOpti
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>()
 
   // Initialize Supabase client
-  const supabase = createClient()
+  // Using imported supabase instance
 
   // =============================================================================
   // SUBSCRIPTION MANAGEMENT

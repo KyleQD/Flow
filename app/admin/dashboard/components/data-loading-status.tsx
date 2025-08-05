@@ -40,7 +40,7 @@ import { useDataMonitoring } from "../hooks/use-data-validation"
 
 interface DataLoadingStatusProps {
   data: any
-  dataType: 'dashboardStats' | 'tours' | 'events' | 'artists' | 'venues'
+  dataType: 'dashboardStats' | 'tour' | 'event' | 'artist' | 'venue'
   isLoading: boolean
   error: string | null
   onRetry?: () => void

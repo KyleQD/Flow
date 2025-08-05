@@ -209,58 +209,58 @@ export function useDataValidation<T>(
 export const validationRules = {
   // Dashboard stats validation
   dashboardStats: [
-    { field: 'totalTours', required: true, type: 'number', minValue: 0 },
-    { field: 'activeTours', required: true, type: 'number', minValue: 0 },
-    { field: 'totalEvents', required: true, type: 'number', minValue: 0 },
-    { field: 'upcomingEvents', required: true, type: 'number', minValue: 0 },
-    { field: 'totalRevenue', required: true, type: 'number', minValue: 0 },
-    { field: 'monthlyRevenue', required: true, type: 'number', minValue: 0 },
-    { field: 'ticketsSold', required: true, type: 'number', minValue: 0 },
-    { field: 'totalCapacity', required: true, type: 'number', minValue: 0 }
+    { field: 'totalTours', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'activeTours', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'totalEvents', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'upcomingEvents', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'totalRevenue', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'monthlyRevenue', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'ticketsSold', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'totalCapacity', required: true, type: 'number' as const, minValue: 0 }
   ],
 
   // Tour validation
   tour: [
-    { field: 'id', required: true, type: 'string', minLength: 1 },
-    { field: 'name', required: true, type: 'string', minLength: 1, maxLength: 200 },
-    { field: 'artist', required: true, type: 'string', minLength: 1 },
-    { field: 'status', required: true, type: 'string', pattern: /^(active|completed|planning|cancelled)$/ },
-    { field: 'start_date', required: true, type: 'string' },
-    { field: 'end_date', required: true, type: 'string' },
-    { field: 'totalShows', required: true, type: 'number', minValue: 0 },
-    { field: 'completedShows', required: true, type: 'number', minValue: 0 },
-    { field: 'revenue', required: true, type: 'number', minValue: 0 }
+    { field: 'id', required: true, type: 'string' as const, minLength: 1 },
+    { field: 'name', required: true, type: 'string' as const, minLength: 1, maxLength: 200 },
+    { field: 'artist', required: true, type: 'string' as const, minLength: 1 },
+    { field: 'status', required: true, type: 'string' as const, pattern: /^(active|completed|planning|cancelled)$/ },
+    { field: 'start_date', required: true, type: 'string' as const },
+    { field: 'end_date', required: true, type: 'string' as const },
+    { field: 'totalShows', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'completedShows', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'revenue', required: true, type: 'number' as const, minValue: 0 }
   ],
 
   // Event validation
   event: [
-    { field: 'id', required: true, type: 'string', minLength: 1 },
-    { field: 'name', required: true, type: 'string', minLength: 1, maxLength: 200 },
-    { field: 'venue_name', required: true, type: 'string', minLength: 1 },
-    { field: 'event_date', required: true, type: 'string' },
-    { field: 'status', required: true, type: 'string', pattern: /^(scheduled|confirmed|completed|cancelled)$/ },
-    { field: 'tickets_sold', required: true, type: 'number', minValue: 0 },
-    { field: 'capacity', required: true, type: 'number', minValue: 0 },
-    { field: 'expected_revenue', required: true, type: 'number', minValue: 0 }
+    { field: 'id', required: true, type: 'string' as const, minLength: 1 },
+    { field: 'name', required: true, type: 'string' as const, minLength: 1, maxLength: 200 },
+    { field: 'venue_name', required: true, type: 'string' as const, minLength: 1 },
+    { field: 'event_date', required: true, type: 'string' as const },
+    { field: 'status', required: true, type: 'string' as const, pattern: /^(scheduled|confirmed|completed|cancelled)$/ },
+    { field: 'tickets_sold', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'capacity', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'expected_revenue', required: true, type: 'number' as const, minValue: 0 }
   ],
 
   // Artist validation
   artist: [
-    { field: 'id', required: true, type: 'string', minLength: 1 },
-    { field: 'name', required: true, type: 'string', minLength: 1, maxLength: 200 },
-    { field: 'status', required: true, type: 'string', pattern: /^(active|inactive)$/ },
-    { field: 'revenue', required: true, type: 'number', minValue: 0 },
-    { field: 'events_count', required: true, type: 'number', minValue: 0 }
+    { field: 'id', required: true, type: 'string' as const, minLength: 1 },
+    { field: 'name', required: true, type: 'string' as const, minLength: 1, maxLength: 200 },
+    { field: 'status', required: true, type: 'string' as const, pattern: /^(active|inactive)$/ },
+    { field: 'revenue', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'events_count', required: true, type: 'number' as const, minValue: 0 }
   ],
 
   // Venue validation
   venue: [
-    { field: 'id', required: true, type: 'string', minLength: 1 },
-    { field: 'name', required: true, type: 'string', minLength: 1, maxLength: 200 },
-    { field: 'status', required: true, type: 'string', pattern: /^(active|inactive)$/ },
-    { field: 'capacity', required: true, type: 'number', minValue: 0 },
-    { field: 'events_count', required: true, type: 'number', minValue: 0 },
-    { field: 'revenue', required: true, type: 'number', minValue: 0 }
+    { field: 'id', required: true, type: 'string' as const, minLength: 1 },
+    { field: 'name', required: true, type: 'string' as const, minLength: 1, maxLength: 200 },
+    { field: 'status', required: true, type: 'string' as const, pattern: /^(active|inactive)$/ },
+    { field: 'capacity', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'events_count', required: true, type: 'number' as const, minValue: 0 },
+    { field: 'revenue', required: true, type: 'number' as const, minValue: 0 }
   ]
 }
 
@@ -363,7 +363,7 @@ export function useDataMonitoring<T>(
       }
 
       // Call change handler
-      if (onDataChange && data !== null) {
+      if (onDataChange && data !== null && data !== undefined) {
         onDataChange(data, previousData)
       }
 

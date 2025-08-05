@@ -26,7 +26,9 @@ import {
   Zap,
   Bell,
   Search,
-  Plus
+  Plus,
+  Clock,
+  Trophy
 } from 'lucide-react'
 
 // =============================================================================
@@ -303,6 +305,19 @@ export function NavigationSidebar({ user, isOpen, onToggle, roleTheme }: Navigat
       {/* Navigation Content */}
       <ScrollArea className="flex-1 px-2 py-4">
         <div className="space-y-6">
+          {/* Main Navigation */}
+          <NavGroup title="Main" defaultOpen={true}>
+            <NavItem href="/" icon={<Home className="h-4 w-4" />} label="Home" />
+            <NavItem href="/dashboard" icon={<BarChart3 className="h-4 w-4" />} label="Dashboard" />
+            <NavItem href="/events" icon={<Calendar className="h-4 w-4" />} label="Events" badge={3} />
+            <NavItem href="/music" icon={<Music className="h-4 w-4" />} label="Music" />
+            <NavItem href="/network" icon={<Users className="h-4 w-4" />} label="Network" />
+            <NavItem href="/messages" icon={<MessageSquare className="h-4 w-4" />} label="Messages" badge={2} />
+            <NavItem href="/bookings" icon={<Clock className="h-4 w-4" />} label="Bookings" badge={5} />
+            <NavItem href="/teams" icon={<Users className="h-4 w-4" />} label="Team" isNew={true} />
+            <NavItem href="/achievements" icon={<Trophy className="h-4 w-4" />} label="Achievements" isNew={true} />
+          </NavGroup>
+
           {/* Primary Navigation */}
           <div>
             {!collapsed && (

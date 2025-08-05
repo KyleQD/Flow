@@ -53,6 +53,12 @@ export interface ArtistJob {
   required_genres: string[]
   age_requirement: string | null
   
+  // Collaboration-specific fields
+  instruments_needed: string[]
+  genre: string | null
+  attachments: Record<string, any>
+  collaboration_details: Record<string, any>
+  
   // Additional Info
   benefits: string[]
   special_requirements: string | null
@@ -76,7 +82,7 @@ export interface ArtistJob {
   poster_name?: string
   poster_avatar?: string
   is_saved?: boolean
-  user_application?: ArtistJobApplication
+  user_application?: ArtistJobApplication | CollaborationApplication
   time_since_posted?: string
   location_display?: string
 }
@@ -203,6 +209,13 @@ export interface CreateJobFormData {
   required_experience?: 'beginner' | 'intermediate' | 'professional'
   required_genres?: string[]
   age_requirement?: string
+  
+  // Collaboration-specific fields
+  instruments_needed?: string[]
+  genre?: string
+  attachments?: Record<string, any>
+  collaboration_details?: Record<string, any>
+  
   benefits?: string[]
   special_requirements?: string
   contact_email?: string
@@ -342,4 +355,165 @@ export const EXPERIENCE_LEVEL_OPTIONS: ExperienceLevelOption[] = [
   { value: 'beginner', label: 'Beginner', description: 'New to performing/music industry' },
   { value: 'intermediate', label: 'Intermediate', description: 'Some experience and skills' },
   { value: 'professional', label: 'Professional', description: 'Experienced professional' }
+]
+
+// =============================================================================
+// COLLABORATION-SPECIFIC TYPES AND INTERFACES
+// =============================================================================
+
+export interface CollaborationApplication {
+  id: string
+  
+  // Base application fields
+  job_id: string
+  applicant_id: string
+  
+  // Collaboration-specific application fields
+  message: string | null
+  sample_attachments: Record<string, any>
+  available_instruments: string[]
+  collaboration_interest: string | null
+  previous_collaborations: string | null
+  
+  // Contact and logistics
+  contact_email: string
+  contact_phone: string | null
+  preferred_contact_method: 'email' | 'phone' | 'platform'
+  
+  // Status and metadata
+  status: 'pending' | 'reviewed' | 'accepted' | 'rejected' | 'withdrawn'
+  response_message: string | null
+  
+  // Timestamps
+  applied_at: string
+  reviewed_at: string | null
+  responded_at: string | null
+  
+  // Computed fields
+  applicant_name?: string
+  applicant_avatar?: string
+  job_title?: string
+  time_since_applied?: string
+}
+
+export interface CreateCollaborationApplicationFormData {
+  job_id: string
+  message?: string
+  sample_attachments?: Record<string, any>
+  available_instruments?: string[]
+  collaboration_interest?: string
+  previous_collaborations?: string
+  contact_email: string
+  contact_phone?: string
+  preferred_contact_method?: 'email' | 'phone' | 'platform'
+}
+
+export interface CollaborationFilters extends JobSearchFilters {
+  instruments_needed?: string[]
+  genre?: string
+}
+
+// =============================================================================
+// COLLABORATION UTILITY TYPES AND CONSTANTS
+// =============================================================================
+
+export type InstrumentOption = {
+  value: string
+  label: string
+  category: string
+}
+
+export type GenreOption = {
+  value: string
+  label: string
+}
+
+export const INSTRUMENT_OPTIONS: InstrumentOption[] = [
+  // Strings
+  { value: 'guitar', label: 'Guitar', category: 'Strings' },
+  { value: 'electric-guitar', label: 'Electric Guitar', category: 'Strings' },
+  { value: 'acoustic-guitar', label: 'Acoustic Guitar', category: 'Strings' },
+  { value: 'bass', label: 'Bass Guitar', category: 'Strings' },
+  { value: 'violin', label: 'Violin', category: 'Strings' },
+  { value: 'viola', label: 'Viola', category: 'Strings' },
+  { value: 'cello', label: 'Cello', category: 'Strings' },
+  { value: 'double-bass', label: 'Double Bass', category: 'Strings' },
+  { value: 'mandolin', label: 'Mandolin', category: 'Strings' },
+  { value: 'banjo', label: 'Banjo', category: 'Strings' },
+  { value: 'ukulele', label: 'Ukulele', category: 'Strings' },
+  
+  // Winds
+  { value: 'flute', label: 'Flute', category: 'Winds' },
+  { value: 'clarinet', label: 'Clarinet', category: 'Winds' },
+  { value: 'oboe', label: 'Oboe', category: 'Winds' },
+  { value: 'bassoon', label: 'Bassoon', category: 'Winds' },
+  { value: 'saxophone', label: 'Saxophone', category: 'Winds' },
+  { value: 'trumpet', label: 'Trumpet', category: 'Winds' },
+  { value: 'trombone', label: 'Trombone', category: 'Winds' },
+  { value: 'french-horn', label: 'French Horn', category: 'Winds' },
+  { value: 'tuba', label: 'Tuba', category: 'Winds' },
+  { value: 'harmonica', label: 'Harmonica', category: 'Winds' },
+  
+  // Percussion
+  { value: 'drums', label: 'Drum Kit', category: 'Percussion' },
+  { value: 'percussion', label: 'Percussion', category: 'Percussion' },
+  { value: 'timpani', label: 'Timpani', category: 'Percussion' },
+  { value: 'xylophone', label: 'Xylophone', category: 'Percussion' },
+  { value: 'vibraphone', label: 'Vibraphone', category: 'Percussion' },
+  { value: 'marimba', label: 'Marimba', category: 'Percussion' },
+  { value: 'congas', label: 'Congas', category: 'Percussion' },
+  { value: 'bongos', label: 'Bongos', category: 'Percussion' },
+  { value: 'cajon', label: 'Cajon', category: 'Percussion' },
+  
+  // Keys
+  { value: 'piano', label: 'Piano', category: 'Keys' },
+  { value: 'keyboard', label: 'Keyboard', category: 'Keys' },
+  { value: 'organ', label: 'Organ', category: 'Keys' },
+  { value: 'synthesizer', label: 'Synthesizer', category: 'Keys' },
+  { value: 'accordion', label: 'Accordion', category: 'Keys' },
+  
+  // Vocals
+  { value: 'vocals', label: 'Lead Vocals', category: 'Vocals' },
+  { value: 'backing-vocals', label: 'Backing Vocals', category: 'Vocals' },
+  { value: 'choir', label: 'Choir', category: 'Vocals' },
+  
+  // Electronic
+  { value: 'dj-turntables', label: 'DJ Turntables', category: 'Electronic' },
+  { value: 'sampler', label: 'Sampler', category: 'Electronic' },
+  { value: 'drum-machine', label: 'Drum Machine', category: 'Electronic' },
+  { value: 'loop-station', label: 'Loop Station', category: 'Electronic' },
+  
+  // Other
+  { value: 'producer', label: 'Producer', category: 'Production' },
+  { value: 'sound-engineer', label: 'Sound Engineer', category: 'Production' },
+  { value: 'songwriter', label: 'Songwriter', category: 'Creative' },
+  { value: 'lyricist', label: 'Lyricist', category: 'Creative' }
+]
+
+export const GENRE_OPTIONS: GenreOption[] = [
+  { value: 'rock', label: 'Rock' },
+  { value: 'pop', label: 'Pop' },
+  { value: 'jazz', label: 'Jazz' },
+  { value: 'blues', label: 'Blues' },
+  { value: 'country', label: 'Country' },
+  { value: 'folk', label: 'Folk' },
+  { value: 'classical', label: 'Classical' },
+  { value: 'electronic', label: 'Electronic' },
+  { value: 'hip-hop', label: 'Hip-Hop' },
+  { value: 'r-and-b', label: 'R&B' },
+  { value: 'soul', label: 'Soul' },
+  { value: 'funk', label: 'Funk' },
+  { value: 'reggae', label: 'Reggae' },
+  { value: 'punk', label: 'Punk' },
+  { value: 'metal', label: 'Metal' },
+  { value: 'alternative', label: 'Alternative' },
+  { value: 'indie', label: 'Indie' },
+  { value: 'ambient', label: 'Ambient' },
+  { value: 'experimental', label: 'Experimental' },
+  { value: 'world', label: 'World Music' },
+  { value: 'latin', label: 'Latin' },
+  { value: 'gospel', label: 'Gospel' },
+  { value: 'new-age', label: 'New Age' },
+  { value: 'soundtrack', label: 'Soundtrack' },
+  { value: 'other', label: 'Other' }
 ] 

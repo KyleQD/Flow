@@ -33,12 +33,14 @@ export async function getProfile(userId: string) {
     ...data,
     full_name: data.metadata?.full_name || data.full_name || null,
     username: data.metadata?.username || data.username || null,
+    title: data.title || data.metadata?.title || null,
     bio: data.metadata?.bio || null,
     location: data.metadata?.location || null,
     phone: data.metadata?.phone || null,
     website: data.metadata?.website || null,
     instagram: data.metadata?.instagram || null,
     twitter: data.metadata?.twitter || null,
+    cover_image: data.metadata?.header_url || null,
   }
 }
 

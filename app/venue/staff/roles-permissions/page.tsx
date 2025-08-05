@@ -7,11 +7,11 @@ import { RoleManagement } from '@/components/venue/staff/role-management'
 import { UserRoleAssignment } from '@/components/venue/staff/user-role-assignment'
 
 interface RolesPermissionsPageProps {
-  searchParams: { venueId?: string }
+  searchParams: Promise<{ venueId?: string }>
 }
 
-export default function RolesPermissionsPage({ searchParams }: RolesPermissionsPageProps) {
-  const venueId = searchParams.venueId
+export default async function RolesPermissionsPage({ searchParams }: RolesPermissionsPageProps) {
+  const { venueId } = await searchParams
 
   if (!venueId) {
     return (

@@ -16,6 +16,9 @@ import {
   Search,
   Bell,
   Briefcase,
+  UserPlus,
+  FolderOpen,
+  GitBranch,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -101,6 +104,28 @@ export function MobileNavigation() {
                   { href: "/events", icon: <Calendar className="h-4 w-4 mr-3" />, label: "Events" },
                   { href: "/teams", icon: <Users className="h-4 w-4 mr-3" />, label: "Team" },
                   { href: "/messages", icon: <MessageSquare className="h-4 w-4 mr-3" />, label: "Messages" },
+                ].map((item) => (
+                  <Button
+                    key={item.href}
+                    variant="ghost"
+                    className={`w-full justify-start ${isActive(item.href) ? "bg-muted" : ""}`}
+                    onClick={() => {
+                      setOpen(false)
+                      handleNavigation(item.href)
+                    }}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Collaboration</h3>
+                {[
+                  { href: "/collaboration", icon: <UserPlus className="h-4 w-4 mr-3" />, label: "Overview" },
+                  { href: "/collaboration/projects", icon: <FolderOpen className="h-4 w-4 mr-3" />, label: "Projects" },
+                  { href: "/artist/collaborations", icon: <GitBranch className="h-4 w-4 mr-3" />, label: "Opportunities" },
                 ].map((item) => (
                   <Button
                     key={item.href}

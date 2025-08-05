@@ -289,8 +289,7 @@ export function useKeyboardShortcuts() {
     },
     {
       key: 'f',
-      modifier: 'cmd',
-      modifier2: 'shift',
+      modifier: 'cmd+shift',
       description: 'Find and replace',
       action: () => {
         // Trigger find and replace
@@ -359,8 +358,7 @@ export function useKeyboardShortcuts() {
     },
     {
       key: 'f',
-      modifier: 'cmd',
-      modifier2: 'shift',
+      modifier: 'cmd+shift',
       description: 'Toggle fullscreen',
       action: () => {
         // Toggle fullscreen mode

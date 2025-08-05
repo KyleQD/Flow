@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useSocial } from "@/context/social"
 import { useAuth } from "@/context/auth"
+import { ProfileAchievementsSection } from "@/components/achievements/profile-achievements-section"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   MessageCircle,
@@ -354,6 +355,9 @@ export default function UserProfilePage() {
             <TabsTrigger value="shows" className="flex items-center gap-1">
               <Mic className="h-4 w-4" /> Shows
             </TabsTrigger>
+            <TabsTrigger value="achievements" className="flex items-center gap-1">
+              <Award className="h-4 w-4" /> Achievements
+            </TabsTrigger>
             <TabsTrigger value="gallery" className="flex items-center gap-1">
               <ImageIcon className="h-4 w-4" /> Gallery
             </TabsTrigger>
@@ -616,6 +620,23 @@ export default function UserProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
+              </motion.div>
+            </TabsContent>
+
+            {/* Achievements Tab */}
+            <TabsContent value="achievements" className="mt-6">
+              <motion.div
+                key="achievements"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ProfileAchievementsSection 
+                  userId={profileUser?.id || ''}
+                  isOwnProfile={profileUser?.id === currentUser?.id}
+                  className="bg-gray-900 border-gray-800"
+                />
               </motion.div>
             </TabsContent>
 

@@ -221,13 +221,13 @@ export function EnhancedProfileSettings() {
       </Card>
 
       {/* Profile Settings Form */}
-      <Card className="bg-white/5 backdrop-blur-xl border border-white/10">
+      <Card className="bg-white/10 backdrop-blur border border-white/20 rounded-3xl">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-white text-xl flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-400" />
             Profile Settings
           </CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardDescription className="text-white/60">
             Update your profile information and control what others can see
           </CardDescription>
         </CardHeader>
@@ -237,8 +237,8 @@ export function EnhancedProfileSettings() {
               
               {/* Basic Information */}
               <div className="space-y-6">
-                <div className="flex items-center gap-2 text-white font-medium">
-                  <User className="h-4 w-4" />
+                <div className="flex items-center gap-2 text-white font-semibold text-lg">
+                  <User className="h-5 w-5" />
                   Basic Information
                 </div>
                 
@@ -248,11 +248,11 @@ export function EnhancedProfileSettings() {
                     name="full_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-300">Full Name</FormLabel>
+                        <FormLabel className="text-white font-semibold">Full Name</FormLabel>
                         <FormControl>
                           <Input 
                             {...field} 
-                            className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500/50 focus:ring-purple-500/20"
+                            className="bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-purple-500/50 focus:ring-purple-500/20 rounded-xl"
                             placeholder="Enter your full name"
                           />
                         </FormControl>
@@ -266,18 +266,18 @@ export function EnhancedProfileSettings() {
                     name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-300">Username</FormLabel>
+                        <FormLabel className="text-white font-semibold">Username</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Input 
                               {...field} 
-                              className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500/50 focus:ring-purple-500/20 pl-8"
+                              className="bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-purple-500/50 focus:ring-purple-500/20 pl-8 rounded-xl"
                               placeholder="your-username"
                             />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">@</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">@</span>
                           </div>
                         </FormControl>
-                        <FormDescription className="text-gray-400 text-xs">
+                        <FormDescription className="text-white/60 text-xs">
                           Your unique identifier on the platform
                         </FormDescription>
                         <FormMessage />
@@ -291,30 +291,30 @@ export function EnhancedProfileSettings() {
                   name="bio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-300">Bio</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          rows={3}
-                          className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500/50 focus:ring-purple-500/20 resize-none"
-                          placeholder="Tell us about yourself..."
-                        />
-                      </FormControl>
-                      <FormDescription className="text-gray-400 text-xs">
-                        {form.watch("bio")?.length || 0}/500 characters
-                      </FormDescription>
+                                              <FormLabel className="text-white font-semibold">Bio</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            {...field} 
+                            rows={3}
+                            className="bg-white/5 border-white/20 text-white placeholder:text-white/40 focus:border-purple-500/50 focus:ring-purple-500/20 resize-none rounded-xl"
+                            placeholder="Tell us about yourself..."
+                          />
+                        </FormControl>
+                        <FormDescription className="text-white/60 text-xs">
+                          {form.watch("bio")?.length || 0}/500 characters
+                        </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
 
-              <Separator className="bg-white/10" />
+              <Separator className="bg-white/20" />
 
               {/* Custom URL Section */}
               <div className="space-y-6">
-                <div className="flex items-center gap-2 text-white font-medium">
-                  <Link className="h-4 w-4" />
+                <div className="flex items-center gap-2 text-white font-semibold text-lg">
+                  <Link className="h-5 w-5" />
                   Custom Profile URL
                 </div>
                 

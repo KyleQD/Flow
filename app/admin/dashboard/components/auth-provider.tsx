@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase-browser"
+import { supabase } from "./lib/supabase-browser"
 import type { Session, User } from "@supabase/supabase-js"
 
 type AuthContextType = {

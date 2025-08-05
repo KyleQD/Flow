@@ -5,7 +5,6 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { ArtistProvider } from "@/contexts/artist-context"
 import { useRouteAccountSync } from "@/hooks/use-route-account-sync"
-import "./globals.css"
 
 function ArtistLayoutContent({ children }: { children: ReactNode }) {
   // Automatically sync account with route

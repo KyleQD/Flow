@@ -23,8 +23,13 @@ import {
   Globe,
   Star,
   Calendar,
-  Bell
+  Bell,
+  FolderOpen,
+  GitBranch
 } from "lucide-react"
+import { SimpleCollaborationHub } from "@/components/collaboration/simple-collaboration-hub"
+// import { EnhancedCollaborationHub } from "@/components/collaboration/enhanced-collaboration-hub"
+// import { RealTimeActivityFeed } from "@/components/collaboration/real-time-activity-feed"
 
 const communityFeatures = [
   { 
@@ -75,10 +80,19 @@ const communityFeatures = [
   {
     label: "Collaborations",
     icon: Star,
-    href: "/artist/features/collaboration",
-    description: "Find artists to collaborate with",
+    href: "/artist/collaborations",
+    description: "Find artists to collaborate with and manage projects",
     color: "from-indigo-500 to-purple-600",
     stats: { total: 4, recent: 1 },
+    category: "professional"
+  },
+  {
+    label: "Project Workspaces",
+    icon: Users,
+    href: "/collaboration/projects",
+    description: "Collaborative project management and file sharing",
+    color: "from-green-500 to-teal-600",
+    stats: { total: 2, recent: 0 },
     category: "professional"
   }
 ]
@@ -353,66 +367,37 @@ export default function CommunityDashboard() {
             )}
           </div>
 
-          {/* Recent Activity Sidebar */}
+          {/* Real-time Activity Sidebar */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.6 }}
           >
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+            <Card className="bg-slate-950/90 border-slate-800 text-white">
               <CardHeader>
-                <CardTitle className="text-slate-200 flex items-center">
-                  <Bell className="h-5 w-5 mr-2 text-yellow-400" />
-                  Recent Activity
-                </CardTitle>
-                <CardDescription className="text-slate-400">
-                  Latest updates from your community
-                </CardDescription>
+                <CardTitle>Activity Feed</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <motion.div
-                      key={activity.id}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      className="flex items-start space-x-3 p-3 bg-slate-800/30 rounded-lg hover:bg-slate-700/30 transition-colors"
-                    >
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={activity.user.avatar} alt={activity.user.name} />
-                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white">
-                          {activity.user.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm">
-                          <span className="font-medium text-white">{activity.user.name}</span>
-                          <span className="text-slate-400 ml-1">{activity.action}</span>
-                        </div>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Badge variant="outline" className="text-xs bg-slate-700/50 text-slate-400 border-slate-600">
-                            {activity.user.role}
-                          </Badge>
-                          <span className="text-xs text-slate-500">{activity.time}</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-                <Button variant="outline" className="w-full mt-4 border-slate-700 text-slate-300 hover:bg-slate-800/50">
-                  View All Activity
-                </Button>
+                <p className="text-slate-400">Loading activity...</p>
               </CardContent>
             </Card>
           </motion.div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Enhanced Collaboration Hub */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.8 }}
+        >
+          <SimpleCollaborationHub />
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 1.0 }}
         >
           <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
             <CardHeader>
@@ -428,9 +413,9 @@ export default function CommunityDashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   { label: "Send Message", icon: MessageSquare, href: "/artist/messages/new" },
-                  { label: "Find Collaborators", icon: Users, href: "/artist/network/discover" },
-                  { label: "Post Job", icon: Briefcase, href: "/artist/jobs/new" },
-                  { label: "Create Event", icon: Calendar, href: "/artist/events/new" }
+                  { label: "Find Collaborators", icon: Users, href: "/artist/collaborations" },
+                  { label: "New Project", icon: Plus, href: "/collaboration/projects/create" },
+                  { label: "Browse Opportunities", icon: TrendingUp, href: "/artist/collaborations?tab=browse" }
                 ].map((action, index) => (
                   <motion.div
                     key={action.label}

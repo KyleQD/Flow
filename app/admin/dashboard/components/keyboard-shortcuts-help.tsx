@@ -33,11 +33,9 @@ import {
   Save,
   RefreshCw,
   Trash2,
-  Select,
   Eye,
   EyeOff,
   Fullscreen,
-  FullscreenExit,
   Command
 } from "lucide-react"
 import { useKeyboardShortcuts } from "../hooks/use-keyboard-shortcuts"
@@ -72,22 +70,12 @@ export function KeyboardShortcutsHelp({ isOpen, onClose }: KeyboardShortcutsHelp
 
   // Format shortcut display
   const formatShortcut = (shortcut: typeof shortcuts[0]) => {
-    let display = ""
-    
+    let display = ''
     if (shortcut.modifier) {
-      display += isMac ? "⌘" : "Ctrl"
+      display += shortcut.modifier === 'cmd' ? '⌘' : shortcut.modifier === 'ctrl' ? 'Ctrl' : shortcut.modifier === 'alt' ? 'Alt' : 'Shift'
+      display += '+'
     }
-    
-    if (shortcut.modifier2) {
-      display += "+Shift"
-    }
-    
-    if (shortcut.modifier3) {
-      display += "+Alt"
-    }
-    
-    display += shortcut.key.toUpperCase()
-    
+    display += shortcut.key
     return display
   }
 

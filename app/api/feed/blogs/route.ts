@@ -1,123 +1,83 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
+import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '0')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const authorId = searchParams.get('author_id')
-    const tag = searchParams.get('tag')
-    const category = searchParams.get('category')
-
-    const supabase = createServiceRoleClient()
+    console.log('[Feed Blogs API] GET request started')
     
-    console.log('📝 [Blogs API] Fetching blog posts:', { page, limit, authorId, tag, category })
+    const authResult = await authenticateApiRequest(request)
+    const { searchParams } = new URL(request.url)
+    const limit = parseInt(searchParams.get('limit') || '10')
+    
+    // Use the authenticated supabase client if available, otherwise create a service client
+    let supabase
+    if (authResult) {
+      supabase = authResult.supabase
+      console.log('[Feed Blogs API] Using authenticated client')
+    } else {
+      // For public feed viewing, we can use a service client
+      const { createClient } = await import('@/lib/supabase/server')
+      supabase = await createClient()
+      console.log('[Feed Blogs API] Using service client for public access')
+    }
 
-    // Build the query with dynamic column selection
-    let query = supabase
-      .from('artist_blog_posts')
+    console.log('[Feed Blogs API] Fetching blog posts, limit:', limit)
+
+    // Get blog posts (posts with type 'blog' or content that looks like a blog)
+    const { data: posts, error: postsError } = await supabase
+      .from('posts')
       .select(`
         id,
-        title,
-        slug,
         content,
-        excerpt,
-        featured_image_url,
-        status,
-        published_at,
+        media_urls,
+        likes_count,
+        comments_count,
         created_at,
         updated_at,
-        stats,
-        tags,
-        categories,
-        user_id
+        user_id,
+        profiles:user_id (
+          id,
+          username,
+          avatar_url,
+          verified
+        )
       `)
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .range(page * limit, (page + 1) * limit - 1)
+      .or('type.eq.blog,content.ilike.%blog%')
+      .order('created_at', { ascending: false })
+      .limit(limit)
 
-    // Add filters
-    if (authorId) {
-      query = query.eq('user_id', authorId)
+    if (postsError) {
+      console.error('[Feed Blogs API] Error fetching blog posts:', postsError)
+      return NextResponse.json(
+        { error: 'Failed to fetch blog posts' },
+        { status: 500 }
+      )
     }
 
-    if (tag) {
-      query = query.contains('tags', [tag])
-    }
+    console.log('[Feed Blogs API] Found blog posts:', posts?.length || 0)
 
-    if (category) {
-      query = query.contains('categories', [category])
-    }
-
-    const { data: blogPosts, error } = await query
-
-    if (error) {
-      console.error('❌ [Blogs API] Error fetching blog posts:', error)
-      return NextResponse.json({ data: null, error: error.message }, { status: 500 })
-    }
-
-    if (!blogPosts || blogPosts.length === 0) {
-      console.log('📝 [Blogs API] No blog posts found')
-      return NextResponse.json({ data: [], error: null })
-    }
-
-    console.log('✅ [Blogs API] Found', blogPosts.length, 'blog posts')
-
-    // Transform the data to match the feed format
-    const transformedBlogs = blogPosts.map(blog => {
-      // For now, use default author info since we can't join with profiles
-      const authorName = 'Sarah Johnson' // We'll enhance this later
-      const authorUsername = 'sarahjohnson'
-      const authorAvatar = 'https://dummyimage.com/150x150/8b5cf6/ffffff?text=SJ'
-      const isVerified = false
-
-      return {
-        id: blog.id,
-        type: 'blog',
-        title: blog.title,
-        description: blog.excerpt,
-        content: blog.content,
-        slug: blog.slug,
-        author: {
-          id: blog.user_id,
-          name: authorName,
-          username: authorUsername,
-          avatar_url: authorAvatar,
-          is_verified: isVerified
-        },
-        cover_image: blog.featured_image_url,
-        created_at: blog.published_at || blog.created_at,
-        engagement: {
-          likes: blog.stats?.likes || 0,
-          views: blog.stats?.views || 0,
-          shares: blog.stats?.shares || 0,
-          comments: blog.stats?.comments || 0
-        },
-        metadata: {
-          tags: blog.tags || [],
-          categories: blog.categories || [],
-          url: `/blog/${blog.slug}`,
-          reading_time: Math.ceil((blog.content?.length || 0) / 200) // Rough estimate: 200 chars per minute
-        },
-        relevance_score: 0.85 // Default relevance score for blogs
+    // Transform posts to match expected format
+    const transformedPosts = (posts || []).map(post => ({
+      id: post.id,
+      content: post.content,
+      media_urls: post.media_urls,
+      likes_count: post.likes_count || 0,
+      comments_count: post.comments_count || 0,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
+      user: {
+        id: post.user_id,
+        username: post.profiles?.username || 'user',
+        avatar_url: post.profiles?.avatar_url || '',
+        verified: post.profiles?.verified || false
       }
-    })
+    }))
 
-    return NextResponse.json({ 
-      data: transformedBlogs, 
-      error: null,
-      pagination: {
-        page,
-        limit,
-        hasMore: blogPosts.length === limit
-      }
-    })
-
+    return NextResponse.json({ posts: transformedPosts })
   } catch (error) {
-    console.error('❌ [Blogs API] Unexpected error:', error)
+    console.error('[Feed Blogs API] Error:', error)
     return NextResponse.json(
-      { data: null, error: 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

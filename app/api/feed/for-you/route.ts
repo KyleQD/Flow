@@ -1,431 +1,83 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      console.log('[For You API] Auth error:', authError)
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    console.log('[Feed For You API] GET request started')
+    
+    const authResult = await authenticateApiRequest(request)
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '20')
-    const offset = parseInt(searchParams.get('offset') || '0')
-    const type = searchParams.get('type') // 'all', 'music', 'events', etc.
-    const sort = searchParams.get('sort') || 'relevant' // 'relevant', 'recent', 'popular'
+    
+    // Use the authenticated supabase client if available, otherwise create a service client
+    let supabase
+    if (authResult) {
+      supabase = authResult.supabase
+      console.log('[Feed For You API] Using authenticated client')
+    } else {
+      // For public feed viewing, we can use a service client
+      const { createClient } = await import('@/lib/supabase/server')
+      supabase = await createClient()
+      console.log('[Feed For You API] Using service client for public access')
+    }
 
-    console.log('[For You API] Fetching personalized content for user:', user.id, 'sort:', sort)
+    console.log('[Feed For You API] Fetching personalized posts, limit:', limit)
 
-    // Get user profile and interests
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, primary_genres, interests, location, username, full_name')
-      .eq('id', user.id)
-      .single()
-
-    // Get user's following relationships
-    const { data: following } = await supabase
-      .from('follows')
-      .select('following_id')
-      .eq('follower_id', user.id)
-
-    const followingIds = following?.map(f => f.following_id) || []
-    const userInterests = profile?.primary_genres || profile?.interests || []
-
-    // Initialize content array
-    let allContent: any[] = []
-
-    // Fetch music content from artist_music table
-    if (!type || type === 'all' || type === 'music') {
-      const { data: music, error: musicError } = await supabase
-        .from('artist_music')
-        .select(`
+    // Get personalized posts (for now, just return recent posts)
+    const { data: posts, error: postsError } = await supabase
+      .from('posts')
+      .select(`
+        id,
+        content,
+        media_urls,
+        likes_count,
+        comments_count,
+        created_at,
+        updated_at,
+        user_id,
+        profiles:user_id (
           id,
-          title,
-          description,
-          genre,
-          duration,
-          cover_art_url,
-          created_at,
-          user_id,
-          profiles!inner(
-            id,
-            username,
-            full_name,
-            avatar_url,
-            is_verified
-          )
-        `)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-        .limit(limit)
+          username,
+          avatar_url,
+          verified
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(limit)
 
-      if (musicError) {
-        console.error('[For You API] Music query error:', musicError)
-      } else if (music) {
-        allContent.push(...music.map(item => {
-          // Calculate relevance score based on user interests
-          const genreMatch = userInterests.includes(item.genre) ? 0.3 : 0
-          const followingMatch = followingIds.includes(item.user_id) ? 0.4 : 0
-          const recencyScore = Math.max(0, 1 - (Date.now() - new Date(item.created_at).getTime()) / (7 * 24 * 60 * 60 * 1000)) * 0.3
-          
-          return {
-            id: item.id,
-            type: 'music',
-            title: item.title,
-            description: item.description,
-            author: {
-              id: item.profiles.id,
-              name: item.profiles.full_name || item.profiles.username,
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url,
-              is_verified: item.profiles.is_verified
-            },
-            cover_image: item.cover_art_url,
-            created_at: item.created_at,
-            engagement: { likes: 0, views: 0, shares: 0, comments: 0 }, // Placeholder
-            metadata: {
-              genre: item.genre,
-              duration: item.duration
-            },
-            relevance_score: genreMatch + followingMatch + recencyScore
-          }
-        }))
-      }
+    if (postsError) {
+      console.error('[Feed For You API] Error fetching posts:', postsError)
+      return NextResponse.json(
+        { error: 'Failed to fetch posts' },
+        { status: 500 }
+      )
     }
 
-    // Fetch events content from both events and artist_events tables
-    if (!type || type === 'all' || type === 'events') {
-      // Query main events table
-      const { data: mainEvents, error: mainEventsError } = await supabase
-        .from('events')
-        .select(`
-          id,
-          title as name,
-          description,
-          event_date,
-          venue_name,
-          venue_address,
-          capacity,
-          ticket_price,
-          created_at,
-          user_id,
-          profiles!inner(
-            id,
-            username,
-            full_name,
-            avatar_url,
-            is_verified
-          )
-        `)
-        .gte('event_date', new Date().toISOString())
-        .order('event_date', { ascending: true })
-        .limit(limit)
+    console.log('[Feed For You API] Found posts:', posts?.length || 0)
 
-      if (mainEventsError) {
-        console.error('[For You API] Main events query error:', mainEventsError)
-      } else if (mainEvents) {
-        allContent.push(...mainEvents.map(item => {
-          const followingMatch = followingIds.includes(item.user_id) ? 0.5 : 0
-          const upcomingScore = Math.max(0, 1 - (new Date(item.event_date).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)) * 0.5
-          
-          return {
-            id: item.id,
-            type: 'event',
-            title: item.name,
-            description: item.description,
-            author: {
-              id: item.profiles.id,
-              name: item.profiles.full_name || item.profiles.username,
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url,
-              is_verified: item.profiles.is_verified
-            },
-            created_at: item.created_at,
-            engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-            metadata: {
-              date: item.event_date,
-              location: item.venue_address,
-              venue: item.venue_name,
-              capacity: item.capacity,
-              ticket_price: item.ticket_price
-            },
-            relevance_score: followingMatch + upcomingScore
-          }
-        }))
+    // Transform posts to match expected format
+    const transformedPosts = (posts || []).map(post => ({
+      id: post.id,
+      content: post.content,
+      media_urls: post.media_urls,
+      likes_count: post.likes_count || 0,
+      comments_count: post.comments_count || 0,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
+      user: {
+        id: post.user_id,
+        username: post.profiles?.username || 'user',
+        avatar_url: post.profiles?.avatar_url || '',
+        verified: post.profiles?.verified || false
       }
+    }))
 
-      // Query artist_events table
-      const { data: artistEvents, error: artistEventsError } = await supabase
-        .from('artist_events')
-        .select(`
-          id,
-          title as name,
-          description,
-          event_date,
-          venue_name,
-          venue_address,
-          capacity,
-          ticket_price_min,
-          created_at,
-          user_id,
-          profiles!inner(
-            id,
-            username,
-            full_name,
-            avatar_url,
-            is_verified
-          )
-        `)
-        .gte('event_date', new Date().toISOString())
-        .eq('is_public', true)
-        .order('event_date', { ascending: true })
-        .limit(limit)
-
-      if (artistEventsError) {
-        console.error('[For You API] Artist events query error:', artistEventsError)
-      } else if (artistEvents) {
-        allContent.push(...artistEvents.map(item => {
-          const followingMatch = followingIds.includes(item.user_id) ? 0.5 : 0
-          const upcomingScore = Math.max(0, 1 - (new Date(item.event_date).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)) * 0.5
-          
-          return {
-            id: `artist_${item.id}`,
-            type: 'event',
-            title: item.name,
-            description: item.description,
-            author: {
-              id: item.profiles.id,
-              name: item.profiles.full_name || item.profiles.username,
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url,
-              is_verified: item.profiles.is_verified
-            },
-            created_at: item.created_at,
-            engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-            metadata: {
-              date: item.event_date,
-              location: item.venue_address,
-              venue: item.venue_name,
-              capacity: item.capacity,
-              ticket_price: item.ticket_price_min
-            },
-            relevance_score: followingMatch + upcomingScore
-          }
-        }))
-      }
-    }
-
-    // Fetch tours content
-    if (!type || type === 'all' || type === 'tours') {
-      const { data: tours, error: toursError } = await supabase
-        .from('tours')
-        .select(`
-          id,
-          name,
-          description,
-          start_date,
-          end_date,
-          status,
-          budget,
-          created_at,
-          created_by,
-          profiles!inner(
-            id,
-            username,
-            full_name,
-            avatar_url,
-            is_verified
-          )
-        `)
-        .gte('start_date', new Date().toISOString())
-        .order('start_date', { ascending: true })
-        .limit(limit)
-
-      if (toursError) {
-        console.error('[For You API] Tours query error:', toursError)
-      } else if (tours) {
-        allContent.push(...tours.map(item => {
-          const followingMatch = followingIds.includes(item.created_by) ? 0.6 : 0
-          const upcomingScore = Math.max(0, 1 - (new Date(item.start_date).getTime() - Date.now()) / (60 * 24 * 60 * 60 * 1000)) * 0.4
-          
-          return {
-            id: item.id,
-            type: 'tour',
-            title: item.name,
-            description: item.description,
-            author: {
-              id: item.profiles.id,
-              name: item.profiles.full_name || item.profiles.username,
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url,
-              is_verified: item.profiles.is_verified
-            },
-            created_at: item.created_at,
-            engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-            metadata: {
-              start_date: item.start_date,
-              end_date: item.end_date,
-              status: item.status,
-              budget: item.budget
-            },
-            relevance_score: followingMatch + upcomingScore
-          }
-        }))
-      }
-    }
-
-    // Fetch posts content (for news/blogs) - using artist_blog_posts if available
-    if (!type || type === 'all' || type === 'news' || type === 'blogs') {
-      // Fetch local posts
-      const { data: posts, error: postsError } = await supabase
-        .from('posts')
-        .select(`
-          id,
-          content,
-          type,
-          created_at,
-          user_id,
-          profiles!inner(
-            id,
-            username,
-            full_name,
-            avatar_url,
-            is_verified
-          )
-        `)
-        .eq('visibility', 'public')
-        .order('created_at', { ascending: false })
-        .limit(limit)
-
-      if (postsError) {
-        console.error('[For You API] Posts query error:', postsError)
-      } else if (posts) {
-        allContent.push(...posts.map(item => {
-          const followingMatch = followingIds.includes(item.user_id) ? 0.6 : 0
-          const recencyScore = Math.max(0, 1 - (Date.now() - new Date(item.created_at).getTime()) / (7 * 24 * 60 * 60 * 1000)) * 0.4
-          
-          return {
-            id: item.id,
-            type: item.type === 'blog' ? 'blog' : 'news',
-            title: item.content.substring(0, 100) + (item.content.length > 100 ? '...' : ''),
-            description: item.content,
-            author: {
-              id: item.profiles.id,
-              name: item.profiles.full_name || item.profiles.username,
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url,
-              is_verified: item.profiles.is_verified
-            },
-            created_at: item.created_at,
-            engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-            metadata: {
-              tags: item.content.match(/#\w+/g) || []
-            },
-            relevance_score: followingMatch + recencyScore
-          }
-        }))
-      }
-
-      // Fetch RSS news if this is a news request
-      if (type === 'news' || type === 'all') {
-        try {
-          console.log('[For You API] Fetching RSS news...')
-          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-          const rssUrl = `${baseUrl}/api/feed/rss-news?limit=${Math.floor(limit / 2)}`
-          console.log('[For You API] RSS URL:', rssUrl)
-          
-          const rssResponse = await fetch(rssUrl)
-          console.log('[For You API] RSS response status:', rssResponse.status)
-          
-          if (rssResponse.ok) {
-            const rssData = await rssResponse.json()
-            console.log('[For You API] RSS data received:', {
-              success: rssData.success,
-              newsCount: rssData.news?.length || 0,
-              total: rssData.total
-            })
-            
-            if (rssData.success && rssData.news && rssData.news.length > 0) {
-              const rssContent = rssData.news.map((item: any) => ({
-                id: `rss_${item.id}`,
-                type: 'news',
-                title: item.title,
-                description: item.description,
-                author: {
-                  id: `rss_${item.source}`,
-                  name: item.author || item.source,
-                  username: item.source.toLowerCase().replace(/\s+/g, ''),
-                  avatar_url: item.image || `https://dummyimage.com/40x40/ef4444/ffffff?text=${item.source.charAt(0)}`,
-                  is_verified: true
-                },
-                created_at: item.pubDate,
-                engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-                metadata: {
-                  url: item.link,
-                  tags: [item.category, item.source].filter(Boolean)
-                },
-                relevance_score: 0.8 // High relevance for external news
-              }))
-              
-              console.log('[For You API] Adding RSS content:', rssContent.length, 'items')
-              allContent.push(...rssContent)
-            } else {
-              console.log('[For You API] No RSS news data available')
-            }
-          } else {
-            console.error('[For You API] RSS response not ok:', rssResponse.status, rssResponse.statusText)
-          }
-        } catch (error) {
-          console.error('[For You API] RSS news fetch error:', error)
-        }
-      }
-    }
-
-    // Sort content based on parameter
-    switch (sort) {
-      case 'recent':
-        allContent.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        break
-      case 'popular':
-        allContent.sort((a, b) => (b.engagement.likes + b.engagement.views) - (a.engagement.likes + a.engagement.views))
-        break
-      case 'relevant':
-      default:
-        allContent.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
-        break
-    }
-
-    // Apply pagination
-    const paginatedContent = allContent.slice(offset, offset + limit)
-
-    // Calculate content type counts
-    const contentCounts = {
-      all: allContent.length,
-      music: allContent.filter(item => item.type === 'music').length,
-      events: allContent.filter(item => item.type === 'event').length,
-      videos: allContent.filter(item => item.type === 'video').length,
-      tours: allContent.filter(item => item.type === 'tour').length,
-      news: allContent.filter(item => item.type === 'news').length,
-      blogs: allContent.filter(item => item.type === 'blog').length
-    }
-
-    console.log('[For You API] Successfully fetched content:', paginatedContent.length, 'counts:', contentCounts)
-
-    return NextResponse.json({
-      success: true,
-      content: paginatedContent,
-      interests: userInterests,
-      counts: contentCounts,
-      total: allContent.length,
-      hasMore: offset + limit < allContent.length
-    })
-
+    return NextResponse.json({ posts: transformedPosts })
   } catch (error) {
-    console.error('[For You API] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[Feed For You API] Error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 } 

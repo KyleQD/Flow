@@ -32,6 +32,9 @@ import {
   Zap,
   Map,
   BookOpen,
+  UserPlus,
+  FolderOpen,
+  GitBranch,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -242,6 +245,17 @@ export function MainSidebar({ open, onOpenChange, className = "" }: MainSidebarP
                 <span>Job</span>
               </Button>
             </div>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="justify-start gap-1 col-span-2"
+                onClick={handleNavigation("/collaboration/projects/create")}
+              >
+                <UserPlus className="h-4 w-4" />
+                <span>New Project</span>
+              </Button>
+            </div>
           </div>
 
           {/* Main Navigation */}
@@ -254,6 +268,13 @@ export function MainSidebar({ open, onOpenChange, className = "" }: MainSidebarP
             <NavItem href="/messages" icon={<MessageSquare className="h-4 w-4" />} label="Messages" badge={2} />
             <NavItem href="/bookings" icon={<Clock className="h-4 w-4" />} label="Bookings" badge={5} />
             <NavItem href="/teams" icon={<Users className="h-4 w-4" />} label="Team" isNew={true} />
+          </NavGroup>
+
+          {/* Collaboration */}
+          <NavGroup title="Collaboration" defaultOpen={false}>
+            <NavItem href="/collaboration" icon={<UserPlus className="h-4 w-4" />} label="Overview" isNew={true} />
+            <NavItem href="/collaboration/projects" icon={<FolderOpen className="h-4 w-4" />} label="Projects" isNew={true} />
+            <NavItem href="/artist/collaborations" icon={<GitBranch className="h-4 w-4" />} label="Opportunities" isNew={true} />
           </NavGroup>
 
           {/* Content */}

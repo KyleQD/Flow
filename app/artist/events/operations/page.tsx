@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { EventOperations } from "../components/event-operations"
 import { StaffModal } from "../components/staff-modal"
 import { TaskModal } from "../components/task-modal"
@@ -11,11 +12,9 @@ import { getEventTasks, addTask, updateTask, deleteTask } from "../actions/manag
 import { getEventEquipment, addEquipment, updateEquipment, deleteEquipment } from "../actions/manage-equipment"
 import { StaffMember, Task, Equipment } from "../components/event-operations"
 
-interface EventOperationsPageProps {
-  eventId: string
-}
-
-export default function EventOperationsPage({ eventId }: EventOperationsPageProps) {
+export default function EventOperationsPage() {
+  const searchParams = useSearchParams()
+  const eventId = searchParams.get('eventId')
   const { toast } = useToast()
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
@@ -29,10 +28,14 @@ export default function EventOperationsPage({ eventId }: EventOperationsPageProp
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | undefined>()
 
   useEffect(() => {
-    loadData()
+    if (eventId) {
+      loadData()
+    }
   }, [eventId])
 
   const loadData = async () => {
+    if (!eventId) return
+    
     try {
       setLoading(true)
       const [staffData, tasksData, equipmentData] = await Promise.all([
@@ -55,6 +58,8 @@ export default function EventOperationsPage({ eventId }: EventOperationsPageProp
   }
 
   const handleAddStaff = async (data: Omit<StaffMember, "id" | "event_id">) => {
+    if (!eventId) return
+    
     try {
       const newStaff = await addStaffMember({ ...data, event_id: eventId })
       setStaff([...staff, newStaff])
@@ -107,6 +112,8 @@ export default function EventOperationsPage({ eventId }: EventOperationsPageProp
   }
 
   const handleAddTask = async (data: Omit<Task, "id" | "event_id">) => {
+    if (!eventId) return
+    
     try {
       const newTask = await addTask({ ...data, event_id: eventId })
       setTasks([...tasks, newTask])
@@ -159,6 +166,8 @@ export default function EventOperationsPage({ eventId }: EventOperationsPageProp
   }
 
   const handleAddEquipment = async (data: Omit<Equipment, "id" | "event_id">) => {
+    if (!eventId) return
+    
     try {
       const newEquipment = await addEquipment({ ...data, event_id: eventId })
       setEquipment([...equipment, newEquipment])
@@ -208,6 +217,14 @@ export default function EventOperationsPage({ eventId }: EventOperationsPageProp
         variant: "destructive",
       })
     }
+  }
+
+  if (!eventId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-slate-400">No event ID provided</div>
+      </div>
+    )
   }
 
   if (loading) {

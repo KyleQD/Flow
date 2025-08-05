@@ -263,7 +263,7 @@ export default function OptimizedDashboardClient() {
     // Import Supabase client dynamically to avoid SSR issues
     const setupRealTimeSubscriptions = async () => {
       try {
-        const { createClient } = await import('@/lib/supabase/client')
+        const { createClient } = await import('./lib/supabase-browser')
         const supabase = createClient()
 
         // Subscribe to tours changes
@@ -562,7 +562,7 @@ export default function OptimizedDashboardClient() {
             <Button
               variant="outline"
               size="sm"
-              onClick={openHelp}
+              onClick={() => openHelp()}
             >
               <HelpCircle className="h-4 w-4" />
             </Button>
@@ -642,7 +642,7 @@ export default function OptimizedDashboardClient() {
             value={`${stats?.coordinationCompletionRate || 0}%`}
             subtitle={`${stats?.fullyCoordinatedGroups || 0} complete`}
             icon={CheckCircle}
-            trend={stats?.coordinationCompletionRate >= 80 ? "up" : "neutral"}
+            trend={(stats?.coordinationCompletionRate || 0) >= 80 ? "up" : "neutral"}
             isLoading={statsLoading}
             color="text-green-400"
           />
@@ -660,7 +660,7 @@ export default function OptimizedDashboardClient() {
             value={`${stats?.logisticsCompletionRate || 0}%`}
             subtitle="Overall completion"
             icon={Target}
-            trend={stats?.logisticsCompletionRate >= 80 ? "up" : "neutral"}
+            trend={(stats?.logisticsCompletionRate || 0) >= 80 ? "up" : "neutral"}
             isLoading={statsLoading}
             color="text-orange-400"
           />

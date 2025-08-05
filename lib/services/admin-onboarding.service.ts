@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { z } from 'zod'
 
 // Zod schemas for validation
@@ -52,14 +52,14 @@ export interface AdminOnboarding {
 }
 
 export class AdminOnboardingService {
-  private static supabase = createClient()
+  // Using imported supabase instance
 
   /**
    * Get all available admin roles
    */
   static async getAdminRoles(): Promise<AdminRole[]> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('admin_roles')
         .select('*')
         .eq('is_active', true)
@@ -78,7 +78,7 @@ export class AdminOnboardingService {
    */
   static async getOnboardingSteps(): Promise<OnboardingStep[]> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('admin_onboarding_steps')
         .select('*')
         .order('step_number')
@@ -96,10 +96,10 @@ export class AdminOnboardingService {
    */
   static async getUserOnboarding(): Promise<AdminOnboarding | null> {
     try {
-      const { data: { user } } = await this.supabase.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('admin_onboarding')
         .select('*')
         .eq('user_id', user.id)
@@ -119,11 +119,11 @@ export class AdminOnboardingService {
   static async startOnboarding(data: z.infer<typeof startOnboardingSchema>): Promise<AdminOnboarding> {
     try {
       const validatedData = startOnboardingSchema.parse(data)
-      const { data: { user } } = await this.supabase.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
       // Call the database function to start onboarding
-      const { data: onboardingId, error: functionError } = await this.supabase
+      const { data: onboardingId, error: functionError } = await supabase
         .rpc('start_admin_onboarding', {
           user_uuid: user.id,
           role_name: validatedData.admin_role
@@ -132,7 +132,7 @@ export class AdminOnboardingService {
       if (functionError) throw functionError
 
       // Fetch the created onboarding record
-      const { data: onboarding, error } = await this.supabase
+      const { data: onboarding, error } = await supabase
         .from('admin_onboarding')
         .select('*')
         .eq('id', onboardingId)
@@ -152,11 +152,11 @@ export class AdminOnboardingService {
   static async completeStep(data: z.infer<typeof completeStepSchema>): Promise<boolean> {
     try {
       const validatedData = completeStepSchema.parse(data)
-      const { data: { user } } = await this.supabase.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
       // Get user's onboarding record
-      const { data: onboarding, error: fetchError } = await this.supabase
+      const { data: onboarding, error: fetchError } = await supabase
         .from('admin_onboarding')
         .select('*')
         .eq('user_id', user.id)
@@ -166,7 +166,7 @@ export class AdminOnboardingService {
       if (!onboarding) throw new Error('No onboarding record found')
 
       // Call the database function to complete the step
-      const { error: functionError } = await this.supabase
+      const { error: functionError } = await supabase
         .rpc('complete_onboarding_step', {
           onboarding_uuid: onboarding.id,
           step_number: validatedData.step_number,
@@ -243,7 +243,7 @@ export class AdminOnboardingService {
     completion_rate: number
   }> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('admin_onboarding')
         .select('onboarding_status')
 

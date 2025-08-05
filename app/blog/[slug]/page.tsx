@@ -33,9 +33,9 @@ interface BlogPost {
 }
 
 interface BlogPostPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 async function getBlogPost(slug: string): Promise<BlogPost | null> {
@@ -96,7 +96,8 @@ async function getBlogPost(slug: string): Promise<BlogPost | null> {
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-  const blogPost = await getBlogPost(params.slug)
+  const { slug } = await params
+  const blogPost = await getBlogPost(slug)
 
   if (!blogPost) {
     notFound()

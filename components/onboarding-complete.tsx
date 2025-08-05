@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, Music, Building2, Headphones, User, Tag, Check, X } from "lucide-react"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
+import { achievementTriggerService } from "@/lib/services/achievement-trigger.service"
 
 interface OnboardingCompleteProps {
   profileType: string | null
@@ -22,6 +23,13 @@ export default function OnboardingComplete({ profileType, userData, profileId }:
   const [promoStatus, setPromoStatus] = useState<"idle" | "valid" | "invalid">("idle")
   const [isPromoVisible, setIsPromoVisible] = useState(false)
   const router = useRouter()
+
+  // Trigger profile completion achievement when component mounts
+  useEffect(() => {
+    if (profileType && profileId) {
+      achievementTriggerService.triggerProfileCompletion(profileId, profileType)
+    }
+  }, [profileType, profileId])
 
   const validatePromoCode = () => {
     if (promoCode.trim().toLowerCase() === "tourifyftw") {

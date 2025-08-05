@@ -41,12 +41,13 @@ const projectSchema = z.object({
 
 type ProjectFormValues = z.infer<typeof projectSchema>
 
-export default function ProjectSettingsPage({ params }: { params: { id: string } }) {
+export default function ProjectSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const [project, setProject] = useState<Project | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [projectId, setProjectId] = useState<string>("")
   const router = useRouter()
 
   const form = useForm<ProjectFormValues>({
@@ -57,15 +58,18 @@ export default function ProjectSettingsPage({ params }: { params: { id: string }
   })
 
   useEffect(() => {
-    fetchProject()
-  }, [params.id])
+    params.then(({ id }) => {
+      setProjectId(id)
+      fetchProject(id)
+    })
+  }, [params])
 
-  const fetchProject = async () => {
+  const fetchProject = async (id: string) => {
     try {
       const { data, error } = await supabase
         .from('projects')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', id)
         .single()
 
       if (error) throw error
@@ -98,11 +102,11 @@ export default function ProjectSettingsPage({ params }: { params: { id: string }
       const { error } = await supabase
         .from('projects')
         .update(formattedData)
-        .eq('id', params.id)
+        .eq('id', projectId)
 
       if (error) throw error
 
-      router.push(`/projects/${params.id}`)
+      router.push(`/projects/${projectId}`)
     } catch (error) {
       console.error('Error updating project:', error)
       setError('Failed to update project. Please try again.')
@@ -119,7 +123,7 @@ export default function ProjectSettingsPage({ params }: { params: { id: string }
       const { error } = await supabase
         .from('projects')
         .delete()
-        .eq('id', params.id)
+        .eq('id', projectId)
 
       if (error) throw error
 

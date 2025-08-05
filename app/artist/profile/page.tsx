@@ -41,6 +41,7 @@ import {
 } from "lucide-react"
 import { useArtist } from "@/contexts/artist-context"
 import { toast } from "sonner"
+import { ProfileAchievementsSection } from "@/components/achievements/profile-achievements-section"
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -512,10 +513,11 @@ export default function ArtistProfilePage() {
             className="lg:col-span-2"
           >
             <Tabs defaultValue="basic" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4 bg-slate-800/50 rounded-xl p-1">
+              <TabsList className="grid w-full grid-cols-5 bg-slate-800/50 rounded-xl p-1">
                 <TabsTrigger value="basic" className="rounded-lg">Basic Info</TabsTrigger>
                 <TabsTrigger value="social" className="rounded-lg">Social Links</TabsTrigger>
                 <TabsTrigger value="professional" className="rounded-lg">Professional</TabsTrigger>
+                <TabsTrigger value="achievements" className="rounded-lg">Achievements</TabsTrigger>
                 <TabsTrigger value="settings" className="rounded-lg">Settings</TabsTrigger>
               </TabsList>
 
@@ -851,6 +853,14 @@ export default function ArtistProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="achievements" className="space-y-6">
+                <ProfileAchievementsSection 
+                  userId={user?.id || ''}
+                  isOwnProfile={true}
+                  className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm rounded-xl"
+                />
               </TabsContent>
 
               <TabsContent value="settings" className="space-y-6">

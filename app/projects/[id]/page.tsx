@@ -15,22 +15,26 @@ interface ProjectWithMembers extends Project {
   members: ProjectMember[]
 }
 
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [project, setProject] = useState<ProjectWithMembers | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [projectId, setProjectId] = useState<string>("")
   const router = useRouter()
 
   useEffect(() => {
-    fetchProject()
-  }, [params.id])
+    params.then(({ id }) => {
+      setProjectId(id)
+      fetchProject(id)
+    })
+  }, [params])
 
-  const fetchProject = async () => {
+  const fetchProject = async (id: string) => {
     try {
       // Fetch project details
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', id)
         .single()
 
       if (projectError) throw projectError
@@ -39,7 +43,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       const { data: membersData, error: membersError } = await supabase
         .from('project_members')
         .select('*')
-        .eq('project_id', params.id)
+        .eq('project_id', id)
 
       if (membersError) throw membersError
 
@@ -101,7 +105,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </div>
         </div>
         <Button
-          onClick={() => router.push(`/projects/${params.id}/settings`)}
+          onClick={() => router.push(`/projects/${projectId}/settings`)}
           variant="outline"
           className="border-slate-700 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300"
         >

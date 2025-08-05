@@ -56,11 +56,7 @@ import {
   Gem
 } from "lucide-react"
 
-interface EnhancedStaffManagementProps {
-  venueId: string
-}
-
-export default function EnhancedStaffManagement({ venueId }: EnhancedStaffManagementProps) {
+export default function EnhancedStaffManagement() {
   const { toast } = useToast()
   const [staff, setStaff] = useState<StaffProfileData[]>([])
   const [filteredStaff, setFilteredStaff] = useState<StaffProfileData[]>([])
@@ -73,10 +69,19 @@ export default function EnhancedStaffManagement({ venueId }: EnhancedStaffManage
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingStaff, setEditingStaff] = useState<StaffProfileData | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<StaffProfileData | null>(null)
+  const [venueId, setVenueId] = useState<string>("")
 
   // Load staff data
   useEffect(() => {
-    loadStaffData()
+    // TODO: Get venueId from context or URL params
+    // For now, using a placeholder
+    setVenueId("default-venue-id")
+  }, [])
+
+  useEffect(() => {
+    if (venueId) {
+      loadStaffData()
+    }
   }, [venueId])
 
   // Filter staff based on search and filters

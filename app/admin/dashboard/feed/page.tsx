@@ -1,5 +1,5 @@
-import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs'
-import { cookies, headers } from 'next/headers'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -18,7 +18,7 @@ interface Post {
 }
 
 export default async function FeedPage() {
-  const supabase = createServerSupabaseClient({ cookies, headers })
+  const supabase = createServerComponentClient({ cookies })
   const { data: posts, error } = await supabase
     .from('posts')
     .select('id, user_id, content, created_at, user:user_id(name, avatar_url)')
@@ -35,11 +35,11 @@ export default async function FeedPage() {
         <Card key={post.id}>
           <CardHeader className="flex flex-row items-center gap-3">
             <Avatar>
-              <AvatarImage src={post.user.avatar_url} alt={post.user.name} />
-              <AvatarFallback>{post.user.name?.[0]}</AvatarFallback>
+              <AvatarImage src={post.user[0]?.avatar_url} alt={post.user[0]?.name} />
+              <AvatarFallback>{post.user[0]?.name?.[0]}</AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-base">{post.user.name}</CardTitle>
+              <CardTitle className="text-base">{post.user[0]?.name}</CardTitle>
               <div className="text-xs text-slate-400">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </div>
