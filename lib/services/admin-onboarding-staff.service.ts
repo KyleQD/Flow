@@ -923,8 +923,10 @@ export class AdminOnboardingStaffService {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('User not authenticated')
 
-      const tableExists = await checkTableExists('staff_messages')
-      if (!tableExists) {
+      // Prefer new team_communications table; fallback to legacy staff_messages
+      const teamCommsExists = await checkTableExists('team_communications')
+      const legacyExists = await checkTableExists('staff_messages')
+      if (!teamCommsExists && !legacyExists) {
         console.warn('⚠️ [Admin Onboarding Staff Service] staff_messages table does not exist, returning mock data')
         const mockMessage: TeamCommunication = {
           id: `mock-message-${Date.now()}`,
@@ -944,19 +946,36 @@ export class AdminOnboardingStaffService {
         return mockMessage
       }
 
+      const targetTable = teamCommsExists ? 'team_communications' : 'staff_messages'
       const { data: message, error } = await supabase
-        .from('staff_messages')
-        .insert({
-          venue_id: venueId,
-          sender_id: user.id,
-          recipients: data.recipients,
-          subject: data.subject,
-          content: data.content,
-          message_type: data.message_type,
-          priority: data.priority,
-          read_by: [],
-          sent_at: new Date().toISOString()
-        })
+        .from(targetTable)
+        .insert(
+          teamCommsExists
+            ? {
+                venue_id: venueId,
+                sender_id: user.id,
+                recipients: data.recipients,
+                subject: data.subject,
+                content: data.content,
+                message_type: data.message_type,
+                priority: data.priority,
+                read_by: [],
+                requires_acknowledgment: false,
+                acknowledged_by: [],
+                sent_at: new Date().toISOString()
+              }
+            : {
+                venue_id: venueId,
+                sender_id: user.id,
+                recipients: data.recipients,
+                subject: data.subject,
+                content: data.content,
+                message_type: data.message_type,
+                priority: data.priority,
+                read_by: [],
+                sent_at: new Date().toISOString()
+              }
+        )
         .select()
         .single()
 

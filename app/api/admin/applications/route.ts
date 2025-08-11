@@ -44,6 +44,20 @@ export async function POST(request: NextRequest) {
       // Mark application approved then create/link candidate
       await AdminOnboardingStaffService.updateApplicationStatus(applicationId, { status: 'approved' })
       const candidate = await AdminOnboardingStaffService.createOrLinkCandidateFromApplication(applicationId)
+
+      // Notify candidate if we have a user_id
+      if (candidate?.user_id) {
+        try {
+          await AdminOnboardingStaffService.sendTeamCommunication(candidate.venue_id, {
+            recipients: [candidate.user_id],
+            subject: 'Application Approved',
+            content: `You have been approved for ${candidate.position}. Please begin onboarding.`,
+            message_type: 'announcement',
+            priority: 'normal'
+          })
+        } catch {}
+      }
+
       return NextResponse.json({ success: true, data: candidate, message: 'Application approved and candidate created' })
     }
 

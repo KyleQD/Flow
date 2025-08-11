@@ -110,41 +110,27 @@ CREATE INDEX IF NOT EXISTS idx_organization_job_postings_created_at ON organizat
 ALTER TABLE job_board_postings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organization_job_postings ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies for job_board_postings
+-- Drop pre-existing conflicting policies to avoid duplicates (safe if absent)
+DROP POLICY IF EXISTS "Public read access to published job postings" ON job_board_postings;
+DROP POLICY IF EXISTS "Organization can manage their job postings" ON job_board_postings;
+DROP POLICY IF EXISTS "Venue can manage their job postings" ON job_board_postings;
+
+DROP POLICY IF EXISTS "Public read access to published organization job postings" ON organization_job_postings;
+DROP POLICY IF EXISTS "Organization can manage their profile job postings" ON organization_job_postings;
+DROP POLICY IF EXISTS "Venue can manage their profile job postings" ON organization_job_postings;
+
+-- Minimal policies that do not depend on external tables
 CREATE POLICY "Public read access to published job postings" ON job_board_postings
   FOR SELECT USING (status = 'published');
 
-CREATE POLICY "Organization can manage their job postings" ON job_board_postings
-  FOR ALL USING (
-    organization_id IN (
-      SELECT venue_id FROM user_venues WHERE user_id = auth.uid()
-    )
-  );
+CREATE POLICY "Manage own job board postings" ON job_board_postings
+  FOR ALL USING (created_by = auth.uid());
 
-CREATE POLICY "Venue can manage their job postings" ON job_board_postings
-  FOR ALL USING (
-    venue_id IN (
-      SELECT venue_id FROM user_venues WHERE user_id = auth.uid()
-    )
-  );
-
--- RLS Policies for organization_job_postings
 CREATE POLICY "Public read access to published organization job postings" ON organization_job_postings
   FOR SELECT USING (status = 'published');
 
-CREATE POLICY "Organization can manage their profile job postings" ON organization_job_postings
-  FOR ALL USING (
-    organization_id IN (
-      SELECT venue_id FROM user_venues WHERE user_id = auth.uid()
-    )
-  );
-
-CREATE POLICY "Venue can manage their profile job postings" ON organization_job_postings
-  FOR ALL USING (
-    venue_id IN (
-      SELECT venue_id FROM user_venues WHERE user_id = auth.uid()
-    )
-  );
+CREATE POLICY "Manage own organization job postings" ON organization_job_postings
+  FOR ALL USING (created_by = auth.uid());
 
 -- Create function to increment view count
 CREATE OR REPLACE FUNCTION increment()
