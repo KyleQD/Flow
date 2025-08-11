@@ -45,6 +45,41 @@ export async function POST(request: NextRequest) {
     const applicantEmail = form_responses.email || user.email || ''
     const applicantPhone = form_responses.phone || ''
 
+    // Simple rate limiting and duplicate protection
+    // 1) Prevent duplicate application for the same job by the same user within 24h
+    const { data: existing, error: existingErr } = await supabase
+      .from('job_applications')
+      .select('id, applied_at')
+      .eq('job_posting_id', job_posting_id)
+      .eq('applicant_id', user.id)
+      .order('applied_at', { ascending: false })
+      .limit(1)
+
+    if (!existingErr && existing && existing.length > 0) {
+      const lastAppliedAt = new Date(existing[0].applied_at)
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      if (lastAppliedAt > oneDayAgo) {
+        return NextResponse.json(
+          { success: false, error: 'You have already applied for this role recently. Please try again later.' },
+          { status: 429 }
+        )
+      }
+    }
+
+    // 2) Global per-user throttle: max 10 applications within the last hour
+    const { data: recentApps } = await supabase
+      .from('job_applications')
+      .select('id, applied_at')
+      .eq('applicant_id', user.id)
+      .gte('applied_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+
+    if ((recentApps?.length || 0) >= 10) {
+      return NextResponse.json(
+        { success: false, error: 'Rate limit exceeded. Please wait before applying to more jobs.' },
+        { status: 429 }
+      )
+    }
+
     // Create the application
     const { data: application, error: applicationError } = await supabase
       .from('job_applications')

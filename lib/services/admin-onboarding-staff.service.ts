@@ -488,7 +488,7 @@ export class AdminOnboardingStaffService {
           *,
           application_form_template:application_form_templates(*)
         `)
-        .eq('venue_id', venueId)
+        .or(`venue_id.eq.${venueId},venue_id.is.null`)
         .order('created_at', { ascending: false })
 
       if (error) throw error
