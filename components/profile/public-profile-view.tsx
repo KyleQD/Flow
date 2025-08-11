@@ -27,7 +27,9 @@ import {
   Ticket,
   UserCheck,
   Check,
-  Sparkles
+  Sparkles,
+  Briefcase,
+  Target
 } from "lucide-react"
 import { toast } from "sonner"
 import { formatDistanceToNow } from 'date-fns'
@@ -90,7 +92,10 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
   const [posts, setPosts] = useState<any[]>([])
   const [events, setEvents] = useState<any[]>([])
   const [music, setMusic] = useState<any[]>([])
+  const [jobs, setJobs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [jobsLoading, setJobsLoading] = useState(false)
+  const [jobsError, setJobsError] = useState<string | null>(null)
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set())
   const [showComments, setShowComments] = useState<string | null>(null)
   const [comments, setComments] = useState<{ [postId: string]: Comment[] }>({})
@@ -106,7 +111,23 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
   useEffect(() => {
     fetchProfileData()
     checkFollowStatus()
+    loadJobs()
   }, [profile.id, currentUser])
+  async function loadJobs() {
+    try {
+      setJobsError(null)
+      setJobsLoading(true)
+      const url = `/api/job-board?organization_id=${encodeURIComponent(profile.id)}&limit=12`
+      const res = await fetch(url)
+      const json = await res.json()
+      if (json?.success) setJobs(json.data || [])
+      else setJobsError(json?.error || 'Failed to load jobs')
+    } catch (e: any) {
+      setJobsError(e?.message || 'Failed to load jobs')
+    } finally {
+      setJobsLoading(false)
+    }
+  }
 
 
 
@@ -971,7 +992,7 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
           {/* Right Column - Content */}
           <div className="lg:col-span-2">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-1">
+              <TabsList className="grid w-full grid-cols-5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-1">
                 <TabsTrigger value="overview" className="rounded-xl data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
                   Overview
                 </TabsTrigger>
@@ -983,6 +1004,9 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
                 </TabsTrigger>
                 <TabsTrigger value="events" className="rounded-xl data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
                   Events
+                </TabsTrigger>
+                <TabsTrigger value="jobs" className="rounded-xl data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70">
+                  Jobs
                 </TabsTrigger>
               </TabsList>
 
@@ -1318,6 +1342,57 @@ export function PublicProfileView({ profile, isOwnProfile = false, onFollow, onM
                     <p className="text-gray-400 text-lg">
                       Event management and ticketing features are in development.
                     </p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="jobs" className="mt-8">
+                <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl overflow-hidden">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-white text-xl font-bold flex items-center gap-2">
+                      <Briefcase className="h-5 w-5 text-purple-400" />
+                      Open Roles
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {jobsLoading ? (
+                      <div className="flex items-center justify-center py-8 text-gray-300">
+                        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading jobs...
+                      </div>
+                    ) : jobsError ? (
+                      <div className="text-center py-8 text-red-300">{jobsError}</div>
+                    ) : jobs.length === 0 ? (
+                      <div className="text-center py-8 text-gray-300">No current openings</div>
+                    ) : (
+                      <div className="grid gap-4">
+                        {jobs.map((job: any) => (
+                          <a key={job.id} href={`/jobs/${job.template_id || job.id}`} className="block group">
+                            <div className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2 text-white font-semibold">
+                                  <Briefcase className="h-4 w-4 text-purple-400" />
+                                  {job.title}
+                                </div>
+                                {job.urgent && (
+                                  <span className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 border border-red-500/30">Urgent</span>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap gap-2 text-xs text-gray-300">
+                                {job.location && (
+                                  <span className="px-2 py-1 rounded bg-white/5 border border-white/10">{job.location}</span>
+                                )}
+                                {job.experience_level && (
+                                  <span className="px-2 py-1 rounded bg-white/5 border border-white/10 flex items-center gap-1"><Target className="h-3 w-3" />{job.experience_level}</span>
+                                )}
+                                {job.employment_type && (
+                                  <span className="px-2 py-1 rounded bg-white/5 border border-white/10">{job.employment_type}</span>
+                                )}
+                              </div>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
