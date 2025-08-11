@@ -88,6 +88,10 @@ CREATE TABLE IF NOT EXISTS staff_shifts (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Ensure new columns exist for existing deployments
+ALTER TABLE staff_shifts ADD COLUMN IF NOT EXISTS job_posting_id UUID;
+CREATE INDEX IF NOT EXISTS idx_staff_shifts_job_posting_id ON staff_shifts(job_posting_id);
+
 -- 2.2 Create staff_zones table for zone management
 CREATE TABLE IF NOT EXISTS staff_zones (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

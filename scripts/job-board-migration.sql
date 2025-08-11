@@ -87,6 +87,10 @@ CREATE TABLE IF NOT EXISTS organization_job_postings (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Ensure missing columns exist if tables pre-exist (idempotent)
+ALTER TABLE job_board_postings ADD COLUMN IF NOT EXISTS template_id UUID;
+ALTER TABLE organization_job_postings ADD COLUMN IF NOT EXISTS template_id UUID;
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_job_board_postings_template_id ON job_board_postings(template_id);
 CREATE INDEX IF NOT EXISTS idx_organization_job_postings_template_id ON organization_job_postings(template_id);
