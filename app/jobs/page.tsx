@@ -576,12 +576,50 @@ export default function JobsPage() {
                             transition: { type: "spring", stiffness: 400, damping: 17 }
                           }}
                         >
-                          <JobCard
-                            job={job}
-                            onSave={handleSaveJob}
-                            onUnsave={handleUnsaveJob}
-                            onApply={handleApplyToJob}
-                          />
+                          {activeTab === 'staffing' ? (
+                            <a href={`/jobs/${(job as any).template_id || (job as any).id}`} className="block">
+                              <Card className="bg-slate-800/30 border-slate-700/50 hover:bg-slate-800/50 transition-all duration-300">
+                                <CardHeader className="pb-2">
+                                  <CardTitle className="text-white flex items-center gap-2">
+                                    <Briefcase className="h-5 w-5 text-purple-400" />
+                                    <span>{(job as any).title}</span>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent className="text-slate-300 text-sm">
+                                  <div className="flex flex-wrap items-center gap-3">
+                                    {(job as any).organization_name && (
+                                      <Badge variant="secondary" className="bg-slate-700/50 border-slate-600/50 rounded-lg">
+                                        <Building2 className="h-3.5 w-3.5 mr-1" />
+                                        {(job as any).organization_name}
+                                      </Badge>
+                                    )}
+                                    {(job as any).location && (
+                                      <Badge variant="secondary" className="bg-slate-700/50 border-slate-600/50 rounded-lg">
+                                        <MapPin className="h-3.5 w-3.5 mr-1" />
+                                        {(job as any).location}
+                                      </Badge>
+                                    )}
+                                    {(job as any).experience_level && (
+                                      <Badge variant="secondary" className="bg-slate-700/50 border-slate-600/50 rounded-lg">
+                                        <Target className="h-3.5 w-3.5 mr-1" />
+                                        {(job as any).experience_level}
+                                      </Badge>
+                                    )}
+                                    {(job as any).urgent && (
+                                      <Badge className="bg-red-600/20 text-red-300 border-red-600/30 rounded-lg">Urgent</Badge>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </a>
+                          ) : (
+                            <JobCard
+                              job={job}
+                              onSave={handleSaveJob}
+                              onUnsave={handleUnsaveJob}
+                              onApply={handleApplyToJob}
+                            />
+                          )}
                         </motion.div>
                       ))}
                     </motion.div>
