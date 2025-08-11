@@ -1689,6 +1689,60 @@ export class AdminOnboardingStaffService {
   }
 
   /**
+   * Create or link an onboarding candidate from an application
+   */
+  static async createOrLinkCandidateFromApplication(applicationId: string): Promise<OnboardingCandidate> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const { data: application, error: appError } = await supabase
+      .from('job_applications')
+      .select(`
+        *,
+        job_posting:job_posting_templates(id, venue_id, department, position, employment_type)
+      `)
+      .eq('id', applicationId)
+      .single()
+
+    if (appError || !application) throw new Error('Application not found')
+
+    const { data: existing } = await supabase
+      .from('staff_onboarding_candidates')
+      .select('*')
+      .eq('application_id', applicationId)
+      .maybeSingle()
+
+    if (existing) return existing as unknown as OnboardingCandidate
+
+    const insertData = {
+      venue_id: application.venue_id,
+      application_id: application.id,
+      user_id: application.applicant_id,
+      name: application.applicant_name,
+      email: application.applicant_email,
+      phone: application.applicant_phone,
+      position: application.job_posting?.position || application.form_responses?.position || 'Candidate',
+      department: application.job_posting?.department || application.form_responses?.department || 'General',
+      status: 'in_progress',
+      stage: 'onboarding',
+      application_date: application.applied_at,
+      employment_type: application.job_posting?.employment_type || application.form_responses?.employment_type || 'contractor',
+      onboarding_progress: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    const { data: candidate, error: insertError } = await supabase
+      .from('staff_onboarding_candidates')
+      .insert(insertData)
+      .select('*')
+      .single()
+
+    if (insertError) throw insertError
+    return candidate as unknown as OnboardingCandidate
+  }
+
+  /**
    * Get enhanced dashboard stats
    */
   static async getEnhancedDashboardStats(venueId: string): Promise<{

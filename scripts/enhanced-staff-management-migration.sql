@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS staff_shifts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     venue_id UUID NOT NULL,
     event_id UUID,
+    job_posting_id UUID,
     staff_member_id UUID NOT NULL,
     shift_date DATE NOT NULL,
     start_time TIME NOT NULL,
@@ -209,6 +210,7 @@ CREATE INDEX IF NOT EXISTS idx_staff_members_last_performance_review ON staff_me
 
 -- 3.5 Indexes for new tables
 CREATE INDEX IF NOT EXISTS idx_staff_shifts_venue_id ON staff_shifts(venue_id);
+CREATE INDEX IF NOT EXISTS idx_staff_shifts_job_posting_id ON staff_shifts(job_posting_id);
 CREATE INDEX IF NOT EXISTS idx_staff_shifts_staff_member_id ON staff_shifts(staff_member_id);
 CREATE INDEX IF NOT EXISTS idx_staff_shifts_shift_date ON staff_shifts(shift_date);
 CREATE INDEX IF NOT EXISTS idx_staff_shifts_status ON staff_shifts(status);

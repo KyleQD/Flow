@@ -31,3 +31,28 @@ export async function GET(request: NextRequest) {
     )
   }
 } 
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { action, application_id: applicationId } = body || {}
+    if (!action || !applicationId) {
+      return NextResponse.json({ success: false, error: 'action and application_id required' }, { status: 400 })
+    }
+
+    if (action === 'approve') {
+      const candidate = await AdminOnboardingStaffService.createOrLinkCandidateFromApplication(applicationId)
+      return NextResponse.json({ success: true, data: candidate, message: 'Application approved and candidate created' })
+    }
+
+    if (action === 'reject') {
+      const updated = await AdminOnboardingStaffService.updateApplicationStatus(applicationId, { status: 'rejected' })
+      return NextResponse.json({ success: true, data: updated, message: 'Application rejected' })
+    }
+
+    return NextResponse.json({ success: false, error: 'Unsupported action' }, { status: 400 })
+  } catch (error) {
+    console.error('❌ [Applications API] Error:', error)
+    return NextResponse.json({ success: false, error: 'Failed to process request' }, { status: 500 })
+  }
+}
