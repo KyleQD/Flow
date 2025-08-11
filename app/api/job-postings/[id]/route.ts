@@ -1,0 +1,49 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase/client'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const jobId = params.id
+
+    // Get the job posting with application form template
+    const { data: jobPosting, error: jobError } = await supabase
+      .from('job_posting_templates')
+      .select(`
+        *,
+        application_form_template:application_form_templates(*)
+      `)
+      .eq('id', jobId)
+      .eq('status', 'published')
+      .single()
+
+    if (jobError) {
+      console.error('Error fetching job posting:', jobError)
+      return NextResponse.json(
+        { success: false, error: 'Job posting not found' },
+        { status: 404 }
+      )
+    }
+
+    // Increment view count
+    await supabase
+      .from('job_posting_templates')
+      .update({ views_count: (jobPosting.views_count || 0) + 1 })
+      .eq('id', jobId)
+
+    return NextResponse.json({
+      success: true,
+      data: jobPosting
+    })
+  } catch (error) {
+    console.error('Error in job posting API:', error)
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+} 

@@ -61,6 +61,7 @@ export default function JobsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
   const [isJobModalOpen, setIsJobModalOpen] = useState(false)
+  const [staffingJobs, setStaffingJobs] = useState<any[]>([])
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -80,6 +81,10 @@ export default function JobsPage() {
       fetchUserApplications()
     }
   }, [filters, activeTab])
+
+  useEffect(() => {
+    if (activeTab === 'staffing') fetchStaffingJobs()
+  }, [activeTab])
 
   const fetchCategories = async () => {
     try {
@@ -189,6 +194,19 @@ export default function JobsPage() {
     }
   }
 
+  const fetchStaffingJobs = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/job-board')
+      const result = await response.json()
+      if (result.success) setStaffingJobs(result.data)
+    } catch (error) {
+      console.error('Error fetching staffing jobs:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleSaveJob = async (jobId: string) => {
     if (!user) return
     try {
@@ -286,6 +304,8 @@ export default function JobsPage() {
         return savedJobs
       case 'applications':
         return userApplications
+      case 'staffing':
+        return staffingJobs
       default:
         return jobs
     }
@@ -484,7 +504,7 @@ export default function JobsPage() {
             transition={{ duration: 0.5, delay: 0.6 }}
           >
             <Tabs value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid w-full grid-cols-4 mb-6 bg-slate-800/50 backdrop-blur-xl border border-slate-700/30 rounded-xl p-1">
+              <TabsList className="grid w-full grid-cols-5 mb-6 bg-slate-800/50 backdrop-blur-xl border border-slate-700/30 rounded-xl p-1">
                 <TabsTrigger 
                   value="all" 
                   className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300"
@@ -513,6 +533,13 @@ export default function JobsPage() {
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Applications
                 </TabsTrigger>
+              <TabsTrigger 
+                value="staffing" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300"
+              >
+                <Briefcase className="h-4 w-4 mr-2" />
+                Staffing
+              </TabsTrigger>
               </TabsList>
 
               <TabsContent value={activeTab} className="space-y-4">

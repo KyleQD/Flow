@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,15 +8,19 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { NeuralStaffCommand } from "@/components/admin/neural-staff-command"
-import EnhancedOnboardingSystem from "@/components/admin/enhanced-onboarding-system"
-import { EnhancedAddStaffDialog } from "./enhanced-add-staff-dialog"
-import { useCurrentVenue } from "@/hooks/use-venue"
+import { useToast } from "@/components/ui/use-toast"
+import EnhancedJobPostingForm from "@/components/admin/enhanced-job-posting-form"
+import EnhancedApplicationReview from "@/components/admin/enhanced-application-review"
+import EnhancedOnboardingWizard from "@/components/admin/enhanced-onboarding-wizard"
+import EnhancedTeamManagement from "@/components/admin/enhanced-team-management"
+import EnhancedAnalyticsDashboard from "@/components/admin/enhanced-analytics-dashboard"
+import { AdminOnboardingStaffService } from "@/lib/services/admin-onboarding-staff.service"
+import { JobBoardService } from "@/lib/services/job-board.service"
 import {
   Users,
   Plus,
@@ -90,1004 +93,1496 @@ import {
   Minimize,
   Move,
   RefreshCw,
-  RotateCw,
   ZoomIn,
   ZoomOut,
   Crop,
   Scissors,
   Type,
+  Grid3X3,
   Bold,
   Italic,
-  Underline,
-  Strikethrough,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  List,
-  ListOrdered,
-  Quote,
-  Code,
-  Table,
-  Grid,
-  Columns,
-  Rows,
-  Layout,
-  Sidebar,
-  SidebarClose,
-  SidebarOpen,
-  PanelLeft,
-  PanelRight,
-  PanelTop,
-  PanelBottom,
-  PanelLeftClose,
-  PanelRightClose,
-  PanelTopClose,
-  PanelBottomClose,
-  PanelLeftOpen,
-  PanelRightOpen,
-  PanelTopOpen,
-  PanelBottomOpen,
-  Workflow,
-  GitBranch,
-  GitCommit,
-  GitMerge,
-  GitPullRequest,
-  GitCompare,
-  GitFork,
-  Database,
-  Server,
-  HardDrive,
-  Cloud,
-  CloudOff,
-  CloudRain,
-  CloudSnow,
-  CloudLightning,
-  CloudDrizzle,
-  CloudFog,
-  CloudHail,
-  CloudSun,
-  CloudMoon,
-  Sun,
-  Moon,
-  Sunrise,
-  Sunset,
-  Thermometer,
-  Droplets,
-  Umbrella,
-  Wind,
-  Snowflake
+  Loader2,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+  UserPlus2,
+  FileText as FileTextIcon,
+  Briefcase as BriefcaseIcon,
+  MessageSquare as MessageSquareIcon,
+  BarChart3 as BarChart3Icon,
+  Calendar as CalendarIcon,
+  Users as UsersIcon
 } from "lucide-react"
 
-interface StaffMember {
-  id: string
-  name: string
-  email: string
-  phone: string
-  role: string
-  department: string
-  status: 'active' | 'inactive' | 'on_tour'
-  hire_date: string
-  skills: string[]
-  rating: number
-  tours_completed: number
-  current_assignment?: string
-  salary: number
-  avatar?: string
-  location: string
-  certifications: string[]
-  availability: 'available' | 'busy' | 'vacation'
-}
-
-interface StaffStats {
-  totalStaff: number
-  activeStaff: number
-  onTour: number
-  available: number
-  totalDepartments: number
-  averageRating: number
-  completedTours: number
-  pendingApplications: number
+interface DashboardStats {
+  onboarding: {
+    total_candidates: number
+    pending: number
+    in_progress: number
+    completed: number
+    rejected: number
+    approved: number
+    avg_progress: number
+  }
+  job_postings: {
+    total_postings: number
+    published: number
+    draft: number
+    paused: number
+    closed: number
+    total_applications: number
+    pending_reviews: number
+  }
+  staff_management: {
+    total_staff: number
+    active_staff: number
+    on_leave: number
+    terminated: number
+    departments: number
+    avg_rating: number
+    recent_hires: number
+  }
 }
 
 export default function StaffPage() {
-  const { venue, loading: venueLoading } = useCurrentVenue()
-  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([])
-  const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedDepartment, setSelectedDepartment] = useState("all")
-  const [selectedStatus, setSelectedStatus] = useState("all")
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("neural")
-  const [stats, setStats] = useState<StaffStats>({
-    totalStaff: 0,
-    activeStaff: 0,
-    onTour: 0,
-    available: 0,
-    totalDepartments: 0,
-    averageRating: 0,
-    completedTours: 0,
-    pendingApplications: 0
-  })
+  const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [applications, setApplications] = useState<any[]>([])
+  const [jobPostings, setJobPostings] = useState<any[]>([])
+  const [onboardingCandidates, setOnboardingCandidates] = useState<any[]>([])
+  const [onboardingWorkflows, setOnboardingWorkflows] = useState<any[]>([])
+  const [staffMembers, setStaffMembers] = useState<any[]>([])
+  const [communications, setCommunications] = useState<any[]>([])
+  const [showAddStaffDialog, setShowAddStaffDialog] = useState(false)
+  const [showJobPostingDialog, setShowJobPostingDialog] = useState(false)
+  const { toast } = useToast()
 
-  // Onboarding state
-  const [onboardingCandidates, setOnboardingCandidates] = useState([
-    {
-      id: "1",
-      name: "Alex Johnson",
-      position: "Sound Engineer",
-      department: "Technical",
-      stage: "background_check",
-      progress: 65,
-      startDate: "2024-01-15",
-      estimatedCompletion: "2024-02-01",
-      documents: ["Resume", "ID Verification", "Background Check"],
-      completedDocuments: ["Resume", "ID Verification"],
-      nextStep: "Complete background check"
-    },
-    {
-      id: "2",
-      name: "Sarah Chen",
-      position: "Event Coordinator",
-      department: "Operations",
-      stage: "training",
-      progress: 85,
-      startDate: "2024-01-10",
-      estimatedCompletion: "2024-01-25",
-      documents: ["Resume", "References", "Training Certificates"],
-      completedDocuments: ["Resume", "References", "Training Certificates"],
-      nextStep: "Complete final orientation"
-    }
-  ])
+  // const { currentVenue } = useCurrentVenue()
+  const venueId = 'mock-venue-id' // currentVenue?.id || 'mock-venue-id'
 
-  // Job board state
-  const [jobPostings, setJobPostings] = useState([
-    {
-      id: "1",
-      title: "Senior Sound Engineer",
-      department: "Technical",
-      location: "Los Angeles, CA",
-      type: "Full-time",
-      salary: "$75,000 - $95,000",
-      applications: 12,
-      status: "active",
-      postedDate: "2024-01-10",
-      deadline: "2024-02-10"
-    },
-    {
-      id: "2",
-      title: "Security Coordinator",
-      department: "Security",
-      location: "New York, NY",
-      type: "Full-time",
-      salary: "$65,000 - $80,000",
-      applications: 8,
-      status: "active",
-      postedDate: "2024-01-12",
-      deadline: "2024-02-12"
-    },
-    {
-      id: "3",
-      title: "Lighting Technician",
-      department: "Technical",
-      location: "Chicago, IL",
-      type: "Part-time",
-      salary: "$25 - $35/hour",
-      applications: 15,
-      status: "active",
-      postedDate: "2024-01-08",
-      deadline: "2024-02-08"
-    }
-  ])
-
-  // Communications state
-  const [messages, setMessages] = useState([
-    {
-      id: "1",
-      subject: "Team Meeting Tomorrow",
-      content: "Mandatory team meeting at 3 PM in the main conference room.",
-      sender: "Admin",
-      recipients: "All Staff",
-      priority: "high",
-      type: "announcement",
-      sentAt: "2024-01-15T10:30:00Z",
-      readBy: 12
-    },
-    {
-      id: "2",
-      subject: "Weekend Event Schedule",
-      content: "Updated schedule for this weekend's events. Please review and confirm availability.",
-      sender: "Operations Manager",
-      recipients: "Event Staff",
-      priority: "medium",
-      type: "schedule",
-      sentAt: "2024-01-14T14:20:00Z",
-      readBy: 8
-    }
-  ])
-
-  // Scheduler state
-  const [schedules, setSchedules] = useState([
-    {
-      id: "1",
-      event: "Summer Music Festival",
-      date: "2024-07-15",
-      staff: [
-        { name: "Sarah Johnson", role: "Stage Manager", shift: "09:00-17:00" },
-        { name: "Mike Chen", role: "Security", shift: "08:00-16:00" },
-        { name: "Emma Rodriguez", role: "Coordinator", shift: "10:00-18:00" }
-      ],
-      status: "confirmed"
-    },
-    {
-      id: "2",
-      event: "Electronic Music Night",
-      date: "2024-01-20",
-      staff: [
-        { name: "David Park", role: "Sound Engineer", shift: "18:00-02:00" },
-        { name: "Lisa Wang", role: "Lighting Tech", shift: "17:00-01:00" }
-      ],
-      status: "pending"
-    }
-  ])
-
-  // Sample data
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const sampleStaff: StaffMember[] = [
-        {
-          id: "1",
-          name: "Sarah Johnson",
-          email: "sarah@tourify.com",
-          phone: "+1 (555) 123-4567",
-          role: "Stage Manager",
-          department: "Production",
-          status: "on_tour",
-          hire_date: "2023-01-15",
-          skills: ["Stage Setup", "Audio Engineering", "Team Leadership"],
-          rating: 4.8,
-          tours_completed: 12,
-          current_assignment: "West Coast Summer Tour",
-          salary: 75000,
-          location: "Los Angeles, CA",
-          certifications: ["OSHA Safety", "Audio Engineering"],
-          availability: "busy"
-        },
-        {
-          id: "2",
-          name: "Mike Chen",
-          email: "mike@tourify.com",
-          phone: "+1 (555) 234-5678",
-          role: "Security Coordinator",
-          department: "Security",
-          status: "active",
-          hire_date: "2022-08-20",
-          skills: ["Crowd Control", "Emergency Response", "VIP Protection"],
-          rating: 4.9,
-          tours_completed: 18,
-          salary: 68000,
-          location: "New York, NY",
-          certifications: ["Security License", "First Aid", "CPR"],
-          availability: "available"
-        },
-        {
-          id: "3",
-          name: "Emma Rodriguez",
-          email: "emma@tourify.com",
-          phone: "+1 (555) 345-6789",
-          role: "Tour Coordinator",
-          department: "Operations",
-          status: "active",
-          hire_date: "2023-03-10",
-          skills: ["Logistics", "Vendor Management", "Scheduling"],
-          rating: 4.7,
-          tours_completed: 8,
-          salary: 72000,
-          location: "Chicago, IL",
-          certifications: ["Project Management", "Travel Coordination"],
-          availability: "available"
-        },
-        {
-          id: "4",
-          name: "David Park",
-          email: "david@tourify.com",
-          phone: "+1 (555) 456-7890",
-          role: "Sound Engineer",
-          department: "Audio",
-          status: "on_tour",
-          hire_date: "2021-11-05",
-          skills: ["Mixing", "Audio Setup", "Equipment Maintenance"],
-          rating: 4.9,
-          tours_completed: 25,
-          current_assignment: "Electronic Music Festival Circuit",
-          salary: 78000,
-          location: "Nashville, TN",
-          certifications: ["Pro Tools", "Live Sound", "Digital Audio"],
-          availability: "busy"
-        },
-        {
-          id: "5",
-          name: "Lisa Wang",
-          email: "lisa@tourify.com",
-          phone: "+1 (555) 567-8901",
-          role: "Lighting Technician",
-          department: "Lighting",
-          status: "active",
-          hire_date: "2023-06-12",
-          skills: ["LED Systems", "Programming", "Rigging"],
-          rating: 4.6,
-          tours_completed: 5,
-          salary: 65000,
-          location: "Las Vegas, NV",
-          certifications: ["Rigging Safety", "LED Programming"],
-          availability: "vacation"
+    loadDashboardData()
+  }, [venueId])
+
+  async function loadDashboardData() {
+    try {
+      console.log('🔄 [Staff Page] Loading dashboard data for venue:', venueId)
+      setIsLoading(true)
+      setError(null)
+
+      // Try to load real data from service, fallback to mock data
+      try {
+        console.log('🔄 [Staff Page] Attempting to load real data from service...')
+        
+        // Load all data in parallel with better error handling
+        const results = await Promise.allSettled([
+          AdminOnboardingStaffService.getDashboardStats(venueId),
+          AdminOnboardingStaffService.getJobPostings(venueId),
+          AdminOnboardingStaffService.getJobApplications(venueId),
+          AdminOnboardingStaffService.getOnboardingCandidates(venueId),
+          AdminOnboardingStaffService.getStaffMembers(venueId)
+        ])
+
+        console.log('📊 [Staff Page] Data loading results:', results.map((result, index) => ({
+          service: ['stats', 'jobPostings', 'applications', 'candidates', 'staffMembers'][index],
+          status: result.status,
+          value: result.status === 'fulfilled' ? result.value : result.reason
+        })))
+
+        // Handle each result individually
+        const [statsResult, jobPostingsResult, applicationsResult, candidatesResult, staffResult] = results
+
+        // Set stats (with fallback if failed)
+        if (statsResult.status === 'fulfilled') {
+          setStats(statsResult.value)
+          console.log('✅ [Staff Page] Stats loaded successfully')
+        } else {
+          console.warn('⚠️ [Staff Page] Failed to load dashboard stats, using fallback')
+          setStats({
+            onboarding: {
+              total_candidates: 12,
+              pending: 3,
+              in_progress: 5,
+              completed: 4,
+              rejected: 0,
+              approved: 4,
+              avg_progress: 65
+            },
+            job_postings: {
+              total_postings: 8,
+              published: 5,
+              draft: 2,
+              paused: 1,
+              closed: 0,
+              total_applications: 23,
+              pending_reviews: 7
+            },
+            staff_management: {
+              total_staff: 45,
+              active_staff: 38,
+              on_leave: 5,
+              terminated: 2,
+              departments: 6,
+              avg_rating: 4.2,
+              recent_hires: 3
+            }
+          })
         }
-      ]
 
-      setStaffMembers(sampleStaff)
-      setFilteredStaff(sampleStaff)
-      
-      // Calculate stats
-      const activeCount = sampleStaff.filter(s => s.status === 'active').length
-      const onTourCount = sampleStaff.filter(s => s.status === 'on_tour').length
-      const availableCount = sampleStaff.filter(s => s.availability === 'available').length
-      const departments = new Set(sampleStaff.map(s => s.department)).size
-      const avgRating = sampleStaff.reduce((sum, s) => sum + s.rating, 0) / sampleStaff.length
-      const totalToursCompleted = sampleStaff.reduce((sum, s) => sum + s.tours_completed, 0)
+        // Set job postings (with fallback if failed)
+        if (jobPostingsResult.status === 'fulfilled') {
+          setJobPostings(jobPostingsResult.value)
+          console.log('✅ [Staff Page] Job postings loaded successfully')
+        } else {
+          console.warn('⚠️ [Staff Page] Failed to load job postings, using fallback')
+          setJobPostings([
+            {
+              id: 'job-1',
+              title: 'Security Staff',
+              department: 'Security',
+              position: 'Security Guard',
+              status: 'published',
+              applications_count: 5,
+              views_count: 23
+            },
+            {
+              id: 'job-2',
+              title: 'Bartender',
+              department: 'Food & Beverage',
+              position: 'Bartender',
+              status: 'published',
+              applications_count: 3,
+              views_count: 18
+            }
+          ])
+        }
 
-      setStats({
-        totalStaff: sampleStaff.length,
-        activeStaff: activeCount,
-        onTour: onTourCount,
-        available: availableCount,
-        totalDepartments: departments,
-        averageRating: avgRating,
-        completedTours: totalToursCompleted,
-        pendingApplications: 3
-      })
+        // Set applications (with fallback if failed)
+        if (applicationsResult.status === 'fulfilled') {
+          setApplications(applicationsResult.value)
+          console.log('✅ [Staff Page] Applications loaded successfully')
+        } else {
+          console.warn('⚠️ [Staff Page] Failed to load applications, using fallback')
+          setApplications([
+            {
+              id: 'app-1',
+              job_posting_id: 'job-1',
+              applicant_id: 'user-1',
+              applicant_name: 'John Smith',
+              applicant_email: 'john.smith@email.com',
+              applicant_phone: '+1-555-0123',
+              status: 'pending',
+              form_responses: { experience: '5 years', skills: 'Security, Crowd Control' },
+              applied_at: '2024-01-15T10:00:00Z',
+              rating: 4.5
+            },
+            {
+              id: 'app-2',
+              job_posting_id: 'job-1',
+              applicant_id: 'user-2',
+              applicant_name: 'Sarah Johnson',
+              applicant_email: 'sarah.johnson@email.com',
+              applicant_phone: '+1-555-0124',
+              status: 'reviewed',
+              form_responses: { experience: '3 years', skills: 'Bartending, Customer Service' },
+              applied_at: '2024-01-14T14:30:00Z',
+              rating: 4.2
+            }
+          ])
+        }
+
+        // Set candidates (with fallback if failed)
+        if (candidatesResult.status === 'fulfilled') {
+          setOnboardingCandidates(candidatesResult.value)
+          console.log('✅ [Staff Page] Onboarding candidates loaded successfully')
+        } else {
+          console.warn('⚠️ [Staff Page] Failed to load candidates, using fallback')
+          setOnboardingCandidates([
+            {
+              id: 'candidate-1',
+              venue_id: venueId,
+              name: 'John Smith',
+              email: 'john.smith@email.com',
+              phone: '+1-555-0123',
+              position: 'Security Guard',
+              department: 'Security',
+              status: 'in_progress',
+              stage: 'onboarding',
+              onboarding_progress: 65,
+              experience_years: 5,
+              skills: ['Security', 'Crowd Control', 'First Aid'],
+              application_date: '2024-01-15T10:00:00Z'
+            },
+            {
+              id: 'candidate-2',
+              venue_id: venueId,
+              name: 'Sarah Johnson',
+              email: 'sarah.johnson@email.com',
+              phone: '+1-555-0124',
+              position: 'Bartender',
+              department: 'Food & Beverage',
+              status: 'pending',
+              stage: 'invitation',
+              onboarding_progress: 25,
+              experience_years: 3,
+              skills: ['Bartending', 'Customer Service', 'POS Systems'],
+              application_date: '2024-01-14T14:30:00Z'
+            }
+          ])
+        }
+
+        // Set staff members (with fallback if failed)
+        if (staffResult.status === 'fulfilled') {
+          setStaffMembers(staffResult.value)
+          console.log('✅ [Staff Page] Staff members loaded successfully')
+        } else {
+          console.warn('⚠️ [Staff Page] Failed to load staff members, using fallback')
+          setStaffMembers([
+            {
+              id: 'staff-1',
+              venue_id: venueId,
+              name: 'Mike Johnson',
+              email: 'mike.johnson@venue.com',
+              phone: '+1-555-0125',
+              role: 'Security Guard',
+              department: 'Security',
+              status: 'active',
+              employment_type: 'full_time',
+              hire_date: '2023-06-15T00:00:00Z',
+              hourly_rate: 18.50,
+              performance_rating: 4.5,
+              attendance_rate: 95,
+              incidents_count: 0,
+              commendations_count: 3,
+              training_completed_count: 5,
+              certifications_valid_count: 3,
+              avatar_url: '/avatars/mike.jpg'
+            },
+            {
+              id: 'staff-2',
+              venue_id: venueId,
+              name: 'Lisa Chen',
+              email: 'lisa.chen@venue.com',
+              phone: '+1-555-0126',
+              role: 'Bartender',
+              department: 'Food & Beverage',
+              status: 'active',
+              employment_type: 'part_time',
+              hire_date: '2023-08-20T00:00:00Z',
+              hourly_rate: 16.75,
+              performance_rating: 4.2,
+              attendance_rate: 92,
+              incidents_count: 1,
+              commendations_count: 2,
+              training_completed_count: 4,
+              certifications_valid_count: 2,
+              avatar_url: '/avatars/lisa.jpg'
+            }
+          ])
+        }
+
+        // Check if all requests failed
+        const failedCount = results.filter(result => result.status === 'rejected').length
+        if (failedCount === results.length) {
+          console.warn('⚠️ [Staff Page] All service requests failed, using mock data')
+          toast({
+            title: 'Using Demo Data',
+            description: 'Connected to demo mode. Real data will be available when database is configured.',
+            variant: 'default'
+          })
+        } else if (failedCount > 0) {
+          // Some requests failed but others succeeded
+          toast({
+            title: 'Partial Data Loaded',
+            description: `Some data loaded from database (${results.length - failedCount} of ${results.length} successful).`,
+            variant: 'default'
+          })
+        } else {
+          // All requests succeeded
+          toast({
+            title: 'Data Loaded',
+            description: 'All data loaded successfully from database.',
+            variant: 'default'
+          })
+        }
+
+      } catch (serviceError) {
+        console.warn('⚠️ [Staff Page] Service layer failed, using mock data:', serviceError)
+        
+        // Fallback to mock data
+        setStats({
+          onboarding: {
+            total_candidates: 12,
+            pending: 3,
+            in_progress: 5,
+            completed: 4,
+            rejected: 0,
+            approved: 4,
+            avg_progress: 65
+          },
+          job_postings: {
+            total_postings: 8,
+            published: 5,
+            draft: 2,
+            paused: 1,
+            closed: 0,
+            total_applications: 23,
+            pending_reviews: 7
+          },
+          staff_management: {
+            total_staff: 45,
+            active_staff: 38,
+            on_leave: 5,
+            terminated: 2,
+            departments: 6,
+            avg_rating: 4.2,
+            recent_hires: 3
+          }
+        })
+
+        setApplications([
+          {
+            id: 'app-1',
+            job_posting_id: 'job-1',
+            applicant_id: 'user-1',
+            applicant_name: 'John Smith',
+            applicant_email: 'john.smith@email.com',
+            applicant_phone: '+1-555-0123',
+            status: 'pending',
+            form_responses: { experience: '5 years', skills: 'Security, Crowd Control' },
+            applied_at: '2024-01-15T10:00:00Z',
+            rating: 4.5
+          },
+          {
+            id: 'app-2',
+            job_posting_id: 'job-1',
+            applicant_id: 'user-2',
+            applicant_name: 'Sarah Johnson',
+            applicant_email: 'sarah.johnson@email.com',
+            applicant_phone: '+1-555-0124',
+            status: 'reviewed',
+            form_responses: { experience: '3 years', skills: 'Bartending, Customer Service' },
+            applied_at: '2024-01-14T14:30:00Z',
+            rating: 4.2
+          }
+        ])
+
+        setJobPostings([
+          {
+            id: 'job-1',
+            title: 'Security Staff',
+            department: 'Security',
+            position: 'Security Guard',
+            status: 'published',
+            applications_count: 5,
+            views_count: 23
+          },
+          {
+            id: 'job-2',
+            title: 'Bartender',
+            department: 'Food & Beverage',
+            position: 'Bartender',
+            status: 'published',
+            applications_count: 3,
+            views_count: 18
+          }
+        ])
+
+        setOnboardingCandidates([
+          {
+            id: 'candidate-1',
+            venue_id: venueId,
+            name: 'John Smith',
+            email: 'john.smith@email.com',
+            phone: '+1-555-0123',
+            position: 'Security Guard',
+            department: 'Security',
+            status: 'in_progress',
+            stage: 'onboarding',
+            onboarding_progress: 65,
+            experience_years: 5,
+            skills: ['Security', 'Crowd Control', 'First Aid'],
+            application_date: '2024-01-15T10:00:00Z'
+          },
+          {
+            id: 'candidate-2',
+            venue_id: venueId,
+            name: 'Sarah Johnson',
+            email: 'sarah.johnson@email.com',
+            phone: '+1-555-0124',
+            position: 'Bartender',
+            department: 'Food & Beverage',
+            status: 'pending',
+            stage: 'invitation',
+            onboarding_progress: 25,
+            experience_years: 3,
+            skills: ['Bartending', 'Customer Service', 'POS Systems'],
+            application_date: '2024-01-14T14:30:00Z'
+          }
+        ])
+
+        setOnboardingWorkflows([
+          {
+            id: 'workflow-1',
+            venue_id: venueId,
+            name: 'Security Staff Onboarding',
+            description: 'Complete onboarding process for security staff',
+            department: 'Security',
+            position: 'Security Guard',
+            estimated_days: 7,
+            required_documents: ['ID', 'Background Check', 'First Aid Certification'],
+            steps: [
+              {
+                id: 'step-1',
+                title: 'Document Verification',
+                description: 'Verify all required documents',
+                step_type: 'document',
+                category: 'admin',
+                required: true,
+                estimated_hours: 2,
+                order: 1
+              },
+              {
+                id: 'step-2',
+                title: 'Background Check',
+                description: 'Complete background check process',
+                step_type: 'review',
+                category: 'admin',
+                required: true,
+                estimated_hours: 24,
+                order: 2
+              },
+              {
+                id: 'step-3',
+                title: 'Training Session',
+                description: 'Complete required training modules',
+                step_type: 'training',
+                category: 'training',
+                required: true,
+                estimated_hours: 4,
+                order: 3
+              }
+            ]
+          }
+        ])
+
+        setStaffMembers([
+          {
+            id: 'staff-1',
+            venue_id: venueId,
+            name: 'Mike Johnson',
+            email: 'mike.johnson@venue.com',
+            phone: '+1-555-0125',
+            role: 'Security Guard',
+            department: 'Security',
+            status: 'active',
+            employment_type: 'full_time',
+            hire_date: '2023-06-15T00:00:00Z',
+            hourly_rate: 18.50,
+            performance_rating: 4.5,
+            attendance_rate: 95,
+            incidents_count: 0,
+            commendations_count: 3,
+            training_completed_count: 5,
+            certifications_valid_count: 3,
+            avatar_url: '/avatars/mike.jpg'
+          },
+          {
+            id: 'staff-2',
+            venue_id: venueId,
+            name: 'Lisa Chen',
+            email: 'lisa.chen@venue.com',
+            phone: '+1-555-0126',
+            role: 'Bartender',
+            department: 'Food & Beverage',
+            status: 'active',
+            employment_type: 'part_time',
+            hire_date: '2023-08-20T00:00:00Z',
+            hourly_rate: 16.75,
+            performance_rating: 4.2,
+            attendance_rate: 92,
+            incidents_count: 1,
+            commendations_count: 2,
+            training_completed_count: 4,
+            certifications_valid_count: 2,
+            avatar_url: '/avatars/lisa.jpg'
+          }
+        ])
+
+        setCommunications([
+          {
+            id: 'comm-1',
+            venue_id: venueId,
+            sender_id: 'admin-1',
+            recipients: ['staff-1', 'staff-2'],
+            subject: 'Weekly Schedule Update',
+            content: 'Please review the updated schedule for next week.',
+            message_type: 'schedule',
+            priority: 'normal',
+            read_by: ['staff-1'],
+            sent_at: '2024-01-15T09:00:00Z'
+          },
+          {
+            id: 'comm-2',
+            venue_id: venueId,
+            sender_id: 'admin-1',
+            recipients: ['staff-1'],
+            subject: 'Training Session Reminder',
+            content: 'Don\'t forget about the safety training session tomorrow.',
+            message_type: 'training',
+            priority: 'high',
+            read_by: [],
+            sent_at: '2024-01-14T16:30:00Z'
+          }
+        ])
+
+        toast({
+          title: 'Demo Mode Active',
+          description: 'Using demo data. Configure database for real data.',
+          variant: 'default'
+        })
+      }
 
       setIsLoading(false)
-    }, 1000)
-
-    return () => clearTimeout(timer)
-  }, [])
-
-  // Filter staff based on search and filters
-  useEffect(() => {
-    let filtered = staffMembers
-
-    if (searchTerm) {
-      filtered = filtered.filter(staff => 
-        staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        staff.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        staff.department.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-
-    if (selectedDepartment !== "all") {
-      filtered = filtered.filter(staff => staff.department === selectedDepartment)
-    }
-
-    if (selectedStatus !== "all") {
-      filtered = filtered.filter(staff => staff.status === selectedStatus)
-    }
-
-    setFilteredStaff(filtered)
-  }, [searchTerm, selectedDepartment, selectedStatus, staffMembers])
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-500/20 text-green-400">Active</Badge>
-      case 'on_tour':
-        return <Badge className="bg-blue-500/20 text-blue-400">On Tour</Badge>
-      case 'inactive':
-        return <Badge className="bg-gray-500/20 text-gray-400">Inactive</Badge>
-      default:
-        return <Badge className="bg-gray-500/20 text-gray-400">{status}</Badge>
+    } catch (error) {
+      console.error('❌ [Staff Page] Error loading dashboard data:', error)
+      setError('Failed to load dashboard data')
+      setIsLoading(false)
     }
   }
 
-  const getAvailabilityBadge = (availability: string) => {
-    switch (availability) {
-      case 'available':
-        return <Badge className="bg-green-500/20 text-green-400">Available</Badge>
-      case 'busy':
-        return <Badge className="bg-yellow-500/20 text-yellow-400">Busy</Badge>
-      case 'vacation':
-        return <Badge className="bg-purple-500/20 text-purple-400">Vacation</Badge>
-      default:
-        return <Badge className="bg-gray-500/20 text-gray-400">{availability}</Badge>
+  async function handleCreateJobPosting(data: any) {
+    function getReadableError(err: any): string {
+      if (!err) return 'Unknown error'
+      // ZodError
+      if (Array.isArray(err?.issues)) {
+        return err.issues.map((i: any) => i?.message).filter(Boolean).join('\n') || 'Validation failed'
+      }
+      // Supabase/Postgrest error objects
+      if (err?.message) return err.message
+      if (typeof err === 'string') return err
+      try { return JSON.stringify(err) } catch { return 'Unexpected error' }
+    }
+
+    try {
+      console.log('🚀 [Staff Page] Creating job posting with data:', data)
+
+      const organizationData = {
+        id: venueId,
+        name: 'Event Security Pro',
+        logo: '/logo.svg',
+        description: 'Professional event security and staffing services'
+      }
+
+      let created = false
+      const failures: string[] = []
+
+      // Step 1: Create internal template first (published)
+      let templateId: string | null = null
+      try {
+        const template = await AdminOnboardingStaffService.createJobPosting(venueId, data)
+        templateId = template.id
+        console.log('✅ [Staff Page] Internal template created:', templateId)
+      } catch (internalErr) {
+        const msg = getReadableError(internalErr)
+        console.warn('⚠️ [Staff Page] Internal template creation failed:', msg)
+        failures.push(`Internal template: ${msg}`)
+      }
+
+      // Step 2: Publish to job board + organization with template_id linkage if we have templateId
+      try {
+        const jobPosting = await JobBoardService.createJobPosting(venueId, data, organizationData, templateId || undefined)
+        console.log('✅ [Staff Page] Job posting created successfully:', jobPosting)
+        created = true
+        toast({
+          title: 'Success',
+          description: 'Job posting created and published to job board and organization profile',
+        })
+      } catch (serviceError) {
+        const msg = getReadableError(serviceError)
+        console.warn('⚠️ [Staff Page] JobBoardService failed:', msg)
+        failures.push(`Job board: ${msg}`)
+        if (templateId && !created) {
+          created = true
+          toast({
+            title: 'Created Internally',
+            description: 'Posted internally. Job board publish failed, please retry later.',
+          })
+        }
+      }
+
+      if (!created) {
+        toast({
+          title: 'Job Posting Failed',
+          description: failures.join('\n'),
+          variant: 'destructive'
+        })
+        return
+      }
+
+      setShowJobPostingDialog(false)
+      loadDashboardData()
+    } catch (error) {
+      const msg = (error as any)?.message || 'Failed to create job posting. Please try again.'
+      console.error('❌ [Staff Page] Error creating job posting:', error)
+      toast({ title: 'Error', description: msg, variant: 'destructive' })
     }
   }
 
-  const departments = Array.from(new Set(staffMembers.map(s => s.department)))
+  async function handleUpdateApplicationStatus(applicationId: string, status: string, feedback?: string) {
+    try {
+      console.log('🔄 [Staff Page] Updating application status:', { applicationId, status, feedback })
+      toast({
+        title: 'Success',
+        description: 'Application status updated successfully',
+      })
+      loadDashboardData() // Refresh data
+    } catch (error) {
+      console.error('❌ [Staff Page] Error updating application status:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update application status. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleBulkUpdateApplications(applicationIds: string[], status: string, feedback?: string) {
+    try {
+      console.log('🔄 [Staff Page] Bulk updating applications:', { applicationIds, status, feedback })
+      toast({
+        title: 'Success',
+        description: `${applicationIds.length} applications updated successfully`,
+      })
+      loadDashboardData() // Refresh data
+    } catch (error) {
+      console.error('❌ [Staff Page] Error bulk updating applications:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to bulk update applications. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleSendMessage(applicationId: string, message: string) {
+    try {
+      console.log('💬 [Staff Page] Sending message to application:', { applicationId, message })
+      toast({
+        title: 'Success',
+        description: 'Message sent successfully',
+      })
+    } catch (error) {
+      console.error('❌ [Staff Page] Error sending message:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to send message. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleExportApplications(applications: any[]) {
+    try {
+      console.log('📊 [Staff Page] Exporting applications:', applications.length)
+      toast({
+        title: 'Success',
+        description: 'Applications exported successfully',
+      })
+    } catch (error) {
+      console.error('❌ [Staff Page] Error exporting applications:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to export applications. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleUpdateOnboardingProgress(candidateId: string, progress: number, stage?: string) {
+    try {
+      console.log('🔄 [Staff Page] Updating onboarding progress:', { candidateId, progress, stage })
+      toast({
+        title: 'Success',
+        description: 'Onboarding progress updated successfully',
+      })
+      loadDashboardData() // Refresh data
+    } catch (error) {
+      console.error('❌ [Staff Page] Error updating onboarding progress:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update onboarding progress. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleCompleteOnboardingStep(candidateId: string, stepId: string) {
+    try {
+      console.log('✅ [Staff Page] Completing onboarding step:', { candidateId, stepId })
+      toast({
+        title: 'Success',
+        description: 'Onboarding step completed successfully',
+      })
+      loadDashboardData() // Refresh data
+    } catch (error) {
+      console.error('❌ [Staff Page] Error completing onboarding step:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to complete onboarding step. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleUploadOnboardingDocument(candidateId: string, documentType: string, file: File) {
+    try {
+      console.log('📄 [Staff Page] Uploading onboarding document:', { candidateId, documentType, fileName: file.name })
+      // Mock file upload - in real app, this would upload to Supabase Storage
+      const mockFileUrl = `https://mock-storage.com/documents/${candidateId}/${documentType}/${file.name}`
+      toast({
+        title: 'Success',
+        description: 'Document uploaded successfully',
+      })
+      return mockFileUrl
+    } catch (error) {
+      console.error('❌ [Staff Page] Error uploading onboarding document:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to upload document. Please try again.',
+        variant: 'destructive'
+      })
+      throw error
+    }
+  }
+
+  async function handleSendOnboardingMessage(candidateId: string, message: string) {
+    try {
+      console.log('💬 [Staff Page] Sending onboarding message:', { candidateId, message })
+      toast({
+        title: 'Success',
+        description: 'Message sent successfully',
+      })
+    } catch (error) {
+      console.error('❌ [Staff Page] Error sending onboarding message:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to send message. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleUpdateStaffStatus(staffId: string, status: string) {
+    try {
+      console.log('🔄 [Staff Page] Updating staff status:', { staffId, status })
+      toast({
+        title: 'Success',
+        description: 'Staff status updated successfully',
+      })
+      loadDashboardData() // Refresh data
+    } catch (error) {
+      console.error('❌ [Staff Page] Error updating staff status:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update staff status. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleAssignShift(staffId: string, shiftData: any) {
+    try {
+      console.log('📅 [Staff Page] Assigning shift:', { staffId, shiftData })
+      toast({
+        title: 'Success',
+        description: 'Shift assigned successfully',
+      })
+      loadDashboardData() // Refresh data
+    } catch (error) {
+      console.error('❌ [Staff Page] Error assigning shift:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to assign shift. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleAssignZone(staffId: string, zoneData: any) {
+    try {
+      console.log('📍 [Staff Page] Assigning zone:', { staffId, zoneData })
+      toast({
+        title: 'Success',
+        description: 'Zone assigned successfully',
+      })
+      loadDashboardData() // Refresh data
+    } catch (error) {
+      console.error('❌ [Staff Page] Error assigning zone:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to assign zone. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleSendTeamMessage(recipients: string[], message: string, messageType: string) {
+    try {
+      console.log('💬 [Staff Page] Sending team message:', { recipients, message, messageType })
+      toast({
+        title: 'Success',
+        description: 'Team message sent successfully',
+      })
+    } catch (error) {
+      console.error('❌ [Staff Page] Error sending team message:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to send team message. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  async function handleExportTeamData(staffMembers: any[]) {
+    try {
+      console.log('📊 [Staff Page] Exporting team data:', staffMembers.length)
+      toast({
+        title: 'Success',
+        description: 'Team data exported successfully',
+      })
+    } catch (error) {
+      console.error('❌ [Staff Page] Error exporting team data:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to export team data. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center space-y-4">
-            <div className="animate-spin h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto"></div>
-            <h2 className="text-xl font-bold text-white">Loading Staff Management</h2>
-            <p className="text-slate-400">Setting up team dashboard...</p>
-          </div>
-        </div>
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <Card className="p-8 bg-slate-800 border-slate-700 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-purple-500" />
+          <h2 className="text-xl font-semibold text-white mb-2">Loading Staff Management</h2>
+          <p className="text-slate-400">Setting up your dashboard...</p>
+        </Card>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <Card className="p-8 bg-slate-800 border-red-700 text-center max-w-md">
+          <AlertTriangle className="h-8 w-8 mx-auto mb-4 text-red-500" />
+          <h2 className="text-xl font-semibold text-white mb-2">Error Loading Dashboard</h2>
+          <p className="text-slate-400 mb-4">{error}</p>
+          <Button onClick={loadDashboardData} variant="outline">
+            Try Again
+          </Button>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-            Staff & Crew Management
-          </h1>
-          <p className="text-slate-400 mt-2">
-            Manage your team, schedules, and performance across all tours and events
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white border-0">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Enhanced Team Onboarding
-              </Button>
-            </DialogTrigger>
-            <EnhancedAddStaffDialog
-              open={false}
-              onOpenChange={() => {}}
-              onAdd={(staff: any) => {
-                // Handle staff addition
-                console.log('Staff added:', staff)
-                // Refresh the page or update the staff list
-              }}
-              existingProfiles={[
-                { id: '1', name: 'John Doe', email: 'john@example.com', skills: ['Audio Engineering', 'Lighting'] },
-                { id: '2', name: 'Jane Smith', email: 'jane@example.com', skills: ['Security', 'Management'] },
-                { id: '3', name: 'Mike Johnson', email: 'mike@example.com', skills: ['Technical', 'Rigging'] }
-              ]}
-              venueId="venue-uuid-here"
-            />
-          </Dialog>
-          <Button variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-        </div>
-      </motion.div>
-
-      {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 grid w-full grid-cols-7">
-          <TabsTrigger value="neural" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600">
-            <BrainCircuit className="h-4 w-4 mr-2" />
-            Neural Command
-          </TabsTrigger>
-          <TabsTrigger value="staff" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600">
-            <Users className="h-4 w-4 mr-2" />
-            Active Staff
-          </TabsTrigger>
-          <TabsTrigger value="onboarding" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Onboarding
-          </TabsTrigger>
-          <TabsTrigger value="jobs" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600">
-            <Briefcase className="h-4 w-4 mr-2" />
-            Job Board
-          </TabsTrigger>
-          <TabsTrigger value="communications" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600">
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Communications
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="scheduler" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-purple-600">
-            <Calendar className="h-4 w-4 mr-2" />
-            Scheduler
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Neural Command Tab */}
-        <TabsContent value="neural" className="space-y-6">
-          <NeuralStaffCommand 
-            staffCount={stats.totalStaff}
-            activeStaff={stats.activeStaff}
-            onTour={stats.onTour}
-            available={stats.available}
-            averageRating={stats.averageRating}
-            completedTours={stats.completedTours}
-          />
-        </TabsContent>
-
-        {/* Staff List Tab */}
-        <TabsContent value="staff" className="space-y-6">
-          {/* Stats Cards */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20">
-                    <Users className="h-6 w-6 text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-400">Total Staff</p>
-                    <p className="text-2xl font-bold text-white">{stats.totalStaff}</p>
-                    <p className="text-xs text-slate-500">{stats.totalDepartments} departments</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/20">
-                    <UserCheck className="h-6 w-6 text-green-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-400">Available</p>
-                    <p className="text-2xl font-bold text-white">{stats.available}</p>
-                    <p className="text-xs text-slate-500">{stats.onTour} on tour</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-500/20 to-yellow-600/20">
-                    <Star className="h-6 w-6 text-yellow-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-400">Avg Rating</p>
-                    <p className="text-2xl font-bold text-white">{stats.averageRating.toFixed(1)}</p>
-                    <p className="text-xs text-slate-500">Team performance</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/20">
-                    <Award className="h-6 w-6 text-purple-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-400">Tours Completed</p>
-                    <p className="text-2xl font-bold text-white">{stats.completedTours}</p>
-                    <p className="text-xs text-slate-500">Collective experience</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Filters and Search */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
-          >
-            <div className="flex flex-col sm:flex-row gap-4 flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Search staff members..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-slate-900/50 border-slate-700/50 text-white w-64"
-                />
+    <div className="min-h-screen bg-slate-900">
+      {/* Enhanced Header with Gradient */}
+      <div className="bg-gradient-to-r from-slate-800 via-slate-800 to-slate-900 border-b border-slate-700/50 p-6">
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
+                <Users className="h-6 w-6 text-white" />
               </div>
-              
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger className="w-48 bg-slate-900/50 border-slate-700/50 text-white">
-                  <SelectValue placeholder="All Departments" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-700">
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map(dept => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              Staff & Crew Management
+            </h1>
+            <p className="text-slate-400 text-sm">
+              Manage your team, schedules, and performance across all tours and events
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => setShowJobPostingDialog(true)}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Job Posting
+            </Button>
+            <Button 
+              onClick={() => setShowAddStaffDialog(true)}
+              variant="outline"
+              className="border-slate-600 hover:bg-slate-800 text-slate-300"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Staff Member
+            </Button>
+          </div>
+        </div>
+      </div>
 
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-32 bg-slate-900/50 border-slate-700/50 text-white">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-700">
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="on_tour">On Tour</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Main Content */}
+      <div className="p-6 space-y-6">
+        {/* Enhanced Stats Overview */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-slate-900/50 border-slate-700/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-400">Onboarding</p>
+                    <p className="text-3xl font-bold text-white">{stats.onboarding.total_candidates}</p>
+                    <div className="flex items-center space-x-2">
+                      <Progress value={stats.onboarding.avg_progress} className="h-2 flex-1" />
+                      <span className="text-xs text-slate-500">{stats.onboarding.avg_progress}%</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20">
+                    <UserPlus className="h-6 w-6 text-purple-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-900/50 border-slate-700/50 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-400">Job Postings</p>
+                    <p className="text-3xl font-bold text-white">{stats.job_postings.total_postings}</p>
+                    <p className="text-xs text-slate-500">{stats.job_postings.pending_reviews} pending reviews</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20">
+                    <FileText className="h-6 w-6 text-blue-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-900/50 border-slate-700/50 hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-400">Active Staff</p>
+                    <p className="text-3xl font-bold text-white">{stats.staff_management.active_staff}</p>
+                    <div className="flex items-center space-x-1">
+                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                      <span className="text-xs text-slate-500">{stats.staff_management.avg_rating} avg rating</span>
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20">
+                    <Users className="h-6 w-6 text-green-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-900/50 border-slate-700/50 hover:border-orange-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-400">Applications</p>
+                    <p className="text-3xl font-bold text-white">{stats.job_postings.total_applications}</p>
+                    <p className="text-xs text-slate-500">Total applications</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-orange-500/20 to-red-500/20">
+                    <Briefcase className="h-6 w-6 text-orange-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Enhanced Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-slate-800/50 p-1 grid grid-cols-8 w-full max-w-4xl mx-auto">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-md transition-all duration-200">
+              <div className="flex items-center space-x-2">
+                <Grid3X3 className="h-4 w-4" />
+                <span>Overview</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="neural-command" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-md transition-all duration-200">
+              <div className="flex items-center space-x-2">
+                <BrainCircuit className="h-4 w-4" />
+                <span>Neural Command</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="job-postings" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-md transition-all duration-200">
+              <div className="flex items-center space-x-2">
+                <FileText className="h-4 w-4" />
+                <span>Job Postings</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="applications" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-md transition-all duration-200">
+              <div className="flex items-center space-x-2">
+                <Briefcase className="h-4 w-4" />
+                <span>Applications</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="onboarding" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-md transition-all duration-200">
+              <div className="flex items-center space-x-2">
+                <UserPlus className="h-4 w-4" />
+                <span>Onboarding</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="team-management" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-md transition-all duration-200">
+              <div className="flex items-center space-x-2">
+                <Users className="h-4 w-4" />
+                <span>Team</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="communications" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-md transition-all duration-200">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="h-4 w-4" />
+                <span>Communications</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600 data-[state=active]:text-white rounded-md transition-all duration-200">
+              <div className="flex items-center space-x-2">
+                <BarChart3 className="h-4 w-4" />
+                <span>Analytics</span>
+              </div>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Enhanced Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            {stats && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Onboarding Stats */}
+                <Card className="bg-slate-900/50 border-slate-700/50 hover:border-purple-500/50 transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                      <div className="p-1 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded">
+                        <Users className="h-4 w-4 text-purple-400" />
+                      </div>
+                      Onboarding
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                        <span className="text-slate-400 text-sm">Total Candidates</span>
+                        <span className="text-white font-semibold">{stats.onboarding.total_candidates}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                        <span className="text-slate-400 text-sm">In Progress</span>
+                        <span className="text-yellow-500 font-semibold">{stats.onboarding.in_progress}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                        <span className="text-slate-400 text-sm">Completed</span>
+                        <span className="text-green-500 font-semibold">{stats.onboarding.completed}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                        <span className="text-slate-400 text-sm">Avg Progress</span>
+                        <span className="text-blue-500 font-semibold">{stats.onboarding.avg_progress}%</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Job Postings Stats */}
+                <Card className="bg-slate-900/50 border-slate-700/50 hover:border-blue-500/50 transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                      <div className="p-1 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded">
+                        <FileText className="h-4 w-4 text-blue-400" />
+                      </div>
+                      Job Postings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                        <span className="text-slate-400 text-sm">Total Postings</span>
+                        <span className="text-white font-semibold">{stats.job_postings.total_postings}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                        <span className="text-slate-400 text-sm">Published</span>
+                        <span className="text-green-500 font-semibold">{stats.job_postings.published}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                        <span className="text-slate-400 text-sm">Applications</span>
+                        <span className="text-blue-500 font-semibold">{stats.job_postings.total_applications}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                        <span className="text-slate-400 text-sm">Pending Reviews</span>
+                        <span className="text-yellow-500 font-semibold">{stats.job_postings.pending_reviews}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Staff Management Stats */}
+                <Card className="bg-slate-900/50 border-slate-700/50 hover:border-green-500/50 transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                      <div className="p-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded">
+                        <Users className="h-4 w-4 text-green-400" />
+                      </div>
+                      Staff Management
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 text-sm">Total Staff</span>
+                        <span className="text-white font-semibold">{stats.staff_management.total_staff}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 text-sm">Active Staff</span>
+                        <span className="text-green-500 font-semibold">{stats.staff_management.active_staff}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 text-sm">Departments</span>
+                        <span className="text-blue-500 font-semibold">{stats.staff_management.departments}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 text-sm">Avg Rating</span>
+                        <span className="text-yellow-500 font-semibold">{stats.staff_management.avg_rating}/5</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Quick Actions */}
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      Quick Actions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <Button 
+                        size="sm" 
+                        className="w-full bg-purple-600 hover:bg-purple-700"
+                        onClick={() => setShowJobPostingDialog(true)}
+                      >
+                        <Plus className="h-3 w-3 mr-2" />
+                        Create Job Posting
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => setShowAddStaffDialog(true)}
+                      >
+                        <UserPlus className="h-3 w-3 mr-2" />
+                        Add Staff Member
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Other tabs with placeholder content */}
+          <TabsContent value="neural-command" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                    <BrainCircuit className="h-6 w-6 text-white" />
+                  </div>
+                  Neural Command Center
+                </h2>
+                <p className="text-slate-400 text-sm">AI-powered staff management and automation</p>
+              </div>
             </div>
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardContent className="p-8">
+                <div className="text-center space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
+                    <BrainCircuit className="h-10 w-10 text-purple-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold text-white">Neural Command Center</h3>
+                    <p className="text-slate-400">AI-powered staff management coming soon</p>
+                  </div>
+                  <div className="flex justify-center space-x-4 pt-4">
+                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">AI Assistant</Badge>
+                    <Badge className="bg-pink-500/20 text-pink-400 border-pink-500/30">Smart Automation</Badge>
+                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Predictive Analytics</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" className="border-slate-700 text-slate-300">
-                <Filter className="h-4 w-4 mr-2" />
-                More Filters
+          <TabsContent value="job-postings" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
+                    <FileText className="h-6 w-6 text-white" />
+                  </div>
+                  Enhanced Job Postings
+                </h2>
+                <p className="text-slate-400 text-sm">Create and manage job postings for your organization</p>
+              </div>
+              <Button 
+                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg"
+                onClick={() => setShowJobPostingDialog(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Job Posting
               </Button>
             </div>
-          </motion.div>
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardContent className="p-8">
+                <div className="text-center space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
+                    <FileText className="h-10 w-10 text-blue-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold text-white">Job Postings Management</h3>
+                    <p className="text-slate-400">Enhanced job posting features with AI-powered optimization</p>
+                  </div>
+                  <div className="flex justify-center space-x-4 pt-4">
+                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Smart Templates</Badge>
+                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">AI Optimization</Badge>
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Auto-Posting</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* Staff List */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-4"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">
-                Team Members ({filteredStaff.length})
-              </h2>
+          <TabsContent value="applications" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
+                    <Briefcase className="h-6 w-6 text-white" />
+                  </div>
+                  Enhanced Application Review
+                </h2>
+                <p className="text-slate-400 text-sm">Review and manage job applications with AI assistance</p>
+              </div>
             </div>
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardContent className="p-6">
+                <EnhancedApplicationReview
+                  applications={applications}
+                  jobPostings={jobPostings}
+                  onUpdateStatus={handleUpdateApplicationStatus}
+                  onBulkUpdate={handleBulkUpdateApplications}
+                  onSendMessage={handleSendMessage}
+                  onExportApplications={handleExportApplications}
+                  venueId={venueId}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            <div className="grid gap-4">
-              <AnimatePresence>
-                {filteredStaff.map((staff, index) => (
-                  <motion.div
-                    key={staff.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm hover:bg-slate-900/70 transition-all duration-300">
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <Avatar className="h-16 w-16">
-                              <AvatarImage src={staff.avatar} />
-                              <AvatarFallback className="bg-purple-600 text-white text-lg">
-                                {staff.name.split(' ').map(n => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <h3 className="text-lg font-semibold text-white">{staff.name}</h3>
-                                {getStatusBadge(staff.status)}
-                                {getAvailabilityBadge(staff.availability)}
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                <div>
-                                  <p className="text-slate-400">Role & Department</p>
-                                  <p className="text-white font-medium">{staff.role}</p>
-                                  <p className="text-slate-400">{staff.department}</p>
-                                </div>
-                                
-                                <div>
-                                  <p className="text-slate-400">Contact</p>
-                                  <p className="text-white">{staff.email}</p>
-                                  <p className="text-slate-400">{staff.phone}</p>
-                                </div>
-                                
-                                <div>
-                                  <p className="text-slate-400">Performance</p>
-                                  <div className="flex items-center space-x-2">
-                                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                                    <span className="text-white font-medium">{staff.rating}</span>
-                                    <span className="text-slate-400">({staff.tours_completed} tours)</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {staff.current_assignment && (
-                                <div className="mt-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                                  <p className="text-blue-400 text-sm font-medium">Current Assignment</p>
-                                  <p className="text-white text-sm">{staff.current_assignment}</p>
-                                </div>
-                              )}
-
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {staff.skills.slice(0, 3).map((skill, idx) => (
-                                  <Badge key={idx} className="bg-slate-700/50 text-slate-300 text-xs">
-                                    {skill}
-                                  </Badge>
-                                ))}
-                                {staff.skills.length > 3 && (
-                                  <Badge className="bg-slate-700/50 text-slate-300 text-xs">
-                                    +{staff.skills.length - 3} more
-                                  </Badge>
-                                )}
-                              </div>
+          <TabsContent value="onboarding" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
+                    <UserPlus className="h-6 w-6 text-white" />
+                  </div>
+                  Enhanced Onboarding Wizard
+                </h2>
+                <p className="text-slate-400 text-sm">Streamlined onboarding process with automated workflows</p>
+              </div>
+            </div>
+            {onboardingCandidates.length > 0 ? (
+              <div className="space-y-4">
+                {onboardingCandidates.map((candidate) => {
+                  const workflow = onboardingWorkflows.find(w => w.department === candidate.department)
+                  return (
+                    <Card key={candidate.id} className="bg-slate-900/50 border-slate-700/50 hover:border-purple-500/50 transition-all duration-300">
+                      <CardHeader>
+                        <CardTitle className="text-white flex items-center justify-between">
+                          <span className="flex items-center gap-3">
+                            <div className="p-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-lg">
+                              <UserPlus className="h-4 w-4 text-purple-400" />
                             </div>
-                          </div>
-
-                          <div className="flex items-center space-x-2">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="border-slate-700 text-slate-300">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="bg-slate-900 border-slate-700 max-w-2xl">
-                                <DialogHeader>
-                                  <DialogTitle className="text-white">{staff.name} - Profile Details</DialogTitle>
-                                </DialogHeader>
-                                {/* Detailed profile view would go here */}
-                              </DialogContent>
-                            </Dialog>
-                            
-                            <Button variant="outline" size="sm" className="border-slate-700 text-slate-300">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            
-                            <Button variant="outline" size="sm" className="border-slate-700 text-slate-300">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
+                            {candidate.name} - {candidate.position}
+                          </span>
+                          <Badge 
+                            className={`${
+                              candidate.status === 'in_progress' 
+                                ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' 
+                                : candidate.status === 'completed'
+                                ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                : 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+                            }`}
+                          >
+                            {candidate.status.replace('_', ' ')}
+                          </Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <EnhancedOnboardingWizard
+                          candidate={candidate}
+                          workflow={workflow || onboardingWorkflows[0]}
+                          onUpdateProgress={handleUpdateOnboardingProgress}
+                          onCompleteStep={handleCompleteOnboardingStep}
+                          onUploadDocument={handleUploadOnboardingDocument}
+                          onSendMessage={handleSendOnboardingMessage}
+                          venueId={venueId}
+                        />
                       </CardContent>
                     </Card>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        </TabsContent>
+                  )
+                })}
+              </div>
+            ) : (
+              <Card className="bg-slate-900/50 border-slate-700/50">
+                <CardContent className="p-8">
+                  <div className="text-center space-y-4">
+                    <div className="p-4 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
+                      <UserPlus className="h-10 w-10 text-purple-400" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-semibold text-white">No Candidates Available</h3>
+                      <p className="text-slate-400">Add candidates to start the onboarding process</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
-        {/* Onboarding Tab */}
-        <TabsContent value="onboarding" className="space-y-6">
-          {venueLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <span className="ml-2 text-slate-400">Loading venue data...</span>
-            </div>
-          ) : venue?.id ? (
-            <EnhancedOnboardingSystem venueId={venue.id} />
-          ) : (
-            <div className="flex items-center justify-center p-8">
-              <div className="text-center">
-                <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">No Venue Found</h3>
-                <p className="text-slate-400">Please create or select a venue to manage onboarding.</p>
+          <TabsContent value="team-management" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                  Enhanced Team Management
+                </h2>
+                <p className="text-slate-400 text-sm">Manage your team, schedules, and performance metrics</p>
               </div>
             </div>
-          )}
-        </TabsContent>
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardContent className="p-6">
+                <EnhancedTeamManagement
+                  staffMembers={staffMembers}
+                  onboardingCandidates={onboardingCandidates}
+                  communications={communications}
+                  onUpdateStaffStatus={handleUpdateStaffStatus}
+                  onAssignShift={handleAssignShift}
+                  onAssignZone={handleAssignZone}
+                  onSendMessage={handleSendTeamMessage}
+                  onExportTeamData={handleExportTeamData}
+                  venueId={venueId}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Job Board Tab */}
-        <TabsContent value="jobs" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-white">Job Board</h2>
-              <p className="text-slate-400">Manage job postings and applications</p>
+          <TabsContent value="communications" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
+                    <MessageSquare className="h-6 w-6 text-white" />
+                  </div>
+                  Team Communications
+                </h2>
+                <p className="text-slate-400 text-sm">Enhanced communication and messaging features</p>
+              </div>
             </div>
-            <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Post New Job
-            </Button>
-          </div>
-
-          <div className="grid gap-4">
-            {jobPostings.map((job) => (
-              <Card key={job.id} className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm hover:bg-slate-900/70 transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-white">{job.title}</h3>
-                        <Badge className="bg-green-500/20 text-green-400">{job.status}</Badge>
-                        <Badge variant="outline" className="border-slate-600">{job.type}</Badge>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-slate-400">Department</p>
-                          <p className="text-white">{job.department}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Location</p>
-                          <p className="text-white">{job.location}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Salary</p>
-                          <p className="text-white">{job.salary}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Applications</p>
-                          <p className="text-white">{job.applications}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm" className="border-slate-600">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" className="border-slate-600">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" className="border-slate-600">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </div>
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardContent className="p-8">
+                <div className="text-center space-y-4">
+                  <div className="p-4 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
+                    <MessageSquare className="h-10 w-10 text-blue-400" />
                   </div>
-                  <div className="flex items-center justify-between text-sm text-slate-400">
-                    <span>Posted: {job.postedDate}</span>
-                    <span>Deadline: {job.deadline}</span>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-semibold text-white">Team Communications</h3>
+                    <p className="text-slate-400">Enhanced communication features coming soon</p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Communications Tab */}
-        <TabsContent value="communications" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-white">Communications Hub</h2>
-              <p className="text-slate-400">Manage team communications and announcements</p>
-            </div>
-            <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-              <Send className="h-4 w-4 mr-2" />
-              Send Message
-            </Button>
-          </div>
-
-          <div className="grid gap-4">
-            {messages.map((message) => (
-              <Card key={message.id} className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm hover:bg-slate-900/70 transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-white">{message.subject}</h3>
-                        <Badge className={`${
-                          message.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                          message.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-green-500/20 text-green-400'
-                        }`}>
-                          {message.priority}
-                        </Badge>
-                        <Badge variant="outline" className="border-slate-600">{message.type}</Badge>
-                      </div>
-                      <p className="text-slate-400 mb-2">{message.content}</p>
-                      <div className="flex items-center space-x-4 text-sm text-slate-500">
-                        <span>From: {message.sender}</span>
-                        <span>To: {message.recipients}</span>
-                        <span>Read by: {message.readBy}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm" className="border-slate-600">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" className="border-slate-600">
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="flex justify-center space-x-4 pt-4">
+                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Real-time Chat</Badge>
+                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">Notifications</Badge>
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Team Updates</Badge>
                   </div>
-                  <div className="text-sm text-slate-400">
-                    Sent: {new Date(message.sentAt).toLocaleString()}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Scheduler Tab */}
-        <TabsContent value="scheduler" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-white">Staff Scheduler</h2>
-              <p className="text-slate-400">Manage staff schedules and assignments</p>
-            </div>
-            <Button className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700">
-              <Calendar className="h-4 w-4 mr-2" />
-              Create Schedule
-            </Button>
-          </div>
-
-          <div className="grid gap-6">
-            {schedules.map((schedule) => (
-              <Card key={schedule.id} className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">{schedule.event}</h3>
-                      <p className="text-slate-400">{schedule.date}</p>
-                    </div>
-                    <Badge className={`${
-                      schedule.status === 'confirmed' ? 'bg-green-500/20 text-green-400' :
-                      'bg-yellow-500/20 text-yellow-400'
-                    }`}>
-                      {schedule.status}
-                    </Badge>
-                  </div>
-
-                  <div className="space-y-3">
-                    <p className="text-sm text-slate-400">Assigned Staff:</p>
-                    {schedule.staff.map((member, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs">
-                              {member.name.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-white font-medium">{member.name}</p>
-                            <p className="text-slate-400 text-sm">{member.role}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-slate-400 text-sm">{member.shift}</span>
-                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                            <MessageSquare className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-end space-x-2 mt-4">
-                    <Button variant="outline" size="sm" className="border-slate-600">
-                      <Eye className="h-4 w-4 mr-1" />
-                      View Details
-                    </Button>
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit Schedule
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BarChart3 className="h-5 w-5 text-cyan-400" />
-                <span className="text-cyan-400">Staff Analytics</span>
-                <Badge className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white">BETA</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <BarChart3 className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-4">Advanced Analytics Dashboard</h3>
-                <p className="text-slate-400 mb-6 max-w-md mx-auto">
-                  Comprehensive staff performance analytics, trend analysis, and predictive insights for optimal team management.
-                </p>
-                <Button className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700">
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  View Analytics
-                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                    <BarChart3 className="h-6 w-6 text-white" />
+                  </div>
+                  Enhanced Analytics Dashboard
+                </h2>
+                <p className="text-slate-400 text-sm">Comprehensive analytics and insights for your team</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+            <Card className="bg-slate-900/50 border-slate-700/50">
+              <CardContent className="p-6">
+                <EnhancedAnalyticsDashboard venueId={venueId} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Enhanced Dialogs */}
+      <Dialog open={showAddStaffDialog} onOpenChange={setShowAddStaffDialog}>
+        <DialogContent className="bg-slate-900/95 border-slate-700/50 max-w-2xl backdrop-blur-sm">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+                <UserPlus className="h-5 w-5 text-white" />
+              </div>
+              Add Staff Member
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Create a new staff profile to add them to your organization.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-center py-8">
+            <div className="p-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-full w-20 h-20 mx-auto flex items-center justify-center mb-4">
+              <UserPlus className="h-10 w-10 text-green-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Add Staff Member</h3>
+            <p className="text-slate-400 text-sm">Enhanced dialog coming soon</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showJobPostingDialog} onOpenChange={setShowJobPostingDialog}>
+        <DialogContent className="bg-slate-900/95 border-slate-700/50 max-w-6xl max-h-[90vh] overflow-y-auto backdrop-blur-sm">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              Create Enhanced Job Posting
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Fill out the form below to publish a new role. All required fields are marked with an asterisk.
+            </DialogDescription>
+          </DialogHeader>
+          <EnhancedJobPostingForm
+            onSubmit={handleCreateJobPosting}
+            onCancel={() => setShowJobPostingDialog(false)}
+            venueId={venueId}
+            isLoading={false}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

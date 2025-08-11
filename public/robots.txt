@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /
+
+# Private Tourify Platform - No indexing allowed
+# This prevents search engines from indexing the private deployment 

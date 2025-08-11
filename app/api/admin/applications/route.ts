@@ -4,22 +4,27 @@ import { AdminOnboardingStaffService } from '@/lib/services/admin-onboarding-sta
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const venueId = searchParams.get('venue_id') || 'mock-venue-id'
+    const venueId = searchParams.get('venue_id')
 
-    console.log('🔧 [Dashboard Stats API] Fetching stats for venue:', venueId)
+    if (!venueId) {
+      return NextResponse.json(
+        { success: false, error: 'Venue ID is required' },
+        { status: 400 }
+      )
+    }
 
-    const stats = await AdminOnboardingStaffService.getDashboardStats(venueId)
+    const applications = await AdminOnboardingStaffService.getJobApplications(venueId)
 
     return NextResponse.json({
       success: true,
-      stats: stats
+      data: applications
     })
   } catch (error) {
-    console.error('❌ [Dashboard Stats API] Error:', error)
+    console.error('❌ [Applications API] Error:', error)
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Failed to fetch dashboard stats',
+        error: 'Failed to fetch applications',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

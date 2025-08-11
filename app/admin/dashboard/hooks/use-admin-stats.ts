@@ -28,7 +28,10 @@ export function useAdminStats() {
         setIsLoading(true)
         setError(null)
         
-        const response = await fetch('/api/admin/dashboard/stats', {
+        // Use a default venue ID for the sidebar stats
+        const venueId = 'mock-venue-id'
+        
+        const response = await fetch(`/api/admin/dashboard/stats?venue_id=${venueId}`, {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
