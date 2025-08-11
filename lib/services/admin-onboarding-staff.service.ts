@@ -824,6 +824,53 @@ export class AdminOnboardingStaffService {
         })
         .eq('id', candidateId)
 
+      // If candidate came from a job posting application, create a default crew assignment in staff_shifts
+      try {
+        const applicationId = candidate.application_id
+        if (applicationId) {
+          const { data: application } = await supabase
+            .from('job_applications')
+            .select('id, job_posting_id, venue_id')
+            .eq('id', applicationId)
+            .single()
+
+          if (application?.job_posting_id) {
+            const shiftsTableExists = await checkTableExists('staff_shifts')
+            if (shiftsTableExists) {
+              await supabase
+                .from('staff_shifts')
+                .insert({
+                  venue_id: application.venue_id || candidate.venue_id,
+                  job_posting_id: application.job_posting_id,
+                  staff_member_id: staffMember.id,
+                  shift_date: new Date().toISOString().slice(0, 10),
+                  start_time: '09:00',
+                  end_time: '17:00',
+                  break_duration: 0,
+                  role_assignment: candidate.position,
+                  status: 'scheduled',
+                  created_by: (await supabase.auth.getUser()).data.user?.id
+                })
+            }
+          }
+        }
+      } catch (crewErr) {
+        console.warn('⚠️ [Admin Onboarding Staff Service] Failed to create default crew assignment:', crewErr)
+      }
+
+      // Send a team communication to the staff member notifying onboarding completion (if messaging table exists)
+      try {
+        await this.sendTeamCommunication(candidate.venue_id, {
+          recipients: candidate.user_id ? [candidate.user_id] : [],
+          subject: `Welcome aboard, ${candidate.name}!`,
+          content: `Your onboarding for ${candidate.position} is complete. Next steps will be shared shortly.`,
+          message_type: 'announcement',
+          priority: 'normal'
+        })
+      } catch (msgErr) {
+        console.warn('⚠️ [Admin Onboarding Staff Service] Failed to send onboarding completion message:', msgErr)
+      }
+
       return staffMember
     } catch (error) {
       console.error('❌ [Admin Onboarding Staff Service] Error completing onboarding:', error)
