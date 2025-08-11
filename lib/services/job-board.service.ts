@@ -10,7 +10,8 @@ const jobBoardPostingSchema = z.object({
   position: z.string().min(1, 'Position is required'),
   employment_type: z.enum(['full_time', 'part_time', 'contractor', 'volunteer']),
   location: z.string().min(1, 'Location is required'),
-  venue_id: z.string().min(1, 'Venue ID is required'),
+  // venue_id is optional to avoid FK/UUID issues during early setup
+  venue_id: z.string().uuid().optional(),
   organization_id: z.string().min(1, 'Organization ID is required'),
   organization_name: z.string().min(1, 'Organization name is required'),
   organization_logo: z.string().optional(),
@@ -58,6 +59,10 @@ const jobBoardPostingSchema = z.object({
 })
 
 export class JobBoardService {
+  private static isValidUuid(id?: string) {
+    if (!id) return false
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(id)
+  }
   /**
    * Create a job posting and publish it to both the job board and organization profile
    */
@@ -81,10 +86,14 @@ export class JobBoardService {
       if (!user) throw new Error('User not authenticated')
       
       // Validate the data
+      // Normalize org/venue IDs to avoid invalid UUID errors
+      const normalizedOrgId = this.isValidUuid(organizationData.id) ? organizationData.id : user.id
+      const normalizedVenueId = this.isValidUuid(venueId) ? venueId : undefined
+
       const validatedData = jobBoardPostingSchema.parse({
         ...data,
-        venue_id: venueId,
-        organization_id: organizationData.id,
+        venue_id: normalizedVenueId,
+        organization_id: normalizedOrgId,
         organization_name: organizationData.name,
         organization_logo: organizationData.logo,
         organization_description: organizationData.description,

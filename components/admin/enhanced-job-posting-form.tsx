@@ -184,6 +184,7 @@ export default function EnhancedJobPostingForm({
     control,
     watch,
     setValue,
+    trigger,
     formState: { errors, isValid, isDirty }
   } = useForm<EnhancedJobPostingFormData>({
     resolver: zodResolver(enhancedJobPostingSchema),
@@ -231,6 +232,33 @@ export default function EnhancedJobPostingForm({
   })
 
   const watchedFields = watch()
+
+  // Map fields per step for step-wise validation
+  const stepFieldMap: Record<number, (keyof EnhancedJobPostingFormData)[]> = {
+    1: [
+      'title',
+      'description',
+      'department',
+      'position',
+      'employment_type',
+      'location',
+      'number_of_positions'
+    ],
+    2: ['requirements', 'responsibilities'],
+    3: [],
+    4: []
+  }
+
+  async function handleNextStep() {
+    const fields = stepFieldMap[currentStep]
+    if (fields.length === 0) {
+      setCurrentStep(Math.min(4, currentStep + 1))
+      return
+    }
+    const valid = await trigger(fields as any, { shouldFocus: true })
+    if (valid) setCurrentStep(Math.min(4, currentStep + 1))
+    else toast({ title: 'Missing required fields', description: 'Please complete the highlighted fields before continuing.', variant: 'destructive' })
+  }
 
   // Apply role template
   const applyRoleTemplate = (roleType: string) => {
@@ -309,6 +337,17 @@ export default function EnhancedJobPostingForm({
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  function handleInvalidSubmit() {
+    // Find which step contains the first error and navigate there
+    const errorKeys = Object.keys(errors || {}) as (keyof EnhancedJobPostingFormData)[]
+    const first = errorKeys[0]
+    if (first) {
+      const stepEntry = Object.entries(stepFieldMap).find(([, fields]) => fields.includes(first))
+      if (stepEntry) setCurrentStep(Number(stepEntry[0]))
+    }
+    toast({ title: 'Please fix form errors', description: 'Some required fields are incomplete.', variant: 'destructive' })
   }
 
   const addSkill = () => {
@@ -859,7 +898,7 @@ export default function EnhancedJobPostingForm({
                 {currentStep < 4 ? (
                   <Button
                     type="button"
-                    onClick={() => setCurrentStep(currentStep + 1)}
+                    onClick={handleNextStep}
                   >
                     Next
                   </Button>
