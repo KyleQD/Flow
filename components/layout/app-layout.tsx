@@ -9,6 +9,7 @@ import { TopBar } from './top-bar'
 import { MobileNavigation } from './mobile-navigation'
 import { ConnectionStatusIndicator } from './connection-status-indicator'
 import { NotificationCenter } from './notification-center'
+import { EnhancedNotificationCenter } from '@/components/notifications/enhanced-notification-center'
 import { QuickActions } from './quick-actions'
 import { LoadingScreen } from '../ui/loading-screen'
 import { ErrorBoundary } from '../ui/error-boundary'
@@ -255,7 +256,9 @@ export function AppLayout({
 
           {/* Notification Center */}
           {layoutConfig.notifications && (
-            <NotificationCenter user={user} />
+            <div className="fixed top-4 right-4 z-50">
+              <EnhancedNotificationCenter />
+            </div>
           )}
         </div>
 

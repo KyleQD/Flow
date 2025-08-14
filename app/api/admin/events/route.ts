@@ -1,50 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { hasEntityPermission } from '@/lib/services/rbac'
 
 export async function GET(request: NextRequest) {
   try {
     console.log('[Admin Events API] GET request started')
-    
-    // Return mock events data
-    const mockEvents = [
-      {
-        id: '1',
-        name: 'Summer Music Festival',
-        status: 'upcoming',
-        event_date: '2024-07-15T18:00:00Z',
-        capacity: 5000,
-        ticket_price: 75,
-        venue_id: 'venue-1',
-        created_at: '2024-05-01T10:00:00Z'
-      },
-      {
-        id: '2',
-        name: 'Winter Concert Series',
-        status: 'upcoming',
-        event_date: '2024-12-20T19:30:00Z',
-        capacity: 2000,
-        ticket_price: 45,
-        venue_id: 'venue-2',
-        created_at: '2024-06-15T14:30:00Z'
-      },
-      {
-        id: '3',
-        name: 'Spring Jazz Night',
-        status: 'completed',
-        event_date: '2024-04-10T20:00:00Z',
-        capacity: 800,
-        ticket_price: 35,
-        venue_id: 'venue-3',
-        created_at: '2024-03-01T09:15:00Z'
+    const isEntityRbacEnabled = process.env.FEATURE_ENTITY_RBAC === '1'
+    if (isEntityRbacEnabled) {
+      try {
+        const userHeader = request.headers.get('x-user-id')
+        const userId = userHeader || ''
+        if (!userId) console.warn('[Admin Events API] FEATURE_ENTITY_RBAC enabled but no x-user-id provided')
+        // No specific event scope here; deeper checks should occur on per-event endpoints
+      } catch (e) {
+        console.warn('[Admin Events API] RBAC precheck skipped:', e)
       }
-    ]
-
-    console.log('[Admin Events API] Returning mock events')
-
-    return NextResponse.json({
-      success: true,
-      events: mockEvents,
-      timestamp: new Date().toISOString()
-    })
+    }
+    
+    // Call actual calendar API to get upcoming events, with fallback to demo
+    const calendarRes = await fetch(`${new URL(request.url).origin}/api/admin/calendar?eventType=event&status=upcoming`, { cache: 'no-store' })
+    if (calendarRes.ok) {
+      const data = await calendarRes.json()
+      const events = (data?.events || []).map((e: any) => ({
+        id: e.id,
+        name: e.title || e.name,
+        status: e.status,
+        event_date: e.event_date,
+        venue_id: e.venue_id || null,
+        created_at: e.created_at
+      }))
+      return NextResponse.json({ success: true, events, timestamp: new Date().toISOString() })
+    }
+    // Fallback
+    return NextResponse.json({ success: true, events: [], timestamp: new Date().toISOString() })
 
   } catch (error) {
     console.error('[Admin Events API] Error:', error)

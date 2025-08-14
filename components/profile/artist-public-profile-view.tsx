@@ -194,31 +194,28 @@ export function ArtistPublicProfileView({
     try {
       setLoading(true)
       
-      // Mock data - replace with real API calls
-      const mockTracks: Track[] = [
-        {
-          id: "1",
-          title: "Midnight Dreams",
-          album: "Electric Nights",
-          duration: "3:45",
-          streams: 1250000,
-          release_date: "2023-11-15",
-          cover_art: "/track-1.jpg",
-          preview_url: "/preview-1.mp3",
-          spotify_url: "https://spotify.com/track/example"
-        },
-        {
-          id: "2",
-          title: "Neon Lights",
-          album: "Electric Nights",
-          duration: "4:12",
-          streams: 890000,
-          release_date: "2023-11-15",
-          cover_art: "/track-2.jpg",
-          preview_url: "/preview-2.mp3",
-          spotify_url: "https://spotify.com/track/example2"
+      // Load public tracks for this artist
+      try {
+        const res = await fetch(`/api/artists/${encodeURIComponent(profile.id)}/music?limit=6`)
+        if (res.ok) {
+          const json = await res.json()
+          const loaded: Track[] = (json.tracks || []).map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            album: undefined,
+            duration: t.duration ? `${Math.floor(t.duration/60)}:${String(t.duration%60).padStart(2,'0')}` : '',
+            streams: t.play_count || 0,
+            release_date: t.release_date,
+            cover_art: t.cover_art_url,
+            preview_url: t.file_url,
+            spotify_url: t.spotify_url
+          }))
+          setTracks(loaded)
         }
-      ]
+      } catch (e) {
+        console.warn('Failed to load artist tracks, continuing with empty list')
+        setTracks([])
+      }
 
       const mockEvents: Event[] = [
         {
@@ -268,7 +265,6 @@ export function ArtistPublicProfileView({
         }
       ]
 
-      setTracks(mockTracks)
       setEvents(mockEvents)
       setMerchItems(mockMerch)
     } catch (error) {

@@ -6,6 +6,8 @@ const createEventSchema = z.object({
   name: z.string().min(1, 'Event name is required'),
   description: z.string().optional(),
   venue_name: z.string().min(1, 'Venue name is required'),
+  // Optional structured link to venue_profiles
+  venue_id: z.string().uuid().optional(),
   venue_address: z.string().optional(),
   event_date: z.string().min(1, 'Event date is required'),
   event_time: z.string().optional(),
@@ -44,7 +46,7 @@ export async function GET(
     const { user, supabase } = authResult
 
     // Check if user has admin permissions
-    const hasAdminAccess = await checkAdminPermissions(user)
+    const hasAdminAccess = await checkAdminPermissions(user, { tourId: id })
     if (!hasAdminAccess) {
       console.log('[Tour Events API] User lacks admin permissions for viewing tour events')
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
@@ -113,7 +115,7 @@ export async function POST(
     const { user, supabase } = authResult
 
     // Check if user has admin permissions
-    const hasAdminAccess = await checkAdminPermissions(user)
+    const hasAdminAccess = await checkAdminPermissions(user, { tourId: id })
     if (!hasAdminAccess) {
       console.log('[Tour Events API] User lacks admin permissions for creating tour events')
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })

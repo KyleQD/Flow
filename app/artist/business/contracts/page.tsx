@@ -140,9 +140,19 @@ export default function ContractsPage() {
     try {
       setIsLoading(true)
       
-      // For now, create mock contracts. In a real app, this would be:
-      // const { data, error } = await supabase.from('artist_contracts').select('*').eq('user_id', user.id)
+      // Try real data first
+      const { data, error } = await supabase
+        .from('artist_contracts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (!error && Array.isArray(data)) {
+        setContracts(data as unknown as Contract[])
+        return
+      }
       
+      // Fallback to demo data when table empty or unavailable
       const mockContracts: Contract[] = [
         {
           id: '1',
@@ -221,20 +231,22 @@ export default function ContractsPage() {
       }
 
       if (editingContract?.id) {
-        // Update existing contract
-        setContracts(prev => prev.map(contract => 
-          contract.id === editingContract.id ? { ...contract, ...contractData } : contract
-        ))
+        // Update existing contract in DB
+        const { error } = await supabase
+          .from('artist_contracts')
+          .update(contractData)
+          .eq('id', editingContract.id)
+          .eq('user_id', user.id)
+        if (error) throw error
+        await loadContracts()
         toast.success('Contract updated successfully!')
       } else {
-        // Create new contract
-        const newContract = {
-          ...contractData,
-          id: Date.now().toString(),
-          created_at: new Date().toISOString()
-        }
-        
-        setContracts(prev => [newContract, ...prev])
+        // Create new contract in DB
+        const { error } = await supabase
+          .from('artist_contracts')
+          .insert({ ...contractData, created_at: new Date().toISOString() })
+        if (error) throw error
+        await loadContracts()
         toast.success('Contract created successfully!')
       }
       
@@ -250,7 +262,13 @@ export default function ContractsPage() {
 
   const handleDeleteContract = async (contractId: string) => {
     try {
-      setContracts(prev => prev.filter(contract => contract.id !== contractId))
+      const { error } = await supabase
+        .from('artist_contracts')
+        .delete()
+        .eq('id', contractId)
+        .eq('user_id', user?.id || '')
+      if (error) throw error
+      await loadContracts()
       toast.success('Contract deleted successfully')
     } catch (error) {
       console.error('Error deleting contract:', error)
@@ -262,10 +280,13 @@ export default function ContractsPage() {
 
   const handleStatusChange = async (contractId: string, newStatus: Contract['status']) => {
     try {
-      setContracts(prev => prev.map(contract => 
-        contract.id === contractId ? { ...contract, status: newStatus, updated_at: new Date().toISOString() } : contract
-      ))
-      
+      const { error } = await supabase
+        .from('artist_contracts')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', contractId)
+        .eq('user_id', user?.id || '')
+      if (error) throw error
+      await loadContracts()
       toast.success(`Contract marked as ${newStatus}`)
     } catch (error) {
       console.error('Error updating contract status:', error)

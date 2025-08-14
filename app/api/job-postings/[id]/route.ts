@@ -5,10 +5,10 @@ import { cookies } from 'next/headers'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const jobId = params.id
+    const { id: jobId } = await context.params
 
     // Get the job posting with application form template
     const { data: jobPosting, error: jobError } = await supabase

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
@@ -28,6 +29,9 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState("30")
+  const searchParams = useSearchParams()
+  const accountId = searchParams.get("accountId") || ""
+  const scope = searchParams.get("scope") || "dashboard"
 
   useEffect(() => {
     fetchAnalytics()
@@ -35,9 +39,40 @@ export default function AnalyticsPage() {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch(`/api/analytics?period=${period}`)
-      const data = await response.json()
-      setData(data)
+      const response = await fetch(`/api/analytics?period=${period}&accountId=${accountId}&scope=${scope}`)
+      const raw = await response.json()
+
+      // Normalize backend shapes to the UI's expected format
+      const dailyRevenue: Record<string, number> = raw.dailyRevenue
+        ? raw.dailyRevenue
+        : Array.isArray(raw.revenueTrend)
+          ? Object.fromEntries(raw.revenueTrend.map((r: any) => [r.date, r.revenue]))
+          : {}
+
+      const eventPopularity = raw.eventPopularity
+        ? raw.eventPopularity
+        : Array.isArray(raw.popularEvents)
+          ? raw.popularEvents.map((e: any) => ({
+              id: e.id,
+              title: e.title,
+              date: typeof e.date === 'string' ? e.date : new Date(e.date).toISOString(),
+              capacity: e.capacity,
+              bookings: e.bookings,
+              occupancyRate: e.occupancyRate
+            }))
+          : []
+
+      const normalized: AnalyticsData = {
+        revenue: raw.totalRevenue || 0,
+        statusDistribution: raw.statusDistribution || {},
+        dailyRevenue,
+        eventPopularity,
+        totalEvents: raw.totalEvents || 0,
+        totalBookings: raw.totalBookings || 0,
+        period
+      }
+
+      setData(normalized)
     } catch (error) {
       console.error("Error fetching analytics:", error)
     } finally {
@@ -81,6 +116,7 @@ export default function AnalyticsPage() {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+        <div className="text-sm text-slate-400">Scope: {scope || 'dashboard'} {accountId && `(Account: ${accountId})`}</div>
         <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select period" />

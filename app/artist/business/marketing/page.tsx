@@ -52,6 +52,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
+import { upsertCampaignAction, toggleCampaignPauseAction, deleteCampaignAction, updateSocialPostAction, deleteSocialPostAction, createSocialPostAction } from '@/app/lib/actions/marketing.actions'
 
 interface Campaign {
   id?: string
@@ -126,6 +127,10 @@ export default function MarketingHub() {
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [selectedTab, setSelectedTab] = useState("overview")
+  const [workingCampaignId, setWorkingCampaignId] = useState<string | null>(null)
+  const [workingPostId, setWorkingPostId] = useState<string | null>(null)
+  const [showEditPost, setShowEditPost] = useState(false)
+  const [editingPostId, setEditingPostId] = useState<string | null>(null)
   
   const [campaignForm, setCampaignForm] = useState<Campaign>({
     name: '',
@@ -167,92 +172,63 @@ export default function MarketingHub() {
   const loadMarketingData = async () => {
     try {
       setIsLoading(true)
-      
-      // Mock campaigns data
-      const mockCampaigns: Campaign[] = [
-        {
-          id: '1',
-          name: 'New Single Release Campaign',
-          type: 'song_release',
-          status: 'active',
-          budget: 1000,
-          spent: 650,
-          start_date: '2024-01-01',
-          end_date: '2024-02-01',
-          platforms: ['instagram', 'facebook', 'twitter'],
-          objectives: ['awareness', 'engagement'],
-          content_types: ['image', 'video'],
-          description: 'Promoting the release of our latest single across social media platforms.',
-          metrics: {
-            impressions: 45000,
-            reach: 32000,
-            engagement: 2800,
-            clicks: 1200,
-            conversions: 85
-          },
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-15T10:30:00Z'
-        },
-        {
-          id: '2',
-          name: 'Tour Announcement',
-          type: 'tour_promotion',
-          status: 'completed',
-          budget: 800,
-          spent: 750,
-          start_date: '2023-12-01',
-          end_date: '2023-12-31',
-          platforms: ['instagram', 'youtube'],
-          objectives: ['conversions'],
-          content_types: ['video', 'image'],
-          description: 'Announcing upcoming tour dates and ticket sales.',
-          metrics: {
-            impressions: 28000,
-            reach: 22000,
-            engagement: 1900,
-            clicks: 980,
-            conversions: 156
-          },
-          created_at: '2023-12-01T00:00:00Z',
-          updated_at: '2023-12-31T23:59:59Z'
-        }
-      ]
 
-      // Mock social posts data
-      const mockPosts: SocialPost[] = [
-        {
-          id: '1',
-          platform: 'instagram',
-          content: 'Excited to share our new single! 🎵 Listen now on all platforms. #NewMusic #Artist',
-          media_type: 'image',
-          scheduled_for: '2024-02-01T12:00:00',
-          status: 'published',
-          campaign_id: '1',
-          hashtags: ['NewMusic', 'Artist', 'SingleRelease'],
-          mentions: [],
-          metrics: {
-            likes: 245,
-            comments: 32,
-            shares: 18,
-            views: 1200
-          },
-          created_at: '2024-01-15T10:00:00Z'
-        },
-        {
-          id: '2',
-          platform: 'twitter',
-          content: 'Behind the scenes from our latest recording session 🎸',
-          media_type: 'video',
-          scheduled_for: '2024-02-02T15:30:00',
-          status: 'scheduled',
-          hashtags: ['BehindTheScenes', 'Recording', 'Music'],
-          mentions: [],
-          created_at: '2024-01-20T14:00:00Z'
-        }
-      ]
+      // Load real campaigns and posts
+      const [campaignsRes, postsRes] = await Promise.all([
+        supabase
+          .from('artist_marketing_campaigns')
+          .select('*')
+          .eq('user_id', user?.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('artist_social_posts')
+          .select('*')
+          .eq('user_id', user?.id)
+          .order('created_at', { ascending: false })
+      ])
 
-      setCampaigns(mockCampaigns)
-      setSocialPosts(mockPosts)
+      const realCampaigns = (campaignsRes.data || []).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        status: c.status,
+        budget: Number(c.budget) || 0,
+        spent: Number(c.spent) || 0,
+        start_date: c.start_date || '',
+        end_date: c.end_date || '',
+        platforms: c.platforms || [],
+        objectives: c.objectives || [],
+        content_types: c.content_types || [],
+        description: c.description || '',
+        metrics: c.metrics || { impressions: 0, reach: 0, engagement: 0, clicks: 0, conversions: 0 },
+        created_at: c.created_at,
+        updated_at: c.updated_at,
+      })) as Campaign[]
+
+      const realPosts = (postsRes.data || []).map((p: any) => ({
+        id: p.id,
+        platform: p.platform,
+        content: p.content,
+        media_type: p.media_type,
+        media_url: p.media_url || undefined,
+        scheduled_for: (p.scheduled_for || new Date().toISOString()).toString().slice(0, 16),
+        status: p.status,
+        campaign_id: p.campaign_id || undefined,
+        hashtags: p.hashtags || [],
+        mentions: p.mentions || [],
+        metrics: p.metrics || undefined,
+        created_at: p.created_at,
+      })) as SocialPost[]
+
+      if (realCampaigns.length > 0 || realPosts.length > 0) {
+        setCampaigns(realCampaigns)
+        setSocialPosts(realPosts)
+        return
+      }
+
+      // Fallback to small demo set when no data yet
+      setCampaigns([])
+      setSocialPosts([])
     } catch (error) {
       console.error('Error loading marketing data:', error)
       toast.error('Failed to load marketing data')
@@ -268,27 +244,11 @@ export default function MarketingHub() {
     }
 
     try {
-      const campaignData = {
-        ...campaignForm,
-        user_id: user?.id,
-        updated_at: new Date().toISOString()
-      }
-
-      if (editingCampaign?.id) {
-        setCampaigns(prev => prev.map(campaign => 
-          campaign.id === editingCampaign.id ? { ...campaign, ...campaignData } : campaign
-        ))
-        toast.success('Campaign updated successfully!')
-      } else {
-        const newCampaign = {
-          ...campaignData,
-          id: Date.now().toString(),
-          created_at: new Date().toISOString()
-        }
-        setCampaigns(prev => [newCampaign, ...prev])
-        toast.success('Campaign created successfully!')
-      }
-      
+      const payload = editingCampaign?.id ? { ...campaignForm, id: editingCampaign.id } : { ...campaignForm }
+      const res = await upsertCampaignAction(payload as any)
+      if (!res?.success) throw new Error(res?.error || 'Failed to save campaign')
+      toast.success(editingCampaign ? 'Campaign updated successfully!' : 'Campaign created successfully!')
+      await loadMarketingData()
       setShowCreateCampaign(false)
       setEditingCampaign(null)
     } catch (error) {
@@ -304,13 +264,20 @@ export default function MarketingHub() {
     }
 
     try {
-      const newPost: SocialPost = {
-        ...postForm,
-        id: Date.now().toString(),
-        created_at: new Date().toISOString()
-      }
-      
-      setSocialPosts(prev => [newPost, ...prev])
+      const res = await createSocialPostAction({
+        platform: postForm.platform,
+        content: postForm.content,
+        media_type: postForm.media_type,
+        media_url: postForm.media_url,
+        scheduled_for: postForm.scheduled_for,
+        status: postForm.status,
+        campaign_id: postForm.campaign_id,
+        hashtags: postForm.hashtags,
+        mentions: postForm.mentions,
+      })
+      if (!res?.success) throw new Error(res?.error || 'Failed to create post')
+
+      await loadMarketingData()
       setShowCreatePost(false)
       setPostForm({
         platform: 'instagram',
@@ -321,7 +288,6 @@ export default function MarketingHub() {
         hashtags: [],
         mentions: []
       })
-      
       toast.success('Post created successfully!')
     } catch (error) {
       console.error('Error creating post:', error)
@@ -637,19 +603,52 @@ export default function MarketingHub() {
                           View Analytics
                         </DropdownMenuItem>
                         {campaign.status === 'active' && (
-                          <DropdownMenuItem>
-                            <Pause className="h-4 w-4 mr-2" />
-                            Pause Campaign
-                          </DropdownMenuItem>
-                        )}
-                        {campaign.status === 'paused' && (
-                          <DropdownMenuItem>
-                            <Play className="h-4 w-4 mr-2" />
-                            Resume Campaign
-                          </DropdownMenuItem>
-                        )}
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                setWorkingCampaignId(campaign.id || null)
+                                // optimistic update
+                                setCampaigns(prev => prev.map(c => c.id === campaign.id ? { ...c, status: 'paused' } : c))
+                                const res = await toggleCampaignPauseAction({ id: campaign.id!, pause: true })
+                                if (!res?.success) {
+                                  toast.error(res?.error || 'Failed to pause')
+                                  loadMarketingData()
+                                } else toast.success('Campaign paused')
+                                setWorkingCampaignId(null)
+                              }}
+                            >
+                              <Pause className="h-4 w-4 mr-2" />
+                              Pause Campaign
+                            </DropdownMenuItem>
+                          )}
+                          {campaign.status === 'paused' && (
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                setWorkingCampaignId(campaign.id || null)
+                                setCampaigns(prev => prev.map(c => c.id === campaign.id ? { ...c, status: 'active' } : c))
+                                const res = await toggleCampaignPauseAction({ id: campaign.id!, pause: false })
+                                if (!res?.success) {
+                                  toast.error(res?.error || 'Failed to resume')
+                                  loadMarketingData()
+                                } else toast.success('Campaign resumed')
+                                setWorkingCampaignId(null)
+                              }}
+                            >
+                              <Play className="h-4 w-4 mr-2" />
+                              Resume Campaign
+                            </DropdownMenuItem>
+                          )}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-400">
+                        <DropdownMenuItem className="text-red-400" onClick={async () => {
+                          setWorkingCampaignId(campaign.id || null)
+                          // optimistic
+                          setCampaigns(prev => prev.filter(c => c.id !== campaign.id))
+                          const res = await deleteCampaignAction({ id: campaign.id! })
+                          if (!res?.success) {
+                            toast.error(res?.error || 'Failed to delete')
+                            loadMarketingData()
+                          } else toast.success('Campaign deleted')
+                          setWorkingCampaignId(null)
+                        }}>
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete Campaign
                         </DropdownMenuItem>
@@ -684,7 +683,7 @@ export default function MarketingHub() {
                     </div>
                     
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                       <div className="flex items-center gap-2 mb-2">
                         <Badge className={
                           post.status === 'published' ? 'bg-green-600/20 text-green-300' :
                           post.status === 'scheduled' ? 'bg-blue-600/20 text-blue-300' :
@@ -695,6 +694,45 @@ export default function MarketingHub() {
                         <span className="text-xs text-gray-400">
                           {post.status === 'scheduled' ? 'Scheduled for' : 'Published'} {format(new Date(post.scheduled_for), 'MMM d, h:mm a')}
                         </span>
+                         <div className="ml-auto flex items-center gap-2">
+                          <Button 
+                             variant="ghost" 
+                             size="sm"
+                             className="text-xs"
+                             onClick={async () => {
+                              setWorkingPostId(post.id || null)
+                              const newStatus = post.status === 'published' ? 'draft' : 'published'
+                              // optimistic
+                              setSocialPosts(prev => prev.map(p => p.id === post.id ? { ...p, status: newStatus } : p))
+                              const res = await updateSocialPostAction({ id: post.id!, status: newStatus as any })
+                              if (!res?.success) {
+                                toast.error(res?.error || 'Failed to update post')
+                                loadMarketingData()
+                              } else toast.success(`Post marked as ${newStatus}`)
+                              setWorkingPostId(null)
+                             }}
+                           >
+                             {post.status === 'published' ? 'Mark Draft' : 'Publish'}
+                           </Button>
+                          <Button 
+                             variant="ghost" 
+                             size="sm"
+                             className="text-red-300 hover:text-red-200"
+                             onClick={async () => {
+                              setWorkingPostId(post.id || null)
+                              // optimistic
+                              setSocialPosts(prev => prev.filter(p => p.id !== post.id))
+                              const res = await deleteSocialPostAction({ id: post.id! })
+                              if (!res?.success) {
+                                toast.error(res?.error || 'Failed to delete post')
+                                loadMarketingData()
+                              } else toast.success('Post deleted')
+                              setWorkingPostId(null)
+                             }}
+                           >
+                             Delete
+                           </Button>
+                         </div>
                       </div>
                       
                       <p className="text-white mb-2">{post.content}</p>

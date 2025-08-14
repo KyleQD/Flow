@@ -88,6 +88,23 @@ CREATE TABLE IF NOT EXISTS staff_shifts (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 2.7 event_vendor_requests (internal vendor linking to events for jobs)
+CREATE TABLE IF NOT EXISTS event_vendor_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  event_id UUID NOT NULL,
+  job_posting_template_id UUID NOT NULL,
+  vendor_org_id UUID,
+  created_by UUID NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_vendor_requests_event_id ON event_vendor_requests(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_vendor_requests_status ON event_vendor_requests(status);
+CREATE INDEX IF NOT EXISTS idx_event_vendor_requests_created_by ON event_vendor_requests(created_by);
+
 -- Ensure new columns exist for existing deployments
 ALTER TABLE staff_shifts ADD COLUMN IF NOT EXISTS job_posting_id UUID;
 CREATE INDEX IF NOT EXISTS idx_staff_shifts_job_posting_id ON staff_shifts(job_posting_id);

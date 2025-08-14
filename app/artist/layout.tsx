@@ -1,15 +1,28 @@
 "use client"
 
 import { ReactNode } from "react"
+import { usePathname } from "next/navigation"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { ArtistProvider } from "@/contexts/artist-context"
 import { useRouteAccountSync } from "@/hooks/use-route-account-sync"
 
 function ArtistLayoutContent({ children }: { children: ReactNode }) {
+  const pathname = usePathname()
   // Automatically sync account with route
   const { isCorrectAccount } = useRouteAccountSync()
   
+  // Check if this is a public artist profile (e.g., /artist/felix)
+  // Exclude known dashboard routes
+  const isDashboardRoute = pathname.match(/^\/artist\/(dashboard|feed|music|content|events|profile|settings|business|community|features|epk)/)
+  const isPublicProfile = pathname.match(/^\/artist\/[^\/]+$/) && !isDashboardRoute
+  
+  // For public profiles, don't show sidebar
+  if (isPublicProfile) {
+    return <>{children}</>
+  }
+  
+  // For dashboard pages, show full layout with sidebar
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-to-br from-black via-slate-950 to-black">

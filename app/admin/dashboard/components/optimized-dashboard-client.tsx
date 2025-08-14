@@ -43,6 +43,8 @@ import {
   Building
 } from "lucide-react"
 import Link from "next/link"
+import { DashboardQuickHub } from "./dashboard-quick-hub"
+import { WidgetsRow } from "./apple-widgets"
 
 interface DashboardStats {
   totalTours: number
@@ -569,6 +571,9 @@ export default function OptimizedDashboardClient() {
           </div>
         </div>
 
+        {/* Apple-inspired Widgets overview */}
+        <WidgetsRow tours={tours} events={events} stats={stats} isLoading={statsLoading || toursLoading || eventsLoading} />
+
         {/* Data Loading Status */}
         <AnimatePresence>
           {showDataStatus && (
@@ -1042,6 +1047,8 @@ export default function OptimizedDashboardClient() {
           </TabsContent>
 
           <TabsContent value="tours" className="space-y-6">
+            {/* Inline widgets at top of Tours tab for quick context */}
+            <WidgetsRow tours={tours} events={events} stats={stats} isLoading={statsLoading || toursLoading || eventsLoading} />
             <Card className="bg-slate-900/50 border-slate-700/50">
               <CardHeader>
                 <CardTitle className="text-white">All Tours</CardTitle>
@@ -1087,6 +1094,8 @@ export default function OptimizedDashboardClient() {
           </TabsContent>
 
           <TabsContent value="events" className="space-y-6">
+            {/* Inline widgets at top of Events tab for quick context */}
+            <WidgetsRow tours={tours} events={events} stats={stats} isLoading={statsLoading || toursLoading || eventsLoading} />
             <Card className="bg-slate-900/50 border-slate-700/50">
               <CardHeader>
                 <CardTitle className="text-white">All Events</CardTitle>

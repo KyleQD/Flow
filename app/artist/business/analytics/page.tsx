@@ -110,108 +110,110 @@ export default function BusinessAnalytics() {
   const [selectedTab, setSelectedTab] = useState("overview")
 
   useEffect(() => {
-    if (user) {
-      loadAnalytics()
-    }
+    if (user) loadAnalytics()
   }, [user, timeRange])
 
   const loadAnalytics = async () => {
     if (!user) return
-
     try {
       setIsLoading(true)
-      
-      // Load data from multiple sources
-      const [merchandiseData, eventsData, worksData] = await Promise.all([
-        supabase.from('artist_merchandise').select('*').eq('user_id', user.id),
-        supabase.from('artist_events').select('*').eq('user_id', user.id),
-        supabase.from('artist_works').select('*').eq('user_id', user.id)
+
+      const now = new Date()
+      const start = format(subMonths(now, 11), 'yyyy-MM-01')
+      const end = format(now, 'yyyy-MM-28')
+
+      const [txRes, merchRes, eventsRes] = await Promise.all([
+        supabase
+          .from('artist_financial_transactions')
+          .select('id,type,amount,occurred_at,metadata')
+          .eq('user_id', user.id)
+          .gte('occurred_at', start)
+          .lte('occurred_at', end),
+        supabase.from('artist_merchandise').select('name, price, inventory_count, is_active, id').eq('user_id', user.id),
+        supabase.from('artist_events').select('id, title, ticket_price_min, expected_attendance').eq('user_id', user.id)
       ])
 
-      // Calculate analytics based on real data
-      const merchandiseRevenue = merchandiseData.data?.reduce((sum, item) => 
-        sum + ((item.price || 0) * (item.units_sold || 0)), 0) || 0
-      
-      const eventRevenue = eventsData.data?.reduce((sum, event) => 
-        sum + ((event.ticket_price_min || 0) * (event.expected_attendance || 0)), 0) || 0
-      
-      const streamingRevenue = worksData.data?.length ? worksData.data.length * 150 : 0
-      const licensingRevenue = Math.floor(Math.random() * 3000)
-      const otherRevenue = Math.floor(Math.random() * 1000)
-      
-      const totalRevenue = merchandiseRevenue + eventRevenue + streamingRevenue + licensingRevenue + otherRevenue
-      const totalExpenses = Math.round(totalRevenue * 0.4)
-      const netProfit = totalRevenue - totalExpenses
+      const tx = txRes.data || []
+      const incomeTypes = new Set(['income','royalty','merchandise','event'])
+      let totalRevenue = 0
+      let totalExpenses = 0
+      const monthsMap = new Map<string, { revenue: number; expenses: number; profit: number; fanGrowth: number; engagement: number }>()
 
-      // Generate monthly data
-      const monthlyData = Array.from({ length: 12 }, (_, i) => {
-        const month = format(subMonths(new Date(), 11 - i), 'MMM')
-        const baseRevenue = totalRevenue / 12
-        const revenue = Math.round(baseRevenue * (0.7 + Math.random() * 0.6))
-        const expenses = Math.round(revenue * (0.3 + Math.random() * 0.2))
-        const profit = revenue - expenses
-        
-        return {
-          month,
-          revenue,
-          expenses,
-          profit,
-          fanGrowth: Math.round(50 + Math.random() * 200),
-          engagement: Math.round(1000 + Math.random() * 3000)
+      for (let i = 11; i >= 0; i--) {
+        const m = format(subMonths(now, i), 'MMM')
+        monthsMap.set(m, { revenue: 0, expenses: 0, profit: 0, fanGrowth: 0, engagement: 0 })
+      }
+
+      tx.forEach(row => {
+        const amt = Number(row.amount) || 0
+        const monthKey = format(new Date(row.occurred_at), 'MMM')
+        const entry = monthsMap.get(monthKey)
+        if (!entry) return
+        if (incomeTypes.has(row.type)) {
+          entry.revenue += amt
+          totalRevenue += amt
+        } else {
+          entry.expenses += amt
+          totalExpenses += amt
         }
+        entry.profit = entry.revenue - entry.expenses
+        entry.fanGrowth = entry.fanGrowth || 0
+        entry.engagement = entry.engagement || 0
       })
 
-      // Top products based on merchandise data
-      const topProducts = merchandiseData.data?.slice(0, 5).map(item => ({
+      const monthlyData = Array.from(monthsMap.entries()).map(([month, v]) => ({
+        month,
+        revenue: Math.round(v.revenue),
+        expenses: Math.round(v.expenses),
+        profit: Math.round(v.profit),
+        fanGrowth: Math.round(v.fanGrowth),
+        engagement: Math.round(v.engagement)
+      }))
+
+      // Streams
+      const revenueStreams = {
+        merchandise: sumByType(tx, ['merchandise']),
+        events: sumByType(tx, ['event']),
+        streaming: sumByMeta(tx, 'source', 'streaming'),
+        licensing: sumByType(tx, ['royalty']),
+        other: sumByType(tx, ['income'])
+      }
+
+      // Top products heuristic: active merch sorted by price desc
+      const topProducts = (merchRes.data || []).slice(0, 5).map((item: any) => ({
         name: item.name || 'Product',
-        revenue: (item.price || 0) * (item.units_sold || 0),
-        units: item.units_sold || 0,
-        growth: Math.round(Math.random() * 40 - 10) // -10% to +30%
-      })) || []
+        revenue: Number(item.price) || 0,
+        units: item.inventory_count || 0,
+        growth: 0
+      }))
 
-      // Mock marketing ROI data
-      const marketingROI = [
-        { campaign: 'New Single Release', spent: 500, revenue: 1200, roi: 140, conversions: 85 },
-        { campaign: 'Tour Promotion', spent: 800, revenue: 2400, roi: 200, conversions: 156 },
-        { campaign: 'Brand Awareness', spent: 300, revenue: 450, roi: 50, conversions: 32 }
-      ]
-
-      // Calculate business health score
-      const financialScore = Math.min((netProfit / totalRevenue) * 400, 100) // Profit margin * 4
-      const marketingScore = Math.min(marketingROI.reduce((acc, roi) => acc + roi.roi, 0) / marketingROI.length / 2, 100)
-      const contentScore = Math.min((worksData.data?.length || 0) * 10, 100)
-      const engagementScore = Math.min(Math.random() * 100, 100) // Simulated
-      
-      const overallScore = Math.round((financialScore + marketingScore + contentScore + engagementScore) / 4)
+      const marketingROI = [] as { campaign: string; spent: number; revenue: number; roi: number; conversions: number }[]
+      const netProfit = totalRevenue - totalExpenses
+      const profitMarginPct = totalRevenue > 0 ? Math.round((netProfit / totalRevenue) * 100) : 0
+      const revenueGrowth = calcGrowth(monthlyData.map(m => m.revenue))
 
       const analyticsData: BusinessAnalytics = {
         overview: {
-          totalRevenue,
-          totalExpenses,
-          netProfit,
-          revenueGrowth: Math.round(Math.random() * 30 + 5), // 5-35%
-          profitMargin: Math.round((netProfit / totalRevenue) * 100),
-          fanGrowth: Math.round(Math.random() * 25 + 10), // 10-35%
-          engagementRate: Math.round(Math.random() * 8 + 2), // 2-10%
-          conversionRate: Math.round(Math.random() * 5 + 1) // 1-6%
+          totalRevenue: Math.round(totalRevenue),
+          totalExpenses: Math.round(totalExpenses),
+          netProfit: Math.round(netProfit),
+          revenueGrowth,
+          profitMargin: profitMarginPct,
+          fanGrowth: 0,
+          engagementRate: 0,
+          conversionRate: 0
         },
-        revenueStreams: {
-          merchandise: merchandiseRevenue,
-          events: eventRevenue,
-          streaming: streamingRevenue,
-          licensing: licensingRevenue,
-          other: otherRevenue
-        },
+        revenueStreams,
         monthlyData,
         topProducts,
         marketingROI,
         businessHealth: {
-          score: overallScore,
+          score: clamp(Math.round(profitMarginPct * 0.6 + revenueGrowth * 0.4), 0, 100),
           factors: {
-            financial: Math.round(financialScore),
-            marketing: Math.round(marketingScore),
-            content: Math.round(contentScore),
-            engagement: Math.round(engagementScore)
+            financial: clamp(profitMarginPct, 0, 100),
+            marketing: 50,
+            content: (merchRes.data || []).length * 5 > 100 ? 100 : (merchRes.data || []).length * 5,
+            engagement: 50
           }
         }
       }
@@ -290,6 +292,22 @@ export default function BusinessAnalytics() {
       value,
       color: COLORS[index % COLORS.length]
     }))
+
+  function sumByType(rows: any[], types: string[]) {
+    const set = new Set(types)
+    return rows.reduce((sum, r) => sum + (set.has(r.type) ? Number(r.amount) || 0 : 0), 0)
+  }
+  function sumByMeta(rows: any[], key: string, value: string) {
+    return rows.reduce((sum, r) => sum + ((r.metadata && (r.metadata[key] || r.metadata[key]?.toLowerCase?.()) === value) ? Number(r.amount) || 0 : 0), 0)
+  }
+  function clamp(n: number, a: number, b: number) { return Math.max(a, Math.min(b, n)) }
+  function calcGrowth(series: number[]) {
+    if (series.length < 2) return 0
+    const first = series[0]
+    const last = series[series.length - 1]
+    if (first <= 0) return last > 0 ? 100 : 0
+    return Math.round(((last - first) / first) * 100)
+  }
 
   return (
     <div className="space-y-6">

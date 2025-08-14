@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Combobox } from "@/components/ui/combobox"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -118,6 +119,11 @@ export function LogisticsDynamicManager({
   const [isCreating, setIsCreating] = useState(false)
   const [newItem, setNewItem] = useState<Partial<LogisticsItem>>({})
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout>()
+  const [attachAssetByTask, setAttachAssetByTask] = useState<Record<string, { assetId: string; start: string; end: string }>>({})
+  const [userQuery, setUserQuery] = useState('')
+  const [userOptions, setUserOptions] = useState<{ id: string; full_name?: string; email?: string; avatar_url?: string }[]>([])
+  const [assetQueryByTask, setAssetQueryByTask] = useState<Record<string, string>>({})
+  const [assetOptionsByTask, setAssetOptionsByTask] = useState<Record<string, any[]>>({})
 
   // Fetch logistics items
   const fetchItems = useCallback(async () => {
@@ -140,46 +146,29 @@ export function LogisticsDynamicManager({
       }
 
       const data = await response.json()
-      setItems(data.items || [])
+      const mapped: LogisticsItem[] = (data.items || []).map((r: any) => ({
+        id: r.id,
+        type: r.type,
+        title: r.title,
+        description: r.description || '',
+        status: r.status,
+        priority: r.priority,
+        assignedTo: r.assigned_to_user_id || '',
+        dueDate: r.due_date || '',
+        budget: r.budget ?? undefined,
+        actualCost: r.actual_cost ?? undefined,
+        notes: r.notes || '',
+        tags: r.tags || [],
+        lastUpdated: r.updated_at || r.created_at,
+        createdBy: r.created_by || ''
+      }))
+      setItems(mapped)
     } catch (err) {
       console.error('[LogisticsDynamicManager] Error fetching items:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch logistics items')
       
-      // Set mock data for demonstration
-      setItems([
-        {
-          id: '1',
-          type: 'transportation',
-          title: 'Airport Transfer',
-          description: 'Transport from airport to hotel for 15 people',
-          status: 'confirmed',
-          priority: 'high',
-          assignedTo: 'John Smith',
-          dueDate: '2025-02-15',
-          budget: 500,
-          actualCost: 450,
-          notes: 'Confirmed with ABC Transport',
-          tags: ['transport', 'airport'],
-          lastUpdated: '2025-01-31T10:30:00Z',
-          createdBy: 'Admin'
-        },
-        {
-          id: '2',
-          type: 'equipment',
-          title: 'Sound System Setup',
-          description: 'Full PA system for main stage',
-          status: 'in_progress',
-          priority: 'urgent',
-          assignedTo: 'Mike Johnson',
-          dueDate: '2025-02-10',
-          budget: 2000,
-          actualCost: 1800,
-          notes: 'Equipment being delivered tomorrow',
-          tags: ['audio', 'stage'],
-          lastUpdated: '2025-01-31T09:15:00Z',
-          createdBy: 'Admin'
-        }
-      ])
+      // Fall back to empty when API fails
+      setItems([])
     } finally {
       setLoading(false)
     }
@@ -196,7 +185,19 @@ export function LogisticsDynamicManager({
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(item)
+        body: JSON.stringify({
+          type: item.type,
+          title: item.title,
+          description: item.description,
+          status: item.status,
+          priority: item.priority,
+          assignedTo: item.assignedTo,
+          dueDate: item.dueDate,
+          budget: item.budget,
+          actualCost: item.actualCost,
+          notes: item.notes,
+          tags: item.tags
+        })
       })
 
       if (!response.ok) {
@@ -231,6 +232,46 @@ export function LogisticsDynamicManager({
       saveItem(item)
     }, 2000)
   }, [saveItem])
+
+  // Search users by query for assignment
+  useEffect(() => {
+    const controller = new AbortController()
+    const q = userQuery.trim()
+    async function run() {
+      if (!q) { setUserOptions([]); return }
+      try {
+        const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(q)}&limit=8`, { signal: controller.signal })
+        if (!res.ok) return
+        const data = await res.json()
+        setUserOptions(Array.isArray(data?.users) ? data.users : [])
+      } catch {}
+    }
+    const t = setTimeout(run, 250)
+    return () => { clearTimeout(t); controller.abort() }
+  }, [userQuery])
+
+  // Asset search per task
+  useEffect(() => {
+    const controllers: AbortController[] = []
+    Object.entries(assetQueryByTask).forEach(([taskId, q]) => {
+      const query = q.trim()
+      const controller = new AbortController()
+      controllers.push(controller)
+      const run = async () => {
+        if (!query) { setAssetOptionsByTask(prev => ({ ...prev, [taskId]: [] })); return }
+        try {
+          const res = await fetch(`/api/admin/assets/search?q=${encodeURIComponent(query)}&limit=8`, { signal: controller.signal })
+          if (!res.ok) return
+          const data = await res.json()
+          setAssetOptionsByTask(prev => ({ ...prev, [taskId]: Array.isArray(data?.assets) ? data.assets : [] }))
+        } catch {}
+      }
+      const t = setTimeout(run, 250)
+      // store timeout on controller for cleanup
+      ;(controller as any)._t = t
+    })
+    return () => controllers.forEach(c => { if ((c as any)._t) clearTimeout((c as any)._t); c.abort() })
+  }, [assetQueryByTask])
 
   // Handle item editing
   const handleEdit = useCallback((item: LogisticsItem) => {
@@ -295,6 +336,32 @@ export function LogisticsDynamicManager({
       })
     }
   }, [toast])
+
+  // Attach equipment to a task
+  const attachEquipment = useCallback(async (taskId: string) => {
+    const form = attachAssetByTask[taskId]
+    if (!form?.assetId) {
+      toast({ title: 'Missing asset', description: 'Enter an equipment asset ID', variant: 'destructive' })
+      return
+    }
+    try {
+      const res = await fetch(`/api/admin/logistics/items/${taskId}/equipment`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          equipmentAssetId: form.assetId,
+          startTime: form.start || null,
+          endTime: form.end || null
+        })
+      })
+      if (!res.ok) throw new Error('attach failed')
+      toast({ title: 'Equipment attached', description: 'Asset linked to task', variant: 'default' })
+      setAttachAssetByTask(prev => ({ ...prev, [taskId]: { assetId: '', start: '', end: '' } }))
+    } catch (err) {
+      toast({ title: 'Attach failed', description: 'Could not attach equipment', variant: 'destructive' })
+    }
+  }, [attachAssetByTask, toast])
 
   // Handle bulk actions
   const handleBulkAction = useCallback(async (action: string) => {
@@ -408,6 +475,24 @@ export function LogisticsDynamicManager({
     }
   }
 
+  // Quick status change helper
+  const updateStatus = useCallback(async (taskId: string, status: string) => {
+    try {
+      const res = await fetch(`/api/admin/logistics/items/${taskId}/status`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      })
+      if (!res.ok) throw new Error('status failed')
+      const { item } = await res.json()
+      setItems(prev => prev.map(i => i.id === taskId ? { ...i, status: item.status } : i))
+      toast({ title: 'Status updated', description: `Task marked as ${status.replace('_',' ')}` })
+    } catch {
+      toast({ title: 'Update failed', description: 'Could not update status', variant: 'destructive' })
+    }
+  }, [toast])
+
   if (loading) {
     return (
       <Card className="bg-slate-900/50 border-slate-700/50">
@@ -467,7 +552,7 @@ export function LogisticsDynamicManager({
             </div>
           )}
           
-          <Button
+            <Button
             variant="outline"
             size="sm"
             onClick={() => setIsCreating(true)}
@@ -657,6 +742,45 @@ export function LogisticsDynamicManager({
                           <span className="font-medium">Notes:</span> {item.notes}
                         </div>
                       )}
+
+                      {/* Equipment attachment (for equipment/backline tasks) */}
+                      {(item.type === 'equipment' || item.type === 'backline') && (
+                        <div className="mt-2 space-y-2">
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                            <Input
+                              placeholder="Search equipment by name or serial"
+                              value={assetQueryByTask[item.id] || ''}
+                              onChange={(e) => setAssetQueryByTask(prev => ({ ...prev, [item.id]: e.target.value }))}
+                            />
+                            <Input
+                              type="datetime-local"
+                              value={attachAssetByTask[item.id]?.start || ''}
+                              onChange={(e) => setAttachAssetByTask(prev => ({ ...prev, [item.id]: { ...(prev[item.id] || { assetId: '', start: '', end: '' }), start: e.target.value } }))}
+                            />
+                            <Input
+                              type="datetime-local"
+                              value={attachAssetByTask[item.id]?.end || ''}
+                              onChange={(e) => setAttachAssetByTask(prev => ({ ...prev, [item.id]: { ...(prev[item.id] || { assetId: '', start: '', end: '' }), end: e.target.value } }))}
+                            />
+                            <Button size="sm" onClick={() => attachEquipment(item.id)}>Attach Equipment</Button>
+                          </div>
+                          {(assetOptionsByTask[item.id]?.length || 0) > 0 && (
+                            <div className="max-h-40 overflow-auto rounded border border-slate-700/50 bg-slate-800">
+                              {assetOptionsByTask[item.id].map(a => (
+                                <button
+                                  key={a.id}
+                                  type="button"
+                                  onClick={() => setAttachAssetByTask(prev => ({ ...prev, [item.id]: { ...(prev[item.id] || { start: '', end: '' }), assetId: a.id } }))}
+                                  className="w-full text-left px-3 py-2 hover:bg-slate-700/50 text-sm"
+                                >
+                                  <span className="text-white">{a.name}</span>
+                                  <span className="text-slate-400 ml-2">{a.serial_number || ''}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}
@@ -699,6 +823,16 @@ export function LogisticsDynamicManager({
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
+                            {/* Quick status actions */}
+                            {item.status !== 'in_progress' && (
+                              <Button variant="ghost" size="sm" onClick={() => updateStatus(item.id, 'in_progress')} className="text-yellow-400 hover:text-yellow-300">Start</Button>
+                            )}
+                            {item.status !== 'completed' && (
+                              <Button variant="ghost" size="sm" onClick={() => updateStatus(item.id, 'completed')} className="text-green-400 hover:text-green-300">Complete</Button>
+                            )}
+                            {item.status !== 'cancelled' && (
+                              <Button variant="ghost" size="sm" onClick={() => updateStatus(item.id, 'cancelled')} className="text-slate-400 hover:text-slate-300">Cancel</Button>
+                            )}
                           </>
                         )}
                       </div>
@@ -794,10 +928,12 @@ export function LogisticsDynamicManager({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm text-slate-300">Assigned To</Label>
-                <Input
-                  value={newItem.assignedTo || ''}
-                  onChange={(e) => setNewItem(prev => ({ ...prev, assignedTo: e.target.value }))}
-                  placeholder="Enter assignee"
+                <Combobox
+                  value={typeof newItem.assignedTo === 'string' ? newItem.assignedTo : ''}
+                  placeholder="Search by name or email"
+                  items={userOptions.map(u => ({ id: u.id, label: u.full_name || u.email || 'User', subLabel: u.email }))}
+                  onSearch={(q) => setUserQuery(q)}
+                  onChange={(val) => setNewItem(prev => ({ ...prev, assignedTo: val }))}
                 />
               </div>
               
@@ -834,19 +970,31 @@ export function LogisticsDynamicManager({
           </div>
           
           <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={() => setIsCreating(false)}>
+              <Button variant="outline" onClick={() => setIsCreating(false)}>
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                // Handle create logic here
-                setIsCreating(false)
-                setNewItem({})
-                toast({
-                  title: "Item Created",
-                  description: "New logistics item has been added successfully.",
-                  variant: "default"
-                })
+              onClick={async () => {
+                const payload = {
+                  eventId,
+                  tourId,
+                  ...newItem
+                }
+                try {
+                  const res = await fetch('/api/admin/logistics/items', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                  })
+                  if (!res.ok) throw new Error('Failed to create item')
+                  await fetchItems()
+                  setIsCreating(false)
+                  setNewItem({})
+                  toast({ title: 'Item Created', description: 'New logistics item has been added successfully.', variant: 'default' })
+                } catch (err) {
+                  toast({ title: 'Create Failed', description: 'Could not create item', variant: 'destructive' })
+                }
               }}
             >
               Create Item

@@ -59,6 +59,7 @@ export function EnhancedQuickActions() {
   const { accounts, currentAccount } = useMultiAccount()
   const router = useRouter()
   const [quickActions, setQuickActions] = useState<QuickAction[]>([])
+  const [showMore, setShowMore] = useState(false)
   const [recentActions, setRecentActions] = useState<QuickAction[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -234,7 +235,11 @@ export function EnhancedQuickActions() {
         }
       ]
 
-      setQuickActions([...baseActions, ...accountSpecificActions])
+      // Merge and sort by priority; keep deterministic order
+      const merged = [...baseActions, ...accountSpecificActions]
+      const priorityRank = { high: 3, medium: 2, low: 1 } as const
+      merged.sort((a, b) => (priorityRank[b.priority] - priorityRank[a.priority]))
+      setQuickActions(merged)
       setRecentActions(recent)
       setIsLoading(false)
     }
@@ -359,7 +364,7 @@ export function EnhancedQuickActions() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 px-4 pb-4">
-          {quickActions.map((action) => {
+          {(showMore ? quickActions : quickActions.slice(0, 6)).map((action) => {
             const priorityColor = getPriorityColor(action.priority)
             const accountColor = getAccountColor(action.accountType)
             const iconColor = action.accountType ? accountColor : priorityColor
@@ -396,6 +401,19 @@ export function EnhancedQuickActions() {
               </Button>
             )
           })}
+          {quickActions.length > 6 && (
+            <div className="pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full border-purple-500/50 text-purple-300 hover:bg-purple-500/20 rounded-xl"
+                onClick={() => setShowMore(!showMore)}
+              >
+                {showMore ? 'Show Less' : 'More Actions'}
+                <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

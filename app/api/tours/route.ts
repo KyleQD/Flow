@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     console.log('[Tours API] Fetching tours for user:', user.id)
 
-    // Build query to fetch tours with optional filtering
+    // Build query to fetch tours with embedded events for calendar population
     let query = supabase
       .from('tours')
       .select(`

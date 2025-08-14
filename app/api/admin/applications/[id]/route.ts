@@ -3,9 +3,10 @@ import { AdminOnboardingStaffService } from '@/lib/services/admin-onboarding-sta
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const body = await request.json()
     const { status, feedback, rating } = body
 
@@ -17,7 +18,7 @@ export async function PATCH(
     }
 
     const updatedApplication = await AdminOnboardingStaffService.updateApplicationStatus(
-      params.id,
+      id,
       { status, feedback, rating }
     )
 

@@ -320,6 +320,10 @@ export function EnhancedProfileSearch({
     )
   }, [filters])
 
+  const isDiscoverMode = useMemo(() => {
+    return activeFilterCount === 0 && !searchQuery.trim()
+  }, [activeFilterCount, searchQuery])
+
   const getProfileDisplayName = (profile: SearchProfile) => {
     switch (profile.account_type) {
       case 'artist':
@@ -345,21 +349,21 @@ export function EnhancedProfileSearch({
     
     if (viewMode === 'list') {
       return (
-        <Card 
-          key={profile.id} 
-          className="bg-white/10 backdrop-blur border border-white/20 rounded-xl hover:bg-white/15 transition-all duration-300 cursor-pointer"
+      <Card 
+        key={profile.id} 
+        className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/15 rounded-[32px] overflow-hidden hover:bg-white/10 transition-all duration-300 cursor-pointer shadow-[0_8px_30px_rgba(0,0,0,0.25)]"
           onClick={() => onProfileSelect?.(profile)}
         >
-          <CardContent className="p-4">
+          <CardContent className="p-4 min-h-[120px]">
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
+              <Avatar className="h-12 w-12">
                 <AvatarImage src={profile.avatar_url} alt={displayName} />
                 <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
               </Avatar>
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-semibold text-white truncate">{displayName}</h3>
+                  <h3 className="text-base font-semibold text-white truncate">{displayName}</h3>
                   {profile.verified && (
                     <CheckCircle className="h-4 w-4 text-blue-400" />
                   )}
@@ -368,11 +372,11 @@ export function EnhancedProfileSearch({
                   </Badge>
                 </div>
                 
-                <p className="text-white/70 text-sm mb-2 truncate">
+                <p className="text-white/70 text-xs mb-2 truncate">
                   {profile.bio || "No description available"}
                 </p>
                 
-                <div className="flex items-center gap-4 text-sm text-white/60">
+                <div className="flex items-center gap-4 text-xs text-white/60">
                   {profile.location && (
                     <div className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
@@ -428,18 +432,18 @@ export function EnhancedProfileSearch({
     return (
       <Card 
         key={profile.id} 
-        className="bg-white/10 backdrop-blur border border-white/20 rounded-xl hover:bg-white/15 transition-all duration-300 cursor-pointer group"
+        className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/15 rounded-[32px] overflow-hidden hover:bg-white/10 transition-all duration-300 cursor-pointer group shadow-[0_8px_30px_rgba(0,0,0,0.25)]"
         onClick={() => onProfileSelect?.(profile)}
       >
-        <CardContent className="p-6">
-          <div className="text-center">
-            <Avatar className="h-20 w-20 mx-auto mb-4">
+        <CardContent className="p-4 h-44 flex flex-col items-center justify-start">
+          <div className="text-center w-full">
+            <Avatar className="h-12 w-12 mx-auto mb-2">
               <AvatarImage src={profile.avatar_url} alt={displayName} />
               <AvatarFallback className="text-lg">{displayName.charAt(0)}</AvatarFallback>
             </Avatar>
             
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <h3 className="text-lg font-semibold text-white truncate">{displayName}</h3>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <h3 className="text-base font-semibold text-white truncate">{displayName}</h3>
               {profile.verified && (
                 <CheckCircle className="h-4 w-4 text-blue-400" />
               )}
@@ -447,7 +451,7 @@ export function EnhancedProfileSearch({
             
             <Badge 
               className={cn(
-                "text-white mb-3",
+                "text-white mb-2",
                 profile.account_type === 'artist' && "bg-purple-500",
                 profile.account_type === 'venue' && "bg-indigo-500",
                 profile.account_type === 'general' && "bg-emerald-500"
@@ -456,11 +460,11 @@ export function EnhancedProfileSearch({
               {profile.account_type}
             </Badge>
             
-            <p className="text-white/70 text-sm mb-4 line-clamp-2">
+            <p className="text-white/70 text-xs mb-3 line-clamp-2">
               {profile.bio || "No description available"}
             </p>
             
-            <div className="flex items-center justify-center gap-4 text-xs text-white/60 mb-4">
+            <div className="flex items-center justify-center gap-3 text-[11px] text-white/60 mb-2">
               {profile.location && (
                 <div className="flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
@@ -479,7 +483,7 @@ export function EnhancedProfileSearch({
               </div>
             </div>
             
-            <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="flex items-center justify-center gap-2 mb-2">
               <Badge className={cn("text-xs", getAvailabilityColor(profile.availability_status || 'available'))}>
                 {profile.availability_status || 'available'}
               </Badge>
@@ -490,12 +494,12 @@ export function EnhancedProfileSearch({
               )}
             </div>
             
-            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button size="sm" variant="ghost" className="flex-1 text-white hover:bg-white/20">
+            <div className="flex gap-2 mt-auto opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button size="sm" variant="ghost" className="flex-1 text-white hover:bg-white/15 rounded-xl">
                 <Heart className="h-3 w-3 mr-1" />
                 Follow
               </Button>
-              <Button size="sm" variant="ghost" className="flex-1 text-white hover:bg-white/20">
+              <Button size="sm" variant="ghost" className="flex-1 text-white hover:bg-white/15 rounded-xl">
                 <MessageCircle className="h-3 w-3 mr-1" />
                 Message
               </Button>
@@ -509,16 +513,16 @@ export function EnhancedProfileSearch({
   return (
     <div className="space-y-6">
       {/* Search Header */}
-      <Card className="bg-white/10 backdrop-blur border border-white/20 rounded-3xl">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4 mb-4">
+      <Card className="bg-gradient-to-br from-slate-900/60 via-purple-900/40 to-slate-900/60 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.3)]">
+        <CardContent className="p-4 md:p-5">
+          <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
               <Input
                 placeholder="Search by name, skills, genre, or location..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-white/10 border-white/20 text-white placeholder-white/60"
+                className="pl-10 bg-white/10 border-white/20 text-white placeholder-white/60 rounded-2xl"
               />
             </div>
             
@@ -526,12 +530,12 @@ export function EnhancedProfileSearch({
               <Button
                 variant="outline"
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="border-white/30 text-white hover:bg-white/10"
+                className="border-white/20 text-white hover:bg-white/10 rounded-2xl"
               >
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
                 Filters
                 {activeFilterCount > 0 && (
-                  <Badge className="ml-2 bg-purple-500 text-white text-xs">
+                  <Badge className="ml-2 bg-purple-500 text-white text-xs rounded-full">
                     {activeFilterCount}
                   </Badge>
                 )}
@@ -543,7 +547,7 @@ export function EnhancedProfileSearch({
                 variant={viewMode === 'grid' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('grid')}
-                className="border-white/30 text-white hover:bg-white/10"
+                className="border-white/20 text-white hover:bg-white/10 rounded-xl"
               >
                 <Grid className="h-4 w-4" />
               </Button>
@@ -551,7 +555,7 @@ export function EnhancedProfileSearch({
                 variant={viewMode === 'list' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('list')}
-                className="border-white/30 text-white hover:bg-white/10"
+                className="border-white/20 text-white hover:bg-white/10 rounded-xl"
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -560,14 +564,14 @@ export function EnhancedProfileSearch({
 
           {/* Quick Filters */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-white/60 text-sm">Quick filters:</span>
+            <span className="text-white/70 text-xs md:text-sm">Quick filters:</span>
             {['artist', 'venue', 'general'].map((type) => (
               <Button
                 key={type}
                 variant={filters.account_types.includes(type) ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => toggleArrayFilter('account_types', type)}
-                className="text-xs border-white/30 text-white hover:bg-white/10"
+                className="text-xs border-white/20 text-white hover:bg-white/10 rounded-full px-3"
               >
                 {type === 'artist' && <Music className="h-3 w-3 mr-1" />}
                 {type === 'venue' && <Building2 className="h-3 w-3 mr-1" />}
@@ -580,7 +584,7 @@ export function EnhancedProfileSearch({
               variant={filters.verified_only ? 'default' : 'outline'}
               size="sm"
               onClick={() => updateFilter('verified_only', !filters.verified_only)}
-              className="text-xs border-white/30 text-white hover:bg-white/10"
+              className="text-xs border-white/20 text-white hover:bg-white/10 rounded-full px-3"
             >
               <CheckCircle className="h-3 w-3 mr-1" />
               Verified
@@ -590,7 +594,7 @@ export function EnhancedProfileSearch({
               variant={filters.recently_active ? 'default' : 'outline'}
               size="sm"
               onClick={() => updateFilter('recently_active', !filters.recently_active)}
-              className="text-xs border-white/30 text-white hover:bg-white/10"
+              className="text-xs border-white/20 text-white hover:bg-white/10 rounded-full px-3"
             >
               <Clock className="h-3 w-3 mr-1" />
               Recently Active
@@ -613,7 +617,7 @@ export function EnhancedProfileSearch({
 
       {/* Advanced Filters */}
       {showAdvancedFilters && showFilters && (
-        <Card className="bg-white/10 backdrop-blur border border-white/20 rounded-3xl">
+        <Card className="bg-gradient-to-br from-slate-900/60 to-slate-900/30 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.25)]">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Filter className="h-5 w-5" />
@@ -629,7 +633,7 @@ export function EnhancedProfileSearch({
                   placeholder="City, State, Country"
                   value={filters.location}
                   onChange={(e) => updateFilter('location', e.target.value)}
-                  className="bg-white/10 border-white/20 text-white placeholder-white/60"
+                  className="bg-white/10 border-white/20 text-white placeholder-white/60 rounded-2xl"
                 />
               </div>
 
@@ -674,7 +678,7 @@ export function EnhancedProfileSearch({
                     variant={filters.skills.includes(skill) ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => toggleArrayFilter('skills', skill)}
-                    className="text-xs border-white/30 text-white hover:bg-white/10"
+                    className="text-xs border-white/20 text-white hover:bg-white/10 rounded-full px-3"
                   >
                     {skill}
                   </Button>
@@ -694,7 +698,7 @@ export function EnhancedProfileSearch({
                     variant={filters.genres.includes(genre) ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => toggleArrayFilter('genres', genre)}
-                    className="text-xs border-white/30 text-white hover:bg-white/10"
+                    className="text-xs border-white/20 text-white hover:bg-white/10 rounded-full px-3"
                   >
                     {genre}
                   </Button>
@@ -714,7 +718,7 @@ export function EnhancedProfileSearch({
                     variant={filters.availability.includes(status) ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => toggleArrayFilter('availability', status)}
-                    className="text-xs border-white/30 text-white hover:bg-white/10"
+                    className="text-xs border-white/20 text-white hover:bg-white/10 rounded-full px-3"
                   >
                     <div className={cn("w-2 h-2 rounded-full mr-2", getAvailabilityColor(status))}></div>
                     {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -727,15 +731,15 @@ export function EnhancedProfileSearch({
       )}
 
       {/* Results */}
-      <Card className="bg-white/10 backdrop-blur border border-white/20 rounded-3xl">
+      <Card className="bg-gradient-to-br from-slate-900/50 to-slate-900/20 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.25)]">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-white">
-              Search Results ({filteredProfiles.length})
+              {isDiscoverMode ? 'Discover For You' : `Search Results (${filteredProfiles.length})`}
             </CardTitle>
-            {!loading && filteredProfiles.length > 0 && (
+            {!loading && filteredProfiles.length > 0 && !isDiscoverMode && (
               <Select value="relevance">
-                <SelectTrigger className="w-40 bg-white/10 border-white/20 text-white">
+                <SelectTrigger className="w-40 bg-white/10 border-white/20 text-white rounded-xl">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -750,10 +754,10 @@ export function EnhancedProfileSearch({
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="bg-white/20 rounded-xl h-64"></div>
+                  <div className="bg-white/15 rounded-2xl h-44"></div>
                 </div>
               ))}
             </div>
@@ -768,8 +772,8 @@ export function EnhancedProfileSearch({
           ) : (
             <div className={cn(
               viewMode === 'grid' 
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" 
-                : "space-y-4"
+                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" 
+                : "space-y-2"
             )}>
               {filteredProfiles.map(renderProfileCard)}
             </div>

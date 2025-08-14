@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { useLogistics, useTransportation, useEquipment, useLogisticsAnalytics } from "@/hooks/use-logistics"
+import { EventSelect } from "@/components/events/event-select"
 import { useRentals, useRentalAgreements, useRentalAnalytics, useEquipmentUtilization } from "@/hooks/use-rentals"
 import { useLodging, useLodgingBookings, useLodgingAnalytics, useLodgingUtilization } from "@/hooks/use-lodging"
 import { useTravelCoordination } from "@/hooks/use-travel-coordination"
@@ -218,6 +219,11 @@ export default function LogisticsPage() {
         icon={Truck}
         description="Coordinate transportation, equipment, and venue logistics for all events"
       />
+
+      {/* Scope selector */}
+      <div className="mb-4">
+        <EventSelect onSelect={(evt) => setSelectedEvent(evt?.id || null)} placeholder="Filter by event (optional)" />
+      </div>
 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="bg-slate-800/50 p-1 mb-6 grid grid-cols-7 gap-1 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-xl">
@@ -483,54 +489,23 @@ export default function LogisticsPage() {
             <CardContent>
               <div className="relative pl-8 pb-1">
                 <div className="absolute top-0 bottom-0 left-3.5 w-px bg-slate-700"></div>
-
-                <TimelineItem
-                  date="Aug 13, 08:00 AM"
-                  title="Equipment Delivery"
-                  description="Main stage equipment delivery from SoundMasters Pro"
-                  status="scheduled"
-                  daysAway={20}
-                />
-
-                <TimelineItem
-                  date="Aug 13, 10:00 AM"
-                  title="VIP Area Setup"
-                  description="VIP lounge and backstage area setup by EventSpace Designs"
-                  status="scheduled"
-                  daysAway={20}
-                />
-
-                <TimelineItem
-                  date="Aug 14, 09:00 AM"
-                  title="Artist Transportation"
-                  description="Airport pickup for headline performers"
-                  status="scheduled"
-                  daysAway={21}
-                />
-
-                <TimelineItem
-                  date="Aug 14, 02:00 PM"
-                  title="Sound Check"
-                  description="Technical rehearsal and sound check for all performers"
-                  status="scheduled"
-                  daysAway={21}
-                />
-
-                <TimelineItem
-                  date="Aug 15, 06:00 AM"
-                  title="Food & Beverage Delivery"
-                  description="Catering setup and food delivery from Gourmet Caterers"
-                  status="scheduled"
-                  daysAway={22}
-                />
-
-                <TimelineItem
-                  date="Aug 17, 10:00 PM"
-                  title="Equipment Breakdown"
-                  description="Dismantling and removal of all stage equipment"
-                  status="scheduled"
-                  daysAway={24}
-                />
+                {Array.isArray(logisticsData?.transportation) && logisticsData?.transportation.length > 0 ? (
+                  logisticsData.transportation
+                    .filter((t: any) => t?.due_date || t?.departure_time)
+                    .sort((a: any, b: any) => new Date(a.due_date || a.departure_time).getTime() - new Date(b.due_date || b.departure_time).getTime())
+                    .slice(0, 8)
+                    .map((t: any) => (
+                      <TimelineItem
+                        key={t.id}
+                        date={new Date(t.due_date || t.departure_time).toLocaleString()}
+                        title={t.title || t.type || 'Logistics Item'}
+                        description={t.description || ''}
+                        status={t.status || 'scheduled'}
+                      />
+                    ))
+                ) : (
+                  <div className="text-slate-400 text-sm">No upcoming logistics items</div>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -24,6 +24,7 @@ import {
   Heart
 } from "lucide-react"
 import { format } from "date-fns"
+import { TrackEmbed } from "@/components/blog/renderers/track-embed"
 import BlogEditor from "./blog-editor"
 import { 
   DropdownMenu,
@@ -378,7 +379,7 @@ export default function BlogPage() {
                         {post.title}
                       </h3>
                       <p className="text-gray-400 text-sm mb-3 line-clamp-2">
-                        {post.excerpt || post.content.slice(0, 100) + '...'}
+                        {post.excerpt || post.content.replace(/\[track:[^\]]+\]/g, '').slice(0, 100) + '...'}
                       </p>
                     </div>
                     <DropdownMenu>
@@ -427,6 +428,15 @@ export default function BlogPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
+                  {/* Inline track embed if token present at top */}
+                  {post.content.includes('[track:') && (
+                    <div className="mt-3">
+                      {post.content.match(/\[track:([^\]]+)\]/g)?.slice(0,1).map((tok) => {
+                        const id = tok.replace('[track:', '').replace(']','')
+                        return <TrackEmbed key={id} id={id} />
+                      })}
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                     <div className="flex items-center gap-2">

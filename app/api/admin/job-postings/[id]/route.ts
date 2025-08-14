@@ -3,9 +3,10 @@ import { AdminOnboardingStaffService } from '@/lib/services/admin-onboarding-sta
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { searchParams } = new URL(request.url)
     const venueId = searchParams.get('venue_id')
 
@@ -18,7 +19,7 @@ export async function GET(
 
     // Get specific job posting
     const jobPostings = await AdminOnboardingStaffService.getJobPostings(venueId)
-    const jobPosting = jobPostings.find(job => job.id === params.id)
+    const jobPosting = jobPostings.find(job => job.id === id)
 
     if (!jobPosting) {
       return NextResponse.json(
@@ -42,15 +43,16 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const body = await request.json()
     const { status } = body
 
     if (status) {
       const updatedJobPosting = await AdminOnboardingStaffService.updateJobPostingStatus(
-        params.id,
+        id,
         status
       )
 

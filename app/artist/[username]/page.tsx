@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArtistPublicProfileView } from "@/components/profile/artist-public-profile-view"
+import { ComprehensiveArtistProfile } from "@/components/profile/comprehensive-artist-profile"
+import { PublicProfileLayout } from "@/components/layouts/public-profile-layout"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -81,29 +82,25 @@ export default function ArtistPublicProfilePage() {
       setLoading(true)
       setError(null)
       
-      console.log('🔍 Fetching artist profile for username:', username)
+      console.log('🔍 Fetching artist profile for artist name:', username)
       
-      // Try to fetch the artist profile by username directly
-      const response = await fetch(`/api/profile/${encodeURIComponent(username)}`)
+      // Use the new artist-specific API that looks up by artist name
+      const response = await fetch(`/api/artist/${encodeURIComponent(username)}`)
       
       if (response.ok) {
         const data = await response.json()
         if (data.profile) {
-          console.log('✅ Profile loaded successfully:', data.profile.username)
+          console.log('✅ Artist profile loaded successfully:', data.profile.artist_name)
           setProfile(data.profile)
           
-          // Check if this is the current user's profile
+          // Check if this is the current user's profile by comparing user IDs
           if (isAuthenticated && user) {
-            const currentUsername = user.user_metadata?.username || 
-                                  user.user_metadata?.artist_name?.toLowerCase().replace(/\s+/g, '') ||
-                                  user.user_metadata?.stage_name?.toLowerCase().replace(/\s+/g, '')
-            
-            if (currentUsername && currentUsername.toLowerCase() === username.toLowerCase()) {
+            if (user.id === data.profile.id) {
               setIsOwnProfile(true)
-              console.log('✅ This is the current user\'s profile')
+              console.log('✅ This is the current user\'s artist profile')
             } else {
               setIsOwnProfile(false)
-              console.log('✅ This is another user\'s profile')
+              console.log('✅ This is another user\'s artist profile')
             }
           } else {
             setIsOwnProfile(false)
@@ -113,7 +110,7 @@ export default function ArtistPublicProfilePage() {
           setError('Artist profile not found')
         }
       } else if (response.status === 404) {
-        console.log('❌ Profile not found for username:', username)
+        console.log('❌ Artist profile not found for artist name:', username)
         setError('Artist profile not found')
       } else {
         console.log('❌ API error:', response.status, response.statusText)
@@ -224,8 +221,11 @@ export default function ArtistPublicProfilePage() {
   }
 
   return (
-    <>
-      <ArtistPublicProfileView
+    <PublicProfileLayout 
+      profileName={profile.profile_data?.artist_name || profile.artist_name}
+      profileType="artist"
+    >
+      <ComprehensiveArtistProfile
         profile={profile}
         isOwnProfile={isOwnProfile}
         onFollow={handleFollow}
@@ -241,6 +241,6 @@ export default function ArtistPublicProfilePage() {
           recipientName={profile.profile_data?.artist_name || profile.username}
         />
       )}
-    </>
+    </PublicProfileLayout>
   )
 } 

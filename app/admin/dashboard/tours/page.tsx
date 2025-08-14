@@ -79,6 +79,15 @@ import {
   Receipt
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  addMonths,
+  isSameMonth,
+  isToday
+} from "date-fns"
 import Link from "next/link"
 
 interface Tour {
@@ -371,6 +380,87 @@ export default function ToursPage() {
       case 'cancelled': return <AlertTriangle className="h-4 w-4" />
       default: return <Clock className="h-4 w-4" />
     }
+  }
+
+  // Calendar View for cross-tour events
+  function CalendarView() {
+    const [currentMonth, setCurrentMonth] = useState(new Date())
+
+    const days = eachDayOfInterval({
+      start: startOfMonth(currentMonth),
+      end: endOfMonth(currentMonth)
+    })
+
+    // Build events map by YYYY-MM-DD
+    const eventsByDate: Record<string, Array<{ id: string; tourId: string; name: string; tourName: string; status: string }>> = {}
+
+    for (const t of filteredTours as any[]) {
+      const tourName = t.name
+      const tourId = t.id
+      const events = (t.events || t.venues || []) as any[]
+      for (const e of events) {
+        const dateStr = (e.event_date || e.date) as string | undefined
+        if (!dateStr) continue
+        const key = dateStr
+        if (!eventsByDate[key]) eventsByDate[key] = []
+        eventsByDate[key].push({
+          id: e.id,
+          tourId,
+          name: e.name || e.venue_name || e.venue || 'Event',
+          tourName,
+          status: e.status || 'scheduled'
+        })
+      }
+    }
+
+    const monthLabel = format(currentMonth, 'MMMM yyyy')
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="border-slate-600 text-slate-300" onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}>
+              <ChevronDown className="h-4 w-4 rotate-90" />
+            </Button>
+            <div className="text-white font-semibold">{monthLabel}</div>
+            <Button variant="outline" size="sm" className="border-slate-600 text-slate-300" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+              <ChevronDown className="h-4 w-4 -rotate-90" />
+            </Button>
+          </div>
+          <Button variant="outline" size="sm" className="border-slate-600 text-slate-300" onClick={() => setCurrentMonth(new Date())}>Today</Button>
+        </div>
+
+        <div className="grid grid-cols-7 gap-2">
+          {days.map((d) => {
+            const key = format(d, 'yyyy-MM-dd')
+            const dayEvents = eventsByDate[key] || []
+            const isCurrent = isSameMonth(d, currentMonth)
+            const isCurrentDay = isToday(d)
+            return (
+              <div key={key} className={`${isCurrent ? 'bg-slate-900/40 border-slate-700/60' : 'bg-slate-900/20 border-slate-800/60'} ${isCurrentDay ? 'ring-1 ring-purple-500/60' : ''} min-h-28 rounded-lg border p-2 overflow-hidden`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`${isCurrent ? 'text-slate-300' : 'text-slate-600'} text-xs`}>{format(d, 'd')}</span>
+                  {dayEvents.length > 0 && (
+                    <Badge className="bg-purple-500/20 text-purple-300 border-purple-600/30 h-5 px-1 text-[10px]">{dayEvents.length}</Badge>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  {dayEvents.slice(0, 3).map((ev) => (
+                    <button key={ev.id} onClick={() => router.push(`/admin/dashboard/tours/${ev.tourId}?tab=events&eventId=${ev.id}`)} className="w-full text-left truncate text-[11px] px-1 py-0.5 rounded bg-slate-800/70 text-slate-200 border border-slate-700/60 hover:bg-slate-700/70">
+                      <span className="font-medium">{ev.name}</span>
+                      <span className="text-slate-400"> • {ev.tourName}</span>
+                    </button>
+                  ))}
+                  {dayEvents.length > 3 && (
+                    <div className="text-[11px] text-slate-400">+{dayEvents.length - 3} more</div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
   }
 
   // Logistics status component for tours
@@ -982,12 +1072,16 @@ export default function ToursPage() {
             </CardContent>
           </Card>
         ) : (
-          /* Tours Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTours.map((tour: any) => (
-              <TourCard key={tour.id} tour={tour} />
-            ))}
-          </div>
+          viewMode === 'calendar' ? (
+            <CalendarView />
+          ) : (
+            /* Tours Grid */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTours.map((tour: any) => (
+                <TourCard key={tour.id} tour={tour} />
+              ))}
+            </div>
+          )
         )}
 
         {/* Tour Detail Modal */}

@@ -3,9 +3,10 @@ import { AdminOnboardingStaffService } from '@/lib/services/admin-onboarding-sta
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const body = await request.json()
     const { progress, stage, status, notes } = body
 
@@ -17,7 +18,7 @@ export async function PATCH(
     }
 
     const updatedCandidate = await AdminOnboardingStaffService.updateOnboardingProgress(
-      params.id,
+      id,
       { progress, stage, status, notes }
     )
 
@@ -37,21 +38,22 @@ export async function PATCH(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const body = await request.json()
     const { action } = body
 
     if (action === 'complete') {
-      const staffMember = await AdminOnboardingStaffService.completeOnboarding(params.id)
+      const staffMember = await AdminOnboardingStaffService.completeOnboarding(id)
       return NextResponse.json({
         data: staffMember,
         success: true,
         message: 'Onboarding completed and staff member created successfully'
       })
     } else if (action === 'generate_token') {
-      const token = await AdminOnboardingStaffService.generateInvitationToken(params.id)
+      const token = await AdminOnboardingStaffService.generateInvitationToken(id)
       return NextResponse.json({
         data: { token },
         success: true,

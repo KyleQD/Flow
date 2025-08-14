@@ -388,7 +388,41 @@ export function ArtistProvider({ children }: { children: ReactNode }) {
     try {
       console.log('📊 Loading artist stats for user:', userId)
       
-      // First try to get basic counts from the tables directly
+      // Attempt optimized RPC first for aggregated stats
+      try {
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('get_enhanced_artist_stats', { artist_user_id: userId as any })
+
+        if (!rpcError && rpcData) {
+          const s = rpcData as Record<string, any>
+          const enhancedStats: ArtistStats = {
+            totalRevenue: Number(s.total_revenue) || 0,
+            totalFans: Number(s.total_fans) || 0,
+            totalStreams: Number(s.total_streams) || 0,
+            engagementRate: Number(s.engagement_rate) || 0,
+            monthlyListeners: Number(s.monthly_listeners) || 0,
+            totalTracks: Number(s.total_tracks) || 0,
+            totalEvents: Number(s.total_events) || 0,
+            totalCollaborations: Number(s.total_collaborations) || 0,
+            musicCount: Number(s.music_count) || 0,
+            videoCount: Number(s.video_count) || 0,
+            photoCount: Number(s.photo_count) || 0,
+            blogCount: Number(s.blog_count) || 0,
+            eventCount: Number(s.event_count) || 0,
+            merchandiseCount: Number(s.merchandise_count) || 0,
+            totalPlays: Number(s.total_plays) || 0,
+            totalViews: Number(s.total_views) || 0
+          }
+
+          setStats(enhancedStats)
+          console.log('✅ Enhanced artist stats loaded via RPC')
+          return
+        }
+      } catch (rpcErr) {
+        console.log('ℹ️ Enhanced stats RPC unavailable, falling back to basic counts:', rpcErr)
+      }
+
+      // Fallback: get basic counts from the tables directly
       try {
         // Try simple table queries first
         const { count: musicCount } = await supabase

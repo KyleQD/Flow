@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -82,6 +82,7 @@ export function DashboardFeed() {
   const [showComments, setShowComments] = useState<{ [postId: string]: boolean }>({})
   const [loadingComments, setLoadingComments] = useState<{ [postId: string]: boolean }>({})
   const [followingUsers, setFollowingUsers] = useState(new Set<string>())
+  const loadMoreRef = useRef<HTMLDivElement>(null)
   
   const { user } = useAuth()
   const router = useRouter()
@@ -89,7 +90,7 @@ export function DashboardFeed() {
 
   const loadPosts = async (feedType = activeTab) => {
     try {
-      const response = await fetch(`/api/feed/posts?type=${feedType}&limit=10`, {
+      const response = await fetch(`/api/feed/posts?type=${feedType}&limit=20`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -103,7 +104,8 @@ export function DashboardFeed() {
         return
       }
       
-      setPosts(result.data || [])
+      // Standardize on { posts } but gracefully support { data }
+      setPosts(result.posts || result.data || [])
     } catch (error) {
       console.error('Error loading posts:', error)
     }
@@ -118,6 +120,18 @@ export function DashboardFeed() {
     await loadPosts()
     setRefreshing(false)
   }
+
+  // Infinite scroll: load next page when sentinel is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      const first = entries[0]
+      if (first.isIntersecting) loadPosts()
+    }, { rootMargin: '200px' })
+
+    const current = loadMoreRef.current
+    if (current) observer.observe(current)
+    return () => { if (current) observer.unobserve(current) }
+  }, [])
 
   const handleLike = async (postId: string) => {
     if (!user) return
@@ -358,7 +372,7 @@ export function DashboardFeed() {
           <TabsContent value={activeTab} className="mt-6 space-y-4">
             <AnimatePresence>
               {posts.length > 0 ? (
-                posts.slice(0, 5).map((post, index) => (
+                posts.map((post, index) => (
                   <motion.div
                     key={post.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -587,6 +601,8 @@ export function DashboardFeed() {
                 </div>
               )}
             </AnimatePresence>
+            {/* Load more sentinel */}
+            <div ref={loadMoreRef} />
           </TabsContent>
         </Tabs>
       </CardContent>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -171,6 +171,7 @@ interface TourVendor {
 export default function TourManagementPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const tourId = params.id as string
 
   const [tour, setTour] = useState<Tour | null>(null)
@@ -185,6 +186,12 @@ export default function TourManagementPage() {
   const [showShareDialog, setShowShareDialog] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [editForm, setEditForm] = useState<Partial<Tour>>({})
+  const initialEventId = (searchParams.get('eventId') || undefined) as string | undefined
+
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab) setActiveTab(tab)
+  }, [searchParams])
 
   // Mock data for development
   const mockTour: Tour = {
@@ -833,10 +840,12 @@ export default function TourManagementPage() {
 
           {/* Events Tab */}
           <TabsContent value="events" className="space-y-6">
+            <div className="text-sm text-slate-400">Select an event below to view or edit. If you arrived here from the calendar, the targeted event opens automatically.</div>
             <TourEventManager
               tourId={tourId}
               events={events}
               onEventsUpdate={setEvents}
+              initialEventId={initialEventId}
             />
           </TabsContent>
 

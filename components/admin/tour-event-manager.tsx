@@ -19,6 +19,7 @@ interface Event {
   description?: string
   tour_id: string
   venue_name: string
+  venue_id?: string
   venue_address?: string
   event_date: string
   event_time?: string
@@ -47,9 +48,10 @@ interface TourEventManagerProps {
   tourId: string
   events: Event[]
   onEventsUpdate: (events: Event[]) => void
+  initialEventId?: string
 }
 
-export function TourEventManager({ tourId, events, onEventsUpdate }: TourEventManagerProps) {
+export function TourEventManager({ tourId, events, onEventsUpdate, initialEventId }: TourEventManagerProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -57,11 +59,16 @@ export function TourEventManager({ tourId, events, onEventsUpdate }: TourEventMa
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [filterStatus, setFilterStatus] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [highlightEventId, setHighlightEventId] = useState<string | null>(initialEventId || null)
+  const [venueQuery, setVenueQuery] = useState('')
+  const [isVenueLoading, setIsVenueLoading] = useState(false)
+  const [venueResults, setVenueResults] = useState<Array<{ id: string; name: string; city?: string; state?: string; capacity?: number; fullAddress?: string }>>([])
 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     venue_name: '',
+    venue_id: '' as string | undefined,
     venue_address: '',
     event_date: '',
     event_time: '',
@@ -88,6 +95,7 @@ export function TourEventManager({ tourId, events, onEventsUpdate }: TourEventMa
       name: '',
       description: '',
       venue_name: '',
+      venue_id: undefined,
       venue_address: '',
       event_date: '',
       event_time: '',
@@ -121,6 +129,7 @@ export function TourEventManager({ tourId, events, onEventsUpdate }: TourEventMa
       name: event.name,
       description: event.description || '',
       venue_name: event.venue_name,
+      venue_id: event.venue_id,
       venue_address: event.venue_address || '',
       event_date: event.event_date,
       event_time: event.event_time || '',
@@ -147,6 +156,61 @@ export function TourEventManager({ tourId, events, onEventsUpdate }: TourEventMa
   const handleDeleteEvent = (event: Event) => {
     setSelectedEvent(event)
     setIsDeleteDialogOpen(true)
+  }
+
+  // Open edit dialog if an initial event id is provided via navigation
+  useEffect(() => {
+    if (!initialEventId) return
+    const ev = events.find(e => e.id === initialEventId)
+    if (ev) {
+      handleEditEvent(ev)
+      setHighlightEventId(initialEventId)
+      // Smooth scroll to the event in the list
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`tour-event-${initialEventId}`)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+      // Remove highlight after a short delay
+      const t = setTimeout(() => setHighlightEventId(null), 4000)
+      return () => clearTimeout(t)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialEventId, events])
+
+  const searchVenues = async () => {
+    if (!venueQuery || venueQuery.trim().length < 2) {
+      setVenueResults([])
+      return
+    }
+    try {
+      setIsVenueLoading(true)
+      const params = new URLSearchParams({ query: venueQuery, limit: '10' })
+      const res = await fetch(`/api/tours/planner/venues?${params.toString()}`)
+      if (!res.ok) throw new Error('Failed to search venues')
+      const data = await res.json()
+      const items = (data.venues || []).map((v: any) => ({
+        id: v.id,
+        name: v.name,
+        city: v.city,
+        state: v.state,
+        capacity: v.capacity,
+        fullAddress: v.fullAddress
+      }))
+      setVenueResults(items)
+    } catch (e) {
+      setVenueResults([])
+    } finally {
+      setIsVenueLoading(false)
+    }
+  }
+
+  const applyVenueSelection = (venue: { id: string; name: string; fullAddress?: string }) => {
+    setFormData(prev => ({
+      ...prev,
+      venue_id: venue.id,
+      venue_name: venue.name,
+      venue_address: venue.fullAddress || prev.venue_address
+    }))
   }
 
   const handleSubmit = async (isEdit: boolean = false) => {
@@ -291,8 +355,10 @@ export function TourEventManager({ tourId, events, onEventsUpdate }: TourEventMa
 
       {/* Events Grid */}
       <div className="grid gap-4">
-        {filteredEvents.map((event) => (
-          <Card key={event.id} className="bg-slate-900/50 border-slate-700/50 hover:bg-slate-900/70 transition-colors">
+        {filteredEvents.map((event) => {
+          const isHighlighted = highlightEventId === event.id
+          return (
+          <Card id={`tour-event-${event.id}`} key={event.id} className={`bg-slate-900/50 border-slate-700/50 hover:bg-slate-900/70 transition-colors ${isHighlighted ? 'ring-2 ring-purple-500/60 animate-pulse' : ''}`}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -349,7 +415,7 @@ export function TourEventManager({ tourId, events, onEventsUpdate }: TourEventMa
               </div>
             </CardContent>
           </Card>
-        ))}
+        )})}
       </div>
 
       {filteredEvents.length === 0 && (
@@ -388,12 +454,40 @@ export function TourEventManager({ tourId, events, onEventsUpdate }: TourEventMa
                 />
               </div>
               <div>
-                <Label className="text-slate-300">Venue Name</Label>
-                <Input
-                  value={formData.venue_name}
-                  onChange={(e) => setFormData({ ...formData, venue_name: e.target.value })}
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
+                <Label className="text-slate-300">Venue</Label>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Search venues..."
+                      value={venueQuery}
+                      onChange={(e) => setVenueQuery(e.target.value)}
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                    <Button onClick={searchVenues} variant="outline" className="border-slate-600 text-slate-200">
+                      {isVenueLoading ? '...' : 'Search'}
+                    </Button>
+                  </div>
+                  {venueResults.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto rounded-md border border-slate-600">
+                      {venueResults.map(v => (
+                        <button
+                          key={v.id}
+                          onClick={() => applyVenueSelection(v)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-700 text-slate-200"
+                        >
+                          <div className="font-medium">{v.name}</div>
+                          <div className="text-xs text-slate-400">{v.fullAddress || `${v.city || ''}${v.state ? `, ${v.state}` : ''}`}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <Input
+                    placeholder="Or type venue name"
+                    value={formData.venue_name}
+                    onChange={(e) => setFormData({ ...formData, venue_name: e.target.value, venue_id: undefined })}
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
               </div>
             </div>
             
@@ -532,12 +626,40 @@ export function TourEventManager({ tourId, events, onEventsUpdate }: TourEventMa
                 />
               </div>
               <div>
-                <Label className="text-slate-300">Venue Name</Label>
-                <Input
-                  value={formData.venue_name}
-                  onChange={(e) => setFormData({ ...formData, venue_name: e.target.value })}
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
+                <Label className="text-slate-300">Venue</Label>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Search venues..."
+                      value={venueQuery}
+                      onChange={(e) => setVenueQuery(e.target.value)}
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                    <Button onClick={searchVenues} variant="outline" className="border-slate-600 text-slate-200">
+                      {isVenueLoading ? '...' : 'Search'}
+                    </Button>
+                  </div>
+                  {venueResults.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto rounded-md border border-slate-600">
+                      {venueResults.map(v => (
+                        <button
+                          key={v.id}
+                          onClick={() => applyVenueSelection(v)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-700 text-slate-200"
+                        >
+                          <div className="font-medium">{v.name}</div>
+                          <div className="text-xs text-slate-400">{v.fullAddress || `${v.city || ''}${v.state ? `, ${v.state}` : ''}`}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <Input
+                    placeholder="Or type venue name"
+                    value={formData.venue_name}
+                    onChange={(e) => setFormData({ ...formData, venue_name: e.target.value, venue_id: undefined })}
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
               </div>
             </div>
             

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { useArtist } from "@/contexts/artist-context"
 import { 
   Music2, 
   Video, 
@@ -25,14 +26,23 @@ import {
   Sparkles
 } from "lucide-react"
 
-const contentFeatures = [
+interface ContentFeature {
+  label: string
+  icon: any
+  href: string
+  description: string
+  color: string
+  stats: { total: number; recent: number }
+  category: string
+}
+
+const staticFeatures: Omit<ContentFeature, 'stats'>[] = [
   { 
     label: "Music", 
     icon: Music2, 
     href: "/artist/music", 
     description: "Upload and manage your tracks",
     color: "from-purple-500 to-violet-600",
-    stats: { total: 12, recent: 3 },
     category: "media"
   },
   { 
@@ -41,7 +51,6 @@ const contentFeatures = [
     href: "/artist/content/videos", 
     description: "Upload and manage videos",
     color: "from-blue-500 to-cyan-600",
-    stats: { total: 8, recent: 1 },
     category: "media"
   },
   { 
@@ -50,7 +59,6 @@ const contentFeatures = [
     href: "/artist/content/photos", 
     description: "Manage your photo gallery",
     color: "from-green-500 to-emerald-600",
-    stats: { total: 45, recent: 12 },
     category: "media"
   },
   { 
@@ -59,7 +67,6 @@ const contentFeatures = [
     href: "/artist/content/blog", 
     description: "Create and manage blog posts",
     color: "from-orange-500 to-red-600",
-    stats: { total: 6, recent: 2 },
     category: "content"
   },
   { 
@@ -68,7 +75,6 @@ const contentFeatures = [
     href: "/artist/features/portfolio", 
     description: "Showcase your best work",
     color: "from-pink-500 to-rose-600",
-    stats: { total: 1, recent: 0 },
     category: "showcase"
   },
   { 
@@ -77,16 +83,15 @@ const contentFeatures = [
     href: "/artist/features/press-kit", 
     description: "Build your EPK",
     color: "from-indigo-500 to-purple-600",
-    stats: { total: 1, recent: 1 },
     category: "business"
   },
 ]
 
-const quickStats = [
-  { label: "Total Content", value: "72", change: "+8", icon: TrendingUp },
-  { label: "This Week", value: "19", change: "+12", icon: Clock },
-  { label: "Total Views", value: "2.4K", change: "+15%", icon: Eye },
-]
+function formatNumber(n: number) {
+  if (n >= 1000000) return `${(n/1000000).toFixed(1)}M`
+  if (n >= 1000) return `${(n/1000).toFixed(1)}K`
+  return `${n}`
+}
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -102,7 +107,7 @@ const staggerContainer = {
   }
 }
 
-function ContentFeatureCard({ feature, index }: { feature: typeof contentFeatures[0], index: number }) {
+function ContentFeatureCard({ feature, index }: { feature: ContentFeature, index: number }) {
   return (
     <motion.div
       variants={fadeIn}
@@ -153,6 +158,28 @@ function ContentFeatureCard({ feature, index }: { feature: typeof contentFeature
 export default function ContentDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
+  const { stats } = useArtist()
+
+  const contentFeatures: ContentFeature[] = useMemo(() => {
+    const totals = {
+      Music: stats.musicCount,
+      Videos: stats.videoCount,
+      Photos: stats.photoCount,
+      Blog: stats.blogCount,
+      Portfolio: 1,
+      'Press Kit': 1
+    } as Record<string, number>
+    return staticFeatures.map(f => ({
+      ...f,
+      stats: { total: totals[f.label] ?? 0, recent: 0 }
+    }))
+  }, [stats.musicCount, stats.videoCount, stats.photoCount, stats.blogCount])
+
+  const quickStats = useMemo(() => ([
+    { label: "Total Content", value: `${stats.musicCount + stats.videoCount + stats.photoCount + stats.blogCount}`, change: "", icon: TrendingUp },
+    { label: "This Week", value: "-", change: "", icon: Clock },
+    { label: "Total Views", value: formatNumber(stats.totalViews || 0), change: "", icon: Eye },
+  ]), [stats])
 
   const filteredFeatures = useMemo(() => {
     return contentFeatures.filter(feature => {
@@ -161,7 +188,7 @@ export default function ContentDashboard() {
       const matchesCategory = selectedCategory === "all" || feature.category === selectedCategory
       return matchesSearch && matchesCategory
     })
-  }, [searchQuery, selectedCategory])
+  }, [searchQuery, selectedCategory, contentFeatures])
 
   const categories = useMemo(() => {
     const cats = ["all", ...new Set(contentFeatures.map(f => f.category))]
@@ -170,7 +197,7 @@ export default function ContentDashboard() {
       label: cat.charAt(0).toUpperCase() + cat.slice(1),
       count: cat === "all" ? contentFeatures.length : contentFeatures.filter(f => f.category === cat).length
     }))
-  }, [])
+  }, [contentFeatures])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">

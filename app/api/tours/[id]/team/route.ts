@@ -30,7 +30,7 @@ export async function GET(
     const { user, supabase } = authResult
 
     // Check if user has admin permissions
-    const hasAdminAccess = await checkAdminPermissions(user)
+    const hasAdminAccess = await checkAdminPermissions(user, { tourId: id })
     if (!hasAdminAccess) {
       console.log('[Tour Team API] User lacks admin permissions for viewing tour team')
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
@@ -99,7 +99,7 @@ export async function POST(
     const { user, supabase } = authResult
 
     // Check if user has admin permissions
-    const hasAdminAccess = await checkAdminPermissions(user)
+    const hasAdminAccess = await checkAdminPermissions(user, { tourId: id })
     if (!hasAdminAccess) {
       console.log('[Tour Team API] User lacks admin permissions for creating tour team members')
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })

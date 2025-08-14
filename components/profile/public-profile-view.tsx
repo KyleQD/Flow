@@ -53,7 +53,7 @@ interface Comment {
 interface PublicProfileProps {
   profile: {
     id: string
-    account_type: 'general' | 'artist' | 'venue'
+    account_type: 'general' | 'artist' | 'venue' | 'organization'
     profile_data: any
     username: string
     avatar_url?: string

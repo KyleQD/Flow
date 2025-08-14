@@ -10,9 +10,10 @@ if [ ! -f "supabase/migrations/20250131000000_backline_rentals_system.sql" ]; th
 fi
 
 echo "📋 Available migrations to run:"
-echo "1. Backline & Rentals System (20250131000000_backline_rentals_system.sql)"
-echo "2. Comprehensive Lodging System (20250131000001_comprehensive_lodging_system.sql)"
-echo "3. Advanced Travel Coordination (20250131000002_advanced_travel_coordination.sql)"
+echo "1. Logistics Tasks Core (20250813094500_logistics_tasks.sql)"
+echo "2. Backline & Rentals System (20250131000000_backline_rentals_system.sql)"
+echo "3. Comprehensive Lodging System (20250131000001_comprehensive_lodging_system.sql)"
+echo "4. Advanced Travel Coordination (20250131000002_advanced_travel_coordination.sql)"
 echo ""
 
 echo "⚠️  IMPORTANT: These migrations need to be run manually in your Supabase dashboard."
@@ -25,6 +26,7 @@ echo "4. Run them in order (1, 2, 3)"
 echo ""
 
 echo "🔗 Migration files location:"
+echo "- supabase/migrations/20250813094500_logistics_tasks.sql"
 echo "- supabase/migrations/20250131000000_backline_rentals_system.sql"
 echo "- supabase/migrations/20250131000001_comprehensive_lodging_system.sql"
 echo "- supabase/migrations/20250131000002_advanced_travel_coordination.sql"

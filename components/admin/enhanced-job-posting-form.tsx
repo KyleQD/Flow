@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   CheckCircle
 } from 'lucide-react'
+import { EventSelect } from '@/components/events/event-select'
 import type { 
   CreateJobPostingData, 
   ApplicationFormField,
@@ -193,7 +194,7 @@ export default function EnhancedJobPostingForm({
       title: initialData?.title || '',
       description: initialData?.description || '',
       department: initialData?.department || '',
-      position: initialData?.position || '',
+      position: initialData?.position || initialData?.title || '',
       employment_type: initialData?.employment_type || 'part_time',
       location: initialData?.location || '',
       number_of_positions: initialData?.number_of_positions || 1,
@@ -233,6 +234,13 @@ export default function EnhancedJobPostingForm({
 
   const watchedFields = watch()
 
+  // Keep position in sync with title unless the user changed it explicitly (we infer position from title for now)
+  useEffect(() => {
+    if (watchedFields.title && (!watchedFields.position || watchedFields.position.trim().length === 0)) {
+      setValue('position', watchedFields.title)
+    }
+  }, [watchedFields.title])
+
   // Map fields per step for step-wise validation
   const stepFieldMap: Record<number, (keyof EnhancedJobPostingFormData)[]> = {
     1: [
@@ -265,6 +273,7 @@ export default function EnhancedJobPostingForm({
     const template = roleTemplates[roleType as keyof typeof roleTemplates]
     if (template) {
       setValue('title', template.title)
+      setValue('position', template.title)
       setValue('description', template.description)
       setValue('requirements', template.requirements)
       setValue('responsibilities', template.responsibilities)
@@ -482,6 +491,16 @@ export default function EnhancedJobPostingForm({
                     </Select>
                     {errors.department && <p className="text-red-500 text-sm">{errors.department.message}</p>}
                   </div>
+                </div>
+
+                {/* Optional: Link to Event (internal only) */}
+                <div className="space-y-2">
+                  <Label className="text-white">Link to Existing Event (optional)</Label>
+                  <EventSelect onSelect={(evt) => {
+                    setValue('event_id', evt?.id || undefined)
+                    setValue('event_date', evt?.event_date || undefined)
+                  }} />
+                  <p className="text-slate-500 text-xs">This link is internal only and not shown publicly.</p>
                 </div>
 
                 <div className="space-y-2">

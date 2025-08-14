@@ -30,7 +30,7 @@ export async function GET(
     const { user, supabase } = authResult
 
     // Check if user has admin permissions
-    const hasAdminAccess = await checkAdminPermissions(user)
+    const hasAdminAccess = await checkAdminPermissions(user, { tourId: id })
     if (!hasAdminAccess) {
       console.log('[Tour Team Member API] User lacks admin permissions for viewing team member')
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
@@ -103,7 +103,7 @@ export async function PATCH(
     const { user, supabase } = authResult
 
     // Check if user has admin permissions
-    const hasAdminAccess = await checkAdminPermissions(user)
+    const hasAdminAccess = await checkAdminPermissions(user, { tourId: id })
     if (!hasAdminAccess) {
       console.log('[Tour Team Member API] User lacks admin permissions for updating team member')
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
@@ -189,7 +189,7 @@ export async function DELETE(
     const { user, supabase } = authResult
 
     // Check if user has admin permissions
-    const hasAdminAccess = await checkAdminPermissions(user)
+    const hasAdminAccess = await checkAdminPermissions(user, { tourId: id })
     if (!hasAdminAccess) {
       console.log('[Tour Team Member API] User lacks admin permissions for deleting team member')
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })

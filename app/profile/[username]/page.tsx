@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/auth-context"
 interface ProfileData {
   id: string
   username: string
-  account_type: 'general' | 'artist' | 'venue'
+  account_type: 'general' | 'artist' | 'venue' | 'organization'
   profile_data: any
   avatar_url?: string
   cover_image?: string

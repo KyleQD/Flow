@@ -64,90 +64,191 @@ export default function ArtistFeedPage() {
   const { user } = useAuth()
   const { profile: artistProfile, displayName, avatarInitial } = useArtist()
   const [posts, setPosts] = useState<Post[]>([])
+  const [networkPosts, setNetworkPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingNetwork, setIsLoadingNetwork] = useState(true)
   const [activeTab, setActiveTab] = useState('live')
+  const [feedFilter, setFeedFilter] = useState<'all' | 'following' | 'trending'>('all')
   const supabase = createClientComponentClient<Database>()
 
-  // Fetch posts from the main feed API
+  // Fetch user's own posts
   const fetchPosts = async () => {
     if (!user?.id) return
 
     setIsLoading(true)
     try {
-      // Use the main feed API which has comprehensive post handling
-      const response = await fetch('/api/feed/posts?type=all&limit=50', {
-        credentials: 'include'
+      // Fetch only current user's posts
+      const response = await fetch(`/api/feed/posts?type=user&user_id=${user.id}&limit=20`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch posts')
+        console.log('API Response Error:', response.status, 'using empty posts for now')
+        // Don't show error to user, just use empty posts
+        setPosts([])
+        setIsLoading(false)
+        return
       }
 
       const result = await response.json()
-      const feedPosts = result.data || []
-
-      // Fetch liked posts for current user
-      const postIds = feedPosts.map((post: any) => post.id)
-      let likedPosts: string[] = []
-      if (postIds.length > 0 && user?.id) {
-        const { data: likesData } = await supabase
-          .from('post_likes')
-          .select('post_id')
-          .in('post_id', postIds)
-          .eq('user_id', user.id)
-        likedPosts = likesData?.map(like => like.post_id) || []
-      }
+      console.log('API Response:', result)
+      const feedPosts = result.data || result.posts || []
 
       // Transform posts to match our Post interface
-      const transformedPosts: Post[] = feedPosts.map((post: any) => {
-        const userData = post.profiles || post.user || {
-          id: post.user_id,
-          username: post.account_username || 'Unknown',
-          avatar_url: post.account_avatar_url
-        }
+      const transformedPosts: Post[] = await transformPosts(feedPosts)
 
-        return {
-          id: post.id,
-          content: post.content,
-          type: post.type || 'text',
-          visibility: post.visibility || 'public',
-          location: post.location,
-          hashtags: post.hashtags || [],
-          media_items: (post.media_urls || []).map((url: string, index: number) => ({
-            id: `${post.id}-media-${index}`,
-            type: 'image', // Default to image, could be enhanced to detect type from URL
-            url: url,
-            altText: `Media ${index + 1}`,
-            title: `Media ${index + 1}`
-          })),
-          created_at: post.created_at,
-          user: {
-            id: userData.id,
-            username: userData.username || userData.full_name || 'Unknown',
-            avatar_url: userData.avatar_url
-          },
-          likes_count: post.likes_count || 0,
-          comments_count: post.comments_count || 0,
-          shares_count: post.shares_count || 0,
-          is_liked: likedPosts.includes(post.id)
-        }
-      })
-
-      console.log('Fetched posts from main feed API:', transformedPosts)
+      console.log('Fetched user posts:', transformedPosts)
       setPosts(transformedPosts)
     } catch (error) {
-      console.error('Error fetching posts:', error)
-      toast.error('Failed to load posts')
+      console.log('Error fetching posts, using empty posts:', error)
+      // Don't show error toast, just handle gracefully
+      setPosts([])
     } finally {
       setIsLoading(false)
     }
   }
 
+  // Fetch network posts (following, followers, pages)
+  const fetchNetworkPosts = async () => {
+    if (!user?.id) return
+
+    setIsLoadingNetwork(true)
+    try {
+      // Get users that this artist follows
+      const { data: following, error: followError } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', user.id)
+
+      if (followError) {
+        console.log('Follows table not available yet, using empty network posts')
+        setNetworkPosts([])
+        setIsLoadingNetwork(false)
+        return
+      }
+
+      const followingIds = following?.map(f => f.following_id) || []
+
+      if (followingIds.length === 0) {
+        setNetworkPosts([])
+        setIsLoadingNetwork(false)
+        return
+      }
+
+      // Fetch posts from followed users
+      const response = await fetch('/api/feed/posts?type=network&limit=30', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ following_ids: followingIds, limit: 30 })
+      })
+
+      if (!response.ok) {
+        console.log('Network API Response Error:', response.status, 'using empty network posts')
+        setNetworkPosts([])
+        setIsLoadingNetwork(false)
+        return
+      }
+
+      const result = await response.json()
+      console.log('Network API Response:', result)
+      const feedPosts = result.data || result.posts || []
+
+      const transformedPosts: Post[] = await transformPosts(feedPosts)
+      
+      console.log('Fetched network posts:', transformedPosts)
+      setNetworkPosts(transformedPosts)
+    } catch (error) {
+      console.log('Error fetching network posts, using empty posts:', error)
+      // Don't show error toast, just handle gracefully
+      setNetworkPosts([])
+    } finally {
+      setIsLoadingNetwork(false)
+    }
+  }
+
+  // Helper function to transform posts
+  const transformPosts = async (feedPosts: any[]): Promise<Post[]> => {
+    // Fetch liked posts for current user
+    const postIds = feedPosts.map((post: any) => post.id)
+    let likedPosts: string[] = []
+    if (postIds.length > 0 && user?.id) {
+      const { data: likesData } = await supabase
+        .from('post_likes')
+        .select('post_id')
+        .in('post_id', postIds)
+        .eq('user_id', user.id)
+      likedPosts = likesData?.map(like => like.post_id) || []
+    }
+
+    return feedPosts.map((post: any) => {
+      const userData = post.profiles || post.user || {
+        id: post.user_id,
+        username: post.account_username || 'Unknown',
+        avatar_url: post.account_avatar_url
+      }
+
+      return {
+        id: post.id,
+        content: post.content,
+        type: post.type || 'text',
+        visibility: post.visibility || 'public',
+        location: post.location,
+        hashtags: post.hashtags || [],
+        media_items: (post.media_urls || []).map((url: string, index: number) => ({
+          id: `${post.id}-media-${index}`,
+          type: 'image',
+          url: url,
+          altText: `Media ${index + 1}`,
+          title: `Media ${index + 1}`
+        })),
+        created_at: post.created_at,
+        user: {
+          id: userData.id,
+          username: userData.username || userData.full_name || 'Unknown',
+          avatar_url: userData.avatar_url
+        },
+        likes_count: post.likes_count || 0,
+        comments_count: post.comments_count || 0,
+        shares_count: post.shares_count || 0,
+        is_liked: likedPosts.includes(post.id)
+      }
+    })
+  }
+
   useEffect(() => {
     if (user) {
       fetchPosts()
+      fetchNetworkPosts()
     }
   }, [user])
+
+  // Get filtered posts based on current filter
+  const getFilteredPosts = () => {
+    switch (feedFilter) {
+      case 'following':
+        return networkPosts
+      case 'trending':
+        // Sort by engagement (likes + comments + shares)
+        return [...posts, ...networkPosts].sort((a, b) => {
+          const engagementA = a.likes_count + a.comments_count + a.shares_count
+          const engagementB = b.likes_count + b.comments_count + b.shares_count
+          return engagementB - engagementA
+        })
+      case 'all':
+      default:
+        // Combine and sort by date
+        return [...posts, ...networkPosts].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+    }
+  }
+
+  const filteredPosts = getFilteredPosts()
+  const isLoadingFeed = feedFilter === 'following' ? isLoadingNetwork : (isLoading || isLoadingNetwork)
 
   const handlePostCreated = (newPost: any) => {
     // Transform the API response to match our Post interface
@@ -220,6 +321,40 @@ export default function ArtistFeedPage() {
     toast.info('Share functionality coming soon!')
   }
 
+  const handleFollow = async (userId: string, action: 'follow' | 'unfollow') => {
+    try {
+      const response = await fetch('/api/follow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          following_id: userId, 
+          action 
+        })
+      })
+
+      if (!response.ok) {
+        toast.info('Follow functionality coming soon!')
+        return
+      }
+
+      const result = await response.json()
+      
+      if (result.success) {
+        toast.success(result.message)
+        // Refresh network posts if we're on the following tab
+        if (feedFilter === 'following') {
+          fetchNetworkPosts()
+        }
+      } else {
+        toast.info('Follow functionality coming soon!')
+      }
+    } catch (error) {
+      console.log('Follow functionality not ready yet:', error)
+      toast.info('Follow functionality coming soon!')
+    }
+  }
+
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
@@ -252,14 +387,33 @@ export default function ArtistFeedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-full blur-3xl"
+          animate={{ y: [0, -20, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 rounded-full blur-3xl"
+          animate={{ y: [0, -15, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
+        <motion.div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-emerald-500/3 to-teal-500/3 rounded-full blur-3xl"
+          animate={{ y: [0, -25, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        />
+      </div>
+
+      <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
         <div className="mb-8">
           <motion.h1 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-bold text-white mb-2"
+            className="text-4xl md:text-5xl font-bold mb-2 bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent"
           >
             Artist Feed
           </motion.h1>
@@ -267,100 +421,260 @@ export default function ArtistFeedPage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-gray-400"
+            className="text-white/70 text-lg"
           >
             Share your music, connect with fans, and grow your audience
           </motion.p>
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="grid w-full grid-cols-3 bg-slate-800/50 border-slate-700">
-            <TabsTrigger 
-              value="live" 
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-            >
-              <Activity className="h-4 w-4 mr-2" />
-              Live Feed
-            </TabsTrigger>
-            <TabsTrigger 
-              value="overview" 
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger 
-              value="insights" 
-              className="data-[state=active]:bg-purple-600 data-[state=active]:text-white"
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Insights
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Live Feed Tab */}
-          <TabsContent value="live" className="space-y-6">
-            {/* Feed Header with Refresh */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">Your Feed</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchPosts}
-                disabled={isLoading}
-                className="border-slate-600 text-slate-300 hover:bg-slate-800"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+            <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
+              <TabsTrigger 
+                value="live" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300"
               >
-                <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-                Refresh
-              </Button>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="flex items-center"
+                >
+                  <Activity className="h-4 w-4 mr-2" />
+                  Live Feed
+                </motion.div>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="overview" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 transition-all duration-300"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="flex items-center"
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Overview
+                </motion.div>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="insights" 
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-green-500/25 transition-all duration-300"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="flex items-center"
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Insights
+                </motion.div>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Live Feed Tab */}
+            <TabsContent value="live" className="space-y-6">
+            {/* Feed Header with Filters */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <h2 className="text-xl font-semibold text-white">Your Feed</h2>
+              
+              <div className="flex items-center gap-3">
+                {/* Feed Filter Buttons */}
+                <div className="flex items-center gap-1 bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-1 shadow-xl">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant={feedFilter === 'all' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setFeedFilter('all')}
+                      className={cn(
+                        "text-xs transition-all duration-300",
+                        feedFilter === 'all' 
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25" 
+                          : "text-white/70 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <Activity className="h-3 w-3 mr-1" />
+                      All
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant={feedFilter === 'following' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setFeedFilter('following')}
+                      className={cn(
+                        "text-xs transition-all duration-300",
+                        feedFilter === 'following' 
+                          ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 shadow-lg shadow-blue-500/25" 
+                          : "text-white/70 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <Users className="h-3 w-3 mr-1" />
+                      Following
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      variant={feedFilter === 'trending' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setFeedFilter('trending')}
+                      className={cn(
+                        "text-xs transition-all duration-300",
+                        feedFilter === 'trending' 
+                          ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-500/25" 
+                          : "text-white/70 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      Trending
+                    </Button>
+                  </motion.div>
+                </div>
+
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      fetchPosts()
+                      fetchNetworkPosts()
+                    }}
+                    disabled={isLoadingFeed}
+                    className="border-white/20 text-white/80 hover:bg-white/10 hover:border-white/30 bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl transition-all duration-300"
+                  >
+                    <RefreshCw className={cn("h-4 w-4 mr-2 transition-transform", isLoadingFeed && "animate-spin")} />
+                    Refresh
+                  </Button>
+                </motion.div>
+              </div>
             </div>
 
-            {/* Post Creator */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <CleanPostCreator
-                onPostCreated={handlePostCreated}
-                placeholder="Share your latest track, behind-the-scenes moments, or connect with your fans..."
-                maxMediaItems={10}
-                defaultVisibility="public"
-                showAdvancedOptions={true}
-                user={{
-                  id: user?.id || '',
-                  username: displayName,
-                  avatar_url: artistProfile?.avatar_url
-                }}
-              />
-            </motion.div>
+            {/* Network Discovery (show when no following posts) */}
+            {feedFilter === 'following' && networkPosts.length === 0 && !isLoadingNetwork && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <Card className="bg-gradient-to-r from-purple-900/30 via-blue-900/30 to-pink-900/30 border border-purple-500/30 backdrop-blur-xl shadow-2xl shadow-purple-500/10">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <motion.div 
+                        className="h-10 w-10 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center"
+                        animate={{ 
+                          boxShadow: [
+                            '0 0 20px rgba(168, 85, 247, 0.3)',
+                            '0 0 40px rgba(168, 85, 247, 0.6)',
+                            '0 0 20px rgba(168, 85, 247, 0.3)'
+                          ]
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        <Users className="h-5 w-5 text-purple-400" />
+                      </motion.div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">Discover Artists</h3>
+                        <p className="text-purple-200/80 text-sm">Connect with other artists and build your network</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:border-purple-400/50 transition-all duration-300"
+                          onClick={() => setFeedFilter('all')}
+                        >
+                          <Target className="h-3 w-3 mr-1" />
+                          Browse All Posts
+                        </Button>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="border-blue-500/30 text-blue-300 hover:bg-blue-500/20 hover:border-blue-400/50 transition-all duration-300"
+                        >
+                          <Star className="h-3 w-3 mr-1" />
+                          Find Similar Artists
+                        </Button>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="border-green-500/30 text-green-300 hover:bg-green-500/20 hover:border-green-400/50 transition-all duration-300"
+                        >
+                          <Lightbulb className="h-3 w-3 mr-1" />
+                          Trending Hashtags
+                        </Button>
+                      </motion.div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Post Creator (hide when viewing following feed) */}
+            {feedFilter !== 'following' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <CleanPostCreator
+                  onPostCreated={handlePostCreated}
+                  placeholder="Share your latest track, behind-the-scenes moments, or connect with your fans..."
+                  maxMediaItems={10}
+                  defaultVisibility="public"
+                  showAdvancedOptions={true}
+                  user={{
+                    id: user?.id || '',
+                    username: displayName,
+                    avatar_url: artistProfile?.avatar_url
+                  }}
+                />
+              </motion.div>
+            )}
 
             {/* Posts Feed */}
             <div className="space-y-6">
-              {isLoading ? (
+              {isLoadingFeed ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
                 </div>
-              ) : posts.length === 0 ? (
-                <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
+              ) : filteredPosts.length === 0 ? (
+                <Card className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
                   <CardContent className="p-12 text-center">
-                    <Sparkles className="h-12 w-12 text-purple-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-white mb-2">No posts yet</h3>
-                    <p className="text-gray-400 mb-6">
-                      Be the first to share something amazing with your community!
-                    </p>
-                    <Button 
-                      onClick={() => setActiveTab('live')}
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    <motion.div
+                      animate={{ y: [0, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
                     >
-                      Create Your First Post
-                    </Button>
+                      <Sparkles className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+                    </motion.div>
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      {feedFilter === 'following' ? 'No posts from following' : 'No posts yet'}
+                    </h3>
+                    <p className="text-white/60 mb-6">
+                      {feedFilter === 'following' 
+                        ? "Start following artists and pages to see their content here!"
+                        : "Be the first to share something amazing with your community!"
+                      }
+                    </p>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button 
+                        onClick={() => feedFilter === 'following' ? setFeedFilter('all') : setActiveTab('live')}
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg shadow-purple-500/25 transition-all duration-300"
+                      >
+                        {feedFilter === 'following' ? 'View All Posts' : 'Create Your First Post'}
+                      </Button>
+                    </motion.div>
                   </CardContent>
                 </Card>
               ) : (
                 <AnimatePresence>
-                  {posts.map((post, index) => (
+                  {filteredPosts.map((post, index) => (
                     <motion.div
                       key={post.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -368,7 +682,7 @@ export default function ArtistFeedPage() {
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ delay: index * 0.1 }}
                     >
-                      <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm hover:border-slate-600/50 transition-all duration-300">
+                      <Card className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-white/10 hover:border-purple-500/30 shadow-lg hover:shadow-purple-500/10 transition-all duration-500">
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-3">
@@ -383,6 +697,18 @@ export default function ArtistFeedPage() {
                                   <span className="font-semibold text-white hover:text-purple-300 transition-colors cursor-pointer">
                                   {post.user.username}
                                   </span>
+                                  {post.user.id !== user?.id && (
+                                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                      <Button 
+                                        size="sm" 
+                                        variant="ghost" 
+                                        onClick={() => handleFollow(post.user.id, 'follow')}
+                                        className="text-xs text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 hover:border-purple-500/30 border border-transparent px-2 py-1 h-6 transition-all duration-300"
+                                      >
+                                        Follow
+                                      </Button>
+                                    </motion.div>
+                                  )}
                                   {post.type !== 'text' && (
                                     <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">
                                         {getPostTypeIcon(post.type)}
@@ -407,13 +733,15 @@ export default function ArtistFeedPage() {
                                 </div>
                               </div>
                             </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-gray-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-white/40 hover:text-white hover:bg-white/10 transition-all duration-300 rounded-full"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </motion.div>
                           </div>
                         </CardHeader>
 
@@ -564,43 +892,49 @@ export default function ArtistFeedPage() {
                           {/* Post actions */}
                           <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
                             <div className="flex items-center gap-8">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleLike(post.id)}
-                                className={cn(
-                                  "flex items-center gap-2 transition-all duration-200 hover:bg-slate-800/50 rounded-lg px-3 py-2",
-                                  post.is_liked 
-                                    ? "text-red-400 hover:text-red-300 hover:bg-red-500/10" 
-                                    : "text-gray-400 hover:text-white"
-                                )}
-                              >
-                                <Heart className={cn("h-5 w-5 transition-transform", post.is_liked && "fill-current scale-110")} />
-                                <span className="font-medium">{post.likes_count}</span>
-                              </Button>
+                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleLike(post.id)}
+                                  className={cn(
+                                    "flex items-center gap-2 transition-all duration-300 rounded-xl px-3 py-2 border border-transparent",
+                                    post.is_liked 
+                                      ? "text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-500/30" 
+                                      : "text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20"
+                                  )}
+                                >
+                                  <Heart className={cn("h-5 w-5 transition-all duration-300", post.is_liked && "fill-current scale-110")} />
+                                  <span className="font-medium">{post.likes_count}</span>
+                                </Button>
+                              </motion.div>
                               
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleComment(post.id)}
-                                className="flex items-center gap-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200 rounded-lg px-3 py-2"
-                              >
-                                <MessageCircle className="h-5 w-5" />
-                                <span className="font-medium">{post.comments_count}</span>
-                              </Button>
+                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleComment(post.id)}
+                                  className="flex items-center gap-2 text-white/60 hover:text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/30 transition-all duration-300 rounded-xl px-3 py-2 border border-transparent"
+                                >
+                                  <MessageCircle className="h-5 w-5" />
+                                  <span className="font-medium">{post.comments_count}</span>
+                                </Button>
+                              </motion.div>
                               
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleShare(post.id)}
-                                className="flex items-center gap-2 text-gray-400 hover:text-green-400 hover:bg-green-500/10 transition-all duration-200 rounded-lg px-3 py-2"
-                              >
-                                <Share2 className="h-5 w-5" />
-                                <span className="font-medium">{post.shares_count}</span>
-                              </Button>
+                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleShare(post.id)}
+                                  className="flex items-center gap-2 text-white/60 hover:text-green-400 hover:bg-green-500/20 hover:border-green-500/30 transition-all duration-300 rounded-xl px-3 py-2 border border-transparent"
+                                >
+                                  <Share2 className="h-5 w-5" />
+                                  <span className="font-medium">{post.shares_count}</span>
+                                </Button>
+                              </motion.div>
                             </div>
 
-                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <div className="flex items-center gap-2 text-white/40 text-sm">
                               {getVisibilityIcon(post.visibility)}
                               <span className="capitalize">{post.visibility}</span>
                             </div>
@@ -769,6 +1103,7 @@ export default function ArtistFeedPage() {
             </Card>
           </TabsContent>
         </Tabs>
+        </motion.div>
       </div>
     </div>
   )

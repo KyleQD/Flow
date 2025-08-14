@@ -1393,3 +1393,198 @@ export type ShiftConflictResponse = {
   conflict_details: string;
   suggested_resolution: string;
 }; 
+
+// =============================================================================
+// ENTITY-SCOPED RBAC TYPES (GENERIC)
+// =============================================================================
+
+export interface RbacRole {
+  id: string
+  name: string
+  display_name?: string | null
+  scope_type: 'global' | 'entity'
+  is_system: boolean
+  description?: string | null
+}
+
+export interface RbacPermission {
+  id: string
+  name: string
+  display_name?: string | null
+  category?: string | null
+  description?: string | null
+}
+
+export interface RbacRolePermission {
+  role_id: string
+  permission_id: string
+}
+
+export interface RbacUserEntityRole {
+  id: string
+  user_id: string
+  entity_type: string
+  entity_id: string
+  role_id: string
+  start_at: string | null
+  end_at: string | null
+  is_active: boolean
+}
+
+export interface RbacUserPermissionOverride {
+  id: string
+  user_id: string
+  entity_type: string
+  entity_id: string
+  permission_id: string
+  allow: boolean
+}
+
+export interface RbacPermissionAuditLog {
+  id: string
+  actor_id: string | null
+  target_user_id: string | null
+  entity_type?: string | null
+  entity_id?: string | null
+  action: string
+  permission_name?: string | null
+  created_at: string
+}
+
+// =============================================================================
+// AGENCIES / ORGANIZATIONS
+// =============================================================================
+
+export interface PerformanceAgency {
+  id: string
+  name: string
+  description?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface StaffingAgency {
+  id: string
+  name: string
+  description?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RentalCompany {
+  id: string
+  name: string
+  description?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ProductionCompany {
+  id: string
+  name: string
+  description?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Promoter {
+  id: string
+  name: string
+  description?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AgencyArtistLink {
+  agency_id: string
+  artist_id: string
+  created_at: string
+}
+
+export interface StaffingAgencyStaffLink {
+  agency_id: string
+  user_id: string
+  created_at: string
+}
+
+export interface EntityManagerLink {
+  id: string
+  entity_type: string
+  entity_id: string
+  user_id: string
+  created_at: string
+}
+
+// =============================================================================
+// EQUIPMENT ASSETS (POLYMORPHIC OWNER)
+// =============================================================================
+
+export interface EquipmentAsset {
+  id: string
+  name: string
+  category?: string | null
+  description?: string | null
+  serial_number?: string | null
+  owner_type: 'Venue' | 'Artist' | 'RentalCompany' | 'ProductionCompany' | string
+  owner_id: string
+  is_available: boolean
+  metadata?: Record<string, any>
+  created_at: string
+  updated_at: string
+}
+
+// =============================================================================
+// LOCATIONS (MULTI-PLACE EVENTS)
+// =============================================================================
+
+export interface Location {
+  id: string
+  location_type: 'Venue' | 'PublicLocation' | 'PrivateLocation' | 'VirtualLocation'
+  name: string
+  address?: string | null
+  coordinates?: Record<string, any> | null
+  meta?: Record<string, any> | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EventLocationLink {
+  event_id: string
+  location_id: string
+  location_type: Location['location_type'] | string
+  is_primary: boolean
+  created_at: string
+}
+
+// =============================================================================
+// EVENT PARTICIPANTS & PACKAGES
+// =============================================================================
+
+export interface EventParticipant {
+  event_id: string
+  participant_type: 'Individual' | 'Artist' | 'PerformanceAgency' | 'StaffingAgency' | 'ProductionCompany' | 'Promoter' | 'RentalCompany' | string
+  participant_id: string
+  role?: string | null
+  created_at: string
+}
+
+export interface EventPackage {
+  id: string
+  name: string
+  description?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EventPackageAssetLink {
+  event_package_id: string
+  equipment_asset_id: string
+  created_at: string
+}
+
+export interface EventPackageServiceLink {
+  event_package_id: string
+  entity_type: string
+  entity_id: string
+  created_at: string
+}

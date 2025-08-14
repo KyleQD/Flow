@@ -58,6 +58,7 @@ import { useAuth } from "@/contexts/auth-context"
 import Link from "next/link"
 import { toast } from "sonner"
 import { format, addDays, isToday, isTomorrow, differenceInDays } from "date-fns"
+import { artistContentService } from '@/lib/services/artist-content.service'
 
 // Import Phase 2 components
 import { ArtistEventsOverview } from '@/components/dashboard/artist-events-overview'
@@ -114,7 +115,7 @@ const quickActions = [
   }
 ]
 
-// Mock upcoming events data - would be fetched from API
+// Mock upcoming events data - used as fallback when no data available
 const mockUpcomingEvents = [
   {
     id: "1",
@@ -154,7 +155,7 @@ const mockUpcomingEvents = [
   }
 ]
 
-// Mock content performance data
+// Mock content performance data - used as fallback when no data available
 const mockContentPerformance = [
   {
     id: "1",
@@ -222,6 +223,32 @@ export default function ArtistDashboard() {
   const { user: authUser } = useAuth()
   const { currentAccount, userAccounts, switchAccount } = useMultiAccount()
   const { user, profile, stats, isLoading, features, displayName, avatarInitial, syncArtistName, refreshStats } = useArtist()
+  
+  // Real data state
+  interface UpcomingEventItem {
+    id: string
+    title: string
+    date: Date
+    venue?: string
+    city?: string
+    status?: string
+    ticketSales?: number
+    capacity?: number
+    revenue?: number
+    type?: string
+  }
+  interface ContentItem {
+    id: string
+    title: string
+    type: 'track' | 'video' | 'photo' | 'blog'
+    plays?: number
+    views?: number
+    likes?: number
+    uploadDate?: Date
+    trend?: 'up' | 'down'
+  }
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEventItem[]>([])
+  const [recentContent, setRecentContent] = useState<ContentItem[]>([])
 
   // Check if we need to switch to artist account
   const artistAccount = userAccounts.find(acc => acc.account_type === 'artist')
@@ -279,22 +306,24 @@ export default function ArtistDashboard() {
     }
   ]
 
-  // Calculate upcoming events summary
+  // Calculate upcoming events summary (prefer real data, fallback to mocks)
+  const eventsSource = upcomingEvents.length > 0 ? upcomingEvents : mockUpcomingEvents
   const upcomingEventsSummary = {
-    total: mockUpcomingEvents.length,
-    confirmed: mockUpcomingEvents.filter(e => e.status === 'confirmed').length,
-    pending: mockUpcomingEvents.filter(e => e.status === 'pending').length,
-    totalRevenue: mockUpcomingEvents.reduce((sum, e) => sum + e.revenue, 0),
-    nextEvent: mockUpcomingEvents[0]
+    total: eventsSource.length,
+    confirmed: eventsSource.filter((e: any) => e.status === 'confirmed').length,
+    pending: eventsSource.filter((e: any) => e.status === 'pending').length,
+    totalRevenue: eventsSource.reduce((sum: number, e: any) => sum + (e.revenue || 0), 0),
+    nextEvent: eventsSource[0]
   }
 
-  // Calculate content performance summary
+  // Calculate content performance summary (prefer real data)
+  const contentItems: any[] = recentContent.length > 0 ? recentContent : mockContentPerformance as any
   const contentSummary = {
     totalTracks: stats.musicCount,
     totalVideos: stats.videoCount,
     totalPhotos: stats.photoCount,
-    totalViews: mockContentPerformance.reduce((sum, c) => sum + (c.views || c.plays), 0),
-    totalLikes: mockContentPerformance.reduce((sum, c) => sum + c.likes, 0)
+    totalViews: contentItems.reduce((sum, c) => sum + (c.views || c.plays || 0), 0),
+    totalLikes: contentItems.reduce((sum, c) => sum + (c.likes || 0), 0)
   }
 
   // Handle account switching
@@ -323,6 +352,75 @@ export default function ArtistDashboard() {
       syncArtistName()
     }
   }, [profile, user, syncArtistName, isInArtistMode])
+
+  // Load dashboard data (events + recent content) when authenticated in artist mode
+  useEffect(() => {
+    if (!user?.id || !isInArtistMode) return
+
+    let aborted = false
+
+    async function loadData() {
+      try {
+        const [events, music, videos, photos] = await Promise.all([
+          artistContentService.getEvents(user.id, { upcoming: true, limit: 3 }).catch(() => []),
+          artistContentService.getMusic(user.id, { limit: 5 }).catch(() => []),
+          artistContentService.getVideos(user.id, { limit: 5 }).catch(() => []),
+          artistContentService.getPhotos(user.id, { limit: 5 }).catch(() => []),
+        ])
+
+        if (aborted) return
+
+        const mappedEvents: UpcomingEventItem[] = (events || []).map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          date: new Date(e.event_date),
+          venue: e.venue_name,
+          city: e.venue_city,
+          status: e.status,
+          capacity: e.capacity ?? undefined,
+          type: e.type,
+        }))
+        setUpcomingEvents(mappedEvents)
+
+        const mappedContent: ContentItem[] = [
+          ...(music || []).map((m: any) => ({
+            id: m.id,
+            title: m.title,
+            type: 'track' as const,
+            plays: m.metadata?.plays ?? 0,
+            likes: m.metadata?.likes ?? 0,
+            uploadDate: m.created_at ? new Date(m.created_at) : undefined,
+            trend: 'up' as const,
+          })),
+          ...(videos || []).map((v: any) => ({
+            id: v.id,
+            title: v.title,
+            type: 'video' as const,
+            views: v.metadata?.views ?? 0,
+            likes: v.metadata?.likes ?? 0,
+            uploadDate: v.created_at ? new Date(v.created_at) : undefined,
+            trend: 'up' as const,
+          })),
+          ...(photos || []).map((p: any) => ({
+            id: p.id,
+            title: p.title || 'Photo',
+            type: 'photo' as const,
+            views: p.metadata?.views ?? 0,
+            likes: p.metadata?.likes ?? 0,
+            uploadDate: p.created_at ? new Date(p.created_at) : undefined,
+            trend: 'down' as const,
+          })),
+        ]
+
+        setRecentContent(mappedContent.slice(0, 6))
+      } catch (err) {
+        console.error('Error loading dashboard data:', err)
+      }
+    }
+
+    loadData()
+    return () => { aborted = true }
+  }, [user?.id, isInArtistMode])
 
   // Show account switching prompt if not in artist mode
   if (!isInArtistMode && artistAccount) {
@@ -725,7 +823,7 @@ export default function ArtistDashboard() {
                   </div>
                   
                   <div className="space-y-3">
-                    {mockContentPerformance.map((content, index) => (
+                    {(contentItems as any[]).map((content, index) => (
                       <div key={content.id} className="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-slate-700/50 rounded-lg">

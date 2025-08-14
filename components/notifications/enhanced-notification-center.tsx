@@ -64,6 +64,8 @@ export function EnhancedNotificationCenter({ className = "" }: NotificationCente
   const [activeTab, setActiveTab] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [filterType, setFilterType] = useState<string>("all")
+  const [accountFilter, setAccountFilter] = useState<string>("all")
+  const [availableAccounts, setAvailableAccounts] = useState<Array<{ id: string; label: string }>>([])
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
@@ -94,6 +96,16 @@ export function EnhancedNotificationCenter({ className = "" }: NotificationCente
 
       setNotifications(data || [])
       setUnreadCount(data?.filter(n => !n.is_read).length || 0)
+
+      // Load account filters if columns exist (best-effort)
+      try {
+        const accounts: Array<{ id: string; label: string }> = []
+        const { data: ownedArtists } = await supabase.from('artist_profiles').select('id, stage_name')
+        if (ownedArtists) ownedArtists.forEach(a => accounts.push({ id: String(a.id), label: a.stage_name || `Artist ${a.id}` }))
+        const { data: ownedVenues } = await supabase.from('venue_profiles').select('id, name')
+        if (ownedVenues) ownedVenues.forEach(v => accounts.push({ id: String(v.id), label: v.name || `Venue ${v.id}` }))
+        setAvailableAccounts(accounts)
+      } catch (_) {}
     } catch (error) {
       console.error("Error fetching notifications:", error)
       toast.error("Failed to fetch notifications")
@@ -206,8 +218,9 @@ export function EnhancedNotificationCenter({ className = "" }: NotificationCente
     const matchesTab = activeTab === "all" || 
                       (activeTab === "unread" && !notification.is_read) ||
                       (activeTab === "read" && notification.is_read)
+    const matchesAccount = accountFilter === 'all' || (notification as any).account_id === accountFilter
     
-    return matchesSearch && matchesType && matchesTab
+    return matchesSearch && matchesType && matchesTab && matchesAccount
   })
 
   // Group notifications by date
@@ -340,6 +353,20 @@ export function EnhancedNotificationCenter({ className = "" }: NotificationCente
                       <option value="booking_request">Bookings</option>
                       <option value="system_alert">System</option>
                     </select>
+
+                    {/* Account filter */}
+                    {availableAccounts.length > 0 && (
+                      <select
+                        value={accountFilter}
+                        onChange={(e) => setAccountFilter(e.target.value)}
+                        className="text-sm border-0 bg-transparent focus:outline-none text-slate-300"
+                      >
+                        <option value="all">All Accounts</option>
+                        {availableAccounts.map(acc => (
+                          <option key={acc.id} value={acc.id}>{acc.label}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
               </CardHeader>

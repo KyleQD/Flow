@@ -18,10 +18,14 @@ interface MessageModalProps {
     full_name?: string
     avatar_url?: string
   }
+  prefill?: {
+    text?: string
+    attachment?: any
+  }
 }
 
-export function MessageModal({ isOpen, onClose, recipient }: MessageModalProps) {
-  const [message, setMessage] = useState("")
+export function MessageModal({ isOpen, onClose, recipient, prefill }: MessageModalProps) {
+  const [message, setMessage] = useState(prefill?.text || "")
   const [isLoading, setIsLoading] = useState(false)
   const { user, isAuthenticated } = useAuth()
 
@@ -52,7 +56,8 @@ export function MessageModal({ isOpen, onClose, recipient }: MessageModalProps) 
         },
         body: JSON.stringify({
           recipientId: recipient.id,
-          content: message.trim()
+          content: message.trim(),
+          attachment: prefill?.attachment || null
         })
       })
 

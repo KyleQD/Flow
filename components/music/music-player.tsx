@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { MessageModal } from '@/components/messaging/message-modal'
 
 interface MusicPlayerProps {
   track: {
@@ -70,6 +71,8 @@ export function MusicPlayer({
   const [isMuted, setIsMuted] = useState(false)
   const [isLiked, setIsLiked] = useState(track.is_liked || false)
   const [isLoading, setIsLoading] = useState(false)
+  const [sharePayload, setSharePayload] = useState<any>(null)
+  const [isMessageOpen, setIsMessageOpen] = useState(false)
   
   const audioRef = useRef<HTMLAudioElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
@@ -180,6 +183,31 @@ export function MusicPlayer({
       console.error('Error liking music:', error)
       toast.error('Failed to like music')
     }
+  }
+
+  const handleShare = async () => {
+    try {
+      const res = await fetch('/api/music/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ musicId: track.id })
+      })
+      if (res.ok) {
+        const { payload } = await res.json()
+        setSharePayload(payload)
+        onShare?.(track.id)
+        toast.success('Share link copied')
+        // Copy a lightweight JSON payload for embedding or link sharing
+        await navigator.clipboard.writeText(JSON.stringify(payload))
+      }
+    } catch (e) {
+      toast.error('Failed to prepare share')
+    }
+  }
+
+  const openMessageWithShare = async () => {
+    if (!sharePayload) await handleShare()
+    setIsMessageOpen(true)
   }
 
   const formatTime = (seconds: number) => {
@@ -369,7 +397,7 @@ export function MusicPlayer({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onShare?.(track.id)}
+                    onClick={handleShare}
                     className="text-gray-400 hover:text-white"
                   >
                     <Share2 className="h-4 w-4" />
@@ -389,6 +417,11 @@ export function MusicPlayer({
                       <DropdownMenuItem className="text-gray-300 hover:text-white">
                         <Users className="h-4 w-4 mr-2" />
                         View Artist
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-slate-700" />
+                      <DropdownMenuItem onClick={openMessageWithShare} className="text-gray-300 hover:text-white">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Share via Message
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-slate-700" />
                       <DropdownMenuItem className="text-gray-300 hover:text-white">
@@ -468,6 +501,12 @@ export function MusicPlayer({
       </CardContent>
 
       <audio ref={audioRef} src={track.file_url} preload="metadata" />
+      <MessageModal
+        isOpen={isMessageOpen}
+        onClose={() => setIsMessageOpen(false)}
+        recipient={{ id: '', username: 'someone' }}
+        prefill={{ text: `Check out this track: ${track.title}`, attachment: sharePayload }}
+      />
     </Card>
   )
 } 

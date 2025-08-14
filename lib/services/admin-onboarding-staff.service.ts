@@ -413,50 +413,58 @@ export class AdminOnboardingStaffService {
       if (!user) throw new Error('User not authenticated')
       console.log('✅ [Admin Onboarding Staff Service] User authenticated:', user.id)
 
-      // Check if table exists
-      const tableExists = await checkTableExists('job_posting_templates')
-      console.log('🔍 [Admin Onboarding Staff Service] Table exists:', tableExists)
-      
-      if (!tableExists) {
-        console.warn('⚠️ [Admin Onboarding Staff Service] job_posting_templates table does not exist, returning mock data')
-        const mockData: JobPostingTemplate = {
-          id: `mock-job-${Date.now()}`,
-          venue_id: venueId,
-          created_by: user.id,
-          ...validatedData,
-          status: 'published',
-          applications_count: 0,
-          views_count: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-        console.log('✅ [Admin Onboarding Staff Service] Returning mock data:', mockData)
-        return mockData
-      }
-
-      console.log('🔧 [Admin Onboarding Staff Service] Creating job posting in database...')
-      // Create job posting
-      const { data: jobPosting, error: jobError } = await supabase
-        .from('job_posting_templates')
-        .insert({
-          venue_id: venueId,
-          created_by: user.id,
-          ...validatedData,
-          status: 'published',
-          applications_count: 0,
-          views_count: 0
+      // Prefer secure server API route that enforces RBAC and RLS
+      try {
+        const res = await fetch('/api/admin/staffing/job-postings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ venueId, ...validatedData })
         })
-        .select()
-        .single()
+        if (!res.ok) {
+          const msg = await res.json().catch(() => ({}))
+          throw new Error(msg?.error || `HTTP ${res.status}`)
+        }
+        const payload = await res.json()
+        const jobPosting = payload?.data as JobPostingTemplate
+        console.log('✅ [Admin Onboarding Staff Service] Job posting created via API:', jobPosting)
+        return jobPosting
+      } catch (apiErr: any) {
+        console.warn('⚠️ [Admin Onboarding Staff Service] API route failed, attempting fallback or mock:', apiErr?.message)
 
-      if (jobError) {
-        console.error('❌ [Admin Onboarding Staff Service] Job posting creation error:', jobError)
-        throw jobError
+        // Fallback: if table exists, last resort attempt direct insert; else return mock
+        const tableExists = await checkTableExists('job_posting_templates')
+        if (!tableExists) {
+          const mockData: JobPostingTemplate = {
+            id: `mock-job-${Date.now()}`,
+            venue_id: venueId,
+            created_by: user.id,
+            ...validatedData,
+            status: 'published',
+            applications_count: 0,
+            views_count: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+          console.log('✅ [Admin Onboarding Staff Service] Returning mock data due to missing table:', mockData)
+          return mockData
+        }
+
+        const { data: jobPosting, error: jobError } = await supabase
+          .from('job_posting_templates')
+          .insert({
+            venue_id: venueId,
+            created_by: user.id,
+            ...validatedData,
+            status: 'published',
+            applications_count: 0,
+            views_count: 0
+          })
+          .select()
+          .single()
+
+        if (jobError) throw jobError
+        return jobPosting
       }
-      console.log('✅ [Admin Onboarding Staff Service] Job posting created:', jobPosting)
-
-      console.log('✅ [Admin Onboarding Staff Service] Final result:', jobPosting)
-      return jobPosting
     } catch (error) {
       // Normalize Zod and Supabase errors into user-friendly messages
       const normalized = (() => {
@@ -1610,32 +1618,12 @@ export class AdminOnboardingStaffService {
       console.log('🔧 [Admin Onboarding Staff Service] Creating zone...')
       
       const validatedData = createZoneSchema.parse(data)
-
-      const tableExists = await checkTableExists('staff_zones')
-      if (!tableExists) {
-        console.warn('⚠️ [Admin Onboarding Staff Service] staff_zones table does not exist, returning mock data')
-        return {
-          id: `mock-zone-${Date.now()}`,
-          ...validatedData,
-          assigned_staff_count: 0,
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      }
-
-      const { data: zone, error } = await supabase
-        .from('staff_zones')
-        .insert({
-          ...validatedData,
-          assigned_staff_count: 0,
-          status: 'active'
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      return zone
+      // Use secure API endpoint enforcing RBAC
+      const res = await fetch('/api/admin/staffing/zones', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(validatedData)
+      })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error || `HTTP ${res.status}`)
+      return (await res.json()).data as StaffZone
     } catch (error) {
       console.error('❌ [Admin Onboarding Staff Service] Error creating zone:', error)
       throw error
@@ -1647,27 +1635,15 @@ export class AdminOnboardingStaffService {
    */
   static async getStaffZones(venueId: string, filters?: any): Promise<StaffZone[]> {
     try {
-      const tableExists = await checkTableExists('staff_zones')
-      if (!tableExists) {
-        console.warn('⚠️ [Admin Onboarding Staff Service] staff_zones table does not exist, returning fallback data')
-        return getFallbackData('zones', venueId) as StaffZone[]
-      }
+      const params = new URLSearchParams({ venueId })
+      if (filters?.event_id) params.set('eventId', filters.event_id)
+      if (filters?.zone_type) params.set('zone_type', filters.zone_type)
+      if (filters?.status) params.set('status', filters.status)
 
-      let query = supabase
-        .from('staff_zones')
-        .select('*')
-        .eq('venue_id', venueId)
-
-      if (filters) {
-        if (filters.event_id) query = query.eq('event_id', filters.event_id)
-        if (filters.zone_type) query = query.eq('zone_type', filters.zone_type)
-        if (filters.status) query = query.eq('status', filters.status)
-      }
-
-      const { data, error } = await query.order('zone_name', { ascending: true })
-
-      if (error) throw error
-      return data || []
+      const res = await fetch(`/api/admin/staffing/zones?${params.toString()}`, { cache: 'no-store' })
+      if (!res.ok) return getFallbackData('zones', venueId) as StaffZone[]
+      const payload = await res.json()
+      return (payload?.data as StaffZone[]) ?? []
     } catch (error) {
       console.error('❌ [Admin Onboarding Staff Service] Error fetching staff zones:', error)
       return getFallbackData('zones', venueId) as StaffZone[]
@@ -1682,39 +1658,11 @@ export class AdminOnboardingStaffService {
       console.log('🔧 [Admin Onboarding Staff Service] Tracking performance metrics...')
       
       const validatedData = updatePerformanceMetricsSchema.parse(data)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not authenticated')
-
-      const tableExists = await checkTableExists('staff_performance_metrics')
-      if (!tableExists) {
-        console.warn('⚠️ [Admin Onboarding Staff Service] staff_performance_metrics table does not exist, returning mock data')
-        const mockMetric: StaffPerformanceMetrics = {
-          id: `mock-metric-${Date.now()}`,
-          ...validatedData,
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          incidents_count: validatedData.incidents_count ?? 0,
-          commendations_count: validatedData.commendations_count ?? 0,
-          training_completed: validatedData.training_completed ?? false,
-          certifications_valid: validatedData.certifications_valid ?? false
-        }
-        return mockMetric
-      }
-
-      const { data: metric, error } = await supabase
-        .from('staff_performance_metrics')
-        .insert({
-          ...validatedData,
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString()
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      return metric
+      const res = await fetch('/api/admin/staffing/performance', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(validatedData)
+      })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error || `HTTP ${res.status}`)
+      return (await res.json()).data as StaffPerformanceMetrics
     } catch (error) {
       console.error('❌ [Admin Onboarding Staff Service] Error tracking performance metrics:', error)
       throw error
@@ -1726,28 +1674,16 @@ export class AdminOnboardingStaffService {
    */
   static async getPerformanceMetrics(venueId: string, filters?: any): Promise<StaffPerformanceMetrics[]> {
     try {
-      const tableExists = await checkTableExists('staff_performance_metrics')
-      if (!tableExists) {
-        console.warn('⚠️ [Admin Onboarding Staff Service] staff_performance_metrics table does not exist, returning fallback data')
-        return getFallbackData('performance_metrics', venueId) as StaffPerformanceMetrics[]
-      }
+      const params = new URLSearchParams({ venueId })
+      if (filters?.staff_member_id) params.set('staff_member_id', filters.staff_member_id)
+      if (filters?.event_id) params.set('eventId', filters.event_id)
+      if (filters?.date_from) params.set('date_from', filters.date_from)
+      if (filters?.date_to) params.set('date_to', filters.date_to)
 
-      let query = supabase
-        .from('staff_performance_metrics')
-        .select('*')
-        .eq('venue_id', venueId)
-
-      if (filters) {
-        if (filters.staff_member_id) query = query.eq('staff_member_id', filters.staff_member_id)
-        if (filters.event_id) query = query.eq('event_id', filters.event_id)
-        if (filters.date_from) query = query.gte('metric_date', filters.date_from)
-        if (filters.date_to) query = query.lte('metric_date', filters.date_to)
-      }
-
-      const { data, error } = await query.order('metric_date', { ascending: false })
-
-      if (error) throw error
-      return data || []
+      const res = await fetch(`/api/admin/staffing/performance?${params.toString()}`, { cache: 'no-store' })
+      if (!res.ok) return getFallbackData('performance_metrics', venueId) as StaffPerformanceMetrics[]
+      const payload = await res.json()
+      return (payload?.data as StaffPerformanceMetrics[]) ?? []
     } catch (error) {
       console.error('❌ [Admin Onboarding Staff Service] Error fetching performance metrics:', error)
       return getFallbackData('performance_metrics', venueId) as StaffPerformanceMetrics[]

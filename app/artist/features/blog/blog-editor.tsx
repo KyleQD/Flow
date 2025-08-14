@@ -58,6 +58,7 @@ export default function BlogEditor({ postId, onBack }: BlogEditorProps) {
   const [newCategory, setNewCategory] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>('')
+  const [attachMusic, setAttachMusic] = useState<{ id: string; title: string } | null>(null)
 
   useEffect(() => {
     if (postId) {
@@ -336,6 +337,37 @@ export default function BlogEditor({ postId, onBack }: BlogEditorProps) {
                   placeholder="Write your blog post content..."
                   className="bg-slate-800 border-slate-700 text-white min-h-[400px]"
                 />
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-purple-500/30 text-purple-300"
+                    onClick={async () => {
+                      const id = prompt('Paste a track ID to attach')
+                      if (!id) return
+                      try {
+                        const res = await fetch('/api/music/share', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ musicId: id })
+                        })
+                        if (res.ok) {
+                          const { payload } = await res.json()
+                          setAttachMusic({ id: payload.id, title: payload.title })
+                          setPost(prev => ({ ...prev, content: `${prev.content}\n\n[track:${payload.id}]` }))
+                          toast.success('Track attached to post')
+                        } else toast.error('Track not found')
+                      } catch {
+                        toast.error('Failed to fetch track')
+                      }
+                    }}
+                  >
+                    Attach Music
+                  </Button>
+                  {attachMusic && (
+                    <span className="text-xs text-gray-400">Attached: {attachMusic.title}</span>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -138,27 +138,142 @@ export async function GET(
       stats.views = Math.floor(Math.random() * 10000) + 1000
     }
 
-    // Transform the profile to match the expected format
+    // Base profile shape that we will enrich per account type
+    let accountType: 'general' | 'artist' | 'venue' | 'organization' = 'general'
+    let profileData: any = {
+      name: profile.full_name,
+      bio: profile.bio,
+      location: profile.location,
+      website: profile.website
+    }
+    let socialLinks: Record<string, any> = {
+      website: profile.website,
+      instagram: null,
+      twitter: null
+    }
+
+    // Attempt to detect specialized profiles
+    try {
+      // Artist
+      const { data: artist, error: artistError } = await supabase
+        .from('artist_profiles')
+        .select('artist_name,bio,genres,social_links,created_at,updated_at')
+        .eq('user_id', profile.id)
+        .limit(1)
+        .single()
+
+      if (!artistError && artist) {
+        accountType = 'artist'
+        profileData = {
+          artist_name: artist.artist_name,
+          bio: artist.bio ?? profile.bio,
+          genre: Array.isArray(artist.genres) && artist.genres.length > 0 ? artist.genres[0] : undefined,
+          website: profile.website,
+          ...artist.social_links
+        }
+        socialLinks = {
+          website: profile.website,
+          ...(artist.social_links || {})
+        }
+      }
+    } catch (e) {
+      // Table may not exist; ignore
+    }
+
+    if (accountType === 'general') {
+      try {
+        // Venue by user
+        const { data: venue, error: venueError } = await supabase
+          .from('venue_profiles')
+          .select('venue_name,description,address,city,state,country,capacity,venue_types,social_links,created_at')
+          .eq('user_id', profile.id)
+          .limit(1)
+          .single()
+
+        if (!venueError && venue) {
+          accountType = 'venue'
+          profileData = {
+            venue_name: venue.venue_name,
+            bio: venue.description ?? profile.bio,
+            location: [venue.city, venue.state].filter(Boolean).join(', '),
+            capacity: venue.capacity,
+            venue_types: venue.venue_types,
+            website: profile.website,
+          }
+          socialLinks = {
+            website: profile.website,
+            ...(venue.social_links || {})
+          }
+          // Map some venue stats if not present
+          stats.events = stats.events || 0
+        }
+      } catch (e) {
+        // Ignore if table missing
+      }
+    }
+
+    if (accountType === 'general') {
+      // Organization detection (two options: dedicated table or columns on profiles)
+      try {
+        const { data: org, error: orgError } = await supabase
+          .from('organizer_profiles')
+          .select('organization_name,organization_type,description,social_links')
+          .eq('user_id', profile.id)
+          .limit(1)
+          .single()
+
+        if (!orgError && org) {
+          accountType = 'organization'
+          profileData = {
+            name: org.organization_name ?? profile.full_name,
+            organization_type: org.organization_type,
+            bio: org.description ?? profile.bio,
+            website: profile.website,
+          }
+          socialLinks = {
+            website: profile.website,
+            ...(org.social_links || {})
+          }
+        }
+      } catch (e) {
+        // Fallback to organization_* columns if present in profiles (best-effort)
+        try {
+          const { data: orgCols } = await supabase
+            .from('profiles')
+            .select('organization_name,organization_type,organization_data')
+            .eq('id', profile.id)
+            .limit(1)
+            .single()
+          if (orgCols && (orgCols as any).organization_name) {
+            accountType = 'organization'
+            profileData = {
+              name: (orgCols as any).organization_name,
+              organization_type: (orgCols as any).organization_type,
+              bio: (orgCols as any).organization_data?.description ?? profile.bio,
+              website: profile.website,
+            }
+            socialLinks = {
+              website: profile.website,
+              ...(orgCols as any).organization_data?.social_links || {}
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+
     const profileWithStats = {
       id: profile.id,
       username: profile.username,
-      account_type: 'general' as const,
-      profile_data: {
-        name: profile.full_name,
-        bio: profile.bio,
-        location: profile.location,
-        website: profile.website
-      },
+      account_type: accountType,
+      profile_data: profileData,
       avatar_url: profile.avatar_url,
       cover_image: null,
       verified: profile.is_verified,
       bio: profile.bio,
       location: profile.location,
-      social_links: {
-        website: profile.website,
-        instagram: null,
-        twitter: null
-      },
+      social_links: socialLinks,
       stats,
       created_at: profile.created_at,
       updated_at: profile.updated_at

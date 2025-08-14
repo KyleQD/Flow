@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const authResult = await authenticateApiRequest(request)
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') || 'all'
+    const user_id = searchParams.get('user_id')
     const limit = parseInt(searchParams.get('limit') || '20')
     
     // Use the authenticated supabase client if available, otherwise create a service client
@@ -77,17 +78,34 @@ export async function GET(request: NextRequest) {
         .select(`
           id,
           content,
+          type,
+          visibility,
+          location,
+          hashtags,
           media_urls,
           likes_count,
           comments_count,
+          shares_count,
           created_at,
           updated_at,
-          user_id
+          user_id,
+          account_username,
+          account_avatar_url,
+          profiles:user_id (
+            id,
+            username,
+            avatar_url,
+            full_name,
+            is_verified
+          )
         `)
         .order('created_at', { ascending: false })
         .limit(limit)
 
-      if (type !== 'all') {
+      // Filter by type and user_id if specified
+      if (type === 'user' && user_id) {
+        query = query.eq('user_id', user_id)
+      } else if (type !== 'all' && type !== 'user' && type !== 'network') {
         query = query.eq('type', type)
       }
 
@@ -171,17 +189,66 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServiceRoleClient()
-    const user = parseAuthFromCookies(request)
-
-    if (!user) {
+    const authResult = await authenticateApiRequest(request)
+    
+    if (!authResult) {
       return NextResponse.json(
         { data: null, error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
+    const { user, supabase } = authResult
     const body = await request.json()
+
+    // Handle network posts request
+    if (body.following_ids) {
+      console.log('[Feed Posts API] Fetching network posts for following IDs:', body.following_ids.length)
+      
+      const { data: posts, error: postsError } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          content,
+          type,
+          visibility,
+          location,
+          hashtags,
+          media_urls,
+          likes_count,
+          comments_count,
+          shares_count,
+          created_at,
+          updated_at,
+          user_id,
+          account_username,
+          account_avatar_url,
+          profiles:user_id (
+            id,
+            username,
+            avatar_url,
+            full_name,
+            is_verified
+          )
+        `)
+        .in('user_id', body.following_ids)
+        .eq('visibility', 'public') // Only show public posts
+        .order('created_at', { ascending: false })
+        .limit(parseInt(body.limit) || 30)
+
+      if (postsError) {
+        console.error('[Feed Posts API] Error fetching network posts:', postsError)
+        return NextResponse.json(
+          { data: [], error: 'Failed to fetch network posts' },
+          { status: 500 }
+        )
+      }
+
+      console.log('[Feed Posts API] Found network posts:', posts?.length || 0)
+      return NextResponse.json({ data: posts || [], error: null })
+    }
+
+    // Handle post creation
     const { content, type = 'text', visibility = 'public', location, hashtags = [], media_urls = [] } = body
 
     if (!content?.trim()) {
@@ -191,24 +258,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get account info using comprehensive system
-    const { data: accountData, error: accountError } = await supabase
-      .rpc('get_or_create_account', {
-        p_user_id: user.id,
-        p_account_type: 'primary',
-        p_profile_id: null
-      })
-
-    if (accountError || !accountData || accountData.length === 0) {
-      return NextResponse.json(
-        { data: null, error: 'Unable to get account info' },
-        { status: 500 }
-      )
-    }
-
-    const account = accountData[0]
-
-    // Create post with comprehensive system
+    // Create post data
     const postData = {
       user_id: user.id,
       content: content.trim(),
@@ -216,13 +266,7 @@ export async function POST(request: NextRequest) {
       visibility,
       location,
       hashtags,
-      media_urls,
-      posted_as_profile_id: account.account_id,
-      posted_as_account_type: 'primary',
-      // Cache account display info
-      account_display_name: account.display_name,
-      account_username: account.username,
-      account_avatar_url: account.avatar_url
+      media_urls
     }
 
     const { data: post, error } = await supabase

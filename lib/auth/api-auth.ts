@@ -167,46 +167,39 @@ export async function authenticateApiRequest(request?: NextRequest): Promise<{ u
  * In this context, "admin" means organizer accounts that can manage events and tours
  * TEMPORARILY DISABLED - allowing all authenticated users access
  */
-export async function checkAdminPermissions(user: any): Promise<boolean> {
-  if (!user?.email) {
-    console.log('[API Auth] No user email for permission check')
-    return false
-  }
-  
+export async function checkAdminPermissions(user: any, opts?: { tourId?: string }): Promise<boolean> {
+  if (!user?.id) return false
   try {
     const supabase = createServiceClient()
-    
-    // For now, just return true for any authenticated user
-    // We'll keep the account type identification but without restrictions
-    console.log('[API Auth] Allowing access for authenticated user:', user.email)
-    
-    // Optional: Still try to fetch profile info for identification (but don't block on failure)
-    try {
-      const { data: userProfile, error } = await supabase
-        .from('profiles')
-        .select('id, role, display_name')
-        .eq('id', user.id)
-        .single()
-      
-      if (userProfile) {
-        console.log('[API Auth] User profile found:', {
-          id: userProfile.id,
-          role: userProfile.role || 'user',
-          display_name: userProfile.display_name
-        })
-      } else {
-        console.log('[API Auth] No profile found, but allowing access anyway')
-      }
-    } catch (profileError) {
-      console.log('[API Auth] Profile lookup failed, but allowing access anyway:', profileError)
-    }
-    
-    // Always return true for authenticated users (no restrictions for now)
-    return true
-  } catch (error) {
-    console.error('[API Auth] Error in checkAdminPermissions (allowing access anyway):', error)
-    // Even if there's an error, allow access for authenticated users
-    return true
+
+    // Global allowance: authenticated users
+    if (!opts?.tourId) return true
+
+    const tourId = opts.tourId
+
+    // Access if user is the tour owner
+    const { data: tourOwner } = await supabase
+      .from('tours')
+      .select('id')
+      .eq('id', tourId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (tourOwner) return true
+
+    // Or confirmed team member
+    const { data: team } = await supabase
+      .from('tour_team_members')
+      .select('id')
+      .eq('tour_id', tourId)
+      .eq('user_id', user.id)
+      .eq('status', 'confirmed')
+      .maybeSingle()
+
+    return !!team
+  } catch (err) {
+    console.error('[API Auth] checkAdminPermissions error:', err)
+    return false
   }
 }
 

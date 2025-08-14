@@ -44,7 +44,7 @@ import {
   ExternalLink
 } from 'lucide-react'
 import { AdminOnboardingStaffService } from '@/lib/services/admin-onboarding-staff.service'
-import { useCurrentVenue } from '@/hooks/use-venue'
+import { useCurrentVenue } from '@/hooks/venue/use-current-venue'
 import type { JobApplication, JobPostingTemplate } from '@/types/admin-onboarding'
 
 interface ApplicationWithJob extends JobApplication {
@@ -307,7 +307,7 @@ export default function ApplicationsPage() {
                   <div className="flex justify-between items-start">
                     <div className="flex items-start gap-4">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={application.avatar_url} />
+                        <AvatarImage src={(application as any).avatar_url || undefined} />
                         <AvatarFallback className="bg-slate-700 text-white">
                           {application.applicant_name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
@@ -403,7 +403,7 @@ export default function ApplicationsPage() {
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-4">
                     <Avatar className="h-16 w-16">
-                      <AvatarImage src={selectedApplication.avatar_url} />
+                      <AvatarImage src={(selectedApplication as any).avatar_url || undefined} />
                       <AvatarFallback className="bg-slate-600 text-white">
                         {selectedApplication.applicant_name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>

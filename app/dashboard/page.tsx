@@ -562,11 +562,14 @@ export default function DashboardPage() {
                         <BarChart3 className="h-5 w-5 text-purple-400" />
                         Quick Stats
                       </h3>
-                      <Button 
+                        <Button 
                         size="sm" 
                         variant="outline" 
                         className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20 rounded-xl"
-                        onClick={() => router.push('/analytics')}
+                        onClick={() => {
+                          const accountId = currentAccount?.profile_id || user?.id
+                          router.push(`/analytics?scope=dashboard&accountId=${accountId}`)
+                        }}
                       >
                         View All
                         <ArrowRight className="h-3 w-3 ml-1" />

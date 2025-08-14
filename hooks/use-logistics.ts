@@ -84,7 +84,7 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
       if (category) params.append('category', category)
       if (availability) params.append('availability', availability)
 
-      const response = await fetch(`/api/admin/logistics/test?${params.toString()}`, {
+      const response = await fetch(`/api/admin/logistics/items?${params.toString()}`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
@@ -102,7 +102,7 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
 
       if (type === 'transportation') {
         transformedData = {
-          transportation: result.transportation || [],
+          transportation: result.items || [],
           equipment: [],
           assignments: [],
           analytics: {
@@ -117,7 +117,7 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
       } else if (type === 'equipment') {
         transformedData = {
           transportation: [],
-          equipment: result.equipment || [],
+          equipment: result.items || [],
           assignments: [],
           analytics: {
             transportCostsByType: {},
@@ -132,7 +132,7 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
         transformedData = {
           transportation: [],
           equipment: [],
-          assignments: result.assignments || [],
+          assignments: result.items || [],
           analytics: {
             transportCostsByType: {},
             equipmentByCategory: {},
@@ -159,16 +159,16 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
       } else {
         // Fetch all data types
         const [transportationRes, equipmentRes, assignmentsRes, analyticsRes] = await Promise.all([
-          fetch(`/api/admin/logistics/test?type=transportation&${params.toString()}`, {
+          fetch(`/api/admin/logistics/items?type=transportation&${params.toString()}`, {
             credentials: 'include'
           }),
-          fetch(`/api/admin/logistics/test?type=equipment&${params.toString()}`, {
+          fetch(`/api/admin/logistics/items?type=equipment&${params.toString()}`, {
             credentials: 'include'
           }),
-          fetch(`/api/admin/logistics/test?type=assignments&${params.toString()}`, {
+          fetch(`/api/admin/logistics/items?type=assignments&${params.toString()}`, {
             credentials: 'include'
           }),
-          fetch(`/api/admin/logistics/test?type=analytics&${params.toString()}`, {
+          fetch(`/api/admin/logistics/metrics?${params.toString()}`, {
             credentials: 'include'
           })
         ])
@@ -181,9 +181,9 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
         ])
 
         transformedData = {
-          transportation: transportationData.transportation || [],
-          equipment: equipmentData.equipment || [],
-          assignments: assignmentsData.assignments || [],
+          transportation: transportationData.items || [],
+          equipment: equipmentData.items || [],
+          assignments: assignmentsData.items || [],
           analytics: analyticsData.analytics || {
             transportCostsByType: {},
             equipmentByCategory: {},
@@ -209,14 +209,14 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
     if (!user) throw new Error('User not authenticated')
 
     try {
-      const response = await fetch('/api/admin/logistics/test', {
+      const response = await fetch('/api/admin/logistics/items', {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          action: 'create_transportation',
+          type: 'transportation',
           ...transportationData
         })
       })
@@ -237,7 +237,7 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
     if (!user) throw new Error('User not authenticated')
 
     try {
-      const response = await fetch('/api/admin/logistics/test', {
+      const response = await fetch('/api/admin/logistics/items', {
         method: 'PUT',
         credentials: 'include',
         headers: {
@@ -266,14 +266,14 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
     if (!user) throw new Error('User not authenticated')
 
     try {
-      const response = await fetch('/api/admin/logistics/test', {
+      const response = await fetch('/api/admin/logistics/items', {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          action: 'create_equipment',
+          type: 'equipment',
           ...equipmentData
         })
       })
@@ -294,7 +294,7 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
     if (!user) throw new Error('User not authenticated')
 
     try {
-      const response = await fetch('/api/admin/logistics/test', {
+      const response = await fetch('/api/admin/logistics/items', {
         method: 'PUT',
         credentials: 'include',
         headers: {
@@ -323,16 +323,13 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
     if (!user) throw new Error('User not authenticated')
 
     try {
-      const response = await fetch('/api/admin/logistics/test', {
+      const response = await fetch(`/api/admin/logistics/items/${assignmentData.id}/equipment`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          action: 'assign_equipment',
-          ...assignmentData
-        })
+        body: JSON.stringify(assignmentData)
       })
 
       if (!response.ok) {
@@ -351,7 +348,7 @@ export function useLogistics(options: UseLogisticsOptions = {}): UseLogisticsRet
     if (!user) throw new Error('User not authenticated')
 
     try {
-      const response = await fetch('/api/admin/logistics/test', {
+      const response = await fetch('/api/admin/logistics/items', {
         method: 'PUT',
         credentials: 'include',
         headers: {

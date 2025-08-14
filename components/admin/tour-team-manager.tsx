@@ -36,10 +36,14 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
+  const [isSearchLoading, setIsSearchLoading] = useState(false)
   const [selectedMember, setSelectedMember] = useState<TourMember | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [filterStatus, setFilterStatus] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [userQuery, setUserQuery] = useState('')
+  const [userResults, setUserResults] = useState<Array<{ id: string; email: string; display_name?: string }>>([])
 
   const [formData, setFormData] = useState({
     name: '',
@@ -88,6 +92,73 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
   const handleDeleteMember = (member: TourMember) => {
     setSelectedMember(member)
     setIsDeleteDialogOpen(true)
+  }
+
+  const searchExistingUsers = async () => {
+    if (!userQuery || userQuery.trim().length < 2) {
+      setUserResults([])
+      return
+    }
+    try {
+      setIsSearchLoading(true)
+      // Lightweight email search via public profiles view if available; fallback to admin API
+      const params = new URLSearchParams({ query: userQuery })
+      const res = await fetch(`/api/admin/users/search?${params.toString()}`)
+      if (res.ok) {
+        const data = await res.json()
+        setUserResults(data.users || [])
+      } else setUserResults([])
+    } catch {
+      setUserResults([])
+    } finally {
+      setIsSearchLoading(false)
+    }
+  }
+
+  const assignExistingUser = async (userId: string, role: string) => {
+    setIsSubmitting(true)
+    try {
+      const res = await fetch(`/api/tours/${tourId}/assign-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role, status: 'confirmed' })
+      })
+      if (!res.ok) throw new Error('Failed to assign user')
+      const data = await res.json()
+      onMembersUpdate([...members, data.member])
+      toast.success('User assigned to tour')
+      setIsInviteDialogOpen(false)
+    } catch {
+      toast.error('Failed to assign user')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const inviteMember = async (payload: { email?: string; phone?: string; role: string }) => {
+    setIsSubmitting(true)
+    try {
+      const res = await fetch(`/api/tours/${tourId}/invites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: payload.email,
+          phone: payload.phone,
+          role: payload.role,
+          positionDetails: {
+            title: payload.role,
+            description: `Tour team invitation for ${payload.role}`
+          }
+        })
+      })
+      if (!res.ok) throw new Error('Failed to send invite')
+      toast.success('Invitation sent')
+      setIsInviteDialogOpen(false)
+    } catch (e) {
+      toast.error('Failed to send invitation')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleSubmit = async (isEdit: boolean = false) => {
@@ -193,10 +264,15 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
           <h2 className="text-2xl font-bold text-white">Tour Team</h2>
           <p className="text-slate-400">Manage team members for this tour</p>
         </div>
-        <Button onClick={handleAddMember} className="bg-purple-600 hover:bg-purple-700">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Member
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsInviteDialogOpen(true)} variant="outline" className="border-slate-600 text-slate-300">
+            Invite
+          </Button>
+          <Button onClick={handleAddMember} className="bg-purple-600 hover:bg-purple-700">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Member
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -548,6 +624,55 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Invite Dialog */}
+      <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+        <DialogContent className="max-w-md bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Invite Team Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-slate-300">Search existing users (email)</Label>
+              <div className="flex gap-2">
+                <Input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} placeholder="jane@company.com" className="bg-slate-700 border-slate-600 text-white" />
+                <Button variant="outline" onClick={searchExistingUsers} className="border-slate-600 text-slate-300">
+                  {isSearchLoading ? '...' : 'Search'}
+                </Button>
+              </div>
+              {userResults.length > 0 && (
+                <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-slate-600">
+                  {userResults.map(u => (
+                    <div key={u.id} className="flex items-center justify-between px-3 py-2 text-sm text-slate-200">
+                      <div>
+                        <div className="font-medium">{u.display_name || u.email}</div>
+                        <div className="text-xs text-slate-400">{u.email}</div>
+                      </div>
+                      <Button size="sm" onClick={() => assignExistingUser(u.id, formData.role || 'Member')} className="bg-purple-600 hover:bg-purple-700">Assign</Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-slate-300">Invite Email</Label>
+                <Input value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="bg-slate-700 border-slate-600 text-white" />
+              </div>
+              <div>
+                <Label className="text-slate-300">Role</Label>
+                <Input value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="bg-slate-700 border-slate-600 text-white" />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)} className="border-slate-600 text-slate-300">Cancel</Button>
+              <Button onClick={() => inviteMember({ email: formData.email, role: formData.role })} disabled={isSubmitting} className="bg-purple-600 hover:bg-purple-700">Send Invite</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 

@@ -106,49 +106,99 @@ export default function FinancialDashboard() {
     try {
       setIsLoading(true)
       
-      // Load real data from various sources
+      // Prefer real transactions from artist_financial_transactions
+      const from = `${selectedYear}-01-01`
+      const to = `${selectedYear}-12-31`
+      const { data: tx, error: txErr } = await supabase
+        .from('artist_financial_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('occurred_at', from)
+        .lte('occurred_at', to)
+        .order('occurred_at', { ascending: false })
+
+      if (!txErr && Array.isArray(tx) && tx.length > 0) {
+        const byMonth = Array.from({ length: 12 }, () => ({ rev: 0, exp: 0 }))
+        const incomeTypes = new Set(['income','royalty','merchandise','event'])
+        let totalRevenue = 0
+        let totalExpenses = 0
+        const recentTransactions: Transaction[] = tx.slice(0, 20).map(row => ({
+          id: row.id,
+          type: incomeTypes.has(row.type) ? 'income' : 'expense',
+          description: row.description || row.type,
+          amount: Math.abs(Number(row.amount) || 0),
+          category: row.type,
+          date: format(new Date(row.occurred_at), 'yyyy-MM-dd'),
+          status: row.status === 'completed' ? 'completed' : 'pending'
+        }))
+
+        tx.forEach(row => {
+          const amt = Number(row.amount) || 0
+          const d = new Date(row.occurred_at)
+          const m = d.getUTCMonth()
+          if (incomeTypes.has(row.type)) {
+            totalRevenue += amt
+            byMonth[m].rev += amt
+          } else {
+            totalExpenses += amt
+            byMonth[m].exp += amt
+          }
+        })
+
+        const netProfit = totalRevenue - totalExpenses
+        const monthlyRevenue = byMonth.map(x => Math.round(x.rev))
+        const monthlyExpenses = byMonth.map(x => Math.round(x.exp))
+
+        // Basic source breakdown from types
+        const revenueBySource = [
+          { source: 'Merchandise', amount: sumByType(tx, ['merchandise']), color: '#8B5CF6' },
+          { source: 'Live Events', amount: sumByType(tx, ['event']), color: '#10B981' },
+          { source: 'Royalties', amount: sumByType(tx, ['royalty']), color: '#F59E0B' },
+          { source: 'Income', amount: sumByType(tx, ['income']), color: '#3B82F6' },
+        ].filter(s => s.amount > 0)
+
+        const expensesByCategory = [
+          { category: 'Marketing', amount: sumByMeta(tx, 'category', 'marketing'), color: '#8B5CF6' },
+          { category: 'Equipment', amount: sumByMeta(tx, 'category', 'equipment'), color: '#10B981' },
+          { category: 'Studio', amount: sumByMeta(tx, 'category', 'studio'), color: '#F59E0B' },
+          { category: 'Travel', amount: sumByMeta(tx, 'category', 'travel'), color: '#EF4444' },
+        ].filter(e => e.amount > 0)
+
+        setFinancialData({
+          totalRevenue: Math.round(totalRevenue),
+          totalExpenses: Math.round(totalExpenses),
+          netProfit: Math.round(netProfit),
+          monthlyRevenue,
+          monthlyExpenses,
+          revenueBySource,
+          expensesByCategory,
+          recentTransactions
+        })
+        return
+      }
+
+      // Fallback to previous derived method if no transactions
       const [merchandiseData, eventsData, worksData] = await Promise.all([
         supabase.from('artist_merchandise').select('*').eq('user_id', user.id),
         supabase.from('artist_events').select('*').eq('user_id', user.id),
         supabase.from('artist_works').select('*').eq('user_id', user.id)
       ])
 
-      // Calculate revenue streams
-      const merchandiseRevenue = merchandiseData.data?.reduce((sum, item) => 
-        sum + ((item.price || 0) * (item.units_sold || 0)), 0) || 0
-      
-      const eventRevenue = eventsData.data?.reduce((sum, event) => 
-        sum + ((event.ticket_price_min || 0) * (event.expected_attendance || 0)), 0) || 0
-      
-      // Simulate streaming and other revenue
+      const merchandiseRevenue = merchandiseData.data?.reduce((sum, item) => sum + ((item.price || 0) * (item.units_sold || 0)), 0) || 0
+      const eventRevenue = eventsData.data?.reduce((sum, event) => sum + ((event.ticket_price_min || 0) * (event.expected_attendance || 0)), 0) || 0
       const streamingRevenue = worksData.data?.length ? worksData.data.length * 125 : 0
       const licensingRevenue = Math.floor(Math.random() * 2000)
-      
       const totalRevenue = merchandiseRevenue + eventRevenue + streamingRevenue + licensingRevenue
-      
-      // Simulate expenses (40% of revenue typically)
       const totalExpenses = Math.round(totalRevenue * 0.4)
       const netProfit = totalRevenue - totalExpenses
-
-      // Generate monthly data
-      const monthlyRevenue = Array.from({ length: 12 }, (_, i) => {
-        const baseAmount = totalRevenue / 12
-        return Math.round(baseAmount * (0.7 + Math.random() * 0.6))
-      })
-
-      const monthlyExpenses = Array.from({ length: 12 }, (_, i) => {
-        return Math.round(monthlyRevenue[i] * (0.3 + Math.random() * 0.2))
-      })
-
-      // Revenue by source
+      const monthlyRevenue = Array.from({ length: 12 }, (_, i) => Math.round((totalRevenue / 12) * (0.7 + Math.random() * 0.6)))
+      const monthlyExpenses = Array.from({ length: 12 }, (_, i) => Math.round(monthlyRevenue[i] * (0.3 + Math.random() * 0.2)))
       const revenueBySource = [
         { source: 'Merchandise', amount: merchandiseRevenue, color: '#8B5CF6' },
         { source: 'Live Events', amount: eventRevenue, color: '#10B981' },
         { source: 'Streaming', amount: streamingRevenue, color: '#F59E0B' },
         { source: 'Licensing', amount: licensingRevenue, color: '#EF4444' }
       ].filter(item => item.amount > 0)
-
-      // Expenses by category
       const expensesByCategory = [
         { category: 'Marketing', amount: Math.round(totalExpenses * 0.3), color: '#8B5CF6' },
         { category: 'Equipment', amount: Math.round(totalExpenses * 0.25), color: '#10B981' },
@@ -156,43 +206,6 @@ export default function FinancialDashboard() {
         { category: 'Travel', amount: Math.round(totalExpenses * 0.15), color: '#EF4444' },
         { category: 'Other', amount: Math.round(totalExpenses * 0.1), color: '#6B7280' }
       ]
-
-      // Recent transactions (mix of real and simulated)
-      const recentTransactions: Transaction[] = []
-      
-      // Add merchandise sales
-      merchandiseData.data?.slice(0, 3).forEach((item, index) => {
-        if (item.units_sold && item.units_sold > 0) {
-          recentTransactions.push({
-            id: `merch-${item.id}`,
-            type: 'income',
-            description: `${item.name} sales`,
-            amount: (item.price || 0) * Math.min(item.units_sold, 10),
-            category: 'Merchandise',
-            date: format(subMonths(new Date(), Math.random() * 3), 'yyyy-MM-dd'),
-            status: 'completed'
-          })
-        }
-      })
-
-      // Add some expenses
-      const expenseItems = [
-        { desc: 'Marketing campaign', amount: 250, category: 'Marketing' },
-        { desc: 'Studio rental', amount: 150, category: 'Studio' },
-        { desc: 'Equipment purchase', amount: 800, category: 'Equipment' }
-      ]
-
-      expenseItems.forEach((item, index) => {
-        recentTransactions.push({
-          id: `exp-${index}`,
-          type: 'expense',
-          description: item.desc,
-          amount: item.amount,
-          category: item.category,
-          date: format(subMonths(new Date(), Math.random() * 2), 'yyyy-MM-dd'),
-          status: 'completed'
-        })
-      })
 
       setFinancialData({
         totalRevenue,
@@ -202,7 +215,7 @@ export default function FinancialDashboard() {
         monthlyExpenses,
         revenueBySource,
         expensesByCategory,
-        recentTransactions: recentTransactions.slice(0, 10)
+        recentTransactions: []
       })
 
     } catch (error) {
@@ -219,24 +232,27 @@ export default function FinancialDashboard() {
       return
     }
 
-    // In a real app, save to a transactions table
-    const transaction: Transaction = {
-      id: Date.now().toString(),
-      type: newTransaction.type,
-      description: newTransaction.description,
-      amount: newTransaction.amount,
-      category: newTransaction.category,
-      date: newTransaction.date,
-      status: 'completed'
+    try {
+      // Persist to transactions table
+      const isIncome = newTransaction.type === 'income'
+      const { error } = await supabase
+        .from('artist_financial_transactions')
+        .insert({
+          user_id: user?.id,
+          type: isIncome ? 'income' : 'expense',
+          amount: newTransaction.amount,
+          occurred_at: newTransaction.date,
+          status: 'completed',
+          description: newTransaction.description,
+          metadata: { category: newTransaction.category }
+        })
+      if (error) throw error
+      await loadFinancialData()
+      toast.success('Transaction added successfully')
+    } catch (e) {
+      console.error('Add transaction failed', e)
+      toast.error('Failed to add transaction')
     }
-
-    setFinancialData(prev => prev ? {
-      ...prev,
-      recentTransactions: [transaction, ...prev.recentTransactions.slice(0, 9)],
-      totalRevenue: prev.totalRevenue + (transaction.type === 'income' ? transaction.amount : 0),
-      totalExpenses: prev.totalExpenses + (transaction.type === 'expense' ? transaction.amount : 0),
-      netProfit: prev.netProfit + (transaction.type === 'income' ? transaction.amount : -transaction.amount)
-    } : null)
 
     setNewTransaction({
       type: 'income',
@@ -245,9 +261,7 @@ export default function FinancialDashboard() {
       category: '',
       date: new Date().toISOString().split('T')[0]
     })
-    
     setShowAddTransaction(false)
-    toast.success('Transaction added successfully')
   }
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -258,6 +272,14 @@ export default function FinancialDashboard() {
     expenses: financialData.monthlyExpenses[index] || 0,
     profit: (financialData.monthlyRevenue[index] || 0) - (financialData.monthlyExpenses[index] || 0)
   })) : []
+
+  function sumByType(rows: any[], types: string[]) {
+    const set = new Set(types)
+    return rows.reduce((sum, r) => sum + (set.has(r.type) ? Number(r.amount) || 0 : 0), 0)
+  }
+  function sumByMeta(rows: any[], key: string, value: string) {
+    return rows.reduce((sum, r) => sum + ((r.metadata && (r.metadata[key] || r.metadata[key]?.toLowerCase?.()) === value) ? Number(r.amount) || 0 : 0), 0)
+  }
 
   if (isLoading) {
     return (

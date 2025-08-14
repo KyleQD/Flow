@@ -1339,21 +1339,40 @@ export default function StaffPage() {
               </Button>
             </div>
             <Card className="bg-slate-900/50 border-slate-700/50">
-              <CardContent className="p-8">
-                <div className="text-center space-y-4">
-                  <div className="p-4 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full w-20 h-20 mx-auto flex items-center justify-center">
-                    <FileText className="h-10 w-10 text-blue-400" />
+              <CardContent className="p-6 space-y-4">
+                {jobPostings.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="p-4 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full w-20 h-20 mx-auto flex items-center justify-center mb-4">
+                      <FileText className="h-10 w-10 text-blue-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">No Job Postings Yet</h3>
+                    <p className="text-slate-400 mb-4">Create your first posting to get started.</p>
+                    <Button onClick={() => setShowJobPostingDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+                      <Plus className="h-4 w-4 mr-2" /> New Posting
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold text-white">Job Postings Management</h3>
-                    <p className="text-slate-400">Enhanced job posting features with AI-powered optimization</p>
+                ) : (
+                  <div className="space-y-3">
+                    {jobPostings.map((jp) => (
+                      <div key={jp.id} className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-white font-semibold">
+                            <FileText className="h-4 w-4 text-blue-400" />
+                            {jp.title}
+                          </div>
+                          <div className="text-slate-400 text-sm">{jp.department} • {jp.position}</div>
+                          <div className="text-slate-500 text-xs">Applications: {jp.applications_count ?? 0} • Views: {jp.views_count ?? 0}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={jp.status === 'published' ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-slate-600/20 text-slate-300 border-slate-600/30'}>
+                            {jp.status}
+                          </Badge>
+                          <a href={`/jobs/${jp.id}`} className="text-blue-300 hover:text-blue-200 text-sm underline">View</a>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex justify-center space-x-4 pt-4">
-                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Smart Templates</Badge>
-                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">AI Optimization</Badge>
-                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Auto-Posting</Badge>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
 import { useArtist } from "@/contexts/artist-context"
 import { supabase } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -48,6 +49,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import EventAnalytics from "./components/event-analytics"
 import Link from "next/link"
+import { GuestlistManager } from "./components/guestlist-manager"
 
 import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help"
 import { usePerformanceTracking } from "@/lib/performance-monitor"
@@ -524,8 +526,8 @@ export default function EventsPage() {
                 <li>• Share events with your fans</li>
               </ul>
             </div>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
       </div>
     )
   }
@@ -566,8 +568,10 @@ export default function EventsPage() {
     )
   }
 
+  // Main component return
   return (
-    <div className="space-y-6">
+    <React.Fragment>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -694,7 +698,7 @@ export default function EventsPage() {
 
       {/* Main Content */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid grid-cols-6 gap-4 bg-slate-800/50 w-full rounded-2xl">
+        <TabsList className="grid grid-cols-7 gap-4 bg-slate-800/50 w-full rounded-2xl">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">
             <BarChart className="h-4 w-4 mr-1" />
@@ -716,6 +720,7 @@ export default function EventsPage() {
             <Settings className="h-4 w-4 mr-1" />
             Settings
           </TabsTrigger>
+          <TabsTrigger value="guestlist">Guestlist</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -1026,167 +1031,351 @@ export default function EventsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="guestlist">
+          {editingEvent ? (
+            <div className="space-y-6">
+              <GuestlistManager eventIdOrSlug={editingEvent.id!} />
+            </div>
+          ) : (
+            <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+              <CardContent className="py-12 text-center text-gray-400">
+                Select an event to manage its guestlist.
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Create/Edit Event Modal */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="bg-slate-800 border-slate-700 max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-white">
-              {editingEvent ? 'Edit Event' : 'Create New Event'}
-            </DialogTitle>
-          </DialogHeader>
+      <AnimatePresence>
+        {showCreateModal && (
+          <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+            <DialogContent className="bg-gradient-to-br from-black/95 via-slate-950/95 to-black/95 backdrop-blur-xl border border-white/20 max-w-5xl max-h-[95vh] overflow-hidden shadow-2xl shadow-purple-500/10">
+              {/* Animated Background Elements */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <motion.div
+                  className="absolute -top-10 -left-10 w-32 h-32 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-2xl"
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    opacity: [0.3, 0.6, 0.3]
+                  }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <motion.div
+                  className="absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-full blur-2xl"
+                  animate={{ 
+                    scale: [1.2, 1, 1.2],
+                    opacity: [0.6, 0.3, 0.6]
+                  }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                />
+              </div>
+
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.3 }}
+                className="relative z-10"
+              >
+                <DialogHeader className="pb-6 border-b border-white/10">
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.5 }}
+                  >
+                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent flex items-center gap-3">
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                        className="p-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20"
+                      >
+                        <Calendar className="h-6 w-6 text-purple-400" />
+                      </motion.div>
+                      {editingEvent ? 'Edit Event' : 'Create New Event'}
+                    </DialogTitle>
+                    <p className="text-white/60 mt-2">
+                      {editingEvent ? 'Update your event details' : 'Bring your vision to life and connect with your audience'}
+                    </p>
+                  </motion.div>
+                </DialogHeader>
+
+                <div className="max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="py-6">
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Basic Information */}
-            <Card className="bg-slate-900/50 border-slate-700/50">
-              <CardHeader>
-                <CardTitle className="text-white">Event Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="text-gray-300">Title *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Event title..."
-                    className="bg-slate-800 border-slate-700 text-white"
-                  />
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+            >
+              <Card className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-purple-500/20 shadow-xl shadow-purple-500/10 hover:shadow-purple-500/20 transition-all duration-500">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="p-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
+                    >
+                      <Edit className="h-4 w-4 text-white" />
+                    </motion.div>
+                    Event Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="title" className="text-white/80 font-medium flex items-center gap-2">
+                    <span className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></span>
+                    Title *
+                  </Label>
+                  <motion.div whileHover={{ scale: 1.01 }} whileFocus={{ scale: 1.01 }}>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Event title..."
+                      className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-white/40 focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 h-12"
+                    />
+                  </motion.div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description" className="text-gray-300">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Event description..."
-                    className="bg-slate-800 border-slate-700 text-white"
-                  />
+                <div className="space-y-3">
+                  <Label htmlFor="description" className="text-white/80 font-medium flex items-center gap-2">
+                    <span className="w-2 h-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></span>
+                    Description
+                  </Label>
+                  <motion.div whileHover={{ scale: 1.01 }} whileFocus={{ scale: 1.01 }}>
+                    <Textarea
+                      id="description"
+                      value={formData.description || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Event description..."
+                      className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-white/40 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 min-h-[100px] resize-none"
+                    />
+                  </motion.div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="type" className="text-gray-300">Type</Label>
-                    <Select
-                      value={formData.type}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as Event['type'] }))}
-                    >
-                      <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="concert">Concert</SelectItem>
-                        <SelectItem value="festival">Festival</SelectItem>
-                        <SelectItem value="tour">Tour</SelectItem>
-                        <SelectItem value="recording">Recording</SelectItem>
-                        <SelectItem value="interview">Interview</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-3">
+                    <Label htmlFor="type" className="text-white/80 font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></span>
+                      Type
+                    </Label>
+                    <motion.div whileHover={{ scale: 1.01 }}>
+                      <Select
+                        value={formData.type}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as Event['type'] }))}
+                      >
+                        <SelectTrigger className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-green-500/50 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 h-12">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gradient-to-br from-slate-900/95 to-black/95 backdrop-blur-xl border border-white/20">
+                          <SelectItem value="concert" className="text-white hover:bg-white/10">Concert</SelectItem>
+                          <SelectItem value="festival" className="text-white hover:bg-white/10">Festival</SelectItem>
+                          <SelectItem value="tour" className="text-white hover:bg-white/10">Tour</SelectItem>
+                          <SelectItem value="recording" className="text-white hover:bg-white/10">Recording</SelectItem>
+                          <SelectItem value="interview" className="text-white hover:bg-white/10">Interview</SelectItem>
+                          <SelectItem value="other" className="text-white hover:bg-white/10">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </motion.div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="status" className="text-gray-300">Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Event['status'] }))}
-                    >
-                      <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="upcoming">Upcoming</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                        <SelectItem value="postponed">Postponed</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-3">
+                    <Label htmlFor="status" className="text-white/80 font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></span>
+                      Status
+                    </Label>
+                    <motion.div whileHover={{ scale: 1.01 }}>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Event['status'] }))}
+                      >
+                        <SelectTrigger className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 h-12">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gradient-to-br from-slate-900/95 to-black/95 backdrop-blur-xl border border-white/20">
+                          <SelectItem value="upcoming" className="text-white hover:bg-white/10">Upcoming</SelectItem>
+                          <SelectItem value="in_progress" className="text-white hover:bg-white/10">In Progress</SelectItem>
+                          <SelectItem value="completed" className="text-white hover:bg-white/10">Completed</SelectItem>
+                          <SelectItem value="cancelled" className="text-white hover:bg-white/10">Cancelled</SelectItem>
+                          <SelectItem value="postponed" className="text-white hover:bg-white/10">Postponed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </motion.div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <motion.div 
+                  className="flex items-center space-x-3 p-4 rounded-xl bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/10"
+                  whileHover={{ scale: 1.02, borderColor: "rgba(168, 85, 247, 0.3)" }}
+                  transition={{ duration: 0.2 }}
+                >
                   <Switch
                     id="is_public"
                     checked={formData.is_public}
                     onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_public: checked }))}
+                    className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-purple-500 data-[state=checked]:to-pink-500"
                   />
-                  <Label htmlFor="is_public" className="text-gray-300">Public Event</Label>
-                </div>
+                  <Label htmlFor="is_public" className="text-white/80 font-medium cursor-pointer">
+                    Public Event
+                  </Label>
+                  <div className="ml-auto">
+                    {formData.is_public ? (
+                      <Badge className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/30">
+                        Public
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-gradient-to-r from-gray-500/20 to-slate-500/20 text-gray-300 border-gray-500/30">
+                        Private
+                      </Badge>
+                    )}
+                  </div>
+                </motion.div>
               </CardContent>
             </Card>
+            </motion.div>
 
             {/* Date & Time */}
-            <Card className="bg-slate-900/50 border-slate-700/50">
-              <CardHeader>
-                <CardTitle className="text-white">Date & Time</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="event_date" className="text-gray-300">Event Date *</Label>
-                  <Input
-                    id="event_date"
-                    type="date"
-                    value={formData.event_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
-                    className="bg-slate-800 border-slate-700 text-white"
-                  />
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+            >
+              <Card className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-blue-500/20 shadow-xl shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-500">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <motion.div
+                      animate={{ rotate: [0, 360] }}
+                      transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                      className="p-1 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
+                    >
+                      <Clock className="h-4 w-4 text-white" />
+                    </motion.div>
+                    Date & Time
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="event_date" className="text-white/80 font-medium flex items-center gap-2">
+                    <span className="w-2 h-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></span>
+                    Event Date *
+                  </Label>
+                  <motion.div whileHover={{ scale: 1.01 }} whileFocus={{ scale: 1.01 }}>
+                    <div className="relative">
+                      <Input
+                        id="event_date"
+                        type="date"
+                        value={formData.event_date}
+                        onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
+                        className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 h-12 pl-12"
+                      />
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400" />
+                    </div>
+                  </motion.div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="doors_open" className="text-gray-300">Doors Open</Label>
-                    <Input
-                      id="doors_open"
-                      type="time"
-                      value={formData.doors_open || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, doors_open: e.target.value }))}
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
+                  <div className="space-y-3">
+                    <Label htmlFor="doors_open" className="text-white/80 font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></span>
+                      Doors Open
+                    </Label>
+                    <motion.div whileHover={{ scale: 1.01 }}>
+                      <div className="relative">
+                        <Input
+                          id="doors_open"
+                          type="time"
+                          value={formData.doors_open || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, doors_open: e.target.value }))}
+                          className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-green-500/50 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 h-12 pl-10"
+                        />
+                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-400" />
+                      </div>
+                    </motion.div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="start_time" className="text-gray-300">Start Time</Label>
-                    <Input
-                      id="start_time"
-                      type="time"
-                      value={formData.start_time || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
+                  <div className="space-y-3">
+                    <Label htmlFor="start_time" className="text-white/80 font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></span>
+                      Start Time
+                    </Label>
+                    <motion.div whileHover={{ scale: 1.01 }}>
+                      <div className="relative">
+                        <Input
+                          id="start_time"
+                          type="time"
+                          value={formData.start_time || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
+                          className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 h-12 pl-10"
+                        />
+                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-400" />
+                      </div>
+                    </motion.div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="end_time" className="text-gray-300">End Time</Label>
-                    <Input
-                      id="end_time"
-                      type="time"
-                      value={formData.end_time || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
+                  <div className="space-y-3">
+                    <Label htmlFor="end_time" className="text-white/80 font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></span>
+                      End Time
+                    </Label>
+                    <motion.div whileHover={{ scale: 1.01 }}>
+                      <div className="relative">
+                        <Input
+                          id="end_time"
+                          type="time"
+                          value={formData.end_time || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
+                          className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 h-12 pl-10"
+                        />
+                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400" />
+                      </div>
+                    </motion.div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+            </motion.div>
 
             {/* Venue Information */}
-            <Card className="bg-slate-900/50 border-slate-700/50">
-              <CardHeader>
-                <CardTitle className="text-white">Venue Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="venue_name" className="text-gray-300">Venue Name</Label>
-                  <Input
-                    id="venue_name"
-                    value={formData.venue_name || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, venue_name: e.target.value }))}
-                    placeholder="Venue name..."
-                    className="bg-slate-800 border-slate-700 text-white"
-                  />
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+            >
+              <Card className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-green-500/20 shadow-xl shadow-green-500/10 hover:shadow-green-500/20 transition-all duration-500">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <motion.div
+                      animate={{ y: [0, -2, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="p-1 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"
+                    >
+                      <MapPin className="h-4 w-4 text-white" />
+                    </motion.div>
+                    Venue Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <Label htmlFor="venue_name" className="text-white/80 font-medium flex items-center gap-2">
+                    <span className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></span>
+                    Venue Name
+                  </Label>
+                  <motion.div whileHover={{ scale: 1.01 }}>
+                    <div className="relative">
+                      <Input
+                        id="venue_name"
+                        value={formData.venue_name || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, venue_name: e.target.value }))}
+                        placeholder="Venue name..."
+                        className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-white/40 focus:border-green-500/50 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 h-12 pl-12"
+                      />
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-400" />
+                    </div>
+                  </motion.div>
                 </div>
 
                 <div className="space-y-2">
@@ -1236,36 +1425,67 @@ export default function EventsPage() {
                 </div>
               </CardContent>
             </Card>
+            </motion.div>
 
             {/* Tickets & Capacity */}
-            <Card className="bg-slate-900/50 border-slate-700/50">
-              <CardHeader>
-                <CardTitle className="text-white">Tickets & Capacity</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+            >
+              <Card className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-orange-500/20 shadow-xl shadow-orange-500/10 hover:shadow-orange-500/20 transition-all duration-500">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <motion.div
+                      animate={{ rotateY: [0, 180, 360] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                      className="p-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500"
+                    >
+                      <DollarSign className="h-4 w-4 text-white" />
+                    </motion.div>
+                    Tickets & Capacity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="capacity" className="text-gray-300">Venue Capacity</Label>
-                    <Input
-                      id="capacity"
-                      type="number"
-                      value={formData.capacity || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
-                      placeholder="0"
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
+                  <div className="space-y-3">
+                    <Label htmlFor="capacity" className="text-white/80 font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></span>
+                      Venue Capacity
+                    </Label>
+                    <motion.div whileHover={{ scale: 1.01 }}>
+                      <div className="relative">
+                        <Input
+                          id="capacity"
+                          type="number"
+                          value={formData.capacity || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
+                          placeholder="0"
+                          className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 h-12 pl-12"
+                        />
+                        <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-orange-400" />
+                      </div>
+                    </motion.div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="expected_attendance" className="text-gray-300">Expected Attendance</Label>
-                    <Input
-                      id="expected_attendance"
-                      type="number"
-                      value={formData.expected_attendance || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, expected_attendance: parseInt(e.target.value) || 0 }))}
-                      placeholder="0"
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
+                  <div className="space-y-3">
+                    <Label htmlFor="expected_attendance" className="text-white/80 font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full"></span>
+                      Expected Attendance
+                    </Label>
+                    <motion.div whileHover={{ scale: 1.01 }}>
+                      <div className="relative">
+                        <Input
+                          id="expected_attendance"
+                          type="number"
+                          value={formData.expected_attendance || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, expected_attendance: parseInt(e.target.value) || 0 }))}
+                          placeholder="0"
+                          className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-white/40 focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300 h-12 pl-12"
+                        />
+                        <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-pink-400" />
+                      </div>
+                    </motion.div>
                   </div>
                 </div>
 
@@ -1310,48 +1530,130 @@ export default function EventsPage() {
                 </div>
               </CardContent>
             </Card>
+            </motion.div>
           </div>
+                  </div>
+                </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setShowCreateModal(false)} disabled={isSubmitting || isUserLoading}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSaveEvent} 
-              disabled={isSubmitting || isUserLoading || !user || !profile} 
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              {isUserLoading ? 'Loading Profile...' : isSubmitting ? 'Saving...' : editingEvent ? 'Update Event' : 'Create Event'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+                {/* Modal Footer */}
+                <motion.div 
+                  className="flex justify-end gap-4 pt-6 border-t border-white/10"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
+                >
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowCreateModal(false)} 
+                      disabled={isSubmitting || isUserLoading}
+                      className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300 px-6 h-12"
+                    >
+                      Cancel
+                    </Button>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button 
+                      onClick={handleSaveEvent} 
+                      disabled={isSubmitting || isUserLoading || !user || !profile} 
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25 transition-all duration-300 px-8 h-12 font-medium"
+                    >
+                      {isUserLoading ? (
+                        <motion.div 
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="flex items-center gap-2"
+                        >
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Loading Profile...
+                        </motion.div>
+                      ) : isSubmitting ? (
+                        <motion.div 
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="flex items-center gap-2"
+                        >
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Saving...
+                        </motion.div>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          {editingEvent ? 'Update Event' : 'Create Event'}
+                        </span>
+                      )}
+                    </Button>
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </AnimatePresence>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(135deg, rgba(168, 85, 247, 0.5), rgba(236, 72, 153, 0.5));
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(135deg, rgba(168, 85, 247, 0.8), rgba(236, 72, 153, 0.8));
+        }
+      `}</style>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteEventId} onOpenChange={() => setDeleteEventId(null)}>
-        <AlertDialogContent className="bg-slate-800 border-slate-700">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Event</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              Are you sure you want to delete this event? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-slate-700 text-white border-slate-600 hover:bg-slate-600">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteEventId && handleDeleteEvent(deleteEventId)}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
+        <AlertDialogContent className="bg-gradient-to-br from-black/95 via-slate-950/95 to-black/95 backdrop-blur-xl border border-red-500/30 shadow-2xl shadow-red-500/20">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white flex items-center gap-3">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                  className="p-2 rounded-full bg-gradient-to-r from-red-500/20 to-orange-500/20"
+                >
+                  <Trash2 className="h-5 w-5 text-red-400" />
+                </motion.div>
+                Delete Event
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-white/60 mt-2">
+                Are you sure you want to delete this event? This action cannot be undone and all associated data will be permanently removed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-3 pt-6">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <AlertDialogCancel className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300 h-11 px-6">
+                  Cancel
+                </AlertDialogCancel>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <AlertDialogAction
+                  onClick={() => deleteEventId && handleDeleteEvent(deleteEventId)}
+                  className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white shadow-lg shadow-red-500/25 transition-all duration-300 h-11 px-6 font-medium"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Event
+                </AlertDialogAction>
+              </motion.div>
+            </AlertDialogFooter>
+          </motion.div>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp />
-    </div>
+      </div>
+    </React.Fragment>
   )
 } 

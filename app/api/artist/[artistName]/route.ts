@@ -1,0 +1,167 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { authenticateApiRequest } from '@/lib/auth/api-auth'
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ artistName: string }> }
+) {
+  try {
+    const authResult = await authenticateApiRequest(request)
+    const resolvedParams = await params
+    const artistName = decodeURIComponent(resolvedParams.artistName)
+
+    console.log('[Artist API] Fetching artist profile for artist name:', artistName)
+
+    // Use the authenticated supabase client if available, otherwise create a service client
+    let supabase
+    if (authResult) {
+      supabase = authResult.supabase
+      console.log('[Artist API] Using authenticated client')
+    } else {
+      // For public profile viewing, we can use a service client
+      const { createClient } = await import('@/lib/supabase/server')
+      supabase = await createClient()
+      console.log('[Artist API] Using service client for public access')
+    }
+
+    // Look up artist profile by artist name (not username)
+    const { data: artistProfile, error: artistError } = await supabase
+      .from('artist_profiles')
+      .select(`
+        id,
+        user_id,
+        artist_name,
+        bio,
+        genres,
+        social_links,
+        verification_status,
+        account_tier,
+        settings,
+        created_at,
+        updated_at
+      `)
+      .ilike('artist_name', artistName)
+      .single()
+
+    if (artistError || !artistProfile) {
+      console.log('[Artist API] Artist profile not found for artist name:', artistName)
+      return NextResponse.json(
+        { error: 'Artist profile not found' },
+        { status: 404 }
+      )
+    }
+
+    console.log('[Artist API] Found artist profile:', artistProfile.artist_name)
+
+    // Get the main profile for this artist
+    const { data: mainProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select(`
+        id,
+        username,
+        full_name,
+        bio,
+        avatar_url,
+        location,
+        website,
+        is_verified,
+        followers_count,
+        following_count,
+        posts_count,
+        created_at,
+        updated_at
+      `)
+      .eq('id', artistProfile.user_id)
+      .single()
+
+    if (profileError || !mainProfile) {
+      console.log('[Artist API] Main profile not found for user:', artistProfile.user_id)
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      )
+    }
+
+    // Initialize stats with default values
+    let stats = {
+      followers: mainProfile.followers_count || 0,
+      following: mainProfile.following_count || 0,
+      posts: mainProfile.posts_count || 0,
+      likes: 0,
+      views: 0,
+      streams: 0,
+      events: 0,
+      monthly_listeners: 0,
+      total_revenue: 0,
+      engagement_rate: 0
+    }
+
+    // Try to get additional stats from posts table if it exists
+    try {
+      const { count: postCount } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', mainProfile.id)
+
+      if (postCount !== null) {
+        stats.posts = postCount
+      }
+    } catch (error) {
+      console.log('[Artist API] Posts table not available, using profile data')
+    }
+
+    // Get like count (sum of likes on posts) if posts table exists
+    try {
+      const { data: posts } = await supabase
+        .from('posts')
+        .select('likes_count')
+        .eq('user_id', mainProfile.id)
+
+      stats.likes = posts?.reduce((sum, post) => sum + (post.likes_count || 0), 0) || 0
+    } catch (error) {
+      console.log('[Artist API] Could not fetch likes data')
+    }
+
+    // Build the artist profile response
+    const profileWithStats = {
+      id: mainProfile.id,
+      username: mainProfile.username, // Keep the main username for internal use
+      artist_name: artistProfile.artist_name, // The public artist name
+      account_type: 'artist',
+      profile_data: {
+        artist_name: artistProfile.artist_name,
+        bio: artistProfile.bio || mainProfile.bio,
+        genre: Array.isArray(artistProfile.genres) && artistProfile.genres.length > 0 
+          ? artistProfile.genres[0] 
+          : undefined,
+        genres: artistProfile.genres,
+        location: mainProfile.location,
+        website: mainProfile.website,
+        ...artistProfile.social_links
+      },
+      avatar_url: mainProfile.avatar_url,
+      cover_image: null,
+      verified: artistProfile.verification_status === 'verified' || mainProfile.is_verified,
+      bio: artistProfile.bio || mainProfile.bio,
+      location: mainProfile.location,
+      social_links: {
+        website: mainProfile.website,
+        ...(artistProfile.social_links || {})
+      },
+      stats,
+      settings: artistProfile.settings,
+      created_at: artistProfile.created_at,
+      updated_at: artistProfile.updated_at
+    }
+
+    console.log('[Artist API] Returning artist profile with stats')
+
+    return NextResponse.json({ profile: profileWithStats })
+  } catch (error) {
+    console.error('[Artist API] Error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

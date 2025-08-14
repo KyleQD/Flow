@@ -68,8 +68,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { EventTaskManager } from "@/components/admin/event-task-manager"
+import { EventLocationsTab } from "@/components/admin/event-locations-tab"
+import { EventParticipantsTab } from "@/components/admin/event-participants-tab"
+import { EntityAccessAudit } from "@/components/admin/entity-access-audit"
 import { EventStaffManager } from "@/components/admin/event-staff-manager"
 import { EventVendorManager } from "@/components/admin/event-vendor-manager"
+import { EventVendorRequests } from "@/components/admin/event-vendor-requests"
 import { EventJobPosting } from "@/components/admin/event-job-posting"
 import { EventJobsList } from "@/components/admin/event-jobs-list"
 import { 
@@ -538,7 +542,7 @@ export default function EventManagementPage() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 bg-slate-800/50 border-slate-700/50">
+          <TabsList className="grid w-full grid-cols-11 bg-slate-800/50 border-slate-700/50">
             <TabsTrigger value="overview" className="data-[state=active]:bg-purple-600">Overview</TabsTrigger>
             <TabsTrigger value="tasks" className="data-[state=active]:bg-purple-600">Tasks</TabsTrigger>
             <TabsTrigger value="staff" className="data-[state=active]:bg-purple-600">Staff</TabsTrigger>
@@ -547,6 +551,9 @@ export default function EventManagementPage() {
             <TabsTrigger value="finances" className="data-[state=active]:bg-purple-600">Finances</TabsTrigger>
             <TabsTrigger value="logistics" className="data-[state=active]:bg-purple-600">Logistics</TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-purple-600">Analytics</TabsTrigger>
+            <TabsTrigger value="locations" className="data-[state=active]:bg-purple-600">Locations</TabsTrigger>
+            <TabsTrigger value="participants" className="data-[state=active]:bg-purple-600">Participants</TabsTrigger>
+            <TabsTrigger value="access" className="data-[state=active]:bg-purple-600">Access</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -710,6 +717,7 @@ export default function EventManagementPage() {
 
           {/* Vendors Tab */}
           <TabsContent value="vendors" className="space-y-6">
+            <EventVendorRequests eventId={eventId} />
             <EventVendorManager
               eventId={eventId}
               vendors={vendors}
@@ -823,6 +831,21 @@ export default function EventManagementPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Locations Tab */}
+          <TabsContent value="locations" className="space-y-6">
+            <EventLocationsTab eventId={eventId} />
+          </TabsContent>
+
+          {/* Participants Tab */}
+          <TabsContent value="participants" className="space-y-6">
+            <EventParticipantsTab eventId={eventId} />
+          </TabsContent>
+
+          {/* Access & Audit Tab */}
+          <TabsContent value="access" className="space-y-6">
+            <EntityAccessAudit entityType="Event" entityId={eventId} />
           </TabsContent>
         </Tabs>
       </div>
