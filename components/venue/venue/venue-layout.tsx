@@ -11,7 +11,7 @@ export const VenueLayout = ({ children }: VenueLayoutProps) => {
     <EventsProvider>
       <div className="flex min-h-screen">
         <VenueSidebar />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1">{children}</main>
       </div>
     </EventsProvider>
   )

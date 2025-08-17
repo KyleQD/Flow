@@ -1,3 +1,9 @@
+import { NextResponse } from 'next/server'
+
+export async function GET() {
+  return NextResponse.json({ ok: true, ts: Date.now() })
+}
+
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase/client'
 

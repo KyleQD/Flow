@@ -300,7 +300,7 @@ export function ArtistProvider({ children }: { children: ReactNode }) {
             genres: [],
             social_links: {},
             verification_status: 'unverified',
-            account_tier: 'free',
+            account_tier: 'pro',
             settings: {}
           })
 

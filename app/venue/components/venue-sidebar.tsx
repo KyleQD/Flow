@@ -96,7 +96,7 @@ export function VenueSidebar() {
   }
 
   return (
-    <div className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col bg-gray-900 pt-16 md:flex">
+    <div className="hidden md:flex w-64 flex-col bg-gray-900 md:sticky md:top-16 md:h-[calc(100vh-4rem)] z-10">
       <ScrollArea className="flex-1 px-2 py-4">
         <div className="space-y-4">
           {/* Main Navigation */}

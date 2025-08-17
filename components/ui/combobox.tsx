@@ -31,7 +31,7 @@ export function Combobox({ value, placeholder = "Search...", items, isLoading, o
     return () => clearTimeout(t)
   }, [query, onSearch])
 
-  const selectedItem = useMemo(() => items.find(i => i.id === value), [items, value])
+  const selectedItem = useMemo(() => (items || []).find(i => i.id === value), [items, value])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -47,9 +47,9 @@ export function Combobox({ value, placeholder = "Search...", items, isLoading, o
         <Command>
           <CommandInput placeholder={placeholder} value={query} onValueChange={setQuery} />
           <CommandList>
-            {!items.length && !isLoading && <CommandEmpty>No results.</CommandEmpty>}
+            {!(items || []).length && !isLoading && <CommandEmpty>No results.</CommandEmpty>}
             <CommandGroup>
-              {items.map(item => (
+              {(items || []).map(item => (
                 <CommandItem key={item.id} value={item.id} onSelect={() => { onChange?.(item.id); setOpen(false) }}>
                   <div className="flex items-center gap-2">
                     {item.iconUrl && <img src={item.iconUrl} alt="" className="h-5 w-5 rounded-full" />}

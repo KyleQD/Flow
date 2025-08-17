@@ -3,6 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { EventFormData } from '../components/create-event-modal'
+import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
+
+const supabase = createClient()
 
 const eventSchema = z.object({
   id: z.string(),
@@ -22,9 +26,14 @@ export async function updateEvent(eventData: EventFormData) {
   try {
     // Validate the event data
     const validatedData = eventSchema.parse(eventData)
-
-    // TODO: Replace with your actual database update logic
-    // Example: await db.event.update({ where: { id: eventData.id }, data: validatedData })
+    await supabase.from('events').update({
+      title: validatedData.title,
+      description: validatedData.description,
+      date: validatedData.date.toISOString(),
+      time: validatedData.startTime,
+      capacity: validatedData.capacity,
+      type: validatedData.type
+    }).eq('id', validatedData.id)
     
     // Revalidate the venue page to show updated data
     revalidatePath('/venue')
@@ -47,8 +56,7 @@ export async function updateEvent(eventData: EventFormData) {
 
 export async function deleteEvent(eventId: string) {
   try {
-    // TODO: Replace with your actual database delete logic
-    // Example: await db.event.delete({ where: { id: eventId } })
+    await supabase.from('events').delete().eq('id', eventId)
     
     // Revalidate the venue page to show updated data
     revalidatePath('/venue')
@@ -64,9 +72,7 @@ export async function deleteEvent(eventId: string) {
 
 export async function uploadEventDocument(eventId: string, file: File) {
   try {
-    // TODO: Replace with your actual file upload logic
-    // Example: await uploadToStorage(file)
-    // Example: await db.eventDocument.create({ data: { eventId, fileUrl } })
+    // Placeholder: hook to storage later
     
     // Revalidate the venue page to show updated data
     revalidatePath('/venue')
@@ -79,3 +85,42 @@ export async function uploadEventDocument(eventId: string, file: File) {
     }
   }
 } 
+
+// Approve booking request and optionally create event (for venue EDM nights etc.)
+const approveSchema = z.object({
+  requestId: z.string().uuid(),
+  createEvent: z.boolean().default(true)
+})
+
+export async function approveBookingAndMaybeCreateEvent(input: { requestId: string; createEvent?: boolean }) {
+  const { requestId, createEvent } = approveSchema.parse(input)
+  // Use RPC to approve
+  const { error: rpcError } = await supabase.rpc('respond_to_booking_request', { p_request_id: requestId, p_status: 'approved', p_response_message: null })
+  if (rpcError) return { success: false, error: rpcError.message }
+
+  // Fetch the request for details
+  const { data: req, error: fetchErr } = await supabase.from('venue_booking_requests').select('*').eq('id', requestId).single()
+  if (fetchErr || !req) return { success: false, error: fetchErr?.message || 'Request not found' }
+
+  let createdEventId: string | null = null
+  if (createEvent) {
+    const { data: evt, error: evtErr } = await supabase.from('events').insert([{ 
+      title: req.event_name,
+      description: req.description,
+      date: req.event_date,
+      time: '19:00',
+      location: 'Venue',
+      type: req.event_type,
+      capacity: req.expected_attendance || 0,
+      user_id: req.requester_id,
+      venue_id: req.venue_id,
+      genre: req.genre
+    }]).select('id').single()
+    if (evtErr) return { success: false, error: evtErr.message }
+    createdEventId = evt?.id ?? null
+  }
+
+  revalidatePath('/venue/bookings')
+  revalidatePath('/venue')
+  return { success: true, eventId: createdEventId }
+}

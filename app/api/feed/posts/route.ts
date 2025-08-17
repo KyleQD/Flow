@@ -72,73 +72,95 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ posts: mockPosts })
       }
 
-      // Get posts based on type
-      let query = supabase
+      // Build a SAFE base query that does not rely on implicit FK joins or optional columns
+      // Select only guaranteed columns to prevent "column does not exist" errors
+      let baseQuery = supabase
         .from('posts')
-        .select(`
-          id,
-          content,
-          type,
-          visibility,
-          location,
-          hashtags,
-          media_urls,
-          likes_count,
-          comments_count,
-          shares_count,
-          created_at,
-          updated_at,
-          user_id,
-          account_username,
-          account_avatar_url,
-          profiles:user_id (
-            id,
-            username,
-            avatar_url,
-            full_name,
-            is_verified
-          )
-        `)
+        .select(
+          [
+            'id',
+            'user_id',
+            'content',
+            'media_urls',
+            'likes_count',
+            'comments_count',
+            'shares_count',
+            'created_at',
+            'updated_at',
+            // Optional content enrichment; if these columns are absent Supabase will still return null values
+            'type',
+            'visibility',
+            'location',
+            'hashtags'
+          ].join(',')
+        )
         .order('created_at', { ascending: false })
         .limit(limit)
 
-      // Filter by type and user_id if specified
-      if (type === 'user' && user_id) {
-        query = query.eq('user_id', user_id)
-      } else if (type !== 'all' && type !== 'user' && type !== 'network') {
-        query = query.eq('type', type)
-      }
+      // Filter by user when explicitly requested
+      if (type === 'user' && user_id) baseQuery = baseQuery.eq('user_id', user_id)
+      // Ignore non-post "types" like 'following'/'network' to avoid bad filters
 
-      const { data: posts, error: postsError } = await query
+      const { data: basePosts, error: baseError } = await baseQuery
 
-      if (postsError) {
-        console.error('[Feed Posts API] Error fetching posts:', postsError)
+      if (baseError) {
+        console.error('[Feed Posts API] Error fetching base posts:', baseError)
         return NextResponse.json(
           { error: 'Failed to fetch posts' },
           { status: 500 }
         )
       }
 
-      console.log('[Feed Posts API] Found posts:', posts?.length || 0)
+      const posts = basePosts || []
+      console.log('[Feed Posts API] Found posts:', posts.length)
 
-      // Transform posts to match expected format
-      const transformedPosts = (posts || []).map(post => ({
-        id: post.id,
-        content: post.content,
-        media_urls: post.media_urls,
-        likes_count: post.likes_count || 0,
-        comments_count: post.comments_count || 0,
-        created_at: post.created_at,
-        updated_at: post.updated_at,
-        user: {
-          id: post.user_id,
-          username: 'user', // Default username since we can't join with profiles
-          avatar_url: '',
-          verified: false
+      // Enrich with profile data in a separate, RLS-safe query
+      const userIds = Array.from(new Set(posts.map(p => p.user_id).filter(Boolean)))
+      let profileById: Record<string, any> = {}
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, is_verified')
+          .in('id', userIds as string[])
+
+        if (!profilesError && profilesData) {
+          profileById = profilesData.reduce((acc: Record<string, any>, p: any) => {
+            acc[p.id] = p
+            return acc
+          }, {})
+        } else if (profilesError) {
+          console.warn('[Feed Posts API] Profiles join failed; continuing with defaults:', profilesError.message)
         }
+      }
+
+      // Normalize shape for DashboardFeed which expects a `profiles` field
+      const normalized = posts.map(p => ({
+        id: p.id,
+        user_id: p.user_id,
+        content: p.content,
+        type: p.type || 'text',
+        visibility: p.visibility || 'public',
+        location: p.location || null,
+        hashtags: Array.isArray(p.hashtags) ? p.hashtags : [],
+        media_urls: Array.isArray(p.media_urls) ? p.media_urls : [],
+        likes_count: p.likes_count || 0,
+        comments_count: p.comments_count || 0,
+        shares_count: p.shares_count || 0,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
+        profiles: profileById[p.user_id] || {
+          id: p.user_id,
+          username: 'user',
+          full_name: 'User',
+          avatar_url: '',
+          is_verified: false
+        },
+        // Provide a consistent like flag expected by some UIs
+        is_liked: false,
+        like_count: p.likes_count || 0
       }))
 
-      return NextResponse.json({ posts: transformedPosts })
+      return NextResponse.json({ data: normalized })
     } catch (error) {
       console.log('[Feed Posts API] Posts table error, returning mock data:', error)
       

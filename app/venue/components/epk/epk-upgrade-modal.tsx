@@ -62,7 +62,7 @@ export function EPKUpgradeModal({ isOpen, onClose }: EPKUpgradeModalProps) {
           <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-lg p-4 border border-purple-800">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold">Premium EPK</h3>
-              <Badge className="bg-purple-600">$1.99/month</Badge>
+              <Badge className="bg-green-600">Free</Badge>
             </div>
             <p className="text-sm text-gray-300 mb-4">
               Take your EPK to the next level with premium features designed to showcase your work professionally.
@@ -119,7 +119,7 @@ export function EPKUpgradeModal({ isOpen, onClose }: EPKUpgradeModalProps) {
             Maybe Later
           </Button>
           <Button onClick={handleUpgrade} disabled={isProcessing}>
-            {isProcessing ? "Processing..." : "Upgrade Now - $1.99/month"}
+            {isProcessing ? "Processing..." : "Enable Premium"}
           </Button>
         </DialogFooter>
       </DialogContent>

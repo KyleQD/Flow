@@ -17,7 +17,9 @@ import { useCurrentVenue } from "../hooks/useCurrentVenue"
 import { venueService } from "@/lib/services/venue.service"
 import { LoadingSpinner } from "../components/loading-spinner"
 import { useToast } from "@/hooks/use-toast"
-import { format } from "date-fns"
+import { format, startOfMonth, endOfMonth } from "date-fns"
+import { approveBookingAndMaybeCreateEvent } from "../actions/event-actions"
+import RecurringTemplateForm from "../components/recurring-template-form"
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -87,12 +89,16 @@ export default function BookingsPage() {
   const [selectedBooking, setSelectedBooking] = useState<BookingRequest | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [isResponseModalOpen, setIsResponseModalOpen] = useState(false)
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date())
+  const [calendarEvents, setCalendarEvents] = useState<BookingRequest[]>([])
+  const [calendarVenueEvents, setCalendarVenueEvents] = useState<Array<{ id: string; title: string; date: string }>>([])
   
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [dateFilter, setDateFilter] = useState<Date | undefined>()
   const [eventTypeFilter, setEventTypeFilter] = useState<string>("all")
+  const [genreFilter, setGenreFilter] = useState<string>("all")
 
   // Response states
   const [responseAction, setResponseAction] = useState<"approve" | "reject" | null>(null)
@@ -103,6 +109,20 @@ export default function BookingsPage() {
       fetchBookings()
     }
   }, [venue?.id])
+  // Load approved bookings for calendar when month or venue changes
+  useEffect(() => {
+    if (!venue?.id) return
+    const rangeStart = startOfMonth(calendarMonth).toISOString()
+    const rangeEnd = endOfMonth(calendarMonth).toISOString()
+    ;(async () => {
+      const approved = await venueService.getConfirmedBookingsByRange(venue.id, rangeStart, rangeEnd)
+      setCalendarEvents(approved as unknown as BookingRequest[])
+      const venueEvents = await venueService.getVenueEventsByRange(venue.id, rangeStart, rangeEnd)
+      setCalendarVenueEvents(
+        (venueEvents || []).map((e: any) => ({ id: e.id, title: e.title ?? 'Event', date: e.date }))
+      )
+    })()
+  }, [venue?.id, calendarMonth])
 
   const fetchBookings = async () => {
     if (!venue?.id) return
@@ -169,6 +189,7 @@ export default function BookingsPage() {
     
     // Event type filter
     if (eventTypeFilter !== "all" && booking.event_type !== eventTypeFilter) return false
+    if (genreFilter !== "all" && (booking as any).genre !== genreFilter) return false
     
     return true
   })
@@ -280,6 +301,7 @@ export default function BookingsPage() {
         <TabsList>
           <TabsTrigger value="requests">Booking Requests</TabsTrigger>
           <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+          <TabsTrigger value="recurring">Recurring Templates</TabsTrigger>
           <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -334,6 +356,24 @@ export default function BookingsPage() {
                       <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
+                </div>
+
+                <div className="min-w-[150px]">
+                  <Label>Genre</Label>
+                  <Select value={genreFilter} onValueChange={setGenreFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All genres" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Genres</SelectItem>
+                      <SelectItem value="edm">EDM</SelectItem>
+                      <SelectItem value="hiphop">Hip-Hop</SelectItem>
+                      <SelectItem value="rock">Rock</SelectItem>
+                      <SelectItem value="jazz">Jazz</SelectItem>
+                      <SelectItem value="pop">Pop</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="min-w-[150px]">
@@ -411,6 +451,9 @@ export default function BookingsPage() {
                               {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                             </Badge>
                             <Badge variant="secondary">{booking.event_type}</Badge>
+                            {(booking as any).genre && (
+                              <Badge className="bg-purple-100 text-purple-800 border-purple-200">{(booking as any).genre}</Badge>
+                            )}
                           </div>
                           
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-3">
@@ -475,11 +518,21 @@ export default function BookingsPage() {
                       {booking.status === "pending" && (
                             <div className="flex gap-1">
                           <Button
-                            size="sm"
-                                onClick={() => {
-                                  setSelectedBooking(booking)
-                                  setResponseAction("approve")
-                                  setIsResponseModalOpen(true)
+                             size="sm"
+                                onClick={async () => {
+                                  const res = await approveBookingAndMaybeCreateEvent({ requestId: booking.id, createEvent: true })
+                                  if (!res.success) {
+                                    toast({ title: 'Failed to approve', description: res.error || 'Unknown error', variant: 'destructive' })
+                                  } else {
+                                    toast({ title: 'Booking Approved', description: 'Event created and calendar updated.' })
+                                    await fetchBookings()
+                                    const rangeStart = startOfMonth(calendarMonth).toISOString()
+                                    const rangeEnd = endOfMonth(calendarMonth).toISOString()
+                                    const approved = await venueService.getConfirmedBookingsByRange(venue!.id, rangeStart, rangeEnd)
+                                    setCalendarEvents(approved as unknown as BookingRequest[])
+                                    const venueEvents = await venueService.getVenueEventsByRange(venue!.id, rangeStart, rangeEnd)
+                                    setCalendarVenueEvents((venueEvents || []).map((e: any) => ({ id: e.id, title: e.title ?? 'Event', date: e.date })))
+                                  }
                                 }}
                                 className="bg-green-600 hover:bg-green-700"
                           >
@@ -549,24 +602,68 @@ export default function BookingsPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="recurring" className="space-y-4">
+          {venue && (
+            <RecurringTemplateForm venueId={venue.id} onCreated={() => {
+              toast({ title: 'Template saved', description: 'Generate slots from the template to open applications.' })
+            }} />
+          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>How recurring nights work</CardTitle>
+              <CardDescription>Define weekly nights like EDM Night or Reggae Night. Slots are generated and artists can request those dates.</CardDescription>
+            </CardHeader>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="calendar">
-                <Card>
-                  <CardHeader>
-              <CardTitle>Venue Calendar</CardTitle>
-              <CardDescription>Visual overview of your bookings and availability</CardDescription>
-                  </CardHeader>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Venue Calendar</CardTitle>
+                <CardDescription>Confirmed booking requests (approved)</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-sm text-muted-foreground w-28 text-center">
+                  {format(calendarMonth, 'MMMM yyyy')}
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
             <CardContent>
-              <div className="h-96 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg">
-                <div className="text-center">
-                  <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-muted-foreground mb-2">Interactive calendar view coming soon</p>
-                  <p className="text-sm text-muted-foreground">
-                    This will show your bookings, availability, and blocked dates
-                  </p>
+              {/* Simple month grid with approved bookings */}
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: new Date(calendarMonth.getFullYear(), calendarMonth.getMonth()+1, 0).getDate() }).map((_, idx) => {
+                  const date = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), idx + 1)
+                  const items = calendarEvents.filter(e => new Date(e.event_date).toDateString() === date.toDateString())
+                  const venueItems = calendarVenueEvents.filter(e => new Date(e.date).toDateString() === date.toDateString())
+                  return (
+                    <div key={idx} className="border rounded-md p-2 min-h-24">
+                      <div className="text-xs font-medium text-muted-foreground">{idx + 1}</div>
+                      <div className="mt-1 space-y-1">
+                        {items.map(item => (
+                          <div key={item.id} className="text-xs rounded bg-green-100 text-green-800 px-1 py-0.5 flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            <span className="truncate" title={item.event_name}>{item.event_name}</span>
+                          </div>
+                        ))}
+                        {venueItems.map(item => (
+                          <div key={item.id} className="text-xs rounded bg-blue-100 text-blue-800 px-1 py-0.5 truncate" title={item.title}>
+                            {item.title}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="upcoming">

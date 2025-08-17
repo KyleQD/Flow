@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { uploadVenueDocument } from "../actions/document-actions"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -222,62 +223,22 @@ export default function DocumentsPage() {
 
   const handleFileUpload = async (files: FileList) => {
     if (!venue?.id) return
-    
     const fileArray = Array.from(files)
     setUploadingFiles(fileArray)
-    
     for (const file of fileArray) {
       try {
-        setUploadProgress(prev => ({ ...prev, [file.name]: 0 }))
-        
-        // Simulate upload progress
-        const progressInterval = setInterval(() => {
-          setUploadProgress(prev => {
-            const current = prev[file.name] || 0
-            if (current >= 100) {
-              clearInterval(progressInterval)
-              return prev
-            }
-            return { ...prev, [file.name]: current + 10 }
-          })
-        }, 200)
-        
-        // Mock upload - in real app, upload to your storage service
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        
-        const newDocument: Document = {
-          id: `doc-${Date.now()}-${Math.random()}`,
-          name: file.name,
-          description: "",
-          document_type: "other",
-          file_url: URL.createObjectURL(file),
-          file_size: file.size,
-          mime_type: file.type,
-          is_public: false,
-          uploaded_by: "current_user",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          folder_id: currentFolder || undefined,
-          version: 1,
-          download_count: 0,
+        setUploadProgress(prev => ({ ...prev, [file.name]: 10 }))
+        const res = await uploadVenueDocument({ venueId: venue.id, file, name: file.name, documentType: 'other', isPublic: false })
+        if (!res.success) {
+          toast({ title: 'Upload Failed', description: res.error || `Failed to upload ${file.name}`, variant: 'destructive' })
+        } else {
+          setUploadProgress(prev => ({ ...prev, [file.name]: 100 }))
+          toast({ title: 'File Uploaded', description: `${file.name} has been uploaded successfully.` })
         }
-        
-        setDocuments(prev => [newDocument, ...prev])
-        
-        toast({
-          title: "File Uploaded",
-          description: `${file.name} has been uploaded successfully.`,
-        })
-        
       } catch (error) {
-        toast({
-          title: "Upload Failed",
-          description: `Failed to upload ${file.name}`,
-          variant: "destructive"
-        })
+        toast({ title: 'Upload Failed', description: `Failed to upload ${file.name}`, variant: 'destructive' })
       }
     }
-    
     setUploadingFiles([])
     setUploadProgress({})
     setIsUploadModalOpen(false)

@@ -40,7 +40,7 @@ export default async function JobsPage() {
         </div>
         {session?.user && (
           <div className="flex items-center gap-4">
-            {session.user.isPro ? (
+            {true ? (
               <Link href="/jobs/new">
                 <Button>Post a Job</Button>
               </Link>
@@ -65,7 +65,7 @@ export default async function JobsPage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{job.budget}</span>
                 {session?.user ? (
-                  session.user.isPro ? (
+                  true ? (
                     <Link href={`/jobs/${job.id}/apply`}>
                       <Button variant="outline" size="sm">Apply Now</Button>
                     </Link>

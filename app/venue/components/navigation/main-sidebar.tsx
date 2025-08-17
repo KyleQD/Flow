@@ -183,10 +183,7 @@ export function MainSidebar({ open, onOpenChange, className = "" }: MainSidebarP
   const SidebarContent = () => (
     <>
       <div className="flex h-14 items-center border-b px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <img src="/images/tourify-logo.png" alt="Tourify" className="h-8 w-auto" />
-          <span className="text-xl font-bold">Tourify</span>
-        </Link>
+        <div className="flex-1" />
         <Button variant="ghost" size="icon" className="ml-auto lg:hidden" onClick={() => onOpenChange(false)}>
           <X className="h-5 w-5" />
           <span className="sr-only">Close sidebar</span>
@@ -260,7 +257,7 @@ export function MainSidebar({ open, onOpenChange, className = "" }: MainSidebarP
             <NavItem href="/content/posts" icon={<FileText className="h-4 w-4" />} label="Posts" />
             <NavItem href="/content/photos" icon={<ImageIcon className="h-4 w-4" />} label="Photos" />
             <NavItem href="/content/videos" icon={<Video className="h-4 w-4" />} label="Videos" />
-            <NavItem href="/epk" icon={<FileText className="h-4 w-4" />} label="EPK" badge="Pro" />
+            <NavItem href="/epk" icon={<FileText className="h-4 w-4" />} label="EPK" badge="Free" />
           </NavGroup>
 
           {/* Venues & Events */}
@@ -316,7 +313,7 @@ export function MainSidebar({ open, onOpenChange, className = "" }: MainSidebarP
   return (
     <>
       {/* Desktop sidebar */}
-      <div className={cn("fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r bg-background lg:flex", className)}>
+      <div className={cn("hidden lg:flex w-64 flex-col border-r bg-background sticky top-16 h-[calc(100vh-4rem)] z-10", className)}>
         <SidebarContent />
       </div>
 

@@ -474,6 +474,131 @@ class VenueService {
   }
 
   // =============================================================================
+  // BOOKINGS CALENDAR METHODS
+  // =============================================================================
+
+  /**
+   * Fetch confirmed booking requests for a venue within a date range to power the calendar
+   */
+  async getConfirmedBookingsByRange(
+    venueId: string,
+    rangeStartIso: string,
+    rangeEndIso: string
+  ): Promise<VenueBookingRequest[]> {
+    try {
+      const cacheKey = `confirmed_bookings_${venueId}_${rangeStartIso}_${rangeEndIso}`
+      const cached = this.getFromCache<VenueBookingRequest[]>(cacheKey)
+      if (cached) return cached
+
+      const { data, error } = await this.supabase
+        .from('venue_booking_requests')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('status', 'approved')
+        .gte('event_date', rangeStartIso)
+        .lte('event_date', rangeEndIso)
+        .order('event_date', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching confirmed bookings range:', error)
+        return []
+      }
+
+      this.setCache(cacheKey, data || [])
+      return data || []
+    } catch (error) {
+      console.error('Error in getConfirmedBookingsByRange:', error)
+      return []
+    }
+  }
+
+  /**
+   * Fetch venue-created events (internal or public) for calendar within range
+   * Requires events.venue_id column (added by migration 20250813120000) or falls back to created_by
+   */
+  async getVenueEventsByRange(
+    venueId: string,
+    rangeStartIso: string,
+    rangeEndIso: string
+  ): Promise<any[]> {
+    try {
+      const cacheKey = `venue_events_${venueId}_${rangeStartIso}_${rangeEndIso}`
+      const cached = this.getFromCache<any[]>(cacheKey)
+      if (cached) return cached
+
+      // Prefer venue_id filter when available
+      const { data, error } = await this.supabase
+        .from('events')
+        .select('*')
+        .eq('venue_id', venueId)
+        .gte('date', rangeStartIso)
+        .lte('date', rangeEndIso)
+        .order('date', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching venue events range:', error)
+        return []
+      }
+
+      this.setCache(cacheKey, data || [])
+      return data || []
+    } catch (error) {
+      console.error('Error in getVenueEventsByRange:', error)
+      return []
+    }
+  }
+
+  // =============================================================================
+  // RECURRING EVENTS / SLOTS
+  // =============================================================================
+
+  async createRecurringTemplate(params: {
+    venueId: string
+    title: string
+    genre?: string
+    weekday: number
+    startTime: string
+    durationMinutes: number
+    startDate: string
+    endDate?: string
+    capacity?: number
+  }) {
+    const { error } = await this.supabase.from('venue_recurring_templates').insert({
+      venue_id: params.venueId,
+      title: params.title,
+      genre: params.genre,
+      weekday: params.weekday,
+      start_time: params.startTime,
+      duration_minutes: params.durationMinutes,
+      start_date: params.startDate,
+      end_date: params.endDate ?? null,
+      capacity: params.capacity ?? null
+    })
+    if (error) throw new Error(error.message)
+  }
+
+  async generateSlotsForTemplate(templateId: string, fromIso: string, toIso: string): Promise<number> {
+    const from = fromIso.split('T')[0]
+    const to = toIso.split('T')[0]
+    const { data, error } = await this.supabase.rpc('generate_slots_for_template', { p_template_id: templateId, p_from: from, p_to: to })
+    if (error) throw new Error(error.message)
+    return data as number
+  }
+
+  async listOpenSlotsByRange(venueId: string, rangeStartIso: string, rangeEndIso: string) {
+    const { data, error } = await this.supabase
+      .from('venue_booking_slots')
+      .select('*')
+      .eq('venue_id', venueId)
+      .eq('status', 'open')
+      .gte('slot_start', rangeStartIso)
+      .lte('slot_end', rangeEndIso)
+      .order('slot_start', { ascending: true })
+    if (error) throw new Error(error.message)
+    return data || []
+  }
+
+  // =============================================================================
   // EQUIPMENT METHODS
   // =============================================================================
 

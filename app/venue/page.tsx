@@ -15,6 +15,7 @@ import { VenueUpcomingEvents } from "./components/venue-upcoming-events"
 import { VenueDocuments } from "./components/venue-documents"
 
 import { VenueAnalyticsSummary } from "./components/venue-analytics-summary"
+import PromotionShell from "./components/promotion-shell"
 import { VenueCalendar } from "./components/venue-calendar"
 import { CommandSearch } from "./components/command-search"
 import { NotificationCenter } from "./components/notification-center"
@@ -439,7 +440,7 @@ export default function VenueDashboard() {
       />
 
       {/* Main content */}
-      <div className="flex-1 p-4 md:p-8 md:ml-64">
+      <div className="flex-1 p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header with venue info and actions */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -786,11 +787,22 @@ export default function VenueDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-96 flex items-center justify-center bg-gray-800 rounded-lg">
-                        <div className="text-center">
-                          <MessageSquare className="h-12 w-12 text-orange-400 mx-auto mb-4 opacity-50" />
-                          <p className="text-gray-400 mb-2">Message management coming soon</p>
-                          <p className="text-sm text-gray-500">Communicate with clients and team members</p>
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2">
+                          <div className="border rounded-lg h-96 overflow-hidden">
+                            <iframe title="Staff Messaging" className="w-full h-full bg-gray-900" src="/venue/staff#communications" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-400 mb-2">Quick Links</div>
+                          <div className="grid gap-2">
+                            <Button variant="outline" onClick={() => window.location.href = '/venue/staff#communications'}>
+                              Open Staff Communications
+                            </Button>
+                            <Button variant="outline" onClick={() => window.location.href = '/messages'}>
+                              Open Global Messages
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -838,12 +850,8 @@ export default function VenueDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-96 flex items-center justify-center bg-gray-800 rounded-lg">
-                        <div className="text-center">
-                          <DollarSign className="h-12 w-12 text-green-400 mx-auto mb-4 opacity-50" />
-                          <p className="text-gray-400 mb-2">Financial dashboard coming soon</p>
-                          <p className="text-sm text-gray-500">Track revenue, expenses, and profitability</p>
-                        </div>
+                      <div className="border rounded-lg overflow-hidden">
+                        <iframe title="Venue Finance" className="w-full h-[1200px] bg-gray-900" src="/venue/finances" />
                       </div>
                     </CardContent>
                   </Card>
@@ -893,12 +901,13 @@ export default function VenueDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-96 flex items-center justify-center bg-gray-800 rounded-lg">
-                        <div className="text-center">
-                          <Megaphone className="h-12 w-12 text-pink-400 mx-auto mb-4 opacity-50" />
-                          <p className="text-gray-400 mb-2">Marketing tools coming soon</p>
-                          <p className="text-sm text-gray-500">Create campaigns and promote events</p>
-                        </div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <Button onClick={() => setActiveTab('promotion')} className="bg-pink-600 hover:bg-pink-700">Create Campaign</Button>
+                        <Button variant="outline" onClick={() => window.location.href='/venue/analytics'}>View Analytics</Button>
+                      </div>
+                      <div className="text-sm text-gray-400 mb-2">Campaigns</div>
+                      <div className="border rounded-lg overflow-hidden p-4 bg-gray-900">
+                        <PromotionShell />
                       </div>
                     </CardContent>
                   </Card>
@@ -917,12 +926,20 @@ export default function VenueDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-96 flex items-center justify-center bg-gray-800 rounded-lg">
-                        <div className="text-center">
-                          <UserCheck className="h-12 w-12 text-cyan-400 mx-auto mb-4 opacity-50" />
-                          <p className="text-gray-400 mb-2">CRM system coming soon</p>
-                          <p className="text-sm text-gray-500">Manage client relationships and history</p>
-                        </div>
+                      <div className="text-sm text-gray-400 mb-2">Recent Requesters</div>
+                      <div className="grid gap-2">
+                        {bookingRequests.slice(0, 10).map((b) => (
+                          <div key={b.id} className="flex items-center justify-between p-3 bg-gray-800/60 rounded">
+                            <div>
+                              <div className="text-white text-sm font-medium">{b.eventName}</div>
+                              <div className="text-xs text-gray-400">{b.organizer} • {new Date(b.date).toLocaleDateString()}</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(b.organizer)}>Copy Contact</Button>
+                              <Button size="sm" onClick={() => setActiveTab('bookings')}>View</Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>

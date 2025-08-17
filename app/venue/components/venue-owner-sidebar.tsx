@@ -217,19 +217,14 @@ export function VenueOwnerSidebar({ venue, isOpen, onClose, onTabChange, activeT
       <div
         className={`fixed top-0 left-0 h-full bg-gray-900 border-r border-gray-800 w-72 z-50 transition-transform duration-300 ease-in-out overflow-y-auto ${
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}
+        } md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:z-10 md:overflow-visible md:self-start`}
       >
         {/* Close button (mobile only) */}
         <button className="absolute top-4 right-4 md:hidden text-gray-400 hover:text-white z-10" onClick={onClose}>
           <X className="h-5 w-5" />
         </button>
 
-        {/* Logo */}
-        <div className="p-4 flex justify-center border-b border-gray-800">
-          <Link href="/">
-            <img src="/images/tourify-logo-white.png" alt="Tourify" className="h-8" />
-          </Link>
-        </div>
+        {/* Removed top logo to avoid overlap with the global top navigation */}
 
         {/* Venue info */}
         <div className="p-4 border-b border-gray-800 hover:bg-gray-800/50 transition-colors cursor-pointer group">

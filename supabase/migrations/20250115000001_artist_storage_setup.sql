@@ -34,6 +34,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =============================================
 
 -- Users can upload to their own folder
+DROP POLICY IF EXISTS "Users can upload music to own folder" ON storage.objects;
 CREATE POLICY "Users can upload music to own folder" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'artist-music' AND
@@ -41,6 +42,7 @@ CREATE POLICY "Users can upload music to own folder" ON storage.objects
   );
 
 -- Users can view their own music files
+DROP POLICY IF EXISTS "Users can view own music files" ON storage.objects;
 CREATE POLICY "Users can view own music files" ON storage.objects
   FOR SELECT USING (
     bucket_id = 'artist-music' AND
@@ -48,6 +50,7 @@ CREATE POLICY "Users can view own music files" ON storage.objects
   );
 
 -- Users can update their own music files
+DROP POLICY IF EXISTS "Users can update own music files" ON storage.objects;
 CREATE POLICY "Users can update own music files" ON storage.objects
   FOR UPDATE USING (
     bucket_id = 'artist-music' AND
@@ -55,6 +58,7 @@ CREATE POLICY "Users can update own music files" ON storage.objects
   );
 
 -- Users can delete their own music files
+DROP POLICY IF EXISTS "Users can delete own music files" ON storage.objects;
 CREATE POLICY "Users can delete own music files" ON storage.objects
   FOR DELETE USING (
     bucket_id = 'artist-music' AND
@@ -66,6 +70,7 @@ CREATE POLICY "Users can delete own music files" ON storage.objects
 -- =============================================
 
 -- Users can upload photos to their own folder
+DROP POLICY IF EXISTS "Users can upload photos to own folder" ON storage.objects;
 CREATE POLICY "Users can upload photos to own folder" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'artist-photos' AND
@@ -73,10 +78,12 @@ CREATE POLICY "Users can upload photos to own folder" ON storage.objects
   );
 
 -- Anyone can view public photos
+DROP POLICY IF EXISTS "Anyone can view artist photos" ON storage.objects;
 CREATE POLICY "Anyone can view artist photos" ON storage.objects
   FOR SELECT USING (bucket_id = 'artist-photos');
 
 -- Users can update their own photos
+DROP POLICY IF EXISTS "Users can update own photos" ON storage.objects;
 CREATE POLICY "Users can update own photos" ON storage.objects
   FOR UPDATE USING (
     bucket_id = 'artist-photos' AND
@@ -84,6 +91,7 @@ CREATE POLICY "Users can update own photos" ON storage.objects
   );
 
 -- Users can delete their own photos
+DROP POLICY IF EXISTS "Users can delete own photos" ON storage.objects;
 CREATE POLICY "Users can delete own photos" ON storage.objects
   FOR DELETE USING (
     bucket_id = 'artist-photos' AND

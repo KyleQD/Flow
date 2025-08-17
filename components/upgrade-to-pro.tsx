@@ -18,14 +18,14 @@ export function UpgradeToPro({ className, variant = "default", ...props }: Upgra
     <Dialog>
       <DialogTrigger asChild>
         <Button variant={variant} className={cn("", className)} {...props}>
-          Upgrade to Pro
+          Pro features are now free
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Upgrade to Pro</DialogTitle>
+          <DialogTitle>Pro access unlocked</DialogTitle>
           <DialogDescription>
-            Unlock the full potential of Tourify with a Pro account:
+            All upgraded features are temporarily free while we roll out the new account organization.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -37,7 +37,7 @@ export function UpgradeToPro({ className, variant = "default", ...props }: Upgra
           </ul>
           <div className="flex justify-end gap-4">
             <Button variant="outline">Learn More</Button>
-            <Button>Upgrade Now</Button>
+            <Button>Got it</Button>
           </div>
         </div>
       </DialogContent>

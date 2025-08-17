@@ -15,6 +15,9 @@ export const authOptions: NextAuthOptions = {
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id
+        // Temporarily grant Pro access to all authenticated users
+        // to make upgraded account types free during beta
+        ;(session.user as any).isPro = true
       }
       return session
     },

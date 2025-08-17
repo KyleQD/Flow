@@ -82,22 +82,27 @@ ALTER TABLE music_comments ENABLE ROW LEVEL SECURITY;
 -- =============================================
 
 -- Public tracks are viewable by everyone
+DROP POLICY IF EXISTS "Public music is viewable by everyone" ON artist_music;
 CREATE POLICY "Public music is viewable by everyone" ON artist_music
   FOR SELECT USING (is_public = true);
 
 -- Users can view their own music (public or private)
+DROP POLICY IF EXISTS "Users can view their own music" ON artist_music;
 CREATE POLICY "Users can view their own music" ON artist_music
   FOR SELECT USING (auth.uid() = user_id);
 
 -- Users can insert their own music
+DROP POLICY IF EXISTS "Users can insert their own music" ON artist_music;
 CREATE POLICY "Users can insert their own music" ON artist_music
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Users can update their own music
+DROP POLICY IF EXISTS "Users can update their own music" ON artist_music;
 CREATE POLICY "Users can update their own music" ON artist_music
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Users can delete their own music
+DROP POLICY IF EXISTS "Users can delete their own music" ON artist_music;
 CREATE POLICY "Users can delete their own music" ON artist_music
   FOR DELETE USING (auth.uid() = user_id);
 
@@ -106,14 +111,17 @@ CREATE POLICY "Users can delete their own music" ON artist_music
 -- =============================================
 
 -- Anyone can view likes
+DROP POLICY IF EXISTS "Anyone can view music likes" ON music_likes;
 CREATE POLICY "Anyone can view music likes" ON music_likes
   FOR SELECT USING (true);
 
 -- Users can like music
+DROP POLICY IF EXISTS "Users can like music" ON music_likes;
 CREATE POLICY "Users can like music" ON music_likes
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Users can unlike music they liked
+DROP POLICY IF EXISTS "Users can unlike their own likes" ON music_likes;
 CREATE POLICY "Users can unlike their own likes" ON music_likes
   FOR DELETE USING (auth.uid() = user_id);
 
@@ -122,6 +130,7 @@ CREATE POLICY "Users can unlike their own likes" ON music_likes
 -- =============================================
 
 -- Anyone can view comments on public music
+DROP POLICY IF EXISTS "Anyone can view music comments" ON music_comments;
 CREATE POLICY "Anyone can view music comments" ON music_comments
   FOR SELECT USING (
     EXISTS (
@@ -132,6 +141,7 @@ CREATE POLICY "Anyone can view music comments" ON music_comments
   );
 
 -- Users can comment on public music
+DROP POLICY IF EXISTS "Users can comment on music" ON music_comments;
 CREATE POLICY "Users can comment on music" ON music_comments
   FOR INSERT WITH CHECK (
     auth.uid() = user_id AND
@@ -143,10 +153,12 @@ CREATE POLICY "Users can comment on music" ON music_comments
   );
 
 -- Users can update their own comments
+DROP POLICY IF EXISTS "Users can update their own comments" ON music_comments;
 CREATE POLICY "Users can update their own comments" ON music_comments
   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Users can delete their own comments
+DROP POLICY IF EXISTS "Users can delete their own comments" ON music_comments;
 CREATE POLICY "Users can delete their own comments" ON music_comments
   FOR DELETE USING (auth.uid() = user_id);
 

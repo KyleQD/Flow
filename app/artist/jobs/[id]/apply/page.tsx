@@ -103,21 +103,7 @@ export default function ApplyToJobPage() {
     )
   }
 
-  if (!session.user.isPro) {
-    return (
-      <div className="container max-w-4xl py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Upgrade to Pro</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>You need a pro account to apply for jobs.</p>
-            <UpgradeToPro className="mt-4" />
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  // Pro gating disabled during beta
 
   if (!job) {
     return (

@@ -35,11 +35,13 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import Image from 'next/image'
 import { useAuth } from '@/contexts/auth-context'
+import { ThreadCardV2 } from '@/components/forums/thread-card-v2'
+import { ThreadComposerV2 } from '@/components/forums/thread-composer-v2'
 
 
 interface ContentItem {
   id: string
-  type: 'music' | 'event' | 'video' | 'tour' | 'news' | 'blog'
+  type: 'music' | 'event' | 'video' | 'tour' | 'news' | 'blog' | 'forum'
   title: string
   description?: string
   author?: {
@@ -67,6 +69,12 @@ interface ContentItem {
     ticket_price?: number
     url?: string
     tags?: string[]
+    forum?: {
+      id: string
+      name: string
+      slug: string
+    }
+    user_vote?: number
   }
   is_liked?: boolean
   is_following?: boolean
@@ -111,11 +119,10 @@ export function ForYouPage() {
   const contentTypes = [
     { value: 'all', label: 'All', icon: Sparkles },
     { value: 'music', label: 'Music', icon: Music2 },
-    { value: 'events', label: 'Events', icon: Calendar },
     { value: 'videos', label: 'Videos', icon: Video },
-    { value: 'tours', label: 'Tours', icon: MapPin },
     { value: 'news', label: 'News', icon: FileText },
-    { value: 'blogs', label: 'Blogs', icon: FileText }
+    { value: 'blogs', label: 'Blogs', icon: FileText },
+    { value: 'forums', label: 'Forums', icon: Users }
   ]
 
   // Helper function to get placeholder images
@@ -126,7 +133,8 @@ export function ForYouPage() {
       video: '3b82f6', // Blue
       tour: 'f59e0b', // Amber
       news: 'ef4444', // Red
-      blog: '8b5cf6'  // Violet
+      blog: '8b5cf6',  // Violet
+      forum: '64748b' // Slate
     }
     
     const color = colors[type as keyof typeof colors] || '6b7280'
@@ -147,10 +155,9 @@ export function ForYouPage() {
       // Add type parameter if a specific tab is selected
       if (activeTab !== 'all') {
         const typeMapping: { [key: string]: string } = {
-          'events': 'event',
           'videos': 'video',
-          'tours': 'tour',
           'blogs': 'blog',
+          'forums': 'forum',
           'news': 'news' // Fix: explicitly map 'news' to 'news'
         }
         const targetType = typeMapping[activeTab] || activeTab.slice(0, -1)
@@ -169,13 +176,18 @@ export function ForYouPage() {
         })
         
         // Initialize engagement data to zero for all content
-        const contentWithZeroEngagement = data.content.map((item: ContentItem) => ({
+        const contentWithZeroEngagement = data.content.map((item: any) => ({
           ...item,
+          // Harmonize forum payload keys into ContentItem shape
+          type: item.type,
+          title: item.title || item.metadata?.title || 'Untitled',
+          description: item.description,
+          author: item.author,
           engagement: {
-            likes: 0,
-            views: 0,
-            shares: 0,
-            comments: 0
+            likes: item.engagement?.likes || 0,
+            views: item.engagement?.views || 0,
+            shares: item.engagement?.shares || 0,
+            comments: item.engagement?.comments || 0
           }
         }))
         setContent(contentWithZeroEngagement)
@@ -533,6 +545,7 @@ export function ForYouPage() {
       case 'tour': return <MapPin className="h-4 w-4" />
       case 'news': return <FileText className="h-4 w-4" />
       case 'blog': return <FileText className="h-4 w-4" />
+      case 'forum': return <Users className="h-4 w-4" />
       default: return <Sparkles className="h-4 w-4" />
     }
   }
@@ -546,6 +559,7 @@ export function ForYouPage() {
       case 'tour': return 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white'
       case 'news': return 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
       case 'blog': return 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
+      case 'forum': return 'bg-gradient-to-r from-slate-600 to-slate-500 text-white'
       default: return 'bg-gradient-to-r from-gray-500 to-slate-500 text-white'
     }
   }
@@ -559,6 +573,7 @@ export function ForYouPage() {
       case 'tour': return 'hover:border-orange-500/50 group-hover:shadow-orange-500/10'
       case 'news': return 'hover:border-red-500/50 group-hover:shadow-red-500/10'
       case 'blog': return 'hover:border-indigo-500/50 group-hover:shadow-indigo-500/10'
+      case 'forum': return 'hover:border-slate-500/50 group-hover:shadow-slate-500/10'
       default: return 'hover:border-purple-500/50 group-hover:shadow-purple-500/10'
     }
   }
@@ -572,6 +587,7 @@ export function ForYouPage() {
       case 'tour': return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
       case 'news': return 'bg-red-500/20 text-red-400 border-red-500/30'
       case 'blog': return 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
+      case 'forum': return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
       default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
     }
   }
@@ -753,6 +769,17 @@ export function ForYouPage() {
               transition={{ delay: 0.3 }}
               className="space-y-6"
             >
+              {/* Thread composer for Forums tab */}
+              {activeTab === 'forums' && user && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6"
+                >
+                  <ThreadComposerV2 onSuccess={() => loadPersonalizedContent()} />
+                </motion.div>
+              )}
+
               {loading ? (
                 <div className="grid grid-cols-1 gap-6">
                   {[...Array(3)].map((_, i) => (
@@ -779,197 +806,138 @@ export function ForYouPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
                     >
-                      <Card className={`relative bg-slate-900/50 border-slate-700/30 transition-all duration-300 group hover:shadow-xl rounded-2xl ${getContentCardBorder(item.type)} ${item.type === 'blog' && item.metadata?.url ? 'hover:border-purple-500/50 hover:bg-slate-900/70' : ''}`}>
-                        <CardContent className="p-4 md:p-6">
-                          {/* Clickable overlay for blog posts */}
-                          {item.type === 'blog' && item.metadata?.url && (
-                            <div 
-                              className="absolute inset-0 z-10 cursor-pointer"
-                              onClick={(e) => {
-                                // Don't trigger if clicking on interactive elements
-                                const target = e.target as HTMLElement
-                                if (target.closest('button') || target.closest('a') || target.closest('[role="button"]')) {
-                                  return
-                                }
-                                window.location.href = item.metadata!.url
-                              }}
-                              title="Read full blog post"
-                            />
-                          )}
-                          {/* Content Header */}
-                          <div className="flex items-start gap-3 md:gap-4 mb-4">
-                            {item.cover_image && (
-                              <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 ring-2 ring-purple-500/20 group-hover:ring-purple-500/50 transition-all">
-                                <Image
-                                  src={item.cover_image}
-                                  alt={item.title}
-                                  fill
-                                  className="object-cover"
-                                  sizes="(max-width: 768px) 64px, 80px"
-                                />
-                                {item.type === 'video' && (
-                                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                    <Play className="h-4 w-4 md:h-6 md:w-6 text-white" />
-                                  </div>
-                                )}
-                              </div>
+                      {item.type === 'forum' ? (
+                        <div className="space-y-2">
+                          <ThreadCardV2
+                            id={item.id.replace('thread_','')}
+                            forum={{
+                              id: item.metadata?.forum?.slug || '',
+                              slug: item.metadata?.forum?.slug || '',
+                              title: item.metadata?.forum?.name || ''
+                            }}
+                            title={item.title}
+                            kind={item.metadata?.kind as any || 'text'}
+                            contentMd={item.metadata?.kind === 'text' ? item.description : undefined}
+                            linkUrl={item.metadata?.url}
+                            author={{
+                              id: item.author?.id || '',
+                              username: item.author?.username || 'Unknown',
+                              avatar_url: item.author?.avatar_url,
+                              is_verified: item.author?.is_verified
+                            }}
+                            score={item.engagement?.likes || 0}
+                            userVote={item.metadata?.user_vote === 1 ? 'up' : item.metadata?.user_vote === -1 ? 'down' : null}
+                            commentsCount={item.engagement?.comments || 0}
+                            createdAt={item.created_at}
+                            compact={true}
+                          />
+                        </div>
+                      ) : (
+                        <Card className={`relative bg-slate-900/50 border-slate-700/30 transition-all duration-300 group hover:shadow-xl rounded-2xl ${getContentCardBorder(item.type)} ${item.type === 'blog' && item.metadata?.url ? 'hover:border-purple-500/50 hover:bg-slate-900/70' : ''}`}>
+                          <CardContent className="p-4 md:p-6">
+                            {/* Clickable overlay for blog posts */}
+                            {item.type === 'blog' && item.metadata?.url && (
+                              <div 
+                                className="absolute inset-0 z-10 cursor-pointer"
+                                onClick={(e) => {
+                                  // Don't trigger if clicking on interactive elements
+                                  const target = e.target as HTMLElement
+                                  if (target.closest('button') || target.closest('a') || target.closest('[role="button"]')) {
+                                    return
+                                  }
+                                  window.location.href = item.metadata!.url
+                                }}
+                                title="Read full blog post"
+                              />
                             )}
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <Badge className={`${getContentColor(item.type)} text-xs md:text-sm`}>
-                                  {getContentIcon(item.type)}
-                                  <span className="ml-1 capitalize hidden sm:inline">{item.type}</span>
-                                </Badge>
-                                {item.metadata?.genre && (
-                                  <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-xs`}>
-                                    {item.metadata.genre}
-                                  </Badge>
-                                )}
-                                {getRelevanceBadge(item.relevance_score)}
-                              </div>
-
-                              <h3 className="text-lg md:text-xl font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors line-clamp-2">
-                                {item.title}
-                                {item.type === 'blog' && item.metadata?.url && (
-                                  <span className="ml-2 text-purple-400 text-sm font-normal">→ Read more</span>
-                                )}
-                              </h3>
-
-                              {item.description && (
-                                <p className="text-slate-300 text-sm mb-3 line-clamp-3 leading-relaxed">
-                                  {item.description}
-                                </p>
+                            {/* Content Header */}
+                            <div className="flex items-start gap-3 md:gap-4 mb-4">
+                              {item.cover_image && (
+                                <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 ring-2 ring-purple-500/20 group-hover:ring-purple-500/50 transition-all">
+                                  <Image
+                                    src={item.cover_image}
+                                    alt={item.title}
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 768px) 64px, 80px"
+                                  />
+                                  {item.type === 'video' && (
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                      <Play className="h-4 w-4 md:h-6 md:w-6 text-white" />
+                                    </div>
+                                  )}
+                                </div>
                               )}
 
-                              {/* Metadata */}
-                              <div className="flex items-center gap-3 md:gap-4 text-slate-400 text-xs md:text-sm flex-wrap">
-                                {item.metadata?.duration && (
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                  <Badge className={`${getContentColor(item.type)} text-xs md:text-sm`}>
+                                    {getContentIcon(item.type)}
+                                    <span className="ml-1 capitalize hidden sm:inline">{item.type}</span>
+                                  </Badge>
+                                  {item.metadata?.genre && (
+                                    <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-xs`}>
+                                      {item.metadata.genre}
+                                    </Badge>
+                                  )}
+                                  {getRelevanceBadge(item.relevance_score)}
+                                </div>
+
+                                <h3 className="text-lg md:text-xl font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors line-clamp-2">
+                                  {item.title}
+                                  {item.type === 'blog' && item.metadata?.url && (
+                                    <span className="ml-2 text-purple-400 text-sm font-normal">→ Read more</span>
+                                  )}
+                                </h3>
+
+                                {item.type === 'forum' && item.metadata?.forum && (
+                                  <div className="mb-2 text-xs md:text-sm text-slate-400">
+                                    in <a className="text-purple-300 hover:text-purple-200" href={`/forums/${item.metadata.forum.slug}`}>{item.metadata.forum.name}</a>
+                                  </div>
+                                )}
+
+                                {item.description && (
+                                  <p className="text-slate-300 text-sm mb-3 line-clamp-3 leading-relaxed">
+                                    {item.description}
+                                  </p>
+                                )}
+
+                                {/* Metadata */}
+                                <div className="flex items-center gap-3 md:gap-4 text-slate-400 text-xs md:text-sm flex-wrap">
+                                  {item.metadata?.duration && (
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      <span>{Math.floor(item.metadata.duration / 60)}:{String(item.metadata.duration % 60).padStart(2, '0')}</span>
+                                    </div>
+                                  )}
+                                  {item.type === 'forum' && (
+                                    <a className="flex items-center gap-1 text-purple-300 hover:text-purple-200" href={`/forums/${item.metadata?.forum?.slug}/thread/${item.id.replace('thread_','')}`}>
+                                      <MessageCircle className="h-3 w-3" />
+                                      <span>Open thread</span>
+                                    </a>
+                                  )}
+                                  {item.metadata?.location && (
+                                    <div className="flex items-center gap-1">
+                                      <MapPin className="h-3 w-3" />
+                                      <span className="truncate max-w-32">{item.metadata.location}</span>
+                                    </div>
+                                  )}
+                                  {item.metadata?.date && (
+                                    <div className="flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      <span>{new Date(item.metadata.date).toLocaleDateString()}</span>
+                                    </div>
+                                  )}
                                   <div className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
-                                    <span>{Math.floor(item.metadata.duration / 60)}:{String(item.metadata.duration % 60).padStart(2, '0')}</span>
+                                    <span>{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
                                   </div>
-                                )}
-                                {item.metadata?.location && (
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    <span className="truncate max-w-32">{item.metadata.location}</span>
-                                  </div>
-                                )}
-                                {item.metadata?.date && (
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>{new Date(item.metadata.date).toLocaleDateString()}</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  <span>{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
                                 </div>
                               </div>
                             </div>
-                          </div>
-
-                          {/* Author Info */}
-                          {item.author && (
-                            <div className="flex items-center justify-between mb-4 p-3 md:p-4 bg-gradient-to-r from-slate-800/30 to-slate-700/30 rounded-2xl border border-slate-700/30">
-                              <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <Avatar className="h-8 w-8 md:h-10 md:w-10 ring-2 ring-purple-500/20 flex-shrink-0">
-                                  <AvatarImage src={item.author.avatar_url} />
-                                  <AvatarFallback className="bg-gradient-to-br from-purple-600 to-pink-600 text-white font-bold text-xs md:text-sm">
-                                    {item.author.name[0]}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium text-white text-sm truncate">
-                                      {item.author.name}
-                                    </span>
-                                    {item.author.is_verified && (
-                                      <div className="w-3 h-3 md:w-4 md:h-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <Star className="w-1.5 h-1.5 md:w-2 md:h-2 text-white" />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className="text-slate-400 text-xs truncate">
-                                    @{item.author.username}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <Button
-                                  size="sm"
-                                  variant={item.is_following ? "outline" : "default"}
-                                  onClick={() => handleFollow(item.author!.id)}
-                                  className={`text-xs whitespace-nowrap rounded-xl ${
-                                    item.is_following 
-                                      ? 'border-green-500/50 text-green-400 hover:bg-green-500/20' 
-                                      : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white'
-                                  } transition-all`}
-                                >
-                                  {item.is_following ? 'Following' : 'Follow'}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleBookmark(item.id)}
-                                  className="text-slate-400 hover:text-yellow-400 transition-colors"
-                                >
-                                  {bookmarkedContent.has(item.id) ? (
-                                    <Bookmark className="h-4 w-4 fill-current" />
-                                  ) : (
-                                    <BookmarkPlus className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Engagement Stats - Now showing real data starting at zero */}
-                          <div className="flex items-center justify-between flex-wrap gap-4">
-                            <div className="flex items-center gap-4 md:gap-6 flex-wrap">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleLike(item.id)}
-                                className={`${item.is_liked ? 'text-red-500' : 'text-slate-400'} hover:text-red-400 transition-colors text-xs md:text-sm`}
-                              >
-                                <Heart className={`h-4 w-4 mr-2 ${item.is_liked ? 'fill-current' : ''}`} />
-                                {item.engagement.likes.toLocaleString()}
-                              </Button>
-                              <div className="flex items-center gap-1 text-slate-400 text-xs md:text-sm">
-                                <Eye className="h-4 w-4" />
-                                <span>{item.engagement.views.toLocaleString()}</span>
-                              </div>
-                              <div className="flex items-center gap-1 text-slate-400 text-xs md:text-sm">
-                                <Share2 className="h-4 w-4" />
-                                <span>{item.engagement.shares.toLocaleString()}</span>
-                              </div>
-                              <div className="flex items-center gap-1 text-slate-400 text-xs md:text-sm">
-                                <MessageCircle className="h-4 w-4" />
-                                <span>{item.engagement.comments.toLocaleString()}</span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              {item.metadata?.url && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => window.open(item.metadata!.url, '_blank', 'noopener,noreferrer')}
-                                  className="text-slate-400 hover:text-blue-400 transition-colors"
-                                  title="Open external link"
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                              )}
-                              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-green-400 transition-colors">
-                                <Share2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                          </CardContent>
+                        </Card>
+                      )}
                     </motion.div>
                   ))}
                 </div>

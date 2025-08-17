@@ -110,75 +110,92 @@ ALTER TABLE post_shares ENABLE ROW LEVEL SECURITY;
 ALTER TABLE post_media ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
+DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON profiles;
 CREATE POLICY "Profiles are viewable by everyone"
   ON profiles FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 CREATE POLICY "Users can insert own profile"
   ON profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
 -- Post comments policies
+DROP POLICY IF EXISTS "Comments are viewable by everyone" ON post_comments;
 CREATE POLICY "Comments are viewable by everyone"
   ON post_comments FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Users can create comments" ON post_comments;
 CREATE POLICY "Users can create comments"
   ON post_comments FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own comments" ON post_comments;
 CREATE POLICY "Users can update their own comments"
   ON post_comments FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own comments" ON post_comments;
 CREATE POLICY "Users can delete their own comments"
   ON post_comments FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Comment likes policies
+DROP POLICY IF EXISTS "Comment likes are viewable by everyone" ON comment_likes;
 CREATE POLICY "Comment likes are viewable by everyone"
   ON comment_likes FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Users can like comments" ON comment_likes;
 CREATE POLICY "Users can like comments"
   ON comment_likes FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can unlike comments" ON comment_likes;
 CREATE POLICY "Users can unlike comments"
   ON comment_likes FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Follows policies
+DROP POLICY IF EXISTS "Follows are viewable by everyone" ON follows;
 CREATE POLICY "Follows are viewable by everyone"
   ON follows FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Users can follow others" ON follows;
 CREATE POLICY "Users can follow others"
   ON follows FOR INSERT
   WITH CHECK (auth.uid() = follower_id);
 
+DROP POLICY IF EXISTS "Users can unfollow others" ON follows;
 CREATE POLICY "Users can unfollow others"
   ON follows FOR DELETE
   USING (auth.uid() = follower_id);
 
 -- Hashtags policies
+DROP POLICY IF EXISTS "Hashtags are viewable by everyone" ON hashtags;
 CREATE POLICY "Hashtags are viewable by everyone"
   ON hashtags FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Anyone can create hashtags" ON hashtags;
 CREATE POLICY "Anyone can create hashtags"
   ON hashtags FOR INSERT
   WITH CHECK (true);
 
 -- Post hashtags policies
+DROP POLICY IF EXISTS "Post hashtags are viewable by everyone" ON post_hashtags;
 CREATE POLICY "Post hashtags are viewable by everyone"
   ON post_hashtags FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Users can tag posts with hashtags" ON post_hashtags;
 CREATE POLICY "Users can tag posts with hashtags"
   ON post_hashtags FOR INSERT
   WITH CHECK (EXISTS (
@@ -186,19 +203,23 @@ CREATE POLICY "Users can tag posts with hashtags"
   ));
 
 -- Post shares policies
+DROP POLICY IF EXISTS "Users can view their own shares" ON post_shares;
 CREATE POLICY "Users can view their own shares"
   ON post_shares FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can share posts" ON post_shares;
 CREATE POLICY "Users can share posts"
   ON post_shares FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Post media policies
+DROP POLICY IF EXISTS "Post media is viewable by everyone" ON post_media;
 CREATE POLICY "Post media is viewable by everyone"
   ON post_media FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Users can manage media for their posts" ON post_media;
 CREATE POLICY "Users can manage media for their posts"
   ON post_media FOR ALL
   USING (EXISTS (
@@ -311,31 +332,37 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create triggers
+DROP TRIGGER IF EXISTS post_comments_count_trigger ON post_comments;
 CREATE TRIGGER post_comments_count_trigger
   AFTER INSERT OR DELETE ON post_comments
   FOR EACH ROW
   EXECUTE FUNCTION update_post_comments_count();
 
+DROP TRIGGER IF EXISTS comment_likes_count_trigger ON comment_likes;
 CREATE TRIGGER comment_likes_count_trigger
   AFTER INSERT OR DELETE ON comment_likes
   FOR EACH ROW
   EXECUTE FUNCTION update_comment_likes_count();
 
+DROP TRIGGER IF EXISTS follow_counts_trigger ON follows;
 CREATE TRIGGER follow_counts_trigger
   AFTER INSERT OR DELETE ON follows
   FOR EACH ROW
   EXECUTE FUNCTION update_follow_counts();
 
+DROP TRIGGER IF EXISTS posts_count_trigger ON posts;
 CREATE TRIGGER posts_count_trigger
   AFTER INSERT OR DELETE ON posts
   FOR EACH ROW
   EXECUTE FUNCTION update_posts_count();
 
+DROP TRIGGER IF EXISTS hashtag_counts_trigger ON post_hashtags;
 CREATE TRIGGER hashtag_counts_trigger
   AFTER INSERT OR DELETE ON post_hashtags
   FOR EACH ROW
   EXECUTE FUNCTION update_hashtag_counts();
 
+DROP TRIGGER IF EXISTS shares_count_trigger ON post_shares;
 CREATE TRIGGER shares_count_trigger
   AFTER INSERT OR DELETE ON post_shares
   FOR EACH ROW
@@ -409,10 +436,49 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Enable realtime for all feed-related tables
-ALTER PUBLICATION supabase_realtime ADD TABLE posts;
-ALTER PUBLICATION supabase_realtime ADD TABLE post_comments;
-ALTER PUBLICATION supabase_realtime ADD TABLE post_likes;
-ALTER PUBLICATION supabase_realtime ADD TABLE comment_likes;
-ALTER PUBLICATION supabase_realtime ADD TABLE follows;
-ALTER PUBLICATION supabase_realtime ADD TABLE post_shares; 
+-- Enable realtime for all feed-related tables (if not already added)
+DO $$
+BEGIN
+  -- Add tables to realtime publication if they're not already there
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'posts'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE posts;
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'post_comments'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE post_comments;
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'post_likes'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE post_likes;
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'comment_likes'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE comment_likes;
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'follows'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE follows;
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'post_shares'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE post_shares;
+  END IF;
+END $$; 
