@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { hasEntityPermission } from '@/lib/services/rbac'
 
 const schema = z.object({
-  venueId: z.string().uuid(),
+  venueId: z.string().uuid().optional(),
   title: z.string().min(1),
   description: z.string().min(10),
   department: z.string().min(1),
@@ -71,7 +71,7 @@ export async function createJobPosting(input: CreateJobPostingInput) {
   if (!allowed) return { ok: false, error: 'Forbidden' as const }
 
   const insertPayload: any = {
-    venue_id: data.venueId,
+    venue_id: data.venueId ?? null,
     created_by: userId,
     title: data.title,
     description: data.description,

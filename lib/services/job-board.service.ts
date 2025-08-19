@@ -88,7 +88,7 @@ export class JobBoardService {
       // Validate the data
       // Normalize org/venue IDs to avoid invalid UUID errors
       const normalizedOrgId = this.isValidUuid(organizationData.id) ? organizationData.id : user.id
-      const normalizedVenueId = this.isValidUuid(venueId) ? venueId : undefined
+      const normalizedVenueId = this.isValidUuid(venueId) ? venueId : null
 
       const validatedData = jobBoardPostingSchema.parse({
         ...data,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
+import { hasEntityPermission } from '@/lib/services/rbac'
 
 interface QueryParams {
   eventId?: string | null
@@ -18,7 +19,7 @@ function parseQuery(request: NextRequest): QueryParams {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createClient()
     const { eventId, tourId, type } = parseQuery(request)
 
     let query = supabase.from('logistics_tasks').select('*').order('updated_at', { ascending: false })
@@ -39,7 +40,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     const body = await request.json()
 
     // Map UI payload to DB columns
@@ -76,6 +79,14 @@ export async function POST(request: NextRequest) {
       created_by: body.createdBy || null
     }
 
+    // Permission: must have logistics edit on event or org
+    const eventId: string | null = payload.event_id
+    let allowed = false
+    if (eventId) {
+      try { allowed = await hasEntityPermission({ userId: user.id, entityType: 'Event', entityId: eventId, permission: 'EDIT_EVENT_LOGISTICS' }) } catch {}
+    }
+    if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
     const { data, error } = await supabase
       .from('logistics_tasks')
       .insert(payload)
@@ -83,6 +94,19 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) throw error
+
+    // Notify assignee if present
+    if (data?.assigned_to_user_id) {
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: data.assigned_to_user_id,
+          type: 'task_assigned',
+          title: `New task: ${data.title}`,
+          content: data.description || null,
+          metadata: { task_id: data.id, event_id: data.event_id }
+        })
+    }
 
     return NextResponse.json({ item: data }, { status: 201 })
   } catch (error) {

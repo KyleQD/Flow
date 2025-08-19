@@ -397,6 +397,10 @@ function getFallbackData(type: string, venueId: string) {
 }
 
 export class AdminOnboardingStaffService {
+  private static isValidUuid(id?: string) {
+    if (!id) return false
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(id)
+  }
   /**
    * Create job posting with application form template
    */
@@ -418,7 +422,7 @@ export class AdminOnboardingStaffService {
         const res = await fetch('/api/admin/staffing/job-postings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ venueId, ...validatedData })
+          body: JSON.stringify({ venueId: this.isValidUuid(venueId) ? venueId : undefined, ...validatedData })
         })
         if (!res.ok) {
           const msg = await res.json().catch(() => ({}))
@@ -490,21 +494,24 @@ export class AdminOnboardingStaffService {
         return getFallbackData('job_postings', venueId) as JobPostingTemplate[]
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('job_posting_templates')
         .select(`
           *,
           application_form_template:application_form_templates(*)
         `)
-        .or(`venue_id.eq.${venueId},venue_id.is.null`)
         .order('created_at', { ascending: false })
+
+      // If the provided venueId is a valid UUID, filter by it or null; otherwise avoid UUID comparison
+      if (this.isValidUuid(venueId)) query = query.or(`venue_id.eq.${venueId},venue_id.is.null`)
+      else query = query.is('venue_id', null)
+
+      const { data, error } = await query
 
       if (error) throw error
       return data || []
     } catch (error) {
-      console.error('❌ [Admin Onboarding Staff Service] Error fetching job postings:', error)
-      // Return fallback data instead of throwing
-      console.warn('⚠️ [Admin Onboarding Staff Service] Returning fallback data due to error')
+      console.warn('⚠️ [Admin Onboarding Staff Service] Error fetching job postings, returning fallback:', error)
       return getFallbackData('job_postings', venueId) as JobPostingTemplate[]
     }
   }
@@ -559,9 +566,7 @@ export class AdminOnboardingStaffService {
       if (error) throw error
       return data || []
     } catch (error) {
-      console.error('❌ [Admin Onboarding Staff Service] Error fetching job applications:', error)
-      // Return fallback data instead of throwing
-      console.warn('⚠️ [Admin Onboarding Staff Service] Returning fallback data due to error')
+      console.warn('⚠️ [Admin Onboarding Staff Service] Error fetching job applications, returning fallback:', error)
       return getFallbackData('applications', venueId) as JobApplication[]
     }
   }
@@ -732,9 +737,7 @@ export class AdminOnboardingStaffService {
       
       return data || []
     } catch (error) {
-      console.error('❌ [Admin Onboarding Staff Service] Error fetching onboarding candidates:', error)
-      // Return fallback data instead of throwing
-      console.warn('⚠️ [Admin Onboarding Staff Service] Returning fallback data due to error')
+      console.warn('⚠️ [Admin Onboarding Staff Service] Error fetching onboarding candidates, returning fallback:', error)
       return getFallbackData('candidates', venueId) as OnboardingCandidate[]
     }
   }
@@ -1104,9 +1107,7 @@ export class AdminOnboardingStaffService {
         staff_management: staffManagementStats
       }
     } catch (error) {
-      console.error('❌ [Admin Onboarding Staff Service] Error fetching dashboard stats:', error)
-      // Return fallback data instead of throwing
-      console.warn('⚠️ [Admin Onboarding Staff Service] Returning fallback stats due to error')
+      console.warn('⚠️ [Admin Onboarding Staff Service] Error fetching dashboard stats, returning fallback:', error)
       return getFallbackData('dashboard_stats', venueId) as any
     }
   }
@@ -1605,7 +1606,7 @@ export class AdminOnboardingStaffService {
       if (error) throw error
       return data || []
     } catch (error) {
-      console.error('❌ [Admin Onboarding Staff Service] Error fetching staff shifts:', error)
+      console.warn('⚠️ [Admin Onboarding Staff Service] Error fetching staff shifts, returning fallback:', error)
       return getFallbackData('shifts', venueId) as StaffShift[]
     }
   }
@@ -1685,7 +1686,7 @@ export class AdminOnboardingStaffService {
       const payload = await res.json()
       return (payload?.data as StaffPerformanceMetrics[]) ?? []
     } catch (error) {
-      console.error('❌ [Admin Onboarding Staff Service] Error fetching performance metrics:', error)
+      console.warn('⚠️ [Admin Onboarding Staff Service] Error fetching performance metrics, returning fallback:', error)
       return getFallbackData('performance_metrics', venueId) as StaffPerformanceMetrics[]
     }
   }
@@ -1789,7 +1790,7 @@ export class AdminOnboardingStaffService {
         performance: performanceStats
       }
     } catch (error) {
-      console.error('❌ [Admin Onboarding Staff Service] Error fetching enhanced dashboard stats:', error)
+      console.warn('⚠️ [Admin Onboarding Staff Service] Error fetching enhanced dashboard stats, returning fallback:', error)
       return getFallbackData('dashboard_stats', venueId) as any
     }
   }

@@ -159,8 +159,9 @@ export default function StaffPage() {
   const [showJobPostingDialog, setShowJobPostingDialog] = useState(false)
   const { toast } = useToast()
 
+  // Prefer actual current venue when available, fallback to user id or null to avoid UUID filter issues
   // const { currentVenue } = useCurrentVenue()
-  const venueId = 'mock-venue-id' // currentVenue?.id || 'mock-venue-id'
+  const venueId = ''
 
   useEffect(() => {
     loadDashboardData()
@@ -723,7 +724,8 @@ export default function StaffPage() {
       }
 
       setShowJobPostingDialog(false)
-      loadDashboardData()
+      // Refresh both internal postings and the job board
+      await loadDashboardData()
     } catch (error) {
       const msg = (error as any)?.message || 'Failed to create job posting. Please try again.'
       console.error('❌ [Staff Page] Error creating job posting:', error)

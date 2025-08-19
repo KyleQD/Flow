@@ -32,6 +32,7 @@ import {
   CheckCircle
 } from 'lucide-react'
 import { EventSelect } from '@/components/events/event-select'
+import { VenueSelect } from '@/components/venues/venue-select'
 import type { 
   CreateJobPostingData, 
   ApplicationFormField,
@@ -424,7 +425,7 @@ export default function EnhancedJobPostingForm({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
+          <form onSubmit={handleSubmit(handleFormSubmit, handleInvalidSubmit)} className="space-y-8">
             {/* Step 1: Basic Information */}
             {currentStep === 1 && (
               <div className="space-y-6">
@@ -495,11 +496,21 @@ export default function EnhancedJobPostingForm({
 
                 {/* Optional: Link to Event (internal only) */}
                 <div className="space-y-2">
-                  <Label className="text-white">Link to Existing Event (optional)</Label>
-                  <EventSelect onSelect={(evt) => {
-                    setValue('event_id', evt?.id || undefined)
-                    setValue('event_date', evt?.event_date || undefined)
-                  }} />
+                  <Label className="text-white">Venue and Event (optional)</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Venue selector */}
+                    <VenueSelect onSelect={(venue) => {
+                      setValue('event_id', undefined)
+                      setValue('event_date', undefined)
+                      // store venue as location hint when available
+                      if (venue?.name && !watchedFields.location) setValue('location', venue.name)
+                    }} />
+                    {/* Event selector */}
+                    <EventSelect onSelect={(evt) => {
+                      setValue('event_id', evt?.id || undefined)
+                      setValue('event_date', evt?.event_date || undefined)
+                    }} />
+                  </div>
                   <p className="text-slate-500 text-xs">This link is internal only and not shown publicly.</p>
                 </div>
 
@@ -924,7 +935,7 @@ export default function EnhancedJobPostingForm({
                 ) : (
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={!isValid || isSubmitting}
                     className="bg-purple-600 hover:bg-purple-700"
                   >
                     {isSubmitting ? 'Creating...' : 'Create Job Posting'}

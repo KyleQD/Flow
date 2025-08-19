@@ -65,37 +65,25 @@ export async function GET(request: NextRequest) {
 
     const calendarEvents: any[] = []
 
-    // 1. Fetch Events (using correct column names)
+    // 1. Fetch Events from events_v2
     try {
       let eventsQuery = supabase
-        .from('events')
+        .from('events_v2')
         .select(`
           id,
-          name as title,
-          description,
-          event_date,
-          event_time,
-          doors_open,
-          duration_minutes,
+          title,
+          start_at,
+          end_at,
           status,
           capacity,
-          tickets_sold,
-          ticket_price,
-          venue_name,
-          venue_address,
           created_at,
-          created_by
+          created_by,
+          venue_id
         `)
-        .gte('event_date', defaultStartDate)
-        .lte('event_date', defaultEndDate)
+        .gte('start_at', defaultStartDate)
+        .lte('end_at', defaultEndDate)
 
-      if (eventType && eventType === 'event') {
-        // No additional filter needed for events
-      }
-
-      if (status) {
-        eventsQuery = eventsQuery.eq('status', status)
-      }
+      if (status) eventsQuery = eventsQuery.eq('status', status)
 
       const { data: events, error: eventsError } = await eventsQuery
 
@@ -103,12 +91,9 @@ export async function GET(request: NextRequest) {
         console.error('[Admin Calendar API] Events query error:', eventsError)
       } else {
         events?.forEach((event: any) => {
-          const startTime = event.event_time ? new Date(`${event.event_date}T${event.event_time}`) : new Date(event.event_date)
-          const endTime = event.duration_minutes 
-            ? new Date(startTime.getTime() + event.duration_minutes * 60000)
-            : new Date(startTime.getTime() + 2 * 60 * 60000) // Default 2 hours
-
-          const priority = event.ticket_price && event.ticket_price > 100 ? 'high' : 'medium'
+          const startTime = event.start_at ? new Date(event.start_at) : new Date()
+          const endTime = event.end_at ? new Date(event.end_at) : new Date(startTime.getTime() + 2 * 60 * 60000)
+          const priority = 'medium'
           const color = getEventColor('event', priority)
 
           calendarEvents.push({
@@ -118,11 +103,11 @@ export async function GET(request: NextRequest) {
             start: startTime,
             end: endTime,
             color,
-            description: event.description,
-            location: event.venue_name ? `${event.venue_name}, ${event.venue_address || ''}` : null,
+            description: null,
+            location: event.venue_id || null,
             status: event.status || 'upcoming',
             priority,
-            attendees: event.tickets_sold ? [event.tickets_sold] : [],
+            attendees: [],
             capacity: event.capacity,
             originalData: event
           })
@@ -132,33 +117,15 @@ export async function GET(request: NextRequest) {
       console.error('[Admin Calendar API] Events fetch error:', error)
     }
 
-    // 2. Fetch Tours (using correct column names)
+    // 2. Fetch Tours (optional; skip if table missing)
     try {
       let toursQuery = supabase
         .from('tours')
-        .select(`
-          id,
-          name as title,
-          description,
-          start_date,
-          end_date,
-          status,
-          budget,
-          expenses,
-          revenue,
-          created_at,
-          created_by
-        `)
+        .select(`id, name as title, description, start_date, end_date, status, budget, expenses, revenue, created_at, created_by`)
         .gte('start_date', defaultStartDate)
         .lte('end_date', defaultEndDate)
 
-      if (eventType && eventType === 'tour') {
-        // No additional filter needed
-      }
-
-      if (status) {
-        toursQuery = toursQuery.eq('status', status)
-      }
+      if (status) toursQuery = toursQuery.eq('status', status)
 
       const { data: tours, error: toursError } = await toursQuery
 
@@ -184,37 +151,19 @@ export async function GET(request: NextRequest) {
         })
       }
     } catch (error) {
-      console.error('[Admin Calendar API] Tours fetch error:', error)
+      console.warn('[Admin Calendar API] Tours table missing or error, skipping')
     }
 
-    // 3. Fetch Tasks (from tasks table)
+    // 3. Fetch Tasks (from tasks table; due_at)
     try {
       let tasksQuery = supabase
         .from('tasks')
-        .select(`
-          id,
-          title,
-          description,
-          status,
-          priority,
-          due_date,
-          created_at,
-          created_by
-        `)
-        .gte('due_date', defaultStartDate)
-        .lte('due_date', defaultEndDate)
+        .select(`id, title, description, status, priority, due_at, created_at, created_by`)
+        .gte('due_at', defaultStartDate)
+        .lte('due_at', defaultEndDate)
 
-      if (eventType && eventType === 'task') {
-        // No additional filter needed
-      }
-
-      if (status) {
-        tasksQuery = tasksQuery.eq('status', status)
-      }
-
-      if (priority) {
-        tasksQuery = tasksQuery.eq('priority', priority)
-      }
+      if (status) tasksQuery = tasksQuery.eq('status', status)
+      if (priority) tasksQuery = tasksQuery.eq('priority', priority)
 
       const { data: tasks, error: tasksError } = await tasksQuery
 
@@ -228,8 +177,8 @@ export async function GET(request: NextRequest) {
             id: `task-${task.id}`,
             title: task.title,
             type: 'task',
-            start: new Date(task.due_date),
-            end: new Date(task.due_date),
+            start: new Date(task.due_at),
+            end: new Date(task.due_at),
             color,
             description: task.description,
             status: task.status || 'upcoming',
@@ -344,31 +293,15 @@ export async function GET(request: NextRequest) {
       console.error('[Admin Calendar API] Payments fetch error:', error)
     }
 
-    // 6. Fetch Logistics (from staff_schedules - simplified)
+    // 6. Fetch Logistics (from staff_shifts)
     try {
       let logisticsQuery = supabase
-        .from('staff_schedules')
-        .select(`
-          id,
-          staff_id,
-          event_id,
-          shift_start,
-          shift_end,
-          role,
-          status,
-          notes,
-          created_at
-        `)
-        .gte('shift_start', defaultStartDate)
-        .lte('shift_end', defaultEndDate)
+        .from('staff_shifts')
+        .select(`id, venue_id, event_id, staff_member_id, shift_date, start_time, end_time, role_assignment, status, notes, created_at`)
+        .gte('shift_date', defaultStartDate)
+        .lte('shift_date', defaultEndDate)
 
-      if (eventType && eventType === 'logistics') {
-        // No additional filter needed
-      }
-
-      if (status) {
-        logisticsQuery = logisticsQuery.eq('status', status)
-      }
+      if (status) logisticsQuery = logisticsQuery.eq('status', status)
 
       const { data: logistics, error: logisticsError } = await logisticsQuery
 
@@ -377,13 +310,15 @@ export async function GET(request: NextRequest) {
       } else {
         logistics?.forEach((logistic: any) => {
           const color = getEventColor('logistics', 'medium')
+          const start = new Date(`${logistic.shift_date}T${logistic.start_time || '09:00:00'}`)
+          const end = new Date(`${logistic.shift_date}T${logistic.end_time || '17:00:00'}`)
 
           calendarEvents.push({
             id: `logistic-${logistic.id}`,
-            title: `${logistic.role} Shift`,
+            title: `${logistic.role_assignment || 'Shift'}`,
             type: 'logistics',
-            start: new Date(logistic.shift_start),
-            end: new Date(logistic.shift_end),
+            start,
+            end,
             color,
             description: logistic.notes,
             status: logistic.status || 'scheduled',
@@ -393,7 +328,7 @@ export async function GET(request: NextRequest) {
         })
       }
     } catch (error) {
-      console.error('[Admin Calendar API] Logistics fetch error:', error)
+      console.warn('[Admin Calendar API] staff_shifts missing or error, skipping')
     }
 
     // 7. Fetch Deadlines (from event_notes - simplified)

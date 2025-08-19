@@ -1,46 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { hasEntityPermission } from '@/lib/services/rbac'
+import { createClient } from '@/lib/supabase/server'
 
-export async function GET(request: NextRequest) {
+// Real data: fetch events from Supabase `events_v2` with light normalization for selectors
+export async function GET(_req: NextRequest) {
   try {
-    console.log('[Admin Events API] GET request started')
-    const isEntityRbacEnabled = process.env.FEATURE_ENTITY_RBAC === '1'
-    if (isEntityRbacEnabled) {
-      try {
-        const userHeader = request.headers.get('x-user-id')
-        const userId = userHeader || ''
-        if (!userId) console.warn('[Admin Events API] FEATURE_ENTITY_RBAC enabled but no x-user-id provided')
-        // No specific event scope here; deeper checks should occur on per-event endpoints
-      } catch (e) {
-        console.warn('[Admin Events API] RBAC precheck skipped:', e)
-      }
-    }
-    
-    // Call actual calendar API to get upcoming events, with fallback to demo
-    const calendarRes = await fetch(`${new URL(request.url).origin}/api/admin/calendar?eventType=event&status=upcoming`, { cache: 'no-store' })
-    if (calendarRes.ok) {
-      const data = await calendarRes.json()
-      const events = (data?.events || []).map((e: any) => ({
-        id: e.id,
-        name: e.title || e.name,
-        status: e.status,
-        event_date: e.event_date,
-        venue_id: e.venue_id || null,
-        created_at: e.created_at
-      }))
-      return NextResponse.json({ success: true, events, timestamp: new Date().toISOString() })
-    }
-    // Fallback
-    return NextResponse.json({ success: true, events: [], timestamp: new Date().toISOString() })
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ events: [] }, { status: 401 })
 
-  } catch (error) {
-    console.error('[Admin Events API] Error:', error)
-    
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch events',
-      events: [],
-      timestamp: new Date().toISOString()
-    }, { status: 500 })
+    // Select a small subset for the selector UI
+    const { data, error } = await supabase
+      .from('events_v2')
+      .select('id, title, status, start_at, venue_id, created_at')
+      .order('start_at', { ascending: true })
+      .limit(50)
+
+    if (error) {
+      // If table missing during early setup, return empty list gracefully
+      if ((error as any)?.code === '42P01') return NextResponse.json({ events: [] })
+      return NextResponse.json({ error: error.message, events: [] }, { status: 400 })
+    }
+
+    const events = (data || []).map(e => ({
+      id: e.id,
+      name: e.title,
+      status: e.status,
+      event_date: e.start_at,
+      venue_id: e.venue_id,
+      created_at: e.created_at
+    }))
+
+    return NextResponse.json({ events })
+  } catch (e: any) {
+    return NextResponse.json({ events: [], error: e?.message || 'Unexpected error' }, { status: 500 })
   }
-} 
+}

@@ -1,24 +1,13 @@
-import { NextResponse, NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const url = new URL(request.url)
-  // Redirect apex to www for canonical domain
   if (url.hostname === 'tourify.live') {
     url.hostname = 'www.tourify.live'
     return NextResponse.redirect(url, 308)
   }
-  return NextResponse.next()
-}
 
-export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)']
-}
-
-import { type NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
-import { NextResponse } from 'next/server'
-
-export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
   const { pathname } = request.nextUrl
 
@@ -121,14 +110,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - files with extensions (.svg, .png, etc.)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
 

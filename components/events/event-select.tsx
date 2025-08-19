@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
@@ -24,6 +24,9 @@ export function EventSelect({ onSelect, placeholder = "Select an event", classNa
   const [events, setEvents] = useState<SelectableEvent[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [selectedId, setSelectedId] = useState<string | undefined>(defaultEventId)
+  // Keep a stable reference to the callback to avoid effect-triggered render loops
+  const onSelectRef = useRef(onSelect)
+  useEffect(() => { onSelectRef.current = onSelect }, [onSelect])
 
   useEffect(function loadEvents() {
     let isActive = true
@@ -61,9 +64,10 @@ export function EventSelect({ onSelect, placeholder = "Select an event", classNa
     [events, selectedId]
   )
 
+  // Notify parent only when the selected event actually changes
   useEffect(function notifyChange() {
-    onSelect(selectedEvent)
-  }, [onSelect, selectedEvent])
+    onSelectRef.current(selectedEvent)
+  }, [selectedEvent?.id])
 
   return (
     <div className={cn("w-full", className)}>
