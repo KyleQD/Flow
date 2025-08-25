@@ -560,9 +560,9 @@ export default function ExportAttendanceData() {
                 <p className="text-sm text-muted-foreground mt-4">
                   This is a preview of the first few records. The actual export will include
                   {exportSettings.includeAllAttendees
-                    ? ` all ${event.attendees} attendees`
+                    ? ` all ${event?.attendees || 0} attendees`
                     : exportSettings.onlyCheckedIn
-                      ? ` only the ${event.checkedIn} checked-in attendees`
+                      ? ` only the ${event?.checkedIn || 0} checked-in attendees`
                       : ` selected attendees`}
                   .
                 </p>

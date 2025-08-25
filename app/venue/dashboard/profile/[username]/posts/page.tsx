@@ -14,21 +14,28 @@ import Link from "next/link"
 export default function UserPostsPage() {
   const params = useParams()
   const username = params?.username as string
-  const { users, loadingUsers } = useSocial()
   const { user: currentUser } = useAuth()
   const [profileUser, setProfileUser] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Find user by username
+  // Mock user data for now
   useEffect(() => {
-    if (!loadingUsers && username) {
-      const user = users.find((u) => u.username === username)
-      setProfileUser(user || null)
+    if (username) {
+      // Mock user data - in a real app, this would fetch from an API
+      const mockUser = {
+        id: 'mock-user-id',
+        username: username,
+        fullName: username.charAt(0).toUpperCase() + username.slice(1),
+        avatar: '',
+        title: 'User',
+        location: 'Unknown'
+      }
+      setProfileUser(mockUser)
       setIsLoading(false)
     }
-  }, [username, users, loadingUsers])
+  }, [username])
 
-  if (isLoading || loadingUsers) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
         <LoadingSpinner size="lg" />

@@ -325,7 +325,7 @@ export class EventPageService {
 
       if (eventError) return false
 
-      if (event[userIdColumn] === userId) return true
+      if ((event as any)[userIdColumn] === userId) return true
 
       // Check if user is an admin collaborator
       const { data: collaborator, error: collaboratorError } = await this.supabase

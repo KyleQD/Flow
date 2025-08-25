@@ -41,6 +41,7 @@ const mockMessages = {
       content: "Hey team, just a reminder that we have a busy weekend ahead. Make sure all stations are fully stocked.",
       timestamp: "2023-12-08T09:30:00Z",
       isAnnouncement: false,
+      attachment: undefined,
     },
     {
       id: 2,
@@ -48,6 +49,7 @@ const mockMessages = {
       content: "Got it. I'll do an inventory check today.",
       timestamp: "2023-12-08T09:35:00Z",
       isAnnouncement: false,
+      attachment: undefined,
     },
     {
       id: 3,
@@ -55,6 +57,7 @@ const mockMessages = {
       content: "I've updated the bar menu with the new seasonal cocktails. Let me know if you have any questions.",
       timestamp: "2023-12-08T10:15:00Z",
       isAnnouncement: false,
+      attachment: undefined,
     },
     {
       id: 4,
@@ -64,6 +67,7 @@ const mockMessages = {
       timestamp: "2023-12-08T11:00:00Z",
       isAnnouncement: true,
       priority: "high",
+      attachment: undefined,
     },
     {
       id: 5,
@@ -71,6 +75,7 @@ const mockMessages = {
       content: "I'll brief the security team about the VIP guests.",
       timestamp: "2023-12-08T11:05:00Z",
       isAnnouncement: false,
+      attachment: undefined,
     },
     {
       id: 6,
@@ -78,6 +83,7 @@ const mockMessages = {
       content: "Do we have any specific requirements for the VIP section?",
       timestamp: "2023-12-08T11:10:00Z",
       isAnnouncement: false,
+      attachment: undefined,
     },
     {
       id: 7,
@@ -86,6 +92,7 @@ const mockMessages = {
         "Yes, they've requested champagne service and our premium spirits menu. I'll send the full details later today.",
       timestamp: "2023-12-08T11:15:00Z",
       isAnnouncement: false,
+      attachment: undefined,
     },
   ],
   "team-2": [
@@ -95,6 +102,7 @@ const mockMessages = {
       content: "I've finished setting up the new audio equipment. It sounds great!",
       timestamp: "2023-12-08T10:00:00Z",
       isAnnouncement: false,
+      attachment: undefined,
     },
     {
       id: 9,
@@ -104,6 +112,7 @@ const mockMessages = {
       timestamp: "2023-12-08T10:30:00Z",
       isAnnouncement: true,
       priority: "medium",
+      attachment: undefined,
     },
   ],
   "team-3": [
@@ -114,6 +123,7 @@ const mockMessages = {
         "The vendor contracts for next month's festival are ready for review. I've uploaded them to the shared drive.",
       timestamp: "2023-12-08T09:00:00Z",
       isAnnouncement: false,
+      attachment: undefined,
     },
     {
       id: 11,
@@ -122,6 +132,7 @@ const mockMessages = {
       timestamp: "2023-12-08T14:00:00Z",
       isAnnouncement: true,
       priority: "high",
+      attachment: undefined,
     },
   ],
   "team-4": [
@@ -132,6 +143,7 @@ const mockMessages = {
         "I've scheduled all our social media posts for the upcoming events. Please review when you get a chance.",
       timestamp: "2023-12-08T11:30:00Z",
       isAnnouncement: false,
+      attachment: undefined,
     },
     {
       id: 13,
@@ -158,6 +170,7 @@ const mockMessages = {
       timestamp: "2023-12-08T15:00:00Z",
       isAnnouncement: true,
       priority: "medium",
+      attachment: undefined,
     },
   ],
 }
@@ -228,6 +241,7 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
       content: newMessage,
       timestamp: new Date().toISOString(),
       isAnnouncement: false,
+      attachment: undefined,
     }
 
     setMessages([...messages, newMessageObj])
@@ -244,6 +258,7 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
       timestamp: new Date().toISOString(),
       isAnnouncement: true,
       priority: newAnnouncement.priority,
+      attachment: undefined,
     }
 
     setMessages([...messages, newAnnouncementObj])
@@ -291,7 +306,7 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
 
   // Group messages by date for display
   const groupMessagesByDate = () => {
-    const groups: Record<string, typeof messages> = {}
+    const groups: Record<string, any[]> = {}
 
     messages.forEach((message) => {
       const date = new Date(message.timestamp).toLocaleDateString()
@@ -353,7 +368,7 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
                             <AvatarFallback>
                               {message.sender.name
                                 .split(" ")
-                                .map((n) => n[0])
+                                .map((n: string) => n[0])
                                 .join("")}
                             </AvatarFallback>
                           </Avatar>
@@ -491,7 +506,7 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
               <Card key={announcement.id} className="overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-start space-x-4">
-                    <div className={`h-10 w-1 rounded-full ${getPriorityColor(announcement.priority || "medium")}`} />
+                    <div className={`h-10 w-1 rounded-full ${getPriorityColor((announcement as any).priority || "medium")}`} />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
@@ -511,7 +526,7 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
                             <span className="font-medium text-sm">{announcement.sender.name}</span>
                             <div className="flex items-center">
                               <Badge variant="outline" className="text-xs mr-2">
-                                {announcement.priority === "high" ? "Important" : "Announcement"}
+                                {(announcement as any).priority === "high" ? "Important" : "Announcement"}
                               </Badge>
                               <span className="text-xs text-muted-foreground">
                                 {new Date(announcement.timestamp).toLocaleString()}

@@ -14,10 +14,5 @@ export function createClient() {
       autoRefreshToken: false,
       persistSession: false
     },
-    cookies: {
-      get(name: string) {
-        return cookies().get(name)?.value
-      },
-    },
   })
 } 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useArtist } from "@/contexts/artist-context"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -246,7 +246,7 @@ export default function MarketingHub() {
     try {
       const payload = editingCampaign?.id ? { ...campaignForm, id: editingCampaign.id } : { ...campaignForm }
       const res = await upsertCampaignAction(payload as any)
-      if (!res?.success) throw new Error(res?.error || 'Failed to save campaign')
+      if (!res?.data?.success) throw new Error((res?.data as any)?.error || (res as any)?.serverError || 'Failed to save campaign')
       toast.success(editingCampaign ? 'Campaign updated successfully!' : 'Campaign created successfully!')
       await loadMarketingData()
       setShowCreateCampaign(false)
@@ -275,7 +275,7 @@ export default function MarketingHub() {
         hashtags: postForm.hashtags,
         mentions: postForm.mentions,
       })
-      if (!res?.success) throw new Error(res?.error || 'Failed to create post')
+      if (!res?.data?.success) throw new Error((res?.data as any)?.error || (res as any)?.serverError || 'Failed to create post')
 
       await loadMarketingData()
       setShowCreatePost(false)
@@ -609,8 +609,9 @@ export default function MarketingHub() {
                                 // optimistic update
                                 setCampaigns(prev => prev.map(c => c.id === campaign.id ? { ...c, status: 'paused' } : c))
                                 const res = await toggleCampaignPauseAction({ id: campaign.id!, pause: true })
-                                if (!res?.success) {
-                                  toast.error(res?.error || 'Failed to pause')
+                                if (!res?.data?.success) {
+                                  const errMsg = (res?.data as any)?.error || (res as any)?.serverError || 'Failed to pause'
+                                  toast.error(errMsg)
                                   loadMarketingData()
                                 } else toast.success('Campaign paused')
                                 setWorkingCampaignId(null)
@@ -626,8 +627,9 @@ export default function MarketingHub() {
                                 setWorkingCampaignId(campaign.id || null)
                                 setCampaigns(prev => prev.map(c => c.id === campaign.id ? { ...c, status: 'active' } : c))
                                 const res = await toggleCampaignPauseAction({ id: campaign.id!, pause: false })
-                                if (!res?.success) {
-                                  toast.error(res?.error || 'Failed to resume')
+                                if (!res?.data?.success) {
+                                  const errMsg = (res?.data as any)?.error || (res as any)?.serverError || 'Failed to resume'
+                                  toast.error(errMsg)
                                   loadMarketingData()
                                 } else toast.success('Campaign resumed')
                                 setWorkingCampaignId(null)
@@ -643,8 +645,9 @@ export default function MarketingHub() {
                           // optimistic
                           setCampaigns(prev => prev.filter(c => c.id !== campaign.id))
                           const res = await deleteCampaignAction({ id: campaign.id! })
-                          if (!res?.success) {
-                            toast.error(res?.error || 'Failed to delete')
+                          if (!res?.data?.success) {
+                            const errMsg = (res?.data as any)?.error || (res as any)?.serverError || 'Failed to delete'
+                            toast.error(errMsg)
                             loadMarketingData()
                           } else toast.success('Campaign deleted')
                           setWorkingCampaignId(null)
@@ -705,8 +708,9 @@ export default function MarketingHub() {
                               // optimistic
                               setSocialPosts(prev => prev.map(p => p.id === post.id ? { ...p, status: newStatus } : p))
                               const res = await updateSocialPostAction({ id: post.id!, status: newStatus as any })
-                              if (!res?.success) {
-                                toast.error(res?.error || 'Failed to update post')
+                              if (!res?.data?.success) {
+                                const errMsg = (res?.data as any)?.error || (res as any)?.serverError || 'Failed to update post'
+                                toast.error(errMsg)
                                 loadMarketingData()
                               } else toast.success(`Post marked as ${newStatus}`)
                               setWorkingPostId(null)
@@ -723,8 +727,9 @@ export default function MarketingHub() {
                               // optimistic
                               setSocialPosts(prev => prev.filter(p => p.id !== post.id))
                               const res = await deleteSocialPostAction({ id: post.id! })
-                              if (!res?.success) {
-                                toast.error(res?.error || 'Failed to delete post')
+                              if (!res?.data?.success) {
+                                const errMsg = (res?.data as any)?.error || (res as any)?.serverError || 'Failed to delete post'
+                                toast.error(errMsg)
                                 loadMarketingData()
                               } else toast.success('Post deleted')
                               setWorkingPostId(null)

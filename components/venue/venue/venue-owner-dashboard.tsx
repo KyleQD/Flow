@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { CalendarDays, Users, DollarSign, BarChart3, Clock, PlusCircle } from "lucide-react"
-import { VenueCalendar } from "@/components/venue/venue-calendar"
+import { VenueCalendar } from "./venue-calendar"
 
 export function VenueOwnerDashboard() {
   return (

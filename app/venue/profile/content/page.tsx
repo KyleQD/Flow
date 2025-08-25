@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { ContentUploader } from "../../../components/content-uploader"
+import ContentUploader from "../../components/content-uploader"
 import { mockContent } from "../../../lib/mock-data"
 import Image from "next/image"
 
@@ -25,6 +25,10 @@ interface MockContentItem {
   isPublic?: boolean
   description?: string
   tags?: string[]
+  views?: number
+  likes?: number
+  comments?: number
+  createdAt?: string
 }
 
 const contentItems: MockContentItem[] = (mockContent as MockContentItem[])
@@ -235,7 +239,7 @@ function ContentCard({ item }: ContentCardProps) {
   return (
     <Card className="overflow-hidden">
       <div className="relative aspect-video">
-        <Image src={item.thumbnailUrl || item.url} alt={item.title} fill className="object-cover" />
+        <Image src={item.thumbnailUrl || item.url || "/placeholder.svg"} alt={item.title || "Content"} fill className="object-cover" />
         <div className="absolute top-2 right-2">
           <Badge variant="secondary" className="flex items-center space-x-1">
             {getContentTypeIcon(item.contentType)}
@@ -261,9 +265,9 @@ function ContentCard({ item }: ContentCardProps) {
               #{tag}
             </Badge>
           ))}
-          {item.tags?.length > 3 && (
+          {(item.tags?.length || 0) > 3 && (
             <Badge variant="outline" className="text-xs">
-              +{item.tags.length - 3} more
+              +{(item.tags?.length || 0) - 3} more
             </Badge>
           )}
         </div>
@@ -272,18 +276,18 @@ function ContentCard({ item }: ContentCardProps) {
         <div className="flex items-center space-x-3">
           <span className="flex items-center">
             <Eye className="h-4 w-4 mr-1" />
-            {item.views}
+            {item.views || 0}
           </span>
           <span className="flex items-center">
             <Heart className="h-4 w-4 mr-1" />
-            {item.likes}
+            {item.likes || 0}
           </span>
           <span className="flex items-center">
             <MessageSquare className="h-4 w-4 mr-1" />
-            {item.comments}
+            {item.comments || 0}
           </span>
         </div>
-        <span className="text-xs">{new Date(item.createdAt).toLocaleDateString()}</span>
+        <span className="text-xs">{new Date(item.createdAt || Date.now()).toLocaleDateString()}</span>
       </CardFooter>
     </Card>
   )
@@ -293,7 +297,7 @@ function ContentListItem({ item }: ContentCardProps) {
   return (
     <div className="flex items-center space-x-4 border rounded-lg p-4 hover:bg-accent/50 transition-colors">
       <div className="relative h-16 w-16 flex-shrink-0">
-        <Image src={item.thumbnailUrl || item.url} alt={item.title} fill className="object-cover rounded-md" />
+        <Image src={item.thumbnailUrl || item.url || "/placeholder.svg"} alt={item.title || "Content"} fill className="object-cover rounded-md" />
       </div>
       <div className="flex-grow min-w-0">
         <div className="flex items-center">
@@ -326,7 +330,7 @@ function ContentListItem({ item }: ContentCardProps) {
               {item.comments}
             </span>
           </div>
-          <span className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleDateString()}</span>
+          <span className="text-xs text-muted-foreground">{new Date(item.createdAt || Date.now()).toLocaleDateString()}</span>
         </div>
       </div>
     </div>

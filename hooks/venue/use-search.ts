@@ -53,7 +53,7 @@ export function useSearch() {
         const mockResults: SearchResult[] = [
           {
             id: "event-1",
-            type: "event",
+            type: "event" as const,
             title: "Summer Jam Festival",
             subtitle: "June 15, 2025",
             icon: "calendar",
@@ -62,7 +62,7 @@ export function useSearch() {
           },
           {
             id: "booking-1",
-            type: "booking",
+            type: "booking" as const,
             title: "Electronic Music Showcase",
             subtitle: "Pending request from Pulse Productions",
             icon: "clock",
@@ -71,7 +71,7 @@ export function useSearch() {
           },
           {
             id: "team-1",
-            type: "team",
+            type: "team" as const,
             title: "Alex Johnson",
             subtitle: "Venue Manager",
             icon: "users",
@@ -80,7 +80,7 @@ export function useSearch() {
           },
           {
             id: "doc-1",
-            type: "document",
+            type: "venue" as const,
             title: "Stage Plot & Technical Rider",
             subtitle: "PDF • 2.4 MB",
             icon: "file-text",

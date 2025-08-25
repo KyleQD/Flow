@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -25,10 +25,8 @@ export const OptimizedImage = React.memo(function OptimizedImage({
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [imgSrc, setImgSrc] = useState(priority ? src : "")
-  const [ref, isVisible] = useIntersectionObserver<HTMLDivElement>({
-    freezeOnceVisible: true,
-    threshold: 0.1,
-  })
+  const ref = useRef<HTMLDivElement>(null)
+  const isVisible = useIntersectionObserver(ref, { threshold: 0.1 })
 
   useEffect(() => {
     if (priority) return

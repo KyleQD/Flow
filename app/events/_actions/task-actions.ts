@@ -17,7 +17,7 @@ const createTaskSchema = z.object({
   priority: z.enum(['low','medium','high','critical']).default('medium')
 })
 
-export const createTaskAction = action(createTaskSchema, async (input) => {
+export const createTaskAction = action.schema(createTaskSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
@@ -25,18 +25,18 @@ export const createTaskAction = action(createTaskSchema, async (input) => {
   const { error } = await supabase
     .from('tasks')
     .insert({
-      org_id: input.orgId,
-      event_id: input.eventId,
-      title: input.title,
-      description: input.description ?? null,
-      assignee_id: input.assigneeId ?? null,
-      due_at: input.dueAt ?? null,
-      priority: input.priority,
+      org_id: parsedInput.orgId,
+      event_id: parsedInput.eventId,
+      title: parsedInput.title,
+      description: parsedInput.description ?? null,
+      assignee_id: parsedInput.assigneeId ?? null,
+      due_at: parsedInput.dueAt ?? null,
+      priority: parsedInput.priority,
       created_by: user.user.id
     })
 
   if (error) return { ok: false, error: 'create_failed' }
-  revalidatePath(`/events/${input.eventId}`)
+  revalidatePath(`/events/${parsedInput.eventId}`)
   return { ok: true }
 })
 

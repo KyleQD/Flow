@@ -31,13 +31,14 @@ import {
   INSTRUMENT_OPTIONS,
   PAYMENT_TYPE_OPTIONS,
   LOCATION_TYPE_OPTIONS,
-  EXPERIENCE_LEVEL_OPTIONS
+  EXPERIENCE_LEVEL_OPTIONS,
+  CreateCollaborationApplicationFormData
 } from '@/types/artist-jobs'
 import { ArtistJobsService } from '@/lib/services/artist-jobs.service'
 
 interface CollaborationFeedProps {
   onCollaborationClick?: (collaboration: ArtistJob) => void
-  onApply?: (collaborationId: string) => void
+  onApply?: (application: CreateCollaborationApplicationFormData | string) => void
   onSave?: (collaborationId: string) => void
   onUnsave?: (collaborationId: string) => void
   userId?: string
@@ -117,7 +118,7 @@ export default function CollaborationFeed({
   const CollaborationCard = ({ collaboration }: { collaboration: ArtistJob }) => {
     const timeAgo = formatDistanceToNow(new Date(collaboration.created_at), { addSuffix: true })
     const hasDeadline = collaboration.deadline
-    const isExpiringSoon = hasDeadline && new Date(collaboration.deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const isExpiringSoon = hasDeadline && collaboration.deadline && new Date(collaboration.deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
     return (
       <Card 
@@ -205,7 +206,7 @@ export default function CollaborationFeed({
                   isExpiringSoon ? "text-red-600" : "text-gray-600"
                 )}>
                   <Calendar className="h-3 w-3" />
-                  <span>Due {format(new Date(collaboration.deadline), 'MMM d')}</span>
+                  <span>Due {collaboration.deadline ? format(new Date(collaboration.deadline), 'MMM d') : 'No deadline'}</span>
                 </div>
               )}
             </div>

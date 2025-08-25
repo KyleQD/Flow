@@ -225,6 +225,27 @@ export function NavigationSidebar({ user, isOpen, onToggle, roleTheme }: Navigat
   // NAVIGATION ITEM COMPONENT
   // =============================================================================
 
+  const NavGroup = ({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) => {
+    const [isOpen, setIsOpen] = useState(defaultOpen)
+    
+    return (
+      <div>
+        {!collapsed && (
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center justify-between w-full px-3 mb-3 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-400 transition-colors"
+          >
+            <span>{title}</span>
+            <ChevronRight className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+          </button>
+        )}
+        <div className={`space-y-1 ${isOpen ? 'block' : 'hidden'}`}>
+          {children}
+        </div>
+      </div>
+    )
+  }
+
   const NavItem = ({ item, level = 0 }: { item: NavItem; level?: number }) => {
     const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
     const Icon = item.icon
@@ -307,15 +328,15 @@ export function NavigationSidebar({ user, isOpen, onToggle, roleTheme }: Navigat
         <div className="space-y-6">
           {/* Main Navigation */}
           <NavGroup title="Main" defaultOpen={true}>
-            <NavItem href="/" icon={<Home className="h-4 w-4" />} label="Home" />
-            <NavItem href="/dashboard" icon={<BarChart3 className="h-4 w-4" />} label="Dashboard" />
-            <NavItem href="/events" icon={<Calendar className="h-4 w-4" />} label="Events" badge={3} />
-            <NavItem href="/music" icon={<Music className="h-4 w-4" />} label="Music" />
-            <NavItem href="/network" icon={<Users className="h-4 w-4" />} label="Network" />
-            <NavItem href="/messages" icon={<MessageSquare className="h-4 w-4" />} label="Messages" badge={2} />
-            <NavItem href="/bookings" icon={<Clock className="h-4 w-4" />} label="Bookings" badge={5} />
-            <NavItem href="/teams" icon={<Users className="h-4 w-4" />} label="Team" isNew={true} />
-            <NavItem href="/achievements" icon={<Trophy className="h-4 w-4" />} label="Achievements" isNew={true} />
+            <NavItem item={{ href: "/", icon: Home, label: "Home" }} />
+            <NavItem item={{ href: "/dashboard", icon: BarChart3, label: "Dashboard" }} />
+            <NavItem item={{ href: "/events", icon: Calendar, label: "Events", badge: 3 }} />
+            <NavItem item={{ href: "/music", icon: Music, label: "Music" }} />
+            <NavItem item={{ href: "/network", icon: Users, label: "Network" }} />
+            <NavItem item={{ href: "/messages", icon: MessageSquare, label: "Messages", badge: 2 }} />
+            <NavItem item={{ href: "/bookings", icon: Clock, label: "Bookings", badge: 5 }} />
+            <NavItem item={{ href: "/teams", icon: Users, label: "Team" }} />
+            <NavItem item={{ href: "/achievements", icon: Trophy, label: "Achievements" }} />
           </NavGroup>
 
           {/* Primary Navigation */}

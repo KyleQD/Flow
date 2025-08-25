@@ -73,7 +73,6 @@ export default function LogisticsPage() {
     transportation: travelTransportation,
     analytics: travelAnalytics,
     groupsLoading: travelGroupsLoading,
-    error: travelError
   } = useTravelCoordination()
 
   // Calculate status metrics

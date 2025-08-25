@@ -238,7 +238,18 @@ export class AdvancedAnalyticsService {
       .single()
 
     if (error) throw error
-    return data
+    return data as {
+      period_start: string
+      period_end: string
+      follower_growth: number
+      engagement_rate: number
+      total_posts: number
+      total_engagement: number
+      avg_likes_per_post: number
+      top_performing_post_id: string
+      growth_trend: string
+      insights: Record<string, any>
+    }
   }
 
   /**

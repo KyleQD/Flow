@@ -578,7 +578,7 @@ export default function MerchandiseManager() {
   if (showEditor) {
     return (
       <MerchandiseEditor
-        item={editingItem}
+        item={editingItem || undefined}
         onSave={handleSaveItem}
         onCancel={() => {
           setShowEditor(false)

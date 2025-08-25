@@ -103,8 +103,8 @@ export default function Dashboard() {
       color: string
 
       constructor() {
-        this.x = Math.random() * canvas.width
-        this.y = Math.random() * canvas.height
+        this.x = Math.random() * (canvas?.width || 800)
+        this.y = Math.random() * (canvas?.height || 600)
         this.size = Math.random() * 2 + 0.5
         this.speedX = (Math.random() - 0.5) * 0.3
         this.speedY = (Math.random() - 0.5) * 0.3
@@ -115,10 +115,10 @@ export default function Dashboard() {
         this.x += this.speedX
         this.y += this.speedY
 
-        if (this.x > canvas.width) this.x = 0
-        if (this.x < 0) this.x = canvas.width
-        if (this.y > canvas.height) this.y = 0
-        if (this.y < 0) this.y = canvas.height
+        if (this.x > (canvas?.width || 800)) this.x = 0
+        if (this.x < 0) this.x = canvas?.width || 800
+        if (this.y > (canvas?.height || 600)) this.y = 0
+        if (this.y < 0) this.y = canvas?.height || 600
       }
 
       draw() {
@@ -1191,11 +1191,11 @@ function UpcomingTask({
 }
 
 // Add missing imports
-function Info(props) {
+function Info(props: React.ComponentProps<typeof AlertCircle>) {
   return <AlertCircle {...props} />
 }
 
-function Check(props) {
+function Check(props: React.ComponentProps<typeof CheckCircle>) {
   return <CheckCircle {...props} />
 }
 

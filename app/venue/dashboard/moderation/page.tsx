@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { ContentModeration } from "../../components/content-moderation"
-import { useAuth } from "../../../context/auth-context"
+import { useAuth } from "../../context/auth-context"
 import { LoadingSpinner } from "../../components/loading-spinner"
 import { useRouter } from "next/navigation"
 import { Shield, AlertTriangle, CheckCircle } from "lucide-react"
@@ -46,7 +46,12 @@ export default function ModerationPage() {
         const settings = getModerationSettings()
 
         setModerationHistory(history)
-        setSettings(settings)
+        setSettings({
+          automaticModeration: true,
+          profanityFilter: true,
+          notificationPreferences: true,
+          ...settings
+        })
       } catch (error) {
         console.error("Error loading moderation data:", error)
       } finally {
@@ -183,11 +188,11 @@ export default function ModerationPage() {
                         </p>
                         <p className="text-xs text-gray-400">
                           {item.status.charAt(0).toUpperCase() + item.status.slice(1)} •{" "}
-                          {new Date(item.timestamp).toLocaleString()}
+                          {new Date(item.date).toLocaleString()}
                         </p>
                       </div>
 
-                      {item.status === "flagged" && (
+                      {item.status === "pending" && (
                         <div className="flex space-x-2 ml-2">
                           <Button
                             size="sm"

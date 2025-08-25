@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Grid, List, Search, Plus, Music, Film, Users, Tag, Loader2 } from "lucide-react"
+import { Calendar, Grid, List, Search, Plus, Music, Film, Users, Tag, Loader2, Mic, Video } from "lucide-react"
 import { PageHeader } from "../../components/navigation/page-header"
 import { useVenueEvents, type VenueEvent } from "../../lib/hooks/use-venue-events"
 import { useRouter } from "next/navigation"
@@ -47,26 +47,39 @@ export default function EventsPage() {
           <Badge
             className={`
               ${
-                event.type === "concert"
+                event.type === "performance"
                   ? "bg-purple-600"
-                  : event.type === "corporate"
+                  : event.type === "meeting"
                     ? "bg-blue-600"
-                    : event.type === "private"
+                    : event.type === "recording"
                       ? "bg-green-600"
-                      : "bg-orange-600"
+                      : event.type === "media"
+                        ? "bg-orange-600"
+                        : "bg-gray-600"
               }
+              text-white px-2 py-1 rounded text-xs font-medium
             `}
           >
-            {event.type === "concert" ? (
+            {event.type === "performance" ? (
               <Music className="h-3 w-3 mr-1" />
-            ) : event.type === "corporate" ? (
+            ) : event.type === "meeting" ? (
               <Users className="h-3 w-3 mr-1" />
-            ) : event.type === "private" ? (
-              <Tag className="h-3 w-3 mr-1" />
+            ) : event.type === "recording" ? (
+              <Mic className="h-3 w-3 mr-1" />
+            ) : event.type === "media" ? (
+              <Video className="h-3 w-3 mr-1" />
             ) : (
-              <Film className="h-3 w-3 mr-1" />
+              <Calendar className="h-3 w-3 mr-1" />
             )}
-            {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
+            {event.type === "performance"
+              ? "Performance"
+              : event.type === "meeting"
+                ? "Meeting"
+                : event.type === "recording"
+                  ? "Recording"
+                  : event.type === "media"
+                    ? "Media"
+                    : "Other"}
           </Badge>
         </div>
       </div>
@@ -74,7 +87,7 @@ export default function EventsPage() {
         <CardTitle>{event.title}</CardTitle>
         <CardDescription className="flex items-center">
           <Calendar className="h-3.5 w-3.5 mr-1" />
-          {event.date} • {event.time}
+          {event.startDate} • {event.startDate}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -82,20 +95,20 @@ export default function EventsPage() {
           <div className="flex justify-between text-sm">
             <span>Ticket Sales</span>
             <span className="font-medium">
-              {event.ticketsSold}/{event.capacity}
+              {0}/{event.capacity}
             </span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-full bg-purple-600 rounded-full"
-              style={{ width: `${(event.ticketsSold / event.capacity) * 100}%` }}
+              style={{ width: `${(0 / event.capacity) * 100}%` }}
             ></div>
           </div>
           <div className="flex justify-between pt-2">
-            <Button variant="outline" size="sm" onClick={() => handleViewDetails(event.id)}>
+            <Button variant="outline" size="sm" onClick={() => handleViewDetails(Number(event.id))}>
               Details
             </Button>
-            <Button size="sm" onClick={() => handleManageEvent(event.id)}>
+            <Button size="sm" onClick={() => handleManageEvent(Number(event.id))}>
               Manage
             </Button>
           </div>
@@ -179,7 +192,7 @@ export default function EventsPage() {
             <Card>
               <CardContent className="py-8">
                 <div className="text-center text-muted-foreground">
-                  <p>{error}</p>
+                  <p>{error.message}</p>
                   <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
                     Try Again
                   </Button>

@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data for frontend
-    const transformedEvents = events?.map(event => ({
+    const transformedEvents = (events || []).map((event: any) => ({
       id: event.id,
       name: event.name,
       description: event.description,

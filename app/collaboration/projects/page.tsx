@@ -43,11 +43,14 @@ export default async function CollaborationProjectsPage() {
     .eq('status', 'active')
     .order('joined_at', { ascending: false })
 
-  const collaborationProjects = projects?.map(p => ({
-    ...p.collaboration_projects,
-    user_role: p.role,
-    joined_at: p.joined_at
-  })) || []
+  const collaborationProjects = (projects || []).map((p: any) => {
+    const proj = Array.isArray(p.collaboration_projects) ? p.collaboration_projects[0] : p.collaboration_projects
+    return {
+      ...(proj || {}),
+      user_role: p.role,
+      joined_at: p.joined_at
+    }
+  }).filter((p: any) => p && p.id)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -113,7 +116,7 @@ export default async function CollaborationProjectsPage() {
                       {project.genre && project.genre.length > 0 && (
                         <div className="flex items-center gap-1 flex-wrap">
                           <Music className="h-4 w-4 text-slate-400" />
-                          {project.genre.slice(0, 2).map((genre) => (
+                          {project.genre.slice(0, 2).map((genre: any) => (
                             <Badge key={genre} variant="secondary" className="text-xs">
                               {genre}
                             </Badge>

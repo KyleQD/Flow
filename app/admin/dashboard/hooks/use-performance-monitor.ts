@@ -220,10 +220,12 @@ export function usePerformanceMonitor(options: PerformanceMonitorOptions = {}) {
   // Measure bundle size
   const measureBundleSize = useCallback(() => {
     if ('getEntriesByType' in performance) {
-      const resources = performance.getEntriesByType('resource')
-      const totalSize = resources.reduce((total, resource) => {
-        return total + (resource.transferSize || 0)
-      }, 0)
+      const entries = performance.getEntriesByType('resource')
+      let totalSize = 0
+      for (const entry of entries) {
+        const res = entry as PerformanceResourceTiming
+        if (typeof (res as any).transferSize === 'number') totalSize += (res as any).transferSize
+      }
       
       const bundleSize = totalSize / 1024 / 1024 // Convert to MB
       
@@ -408,13 +410,15 @@ export function useBundleAnalyzer() {
 
   const analyzeBundle = useCallback(() => {
     if ('getEntriesByType' in performance) {
-      const resources = performance.getEntriesByType('resource')
-      const chunks = resources
-        .filter(resource => resource.name.includes('.js') || resource.name.includes('.css'))
-        .map(resource => ({
-          name: resource.name.split('/').pop() || 'unknown',
-          size: resource.transferSize || 0
-        }))
+      const entries = performance.getEntriesByType('resource')
+      const chunks = entries
+        .filter(e => (e as PerformanceResourceTiming).name?.includes?.('.js') || (e as PerformanceResourceTiming).name?.includes?.('.css'))
+        .map(e => {
+          const r = e as PerformanceResourceTiming
+          const name = r.name?.split?.('/')?.pop?.() || 'unknown'
+          const size = typeof (r as any).transferSize === 'number' ? (r as any).transferSize : 0
+          return { name, size }
+        })
         .sort((a, b) => b.size - a.size)
 
       const totalSize = chunks.reduce((total, chunk) => total + chunk.size, 0)

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 
-export default async function EventOverviewPage({ params }: { params: { id: string } }) {
-  const eventId = params.id
+export default async function EventOverviewPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: eventId } = await params
   const supabase = await createClient()
 
   const [{ data: event }, { data: tasks }, { data: docs }, { data: sched }, { data: incidents }] = await Promise.all([

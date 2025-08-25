@@ -559,7 +559,6 @@ export interface StaffShiftResponse extends ApiResponse<StaffShift> {}
 export interface StaffZonesResponse extends ApiResponse<StaffZone[]> {}
 export interface StaffZoneResponse extends ApiResponse<StaffZone> {}
 export interface PerformanceMetricsResponse extends ApiResponse<StaffPerformanceMetrics[]> {}
-export interface PerformanceMetricsResponse extends ApiResponse<StaffPerformanceMetrics> {}
 export interface TrainingRecordsResponse extends ApiResponse<StaffTrainingRecord[]> {}
 export interface TrainingRecordResponse extends ApiResponse<StaffTrainingRecord> {}
 export interface CertificationsResponse extends ApiResponse<StaffCertification[]> {}

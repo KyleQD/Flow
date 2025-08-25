@@ -6,16 +6,18 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { UserCard } from "@/components/user-card"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { UserCard } from "../user-card"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useSocial } from "@/context/social-context"
 import { useDebounce } from "@/hooks/use-debounce"
 import { Search, Users, MapPin, Briefcase } from "lucide-react"
-import { paginateArray } from "@/lib/pagination-service"
-import { getAllLocations, getAllTitles } from "@/lib/search-service"
+import { paginateArray } from "@/lib/venue/pagination-service"
+import { getAllLocations, getAllTitles } from "@/lib/venue/search-service"
 
 export function IndustryDirectory() {
-  const { users, loadingUsers, searchUsers } = useSocial()
+  const { } = useSocial()
+  const [users] = useState<any[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("all")
   const [location, setLocation] = useState("")
@@ -33,7 +35,11 @@ export function IndustryDirectory() {
   // Filter users based on search query and filters
   useEffect(() => {
     if (!loadingUsers) {
-      let results = searchUsers(debouncedSearchQuery)
+      let results = users.filter(user => 
+        user.fullName?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        user.title?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        user.location?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+      )
 
       // Apply tab filter
       if (activeTab === "tour-managers") {
@@ -59,7 +65,7 @@ export function IndustryDirectory() {
       setFilteredUsers(results)
       setCurrentPage(1)
     }
-  }, [debouncedSearchQuery, activeTab, location, role, loadingUsers, searchUsers])
+  }, [debouncedSearchQuery, activeTab, location, role, loadingUsers, users])
 
   // Paginate filtered users
   useEffect(() => {
@@ -87,7 +93,7 @@ export function IndustryDirectory() {
   if (loadingUsers) {
     return (
       <div className="flex justify-center items-center h-60">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     )
   }

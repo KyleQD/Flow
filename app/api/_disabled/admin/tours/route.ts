@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data for frontend
-    const transformedTours = tours?.map(tour => ({
+    const transformedTours = (tours || []).map((tour: any) => ({
       id: tour.id,
       name: tour.name,
       description: tour.description,

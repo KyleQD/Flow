@@ -13,8 +13,8 @@ import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { EnhancedAccountCards } from '@/components/dashboard/enhanced-account-cards'
 import { DashboardFeed } from '@/components/dashboard/dashboard-feed'
-import { QuickActions } from '@/components/dashboard/quick-actions'
-import { RecentActivity } from '@/components/dashboard/recent-activity'
+// import { QuickActions } from '@/components/dashboard/quick-actions'
+// import { RecentActivity } from '@/components/dashboard/recent-activity'
 import { EnhancedAccountStatusBar } from '@/components/dashboard/enhanced-account-status-bar'
 import { QuickPostCreator } from '@/components/dashboard/quick-post-creator'
 import { UnifiedActivityFeed } from '@/components/dashboard/unified-activity-feed'
@@ -288,7 +288,7 @@ export default function OptimizedDashboard() {
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <Avatar className="h-16 w-16 border-2 border-white/20">
-                    <AvatarImage src={userProfile?.avatar_url || user.user_metadata?.avatar_url} />
+                    <AvatarImage src={userProfile?.avatar_url || (user as any)?.user_metadata?.avatar_url} />
                     <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white text-lg font-semibold">
                       {getDisplayName().charAt(0).toUpperCase()}
                     </AvatarFallback>

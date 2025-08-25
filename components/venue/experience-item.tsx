@@ -6,13 +6,20 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Trash2 } from "lucide-react"
-import type { ProfileData } from "@/lib/types"
+// Define experience type locally
+interface Experience {
+  id: string
+  title: string
+  company: string
+  period: string
+  description: string
+}
 import { motion } from "framer-motion"
-import { ConfirmDialog } from "@/components/confirm-dialog"
+import { ConfirmDialog } from "./confirm-dialog"
 
 interface ExperienceItemProps {
-  experience: ProfileData["experience"][0]
-  onUpdate: (id: string, experience: Partial<Omit<ProfileData["experience"][0], "id">>) => void
+  experience: Experience
+  onUpdate: (id: string, experience: Partial<Omit<Experience, "id">>) => void
   onRemove: (id: string) => void
   isEditable?: boolean
 }

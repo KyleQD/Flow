@@ -135,46 +135,46 @@ export async function GET(request: NextRequest) {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
     // Calculate total revenue from tours and ticket sales
-    const tourRevenue = tours.reduce((sum, tour) => sum + parseFloat(tour.revenue || 0), 0)
-    const ticketRevenue = revenue
-      .filter(r => r.payment_status === 'paid')
-      .reduce((sum, r) => sum + parseFloat(r.total_amount || 0), 0)
+    const tourRevenue = tours.reduce((sum: number, tour: any) => sum + parseFloat(tour.revenue || 0), 0)
+    const ticketRevenue = (revenue as any[])
+      .filter((r: any) => r.payment_status === 'paid')
+      .reduce((sum: number, r: any) => sum + parseFloat(r.total_amount || 0), 0)
     const totalRevenue = tourRevenue + ticketRevenue
 
     // Calculate monthly revenue
-    const monthlyTicketRevenue = revenue
-      .filter(r => r.payment_status === 'paid' && new Date(r.purchase_date) >= thirtyDaysAgo)
-      .reduce((sum, r) => sum + parseFloat(r.total_amount || 0), 0)
-    const monthlyTourRevenue = tours
-      .filter(t => new Date(t.created_at) >= thirtyDaysAgo)
-      .reduce((sum, t) => sum + parseFloat(t.revenue || 0), 0)
+    const monthlyTicketRevenue = (revenue as any[])
+      .filter((r: any) => r.payment_status === 'paid' && new Date(r.purchase_date) >= thirtyDaysAgo)
+      .reduce((sum: number, r: any) => sum + parseFloat(r.total_amount || 0), 0)
+    const monthlyTourRevenue = (tours as any[])
+      .filter((t: any) => new Date(t.created_at) >= thirtyDaysAgo)
+      .reduce((sum: number, t: any) => sum + parseFloat(t.revenue || 0), 0)
     const monthlyRevenue = monthlyTicketRevenue + monthlyTourRevenue
 
     // Calculate tickets sold
-    const ticketsSold = tickets
-      .filter(t => t.payment_status === 'paid')
-      .reduce((sum, t) => sum + (t.quantity || 0), 0)
+    const ticketsSold = (tickets as any[])
+      .filter((t: any) => t.payment_status === 'paid')
+      .reduce((sum: number, t: any) => sum + (t.quantity || 0), 0)
 
     // Calculate total capacity
-    const totalCapacity = events.reduce((sum, e) => sum + (e.capacity || 0), 0)
+    const totalCapacity = (events as any[]).reduce((sum: number, e: any) => sum + (e.capacity || 0), 0)
 
     // Calculate travel coordination stats
     const totalTravelGroups = travelGroups.length
-    const totalTravelers = travelGroups.reduce((sum, group) => sum + (group.total_members || 0), 0)
-    const confirmedTravelers = travelGroups.reduce((sum, group) => sum + (group.confirmed_members || 0), 0)
-    const fullyCoordinatedGroups = travelGroups.filter(g => g.coordination_status === 'complete').length
+    const totalTravelers = (travelGroups as any[]).reduce((sum: number, group: any) => sum + (group.total_members || 0), 0)
+    const confirmedTravelers = (travelGroups as any[]).reduce((sum: number, group: any) => sum + (group.confirmed_members || 0), 0)
+    const fullyCoordinatedGroups = (travelGroups as any[]).filter((g: any) => g.coordination_status === 'complete').length
     const coordinationCompletionRate = totalTravelGroups > 0 ? Math.round((fullyCoordinatedGroups / totalTravelGroups) * 100) : 0
 
     // Calculate logistics stats
-    const activeTransportation = logistics.filter(t => t.status === 'active' || t.status === 'scheduled').length
-    const completedTransportation = logistics.filter(t => t.status === 'completed').length
+    const activeTransportation = (logistics as any[]).filter((t: any) => t.status === 'active' || t.status === 'scheduled').length
+    const completedTransportation = (logistics as any[]).filter((t: any) => t.status === 'completed').length
     const logisticsCompletionRate = logistics.length > 0 ? Math.round((completedTransportation / logistics.length) * 100) : 0
 
     const stats = {
       totalTours: tours.length,
-      activeTours: tours.filter(t => t.status === 'active').length,
+      activeTours: (tours as Array<{ status?: string }>).filter((t) => t.status === 'active').length,
       totalEvents: events.length,
-      upcomingEvents: events.filter(e => new Date(e.event_date) > now).length,
+      upcomingEvents: (events as Array<{ event_date?: string }>).filter((e) => new Date(e.event_date as string) > now).length,
       totalArtists: artists.length,
       totalVenues: venues.length,
       totalRevenue: totalRevenue,

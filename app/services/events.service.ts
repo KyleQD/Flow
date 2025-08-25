@@ -24,7 +24,7 @@ export interface ActiveEvent {
  */
 export async function fetchActiveEvents(): Promise<ActiveEvent[] | FetchActiveEventsError> {
   const cookieStore = cookies()
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Explicitly type the expected shape of event data from the query
   type FetchedEventData = Pick<Event, 'id' | 'name' | 'start_date' | 'tickets_sold' | 'total_tickets'>

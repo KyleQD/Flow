@@ -16,10 +16,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { useProfile } from "@/context/profile-context"
+import { useProfile } from "@/context/venue/profile-context"
 import { useToast } from "@/hooks/use-toast"
 import { Upload } from "lucide-react"
-import type { GroupData } from "@/lib/types"
+import type { GroupData } from "@/lib/venue/types"
 
 interface CreateGroupModalProps {
   isOpen: boolean

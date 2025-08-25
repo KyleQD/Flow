@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { supabase } from '@/lib/supabase'
 import { z } from 'zod'
 
 export const NOTIFICATION_TYPES = {
@@ -56,7 +56,7 @@ export interface NotificationTemplate {
 }
 
 export class NotificationService {
-  private supabase = createClient()
+  private supabase = supabase
 
   // Predefined notification templates
   private templates: Record<string, NotificationTemplate> = {

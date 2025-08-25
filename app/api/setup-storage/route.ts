@@ -4,14 +4,15 @@ import { authenticateApiRequest } from '@/lib/auth/api-auth'
 export async function POST(request: NextRequest) {
   try {
     // Authenticate the request
-    const { user, supabase } = await authenticateApiRequest(request)
-    
-    if (!user) {
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+
+    const { user, supabase } = authResult
 
     console.log('Setting up storage bucket for user:', user.id)
 

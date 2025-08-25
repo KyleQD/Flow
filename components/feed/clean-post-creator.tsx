@@ -325,7 +325,7 @@ export function CleanPostCreator({
 
     } catch (error) {
       console.error('Error creating post:', error)
-      console.error('Post data that failed:', postPayload)
+      console.error('Post data that failed:', postData)
       toast.error(error instanceof Error ? error.message : 'Failed to create post')
     } finally {
       setIsSubmitting(false)
@@ -352,15 +352,15 @@ export function CleanPostCreator({
           {/* User header */}
           <div className="flex items-start gap-4 mb-4">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={user?.avatar_url} />
+              <AvatarImage src={user ? (user as any).avatar_url || (user as any).avatar : undefined} />
               <AvatarFallback className="bg-purple-600 text-white font-medium">
-                {user?.username?.charAt(0).toUpperCase() || 'U'}
+                {(user as any)?.username?.charAt(0).toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             
             <div className="flex-1">
               <div className="font-medium text-white mb-1">
-                {user?.username || 'User'}
+                {(user as any)?.username || 'User'}
               </div>
               <div className="text-sm text-gray-400">
                 {postData.scheduledFor ? 'Scheduled post' : 'Create a post'}

@@ -196,7 +196,7 @@ export default function BlogPage() {
   if (showEditor) {
     return (
       <BlogEditor
-        postId={editingPostId}
+        postId={editingPostId || undefined}
         onBack={() => {
           setShowEditor(false)
           setEditingPostId(null)

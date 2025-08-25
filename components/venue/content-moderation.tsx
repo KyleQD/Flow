@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { AlertTriangle, CheckCircle, XCircle, AlertCircle, Shield } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 export interface ModeratedContent {
   original: string
@@ -130,7 +130,7 @@ export function ContentModeration({ content, onModerated, autoModerate = false }
       <CardContent>
         {isChecking ? (
           <div className="flex flex-col items-center justify-center py-6">
-            <LoadingSpinner size="lg" />
+            <LoadingSpinner />
             <p className="mt-4 text-gray-400">Checking content...</p>
           </div>
         ) : result ? (

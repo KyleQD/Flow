@@ -25,8 +25,8 @@ export const OptimizedImage = React.memo(function OptimizedImage({
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [imgSrc, setImgSrc] = useState(priority ? src : "")
-  const [ref, isVisible] = useIntersectionObserver<HTMLDivElement>({
-    freezeOnceVisible: true,
+  const ref = React.useRef<HTMLDivElement>(null)
+  const isVisible = useIntersectionObserver(ref, {
     threshold: 0.1,
   })
 

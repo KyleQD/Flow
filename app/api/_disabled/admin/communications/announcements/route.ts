@@ -53,7 +53,7 @@ const announcementQuerySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     
     // Parse and validate query parameters
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
         total: filteredAnnouncements.length,
         limit: params.limit,
         offset: params.offset,
-        hasMore: filteredAnnouncements.length === resolvedParams.limit
+        hasMore: filteredAnnouncements.length === params.limit
       }
     })
 
@@ -208,7 +208,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -299,7 +299,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get announcement ID from URL
     const url = new URL(request.url)
@@ -396,7 +396,7 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get announcement ID from URL
     const url = new URL(request.url)

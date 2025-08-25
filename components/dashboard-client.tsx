@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Dashboard from "@/components/dashboard"
 import { getProfile } from "@/services/supabase"
 import { Loader2 } from "lucide-react"
-import { toast } from "react-hot-toast"
+import { useToast } from "@/hooks/use-toast"
 
 interface DashboardClientProps {
   userId: string
@@ -15,6 +15,7 @@ export default function DashboardClient({ userId }: DashboardClientProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { toast } = useToast()
   
   useEffect(() => {
     async function loadProfile() {
@@ -29,7 +30,11 @@ export default function DashboardClient({ userId }: DashboardClientProps) {
         const error = err as Error
         console.error('Error loading profile:', error)
         setError(error.message)
-        toast.error('Failed to load profile')
+        toast({
+          title: "Error",
+          description: "Failed to load profile",
+          variant: "destructive"
+        })
       }
     }
 
@@ -57,7 +62,7 @@ export default function DashboardClient({ userId }: DashboardClientProps) {
 
   return (
     <div className="relative">
-      <Dashboard userId={userId} />
+      <Dashboard />
     </div>
   )
 } 

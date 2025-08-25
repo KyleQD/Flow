@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { createSafeActionClient } from 'next-safe-action'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { ratelimit } from '@/lib/utils/rate-limit'
+import { createRateLimiter } from '@/lib/utils/rate-limit'
 
 const action = createSafeActionClient()
 
@@ -12,16 +12,16 @@ const createOrgSchema = z.object({
   name: z.string().min(2).max(80)
 })
 
-export const createOrganizationAction = action(createOrgSchema, async ({ name }) => {
+export const createOrganizationAction = action.schema(createOrgSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
 
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40)
+  const slug = parsedInput.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40)
 
   const { data, error } = await supabase
     .from('organizations')
-    .insert({ name, slug, created_by: user.user.id })
+    .insert({ name: parsedInput.name, slug, created_by: user.user.id })
     .select('id, slug')
     .single()
 
@@ -42,13 +42,14 @@ const inviteSchema = z.object({
   role: z.enum(['owner','admin','production','finance'])
 })
 
-export const createInviteAction = action(inviteSchema, async ({ orgId, email, role }) => {
+export const createInviteAction = action.schema(inviteSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
 
   // Rate limit invites per user
-  const { success } = await ratelimit.limit(`invite_${user.user.id}`)
+  const rl = createRateLimiter({ namespace: 'invite', limit: 10, windowSec: 60 })
+  const { success } = await rl.check(`invite_${user.user.id}`)
   if (!success) return { ok: false, error: 'rate_limited' }
 
   const token = crypto.randomUUID().replace(/-/g, '')
@@ -56,7 +57,7 @@ export const createInviteAction = action(inviteSchema, async ({ orgId, email, ro
 
   const { error } = await supabase
     .from('org_invites')
-    .insert({ org_id: orgId, email, role, token, expires_at: expires.toISOString(), created_by: user.user.id })
+    .insert({ org_id: parsedInput.orgId, email: parsedInput.email, role: parsedInput.role, token, expires_at: expires.toISOString(), created_by: user.user.id })
 
   if (error) return { ok: false, error: 'invite_failed' }
 
@@ -74,9 +75,9 @@ export const createInviteAction = action(inviteSchema, async ({ orgId, email, ro
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      personalizations: [{ to: [{ email }], subject: 'You have been invited to an organization on Tourify' }],
+      personalizations: [{ to: [{ email: parsedInput.email }], subject: 'You have been invited to an organization on Tourify' }],
       from: { email: from, name: 'Tourify' },
-      content: [{ type: 'text/html', value: `<p>You have been invited as <b>${role}</b>.</p><p>Accept here: <a href="${acceptUrl}">${acceptUrl}</a></p>` }]
+      content: [{ type: 'text/html', value: `<p>You have been invited as <b>${parsedInput.role}</b>.</p><p>Accept here: <a href="${acceptUrl}">${acceptUrl}</a></p>` }]
     })
   })
   if (!res.ok) return { ok: false, error: 'email_failed' }

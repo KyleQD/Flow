@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-import { authenticateApiRequest, checkAdminPermissions } from '@/lib/auth'
+import { authenticateApiRequest, checkAdminPermissions } from '@/lib/auth/api-auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
   try {
     // Authenticate request
     const authResult = await authenticateApiRequest(request)
-    if (!authResult.success) {
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -317,12 +317,12 @@ export async function POST(request: NextRequest) {
   try {
     // Authenticate and check admin permissions
     const authResult = await authenticateApiRequest(request)
-    if (!authResult.success) {
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const adminCheck = await checkAdminPermissions(authResult.userId)
-    if (!adminCheck.success) {
+    const adminAllowed = await checkAdminPermissions(authResult.user)
+    if (!adminAllowed) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
@@ -501,8 +501,8 @@ export async function POST(request: NextRequest) {
             assigned_passengers: autoGroupDetails.total_members,
             group_id: autoGroupId,
             status: 'scheduled',
-            event_id: groupData.event_id,
-            tour_id: groupData.tour_id
+            event_id: autoGroupDetails.event_id,
+            tour_id: autoGroupDetails.tour_id
           }
           
           const { data: transport, error: transportError } = await supabase
@@ -513,7 +513,7 @@ export async function POST(request: NextRequest) {
           
           if (!transportError && transport) {
             // Assign all members to transportation
-            const transportAssignments = members.map((member: any) => ({
+            const transportAssignments = (autoGroupMembers as Array<any>).map((member: any) => ({
               transportation_id: transport.id,
               group_member_id: member.id,
               status: 'confirmed'
@@ -552,12 +552,12 @@ export async function PUT(request: NextRequest) {
   try {
     // Authenticate and check admin permissions
     const authResult = await authenticateApiRequest(request)
-    if (!authResult.success) {
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const adminCheck = await checkAdminPermissions(authResult.userId)
-    if (!adminCheck.success) {
+    const adminAllowed = await checkAdminPermissions(authResult.user)
+    if (!adminAllowed) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
@@ -658,12 +658,12 @@ export async function DELETE(request: NextRequest) {
   try {
     // Authenticate and check admin permissions
     const authResult = await authenticateApiRequest(request)
-    if (!authResult.success) {
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const adminCheck = await checkAdminPermissions(authResult.userId)
-    if (!adminCheck.success) {
+    const adminAllowed = await checkAdminPermissions(authResult.user)
+    if (!adminAllowed) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 

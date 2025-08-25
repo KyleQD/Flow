@@ -506,14 +506,14 @@ export class EnhancedOnboardingService {
    */
   private static async addToVenueTeam(candidate: OnboardingCandidate) {
     try {
-      if (!candidate.user_id) return
+      if (!candidate.id) return
 
       // Add to venue team members
       await supabase
         .from('venue_team_members')
         .insert({
           venue_id: candidate.venue_id,
-          user_id: candidate.user_id,
+          user_id: candidate.id,
           name: candidate.name,
           email: candidate.email,
           phone: candidate.phone,

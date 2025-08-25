@@ -31,7 +31,7 @@ const deletePostSchema = z.object({
 // POST ACTIONS
 // ========================================
 
-export const createPostAction = action(createPostSchema, async (input) => {
+export const createPostAction = action.schema(createPostSchema).action(async ({ parsedInput }) => {
   try {
     const supabase = await createClient()
     const { data: user } = await supabase.auth.getUser()
@@ -49,7 +49,7 @@ export const createPostAction = action(createPostSchema, async (input) => {
     const { data: thread } = await supabase
       .from('forum_threads_v2')
       .select('id, is_locked, forum_id')
-      .eq('id', input.threadId)
+      .eq('id', parsedInput.threadId)
       .single()
 
     if (!thread) {
@@ -62,18 +62,18 @@ export const createPostAction = action(createPostSchema, async (input) => {
 
     // If replying to a comment, check it exists and get its depth
     let parentDepth = -1
-    if (input.parentId) {
+    if (parsedInput.parentId) {
       const { data: parent } = await supabase
         .from('forum_posts')
         .select('depth, thread_id')
-        .eq('id', input.parentId)
+        .eq('id', parsedInput.parentId)
         .single()
 
       if (!parent) {
         return { ok: false, error: 'parent_not_found' }
       }
 
-      if (parent.thread_id !== input.threadId) {
+      if (parent.thread_id !== parsedInput.threadId) {
         return { ok: false, error: 'parent_thread_mismatch' }
       }
 
@@ -89,9 +89,9 @@ export const createPostAction = action(createPostSchema, async (input) => {
     const { data: post, error } = await supabase
       .from('forum_posts')
       .insert({
-        thread_id: input.threadId,
-        parent_id: input.parentId || null,
-        content_md: input.contentMd,
+        thread_id: parsedInput.threadId,
+        parent_id: parsedInput.parentId || null,
+        content_md: parsedInput.contentMd,
         created_by: user.user.id
       })
       .select('id')
@@ -105,21 +105,20 @@ export const createPostAction = action(createPostSchema, async (input) => {
     // Auto-subscribe user to thread if not already subscribed
     await supabase
       .from('forum_subscriptions_v2')
-      .insert({
+      .upsert({
         user_id: user.user.id,
-        thread_id: input.threadId
-      })
-      .onConflict('user_id,thread_id')
+        thread_id: parsedInput.threadId
+      }, { onConflict: 'user_id,thread_id' })
 
     // Create notification for thread author and parent comment author
     const notifications = []
 
     // Notify thread author if this is a top-level comment
-    if (!input.parentId) {
+    if (!parsedInput.parentId) {
       const { data: threadAuthor } = await supabase
         .from('forum_threads_v2')
         .select('created_by')
-        .eq('id', input.threadId)
+        .eq('id', parsedInput.threadId)
         .single()
 
       if (threadAuthor && threadAuthor.created_by !== user.user.id) {
@@ -129,7 +128,7 @@ export const createPostAction = action(createPostSchema, async (input) => {
           title: 'New comment on your thread',
           content: `${user.user.email} commented on your thread`,
           payload: {
-            thread_id: input.threadId,
+            thread_id: parsedInput.threadId,
             post_id: post.id,
             author_id: user.user.id
           }
@@ -138,11 +137,11 @@ export const createPostAction = action(createPostSchema, async (input) => {
     }
 
     // Notify parent comment author if this is a reply
-    if (input.parentId) {
+    if (parsedInput.parentId) {
       const { data: parentAuthor } = await supabase
         .from('forum_posts')
         .select('created_by')
-        .eq('id', input.parentId)
+        .eq('id', parsedInput.parentId)
         .single()
 
       if (parentAuthor && parentAuthor.created_by !== user.user.id) {
@@ -152,9 +151,9 @@ export const createPostAction = action(createPostSchema, async (input) => {
           title: 'Reply to your comment',
           content: `${user.user.email} replied to your comment`,
           payload: {
-            thread_id: input.threadId,
+            thread_id: parsedInput.threadId,
             post_id: post.id,
-            parent_id: input.parentId,
+            parent_id: parsedInput.parentId,
             author_id: user.user.id
           }
         })
@@ -167,7 +166,7 @@ export const createPostAction = action(createPostSchema, async (input) => {
         .insert(notifications)
     }
 
-    revalidatePath(`/forums/t/${input.threadId}`)
+    revalidatePath(`/forums/t/${parsedInput.threadId}`)
     
     return { ok: true, postId: post.id }
   } catch (error) {
@@ -176,7 +175,7 @@ export const createPostAction = action(createPostSchema, async (input) => {
   }
 })
 
-export const updatePostAction = action(updatePostSchema, async (input) => {
+export const updatePostAction = action.schema(updatePostSchema).action(async ({ parsedInput }) => {
   try {
     const supabase = await createClient()
     const { data: user } = await supabase.auth.getUser()
@@ -189,7 +188,7 @@ export const updatePostAction = action(updatePostSchema, async (input) => {
     const { data: post } = await supabase
       .from('forum_posts')
       .select('created_by, thread_id')
-      .eq('id', input.postId)
+      .eq('id', parsedInput.postId)
       .single()
 
     if (!post) {
@@ -199,10 +198,10 @@ export const updatePostAction = action(updatePostSchema, async (input) => {
     const { error } = await supabase
       .from('forum_posts')
       .update({
-        content_md: input.contentMd,
+        content_md: parsedInput.contentMd,
         updated_at: new Date().toISOString()
       })
-      .eq('id', input.postId)
+      .eq('id', parsedInput.postId)
 
     if (error) {
       console.error('Post update error:', error)
@@ -218,7 +217,7 @@ export const updatePostAction = action(updatePostSchema, async (input) => {
   }
 })
 
-export const deletePostAction = action(deletePostSchema, async (input) => {
+export const deletePostAction = action.schema(deletePostSchema).action(async ({ parsedInput }) => {
   try {
     const supabase = await createClient()
     const { data: user } = await supabase.auth.getUser()
@@ -231,7 +230,7 @@ export const deletePostAction = action(deletePostSchema, async (input) => {
     const { data: post } = await supabase
       .from('forum_posts')
       .select('created_by, thread_id')
-      .eq('id', input.postId)
+      .eq('id', parsedInput.postId)
       .single()
 
     if (!post) {
@@ -246,7 +245,7 @@ export const deletePostAction = action(deletePostSchema, async (input) => {
         content_md: '[deleted]',
         updated_at: new Date().toISOString()
       })
-      .eq('id', input.postId)
+      .eq('id', parsedInput.postId)
 
     if (error) {
       console.error('Post deletion error:', error)

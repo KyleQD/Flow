@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
-import { mockProfessions } from "@/lib/mock-data"
+
+interface Profession { id: string; name: string; category?: string }
+const professionsSeed: Profession[] = []
 
 interface ProfessionSelectorProps {
   selectedProfessions: string[]
@@ -21,7 +23,7 @@ export default function ProfessionSelector({
   maxSelections = 3,
 }: ProfessionSelectorProps) {
   const [open, setOpen] = useState(false)
-  const [professions, setProfessions] = useState(mockProfessions)
+  const [professions, setProfessions] = useState(professionsSeed)
   const [searchQuery, setSearchQuery] = useState("")
 
   const handleSelect = (professionId: string) => {

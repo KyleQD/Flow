@@ -9,7 +9,7 @@ import { Search, Bell, Moon, Sun, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { useCommandSearch } from "@/hooks/use-command-search"
+import { useCommandSearch } from "@/hooks/venue/use-command-search"
 import { useTheme } from "@/hooks/use-theme"
 
 interface VenueHeaderProps {

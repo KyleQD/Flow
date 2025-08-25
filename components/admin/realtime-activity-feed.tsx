@@ -65,6 +65,7 @@ interface ActivityItem {
   tourName?: string
   eventId?: string
   eventName?: string
+  url?: string
   metadata?: Record<string, any>
   isRead?: boolean
   isArchived?: boolean

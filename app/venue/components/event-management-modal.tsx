@@ -308,7 +308,7 @@ export function EventManagementModal({ event, isOpen, onClose, currentUser, team
     if (!event?.id) return
     setIsDeleting(true)
     try {
-      const result = await deleteEvent(event.id)
+      const result = await deleteEvent(String(event.id))
       if (result.success) {
         setIsDeleting(false)
         setIsDeleteDialogOpen(false)
@@ -341,13 +341,13 @@ export function EventManagementModal({ event, isOpen, onClose, currentUser, team
     }
     if (activeTab === "documents") {
       if (!event) return null
-      return <DocumentUpload eventId={event.id} />
+      return <DocumentUpload eventId={String(event.id)} />
     }
     if (activeTab === "people") {
       if (!event) return null
       return (
         <PeopleTab
-          eventId={event.id}
+          eventId={String(event.id)}
           members={teamMembers}
           invites={teamInvites}
           currentUserRole={currentUser.role}
@@ -358,7 +358,7 @@ export function EventManagementModal({ event, isOpen, onClose, currentUser, team
       if (!event) return null
       return (
         <ChatTab
-          eventId={event.id}
+          eventId={String(event.id)}
           messages={chatMessages}
           currentUser={currentUser}
         />
@@ -368,7 +368,7 @@ export function EventManagementModal({ event, isOpen, onClose, currentUser, team
       if (!event) return null
       return (
         <PromotionsTab
-          eventId={event.id}
+          eventId={String(event.id)}
           promotions={promotions}
         />
       )

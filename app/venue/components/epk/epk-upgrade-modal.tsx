@@ -1,5 +1,8 @@
 "use client"
 
+// Prevent pre-rendering since this component requires profile context
+export const dynamic = 'force-dynamic'
+
 import { useState } from "react"
 import {
   Dialog,

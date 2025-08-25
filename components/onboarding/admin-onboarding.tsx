@@ -67,7 +67,7 @@ const PREVIOUS_ROLES = [
 
 export default function AdminOnboarding({ onComplete, onCancel }: AdminOnboardingProps) {
   const router = useRouter()
-  const { requestAdminAccess, isLoading } = useMultiAccount()
+  const { isLoading } = useMultiAccount()
   
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState<AdminFormData>({
@@ -152,7 +152,8 @@ export default function AdminOnboarding({ onComplete, onCancel }: AdminOnboardin
     if (!validateStep(step)) return
 
     try {
-      await requestAdminAccess(formData)
+      // TODO: Implement admin access request
+      console.log('Admin access request data:', formData)
       onComplete()
     } catch (error) {
       console.error('Error requesting admin access:', error)

@@ -187,6 +187,7 @@ export default function EnhancedTicketingPage() {
       
       <PageHeader
         title="Enhanced Ticketing Dashboard"
+        icon={BarChart3}
         description="Comprehensive ticketing management with social sharing, campaigns, and analytics"
       />
 
@@ -408,9 +409,9 @@ export default function EnhancedTicketingPage() {
 
         <TabsContent value="campaigns" className="space-y-6">
           <CampaignManager 
-            eventId={selectedEvent === 'all' ? '' : selectedEvent}
-            onCampaignCreated={handleCampaignCreated}
-            onPromoCodeCreated={handlePromoCodeCreated}
+            campaigns={[]}
+            promoCodes={[]}
+            onRefresh={fetchTicketingData}
           />
         </TabsContent>
 

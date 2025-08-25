@@ -86,7 +86,7 @@ export default function CollaborationDetail({
   const hasApplied = !!collaboration.user_application
   const timeAgo = formatDistanceToNow(new Date(collaboration.created_at), { addSuffix: true })
   const hasDeadline = collaboration.deadline
-  const isExpiringSoon = hasDeadline && new Date(collaboration.deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  const isExpiringSoon = hasDeadline && collaboration.deadline && new Date(collaboration.deadline) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
   useEffect(() => {
     if (isOwner && userId) {
@@ -447,7 +447,7 @@ export default function CollaborationDetail({
                   isExpiringSoon ? "text-red-600" : "text-gray-600"
                 )}>
                   <Calendar className="h-4 w-4" />
-                  <span>Deadline: {format(new Date(collaboration.deadline), 'PPP')}</span>
+                  <span>Deadline: {collaboration.deadline ? format(new Date(collaboration.deadline), 'PPP') : 'No deadline'}</span>
                 </div>
               )}
             </div>
@@ -572,7 +572,7 @@ export default function CollaborationDetail({
                     <div>
                       <p className="font-medium">Application Deadline</p>
                       <p className="text-sm text-gray-600">
-                        {format(new Date(collaboration.deadline), 'PPP')}
+                        {collaboration.deadline ? format(new Date(collaboration.deadline), 'PPP') : 'No deadline'}
                       </p>
                     </div>
                   </div>

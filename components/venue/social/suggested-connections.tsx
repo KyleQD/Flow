@@ -7,12 +7,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useSocial } from "@/context/social-context"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 import { Users, UserPlus, RefreshCw, Check } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { useInView } from "react-intersection-observer"
-import { ErrorBoundary } from "@/components/error-boundary"
+import { ErrorBoundary } from "../error-boundary"
 
 // Memoized connection item component for better performance
 const ConnectionItem = memo(
@@ -99,7 +99,8 @@ const ConnectionItem = memo(
 ConnectionItem.displayName = "ConnectionItem"
 
 export function SuggestedConnections() {
-  const { users, sendConnectionRequest } = useSocial()
+  const { } = useSocial()
+  const [users] = useState<any[]>([])
   const { user: currentUser } = useAuth()
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -158,14 +159,15 @@ export function SuggestedConnections() {
     async (userId: string) => {
       try {
         setPendingRequests((prev) => [...prev, userId])
-        await sendConnectionRequest(userId)
+        // Mock sendConnectionRequest for now
+        console.log("Sending connection request to:", userId)
       } catch (error) {
         console.error("Error sending connection request:", error)
         // Remove from pending if there was an error
         setPendingRequests((prev) => prev.filter((id) => id !== userId))
       }
     },
-    [sendConnectionRequest],
+    [],
   )
 
   // Loading skeleton

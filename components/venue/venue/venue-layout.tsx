@@ -1,6 +1,6 @@
 import type React from "react"
 import { VenueSidebar } from "./venue-sidebar"
-import { EventsProvider } from "@/context/events-context"
+import { EventsProvider } from "@/context/venue/events-context"
 
 interface VenueLayoutProps {
   children: React.ReactNode

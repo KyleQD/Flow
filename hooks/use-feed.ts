@@ -284,7 +284,7 @@ export function useComments(postId: string) {
 }
 
 export function useTrendingHashtags() {
-  const [hashtags, setHashtags] = useState([])
+  const [hashtags, setHashtags] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   
   const feedService = new FeedService()

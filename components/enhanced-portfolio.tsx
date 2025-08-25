@@ -92,7 +92,7 @@ const VIRTUAL_SCROLL_SETTINGS = {
 // Add image preloading
 const preloadImage = (url: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const img = new Image()
+    const img = new window.Image()
     img.onload = () => resolve()
     img.onerror = reject
     img.src = url
@@ -127,8 +127,8 @@ const optimizeImage = async (file: File): Promise<File> => {
   return new Promise((resolve) => {
     const reader = new FileReader()
     reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
+          const img = new window.Image()
+    img.onload = () => {
         const canvas = document.createElement("canvas")
         const ctx = canvas.getContext("2d")
         
@@ -174,7 +174,7 @@ const optimizeImage = async (file: File): Promise<File> => {
 }
 
 // Enhance PortfolioItem with progressive loading
-const PortfolioItem = React.memo(({ item, index }: { item: PortfolioItem; index: number }) => {
+const PortfolioItem = React.memo(({ item, index, deletePortfolioItem }: { item: PortfolioItem; index: number; deletePortfolioItem: (id: string) => void }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
   const [isPreloaded, setIsPreloaded] = useState(false)
@@ -368,18 +368,7 @@ export default function EnhancedPortfolio() {
   })
 
   // Add performance monitoring
-  const { performanceMetrics, startMonitoring, stopMonitoring } = usePerformanceMonitor({
-    thresholds: PERFORMANCE_THRESHOLDS,
-    onThresholdExceeded: (metric) => {
-      console.warn(`Performance threshold exceeded: ${metric}`)
-      // Implement performance degradation strategies
-      if (metric === 'renderTime') {
-        // Reduce overscan or batch size
-        VIRTUAL_SCROLL_SETTINGS.overscan = Math.max(1, VIRTUAL_SCROLL_SETTINGS.overscan - 1)
-        PROGRESSIVE_LOADING.batchSize = Math.max(3, PROGRESSIVE_LOADING.batchSize - 1)
-      }
-    }
-  })
+  const performanceMetrics = usePerformanceMonitor()
 
   // Optimize grid columns based on container width
   const gridColumns = useMemo(() => {
@@ -403,11 +392,7 @@ export default function EnhancedPortfolio() {
     }
   })
 
-  // Start performance monitoring
-  useEffect(() => {
-    startMonitoring()
-    return () => stopMonitoring()
-  }, [startMonitoring, stopMonitoring])
+
 
   // Optimize fetchPortfolioItems with retry logic
   const fetchPortfolioItems = useCallback(async (attempt = 1) => {
@@ -739,7 +724,7 @@ export default function EnhancedPortfolio() {
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
                   >
-                    <PortfolioItem item={item} index={virtualRow.index} />
+                    <PortfolioItem item={item} index={virtualRow.index} deletePortfolioItem={deletePortfolioItem} />
                   </div>
                 )
               })}

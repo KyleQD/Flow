@@ -342,7 +342,7 @@ export function DocumentsManagement() {
                 setViewMode={setViewMode}
                 selectedDocument={selectedDocument}
                 setSelectedDocument={setSelectedDocument}
-                currentFolder={currentFolder}
+                currentFolder={currentFolder || null}
                 sortBy={sortBy}
                 sortDirection={sortDirection}
                 toggleSort={toggleSort}
@@ -364,7 +364,7 @@ export function DocumentsManagement() {
         open={isUploadDialogOpen}
         onOpenChange={setIsUploadDialogOpen}
         folders={folders}
-        currentFolder={currentFolder}
+        currentFolder={currentFolder || null}
       />
 
       <CreateFolderDialog

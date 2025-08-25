@@ -56,13 +56,16 @@ export function EditVenueDialog({ venue, open, onOpenChange, onSave }: EditVenue
 
     if (name.includes(".")) {
       const [parent, child] = name.split(".")
-      setVenueData({
-        ...venueData,
-        [parent]: {
-          ...venueData[parent as keyof VenueData],
-          [child]: value,
-        },
-      })
+      const parentValue = venueData[parent as keyof VenueData]
+      if (typeof parentValue === 'object' && parentValue !== null) {
+        setVenueData({
+          ...venueData,
+          [parent]: {
+            ...parentValue,
+            [child]: value,
+          },
+        })
+      }
     } else {
       setVenueData({
         ...venueData,

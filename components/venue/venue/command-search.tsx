@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut"
-import { useSearch } from "@/hooks/use-search"
+import { useKeyboardShortcut } from "@/hooks/venue/use-keyboard-shortcut"
+import { useSearch } from "@/hooks/venue/use-search"
 import { Button } from "@/components/ui/button"
 import {
   CommandDialog,

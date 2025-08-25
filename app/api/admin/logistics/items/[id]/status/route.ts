@@ -3,7 +3,7 @@ import { createServerClient } from '@/lib/supabase/client'
 
 const VALID_STATUS = new Set(['pending','confirmed','in_progress','completed','cancelled','needs_attention'])
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: any) {
   try {
     const supabase = createServerClient()
     const { status } = await request.json()

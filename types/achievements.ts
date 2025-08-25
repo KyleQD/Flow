@@ -287,6 +287,7 @@ export interface EndorsementsResponse {
 }
 
 export interface SkillEndorsementRequest {
+  endorsee_id: string
   skill: string
   level: number
   comment?: string

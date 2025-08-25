@@ -7,14 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useSocial } from "@/context/social-context"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 import { formatDistanceToNow } from "date-fns"
 import { Music, Play, Headphones, Share2, Plus, ExternalLink, RefreshCw, Heart } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import Image from "next/image"
 import { useInView } from "react-intersection-observer"
-import { ErrorBoundary } from "@/components/error-boundary"
+import { ErrorBoundary } from "../error-boundary"
 
 interface MusicRelease {
   id: string
@@ -212,7 +212,8 @@ const ReleaseItem = memo(({ release, user, index }: { release: MusicRelease; use
 ReleaseItem.displayName = "ReleaseItem"
 
 export function MusicReleases() {
-  const { users } = useSocial()
+  const { } = useSocial()
+  const [users] = useState<any[]>([])
   const { user: currentUser } = useAuth()
   const [releases, setReleases] = useState<MusicRelease[]>([])
   const [isLoading, setIsLoading] = useState(true)

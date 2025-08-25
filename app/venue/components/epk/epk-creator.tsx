@@ -1,5 +1,8 @@
 "use client"
 
+// Prevent pre-rendering since this component requires profile context
+export const dynamic = 'force-dynamic'
+
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -133,7 +136,7 @@ export function EPKCreator() {
                 <Label>Photos</Label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {profile?.gallery && profile.gallery.length > 0 ? (
-                    profile.gallery.slice(0, 3).map((item) => (
+                    profile.gallery.slice(0, 3).map((item: any) => (
                       <div key={item.id} className="relative aspect-square rounded-md overflow-hidden">
                         <img
                           src={item.url || "/placeholder.svg"}

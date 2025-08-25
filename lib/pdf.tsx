@@ -62,4 +62,4 @@ export const generateEPKPDF = (data: EPKData): React.ReactNode => {
       {({ loading }) => (loading ? "Generating PDF..." : "Download EPK")}
     </PDFDownloadLink>
   )
-} 
+}

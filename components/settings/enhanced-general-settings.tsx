@@ -237,7 +237,7 @@ export function EnhancedGeneralSettings() {
       console.log('Saving profile data for user:', user?.id)
       console.log('Profile data to save:', data)
 
-      const profileData = {
+      const payload = {
         full_name: data.full_name,
         title: data.title,
         company: data.company,
@@ -261,24 +261,22 @@ export function EnhancedGeneralSettings() {
         show_hourly_rate: data.show_hourly_rate,
         show_availability: data.show_availability,
         allow_project_offers: data.allow_project_offers,
-        public_profile: data.public_profile,
-        updated_at: new Date().toISOString()
+        public_profile: data.public_profile
       }
 
-      console.log('Full profile data to save:', profileData)
+      const res = await fetch('/api/settings/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
 
-      const { error } = await supabase
-        .from('profiles')
-        .update(profileData)
-        .eq('id', user?.id)
-
-      if (error) {
-        console.error('Supabase error saving profile:', error)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        console.error('API error saving profile:', body)
         toast.error('Failed to save profile')
         return
       }
 
-      console.log('Profile saved successfully')
       toast.success('Profile saved successfully!')
       await loadProfile()
     } catch (error) {

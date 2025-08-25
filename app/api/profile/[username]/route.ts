@@ -3,12 +3,11 @@ import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ username: string }> }
+  { params }: any
 ) {
   try {
     const authResult = await authenticateApiRequest(request)
-    const resolvedParams = await params
-    const username = decodeURIComponent(resolvedParams.username)
+    const username = decodeURIComponent(params.username)
 
     console.log('[Profile Username API] Fetching profile for username:', username)
 
@@ -33,6 +32,7 @@ export async function GET(
         full_name,
         bio,
         avatar_url,
+        cover_image,
         location,
         website,
         is_verified,
@@ -129,7 +129,7 @@ export async function GET(
           .select('likes_count')
           .eq('user_id', profile.id)
 
-        stats.likes = posts?.reduce((sum, post) => sum + (post.likes_count || 0), 0) || 0
+        stats.likes = posts?.reduce((sum: number, post: any) => sum + (post.likes_count || 0), 0) || 0
       } catch (error) {
         console.log('[Profile Username API] Could not fetch likes data')
       }
@@ -263,13 +263,45 @@ export async function GET(
       }
     }
 
+    // Fetch public content tied to this profile
+    let portfolio: any[] = []
+    let experiences: any[] = []
+    let certifications: any[] = []
+    let topSkills: Array<{ name: string; endorsed_count: number }> = []
+
+    try {
+      const [{ data: portfolioRows }, { data: experienceRows }, { data: certRows }] = await Promise.all([
+        supabase.from('portfolio_items').select('*').eq('user_id', profile.id).eq('is_public', true).order('order_index', { ascending: true }),
+        supabase.from('profile_experiences').select('*').eq('user_id', profile.id).eq('is_visible', true).order('order_index', { ascending: true }),
+        supabase.from('profile_certifications').select('*').eq('user_id', profile.id).eq('is_public', true).order('issue_date', { ascending: false })
+      ])
+      portfolio = portfolioRows || []
+      experiences = experienceRows || []
+      certifications = certRows || []
+    } catch {
+      // Ignore if tables missing
+    }
+
+    try {
+      const [{ data: endorsements }, { data: top }] = await Promise.all([
+        supabase.from('skill_endorsements').select('skill').eq('endorsed_id', profile.id),
+        supabase.from('profiles').select('top_skills').eq('id', profile.id).single()
+      ])
+      const countMap: Record<string, number> = {}
+      ;(endorsements || []).forEach((e: any) => { countMap[e.skill] = (countMap[e.skill] || 0) + 1 })
+      const topList: string[] = (top as any)?.top_skills || []
+      topSkills = topList.map(name => ({ name, endorsed_count: countMap[name] || 0 }))
+    } catch {
+      topSkills = []
+    }
+
     const profileWithStats = {
       id: profile.id,
       username: profile.username,
       account_type: accountType,
       profile_data: profileData,
       avatar_url: profile.avatar_url,
-      cover_image: null,
+      cover_image: (profile as any).cover_image || (profile as any).header_url || null,
       verified: profile.is_verified,
       bio: profile.bio,
       location: profile.location,
@@ -279,9 +311,9 @@ export async function GET(
       updated_at: profile.updated_at
     }
 
-    console.log('[Profile Username API] Returning profile with stats')
+    console.log('[Profile Username API] Returning profile with content')
 
-    return NextResponse.json({ profile: profileWithStats })
+    return NextResponse.json({ profile: profileWithStats, portfolio, experiences, certifications, top_skills: topSkills })
   } catch (error) {
     console.error('[Profile Username API] Error:', error)
     return NextResponse.json(

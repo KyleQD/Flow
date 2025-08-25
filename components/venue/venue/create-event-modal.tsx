@@ -14,17 +14,16 @@ import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 
 export interface EventFormData {
-  id?: number
-  title: string
-  description: string
+  id?: string | number
+  name: string
+  description?: string
   date: Date
-  startTime: string
-  endTime: string
-  type: string
-  status: string
-  capacity: number
-  ticketPrice: number
-  isPublic: boolean
+  startTime?: string
+  endTime?: string
+  type?: string
+  status?: string
+  capacity?: number
+  ticketPrice?: number
   attendance?: number
 }
 
@@ -47,7 +46,7 @@ export function EventFormModal({
 }: EventFormModalProps) {
   const [formData, setFormData] = useState<EventFormData>(
     initialData || {
-      title: "",
+      name: "",
       description: "",
       date: initialDate || new Date(),
       startTime: "19:00",
@@ -56,7 +55,6 @@ export function EventFormModal({
       status: "pending",
       capacity: 100,
       ticketPrice: 0,
-      isPublic: true,
     },
   )
 
@@ -78,12 +76,12 @@ export function EventFormModal({
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">Event Title</Label>
+            <Label htmlFor="name">Event Name</Label>
             <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => handleChange("title", e.target.value)}
-              placeholder="Enter event title"
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              placeholder="Enter event name"
             />
           </div>
 
@@ -196,14 +194,7 @@ export function EventFormModal({
               </Select>
             </div>
 
-            <div className="flex items-center space-x-2 pt-8">
-              <Switch
-                id="isPublic"
-                checked={formData.isPublic}
-                onCheckedChange={(checked) => handleChange("isPublic", checked)}
-              />
-              <Label htmlFor="isPublic">Public Event</Label>
-            </div>
+
           </div>
         </div>
 

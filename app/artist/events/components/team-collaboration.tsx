@@ -176,6 +176,11 @@ export function TeamCollaboration({
     name: "",
     role: "",
     permissions: [],
+    tasks: [],
+    last_active: new Date().toISOString(),
+    availability: { status: "available" },
+    working_hours: { start: "09:00", end: "17:00", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+    skills: []
   })
   const [newDocument, setNewDocument] = useState<{ name: string; description: string; file: File | null; tags: string[] }>({
     name: "",
@@ -190,6 +195,12 @@ export function TeamCollaboration({
     due_date: new Date().toISOString(),
     status: "pending",
     priority: "medium",
+    dependencies: [],
+    blockers: [],
+    estimated_hours: 0,
+    actual_hours: 0,
+    progress: 0,
+    comments: []
   })
   const [expandedMember, setExpandedMember] = useState<string | null>(null)
   const [selectedTask, setSelectedTask] = useState<TeamTask | null>(null)
@@ -213,6 +224,11 @@ export function TeamCollaboration({
         name: "",
         role: "",
         permissions: [],
+        tasks: [],
+        last_active: new Date().toISOString(),
+        availability: { status: "available" },
+        working_hours: { start: "09:00", end: "17:00", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        skills: []
       })
       toast({
         title: "Success",
@@ -286,6 +302,12 @@ export function TeamCollaboration({
         due_date: new Date().toISOString(),
         status: "pending",
         priority: "medium",
+        dependencies: [],
+        blockers: [],
+        estimated_hours: 0,
+        actual_hours: 0,
+        progress: 0,
+        comments: []
       })
       toast({
         title: "Success",
@@ -591,8 +613,8 @@ export function TeamCollaboration({
                                   </div>
                                   <Badge
                                     variant={
-                                      task.status === "completed" ? "success" :
-                                      task.status === "in_progress" ? "warning" :
+                                      task.status === "completed" ? "default" :
+                                      task.status === "in_progress" ? "outline" :
                                       task.status === "overdue" ? "destructive" :
                                       "secondary"
                                     }
@@ -789,7 +811,7 @@ export function TeamCollaboration({
                               <Badge
                                 variant={
                                   task.priority === "high" ? "destructive" :
-                                  task.priority === "medium" ? "warning" :
+                                  task.priority === "medium" ? "default" :
                                   "secondary"
                                 }
                               >

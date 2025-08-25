@@ -463,7 +463,7 @@ export class ArtistJobsService {
       throw new Error('Failed to fetch saved jobs')
     }
 
-    return (data || []).map(item => item.job as ArtistJob)
+    return (data || []).map(item => item.job as unknown as ArtistJob)
   }
 
   // =============================================================================
@@ -567,12 +567,13 @@ export class ArtistJobsService {
     const locationTypes = new Set()
 
     userApplications.forEach(app => {
-      if (app.job) {
-        categories.add(app.job.category_id)
-        app.job.required_genres?.forEach(genre => genres.add(genre))
-        app.job.required_skills?.forEach(skill => skills.add(skill))
-        paymentTypes.add(app.job.payment_type)
-        locationTypes.add(app.job.location_type)
+      if (app.job && Array.isArray(app.job) && app.job.length > 0) {
+        const job = app.job[0] as any
+        categories.add(job.category_id)
+        job.required_genres?.forEach((genre: any) => genres.add(genre))
+        job.required_skills?.forEach((skill: any) => skills.add(skill))
+        paymentTypes.add(job.payment_type)
+        locationTypes.add(job.location_type)
       }
     })
 
@@ -877,12 +878,13 @@ export class ArtistJobsService {
     const paymentTypes = new Set()
 
     userApplications.forEach(app => {
-      if (app.job) {
-        categories.add(app.job.category_id)
-        if (app.job.genre) genres.add(app.job.genre)
-        app.job.instruments_needed?.forEach(instrument => instruments.add(instrument))
-        app.job.required_genres?.forEach(genre => genres.add(genre))
-        paymentTypes.add(app.job.payment_type)
+      if (app.job && Array.isArray(app.job) && app.job.length > 0) {
+        const job = app.job[0] as any
+        categories.add(job.category_id)
+        if (job.genre) genres.add(job.genre)
+        job.instruments_needed?.forEach((instrument: any) => instruments.add(instrument))
+        job.required_genres?.forEach((genre: any) => genres.add(genre))
+        paymentTypes.add(job.payment_type)
       }
     })
 

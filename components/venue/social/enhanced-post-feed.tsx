@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useSocial } from "@/context/social-context"
-import { useAuth } from "@/context/auth-context"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { useAuth } from "@/contexts/auth-context"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { PostItem } from "@/components/social/post-item"
 import { PostCreator } from "@/components/social/post-creator"
 import { RefreshCw, ArrowUp } from "lucide-react"
@@ -21,7 +21,9 @@ interface EnhancedPostFeedProps {
 }
 
 export function EnhancedPostFeed({ userId, filter = "all", showPostCreator = true, limit }: EnhancedPostFeedProps) {
-  const { posts, loadingPosts, users, fetchMorePosts } = useSocial()
+  const { posts } = useSocial()
+  const [loadingPosts, setLoadingPosts] = useState(false)
+  const [users] = useState<any[]>([])
   const { user: currentUser } = useAuth()
   const [filteredPosts, setFilteredPosts] = useState<any[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -32,7 +34,8 @@ export function EnhancedPostFeed({ userId, filter = "all", showPostCreator = tru
   const [showScrollTop, setShowScrollTop] = useState(false)
 
   // Ref for infinite scrolling
-  const [loadMoreRef, isLoadMoreVisible] = useIntersectionObserver<HTMLDivElement>({
+  const loadMoreRef = React.useRef<HTMLDivElement>(null)
+  const isLoadMoreVisible = useIntersectionObserver(loadMoreRef, {
     threshold: 0.5,
     rootMargin: "100px",
   })
@@ -250,7 +253,15 @@ export function EnhancedPostFeed({ userId, filter = "all", showPostCreator = tru
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.5) }}
                 >
-                  <PostItem post={post} author={author} />
+                  <PostItem 
+                    post={post} 
+                    user={author || { id: post.userId, fullName: "User", username: "user", avatar: "/placeholder.svg" }}
+                    onLike={async () => {}}
+                    onUnlike={async () => {}}
+                    onComment={async () => {}}
+                    onShare={async () => {}}
+                    isLiked={false}
+                  />
                 </motion.div>
               )
             })}
@@ -258,7 +269,7 @@ export function EnhancedPostFeed({ userId, filter = "all", showPostCreator = tru
             {/* Load more indicator */}
             {hasMore && !limit && (
               <div ref={loadMoreRef} className="py-4 text-center">
-                {isLoadingMore ? <LoadingSpinner size="md" /> : <p className="text-gray-500">Scroll for more posts</p>}
+                {isLoadingMore ? <LoadingSpinner /> : <p className="text-gray-500">Scroll for more posts</p>}
               </div>
             )}
 

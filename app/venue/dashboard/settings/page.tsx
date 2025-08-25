@@ -1,10 +1,13 @@
 "use client"
 
+// Prevent pre-rendering since this page requires profile context
+export const dynamic = 'force-dynamic'
+
 import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useProfile } from "../../../context/profile-context"
+import { useProfile } from "../../context/profile-context"
 import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -75,8 +78,8 @@ export default function VenueSettingsPage() {
       marketing: false,
     },
     team: {
-      members: [],
-      roles: [],
+      members: [] as any[],
+      roles: [] as any[],
     },
     payment: {
       acceptedMethods: [] as string[],
@@ -90,34 +93,34 @@ export default function VenueSettingsPage() {
     if (profile) {
       setVenueData({
         name: profile.name,
-        type: profile.type,
-        description: profile.description,
-        location: profile.location,
-        website: profile.website,
-        contactEmail: profile.contactEmail,
-        phone: profile.phone,
-        capacity: profile.capacity,
+        type: profile.type || "",
+        description: profile.description || "",
+        location: profile.location || "",
+        website: profile.website || "",
+        contactEmail: profile.contactEmail || "",
+        phone: profile.phone || "",
+        capacity: profile.capacity || "",
         bookingSettings: {
-          leadTime: profile.bookingSettings.leadTime,
-          autoApprove: profile.bookingSettings.autoApprove,
-          requireDeposit: profile.bookingSettings.requireDeposit,
-          depositAmount: profile.bookingSettings.depositAmount,
-          cancellationPolicy: profile.bookingSettings.cancellationPolicy,
+          leadTime: profile.bookingSettings?.leadTime || "2 weeks",
+          autoApprove: profile.bookingSettings?.autoApprove || "never",
+          requireDeposit: profile.bookingSettings?.requireDeposit || false,
+          depositAmount: profile.bookingSettings?.depositAmount || "",
+          cancellationPolicy: profile.bookingSettings?.cancellationPolicy || "",
         },
         notifications: {
-          newBookings: profile.notifications.newBookings,
-          bookingUpdates: profile.notifications.bookingUpdates,
-          messages: profile.notifications.messages,
-          marketing: profile.notifications.marketing,
+          newBookings: profile.notifications?.newBookings || true,
+          bookingUpdates: profile.notifications?.bookingUpdates || true,
+          messages: profile.notifications?.messages || true,
+          marketing: profile.notifications?.marketing || false,
         },
         team: {
-          members: profile.team.members,
-          roles: profile.team.roles,
+          members: profile.team?.members || [],
+          roles: profile.team?.roles || [],
         },
         payment: {
-          acceptedMethods: profile.payment.acceptedMethods,
-          taxRate: profile.payment.taxRate,
-          currency: profile.payment.currency,
+          acceptedMethods: profile.payment?.acceptedMethods || [],
+          taxRate: profile.payment?.taxRate || "",
+          currency: profile.payment?.currency || "USD",
         },
       })
     }
@@ -363,7 +366,7 @@ export default function VenueSettingsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {profile.skills.map((skill: string) => (
+                      {profile.skills?.map((skill: string) => (
                         <Badge key={skill} variant="secondary" className="px-2 py-1">
                           {skill}
                         </Badge>
@@ -386,10 +389,10 @@ export default function VenueSettingsPage() {
                     <div>
                       <h3 className="text-sm font-medium mb-2">Work Experience</h3>
                       <div className={`p-3 rounded-md ${profile.theme === "dark" ? "bg-gray-800" : "bg-gray-100"}`}>
-                        <p className="font-medium">{profile.experience[0]?.title}</p>
-                        <p className="text-sm text-gray-500">{profile.experience[0]?.company}</p>
+                        <p className="font-medium">{profile.experience?.[0]?.title}</p>
+                        <p className="text-sm text-gray-500">{profile.experience?.[0]?.company}</p>
                       </div>
-                      {profile.experience.length > 1 && (
+                      {profile.experience && profile.experience.length > 1 && (
                         <p className="text-sm text-gray-500 mt-2">+{profile.experience.length - 1} more experiences</p>
                       )}
                     </div>
@@ -397,10 +400,10 @@ export default function VenueSettingsPage() {
                     <div>
                       <h3 className="text-sm font-medium mb-2">Certifications</h3>
                       <div className={`p-3 rounded-md ${profile.theme === "dark" ? "bg-gray-800" : "bg-gray-100"}`}>
-                        <p className="font-medium">{profile.certifications[0]?.title}</p>
-                        <p className="text-sm text-gray-500">{profile.certifications[0]?.organization}</p>
+                        <p className="font-medium">{profile.certifications?.[0]?.title}</p>
+                        <p className="text-sm text-gray-500">{profile.certifications?.[0]?.organization}</p>
                       </div>
-                      {profile.certifications.length > 1 && (
+                      {profile.certifications && profile.certifications.length > 1 && (
                         <p className="text-sm text-gray-500 mt-2">
                           +{profile.certifications.length - 1} more certifications
                         </p>

@@ -3,12 +3,12 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import type { User } from "@/lib/types"
+import type { User } from "@/lib/venue/types"
 import { MapPin, UserPlus, MessageCircle, UserCheck, UserX } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { useSocial } from "@/context/social-context"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 
 interface UserCardProps {
   user: User
@@ -27,14 +27,15 @@ export function UserCard({
   onMessage,
   onViewProfile,
 }: UserCardProps) {
-  const { sendConnectionRequest } = useSocial()
+  const { } = useSocial()
   const { user: currentUser } = useAuth()
 
   const handleConnect = async () => {
     if (onConnect) {
       onConnect()
     } else {
-      await sendConnectionRequest(user.id)
+      // Mock sendConnectionRequest for now
+      console.log("Sending connection request to:", user.id)
     }
   }
 

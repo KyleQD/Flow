@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service-role'
-import { parseAuthFromCookies } from '@/lib/auth'
+import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'recent' // 'recent', 'popular'
 
     const supabase = createServiceRoleClient()
-    const user = parseAuthFromCookies(request)
+    const auth = await authenticateApiRequest(request)
+    const user = auth?.user
     
     if (!user) {
       console.log('[Personal Feed API] Auth error: No user found')

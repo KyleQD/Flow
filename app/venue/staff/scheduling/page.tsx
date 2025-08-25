@@ -171,7 +171,7 @@ export default async function SchedulingPage({ searchParams }: SchedulingPagePro
             </CardHeader>
             <CardContent>
               <Suspense fallback={<div>Loading shifts...</div>}>
-                <ShiftManagement venueId={venueId} />
+                <ShiftManagement />
               </Suspense>
             </CardContent>
           </Card>

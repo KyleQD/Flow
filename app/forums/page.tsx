@@ -3,9 +3,10 @@ import Link from 'next/link'
 import { ForumThreadCard } from '@/components/forums/forum-thread-card'
 import { QuickThreadComposer } from '@/components/forums/quick-thread-composer'
 
-export default async function ForumsIndexPage({ searchParams }: { searchParams?: { sort?: string } }) {
+export default async function ForumsIndexPage({ searchParams }: { searchParams?: Promise<{ sort?: string }> }) {
   const supabase = await createClient()
-  const sort = (searchParams?.sort || 'hot').toLowerCase()
+  const sp = searchParams ? await searchParams : undefined
+  const sort = (sp?.sort || 'hot').toLowerCase()
 
   // Get forums for sidebar
   const { data: forums } = await supabase
@@ -61,24 +62,28 @@ export default async function ForumsIndexPage({ searchParams }: { searchParams?:
 
           {/* Threads feed */}
           <div className="space-y-4">
-            {(threads || []).map(t => (
-              <ForumThreadCard
-                key={t.id}
-                id={t.id}
-                forum={t.forum ? { slug: t.forum.slug, name: t.forum.name } : undefined}
-                title={t.title}
-                description={t.body || t.url || undefined}
-                score={t.score || 0}
-                comments={t.comments_count || 0}
-                createdAt={t.created_at}
-                author={t.author}
-                onOpen={() => {
-                  if (t.forum) {
-                    window.location.href = `/forums/${t.forum.slug}/thread/${t.id}`
-                  }
-                }}
-              />
-            ))}
+            {(threads || []).map(t => {
+              const forumRel = Array.isArray(t.forum) ? t.forum[0] : t.forum
+              const authorRel = Array.isArray(t.author) ? t.author[0] : t.author
+              return (
+                <ForumThreadCard
+                  key={t.id}
+                  id={t.id}
+                  forum={forumRel ? { slug: forumRel.slug, name: forumRel.name } : undefined}
+                  title={t.title}
+                  description={t.body || t.url || undefined}
+                  score={t.score || 0}
+                  comments={t.comments_count || 0}
+                  createdAt={t.created_at}
+                  author={authorRel}
+                  onOpen={() => {
+                    if (forumRel) {
+                      window.location.href = `/forums/${forumRel.slug}/thread/${t.id}`
+                    }
+                  }}
+                />
+              )
+            })}
             
             {(!threads || threads.length === 0) && (
               <div className="text-center py-12">

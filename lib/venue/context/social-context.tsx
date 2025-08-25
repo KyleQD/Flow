@@ -4,9 +4,25 @@ import { createContext, useContext, useState, useEffect, type ReactNode, useCall
 import type { User, Conversation, Message, Notification, Post, Event, SocialContextType } from "@/lib/types"
 import { mockUsers, mockConversations, mockMessages, mockNotifications, mockPosts, mockEvents } from "@/lib/mock-users"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/app/venue/context/auth-context"
 import { v4 as uuidv4 } from "uuid"
 import { searchUsers as searchUsersService } from "@/lib/search-service"
+
+// Type adapter to convert venue auth user to social user
+function adaptVenueUserToSocialUser(venueUser: { id: string; name: string; email: string; role: string } | null): User | null {
+  if (!venueUser) return null
+  
+  return {
+    id: venueUser.id,
+    username: venueUser.name.toLowerCase().replace(/\s+/g, ''),
+    fullName: venueUser.name,
+    avatar: undefined,
+    bio: undefined,
+    location: undefined,
+    isOnline: true,
+    lastSeen: new Date().toISOString(),
+  }
+}
 
 const SocialContext = createContext<SocialContextType | undefined>(undefined)
 
@@ -24,7 +40,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const [loadingEvents, setLoadingEvents] = useState<boolean>(true)
 
   const { toast } = useToast()
-  const { user: currentUser } = useAuth()
+  const { user: venueUser } = useAuth()
+  const currentUser = adaptVenueUserToSocialUser(venueUser)
 
   // Fetch users
   const fetchUsers = useCallback(async () => {
@@ -66,12 +83,12 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
   // Search users with enhanced functionality
   const searchUsers = useCallback(
-    (query: string, filters = {}): User[] => {
+    async (query: string, filters = {}): Promise<User[]> => {
       if (!query.trim() && Object.keys(filters).length === 0) {
         return users
       }
 
-      return searchUsersService(query, filters)
+      return await searchUsersService(query)
     },
     [users],
   )
@@ -81,7 +98,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     setUsers((prevUsers) =>
       prevUsers.map((user) =>
         user.id === userId
-          ? { ...user, isOnline, lastActive: isOnline ? new Date().toISOString() : user.lastActive }
+          ? { ...user, isOnline, lastSeen: isOnline ? new Date().toISOString() : user.lastSeen }
           : user,
       ),
     )
@@ -104,7 +121,9 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         if (currentUser) {
           // Filter conversations for current user
-          const userConversations = mockConversations.filter((conv) => conv.participants.includes(currentUser.id))
+          const userConversations = mockConversations.filter((conv) => 
+            conv.participants.some(participant => participant.id === currentUser.id)
+          )
           setConversations(userConversations)
 
           // Filter notifications for current user
@@ -166,9 +185,9 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         const newNotification: Notification = {
           id: uuidv4(),
           userId,
-          type: "connection_request",
-          content: `${currentUser.fullName} sent you a connection request`,
-          relatedUserId: currentUser.id,
+          type: "follow",
+          title: "Connection Request",
+          message: `${currentUser.fullName} sent you a connection request`,
           timestamp: new Date().toISOString(),
           isRead: false,
         }
@@ -208,16 +227,16 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         // Remove the connection request notification
         setNotifications((prev) =>
-          prev.filter((notif) => !(notif.type === "connection_request" && notif.relatedUserId === userId)),
+          prev.filter((notif) => !(notif.type === "follow" && notif.userId === userId)),
         )
 
         // Create a new notification for the accepted request
         const newNotification: Notification = {
           id: uuidv4(),
           userId,
-          type: "system",
-          content: `${currentUser.fullName} accepted your connection request`,
-          relatedUserId: currentUser.id,
+          type: "follow",
+          title: "Connection Accepted",
+          message: `${currentUser.fullName} accepted your connection request`,
           timestamp: new Date().toISOString(),
           isRead: false,
         }
@@ -257,12 +276,12 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         // Remove the connection request notification
         setNotifications((prev) =>
-          prev.filter((notif) => !(notif.type === "connection_request" && notif.relatedUserId === userId)),
+          prev.filter((notif) => !(notif.type === "follow" && notif.userId === userId)),
         )
 
         toast({
           title: "Connection rejected",
-          description: "The connection request has been rejected.",
+          description: "Connection request has been rejected.",
         })
 
         return true
@@ -293,7 +312,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         toast({
           title: "Connection removed",
-          description: "The connection has been removed.",
+          description: "Connection has been removed.",
         })
 
         return true
@@ -324,7 +343,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         toast({
           title: "User blocked",
-          description: "You have blocked this user.",
+          description: "User has been blocked.",
         })
 
         return true
@@ -355,7 +374,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         toast({
           title: "User unblocked",
-          description: "You have unblocked this user.",
+          description: "User has been unblocked.",
         })
 
         return true
@@ -376,8 +395,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
   // Messaging
   const sendMessage = useCallback(
-    async (receiverId: string, content: string, attachments?: any[]): Promise<boolean> => {
-      if (!currentUser) return false
+    async (receiverId: string, content: string, attachments?: any[]): Promise<void> => {
+      if (!currentUser) return
 
       try {
         // Simulate API call delay
@@ -387,7 +406,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         // Check if conversation exists
         let conversation = conversations.find(
-          (conv) => conv.participants.includes(currentUser.id) && conv.participants.includes(receiverId),
+          (conv) => conv.participants.some(p => p.id === currentUser.id) && conv.participants.some(p => p.id === receiverId),
         )
 
         const newMessageId = uuidv4()
@@ -396,15 +415,11 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         // Create new message
         const newMessage: Message = {
           id: newMessageId,
+          conversationId: conversation?.id || '',
           senderId: currentUser.id,
-          receiverId,
           content,
           timestamp,
           isRead: false,
-          attachments: attachments?.map((att) => ({
-            id: uuidv4(),
-            ...att,
-          })),
         }
 
         if (conversation) {
@@ -424,9 +439,13 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           // Create new conversation
           const newConversation: Conversation = {
             id: uuidv4(),
-            participants: [currentUser.id, receiverId],
+            participants: [
+              { id: currentUser.id, username: currentUser.username, fullName: currentUser.fullName, isOnline: true, lastSeen: new Date().toISOString() },
+              { id: receiverId, username: 'Unknown', fullName: 'Unknown User', isOnline: false, lastSeen: new Date().toISOString() }
+            ],
             lastMessage: newMessage,
             unreadCount: 0,
+            updatedAt: new Date().toISOString(),
           }
 
           setConversations((prev) => [...prev, newConversation])
@@ -438,16 +457,13 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           id: uuidv4(),
           userId: receiverId,
           type: "message",
-          content: `New message from ${currentUser.fullName}`,
-          relatedUserId: currentUser.id,
-          relatedItemId: conversation.id,
+          title: "New Message",
+          message: `New message from ${currentUser.fullName}`,
           timestamp,
           isRead: false,
         }
 
         setNotifications((prev) => [...prev, newNotification])
-
-        return true
       } catch (error) {
         console.error("Error sending message:", error)
 
@@ -456,8 +472,6 @@ export function SocialProvider({ children }: { children: ReactNode }) {
           description: "Failed to send message. Please try again.",
           variant: "destructive",
         })
-
-        return false
       }
     },
     [currentUser, conversations, toast],
@@ -482,26 +496,29 @@ export function SocialProvider({ children }: { children: ReactNode }) {
       if (!currentUser) return null
 
       const conversation = conversations.find(
-        (conv) => conv.participants.includes(currentUser.id) && conv.participants.includes(userId),
+        (conv) => conv.participants.some(p => p.id === currentUser.id) && conv.participants.some(p => p.id === userId),
       )
 
       return conversation || null
     },
-    [currentUser, conversations],
+    [conversations, currentUser],
   )
 
-  const getMessages = useCallback(async (conversationId: string): Promise<Message[]> => {
-    try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 300))
+  const getMessages = useCallback(
+    async (conversationId: string): Promise<Message[]> => {
+      try {
+        // Simulate API call delay
+        await new Promise((resolve) => setTimeout(resolve, 300))
 
-      // In a real app, this would be a server call
-      return mockMessages[conversationId] || []
-    } catch (error) {
-      console.error("Error fetching messages:", error)
-      return []
-    }
-  }, [])
+        // In a real app, this would be a server call
+        return mockMessages.filter(msg => msg.conversationId === conversationId) || []
+      } catch (error) {
+        console.error("Error fetching messages:", error)
+        return []
+      }
+    },
+    [],
+  )
 
   // Posts
   const createPost = useCallback(
@@ -516,16 +533,13 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         const newPost: Post = {
           id: uuidv4(),
-          userId: currentUser.id,
+          authorId: currentUser.id,
           content,
-          media: media?.map((m) => ({
-            id: uuidv4(),
-            ...m,
-          })),
+          images: media?.map((m) => m.url),
           timestamp: new Date().toISOString(),
-          likes: [],
-          comments: [],
-          isPublic,
+          likes: 0,
+          comments: 0,
+          shares: 0,
         }
 
         setPosts((prev) => [newPost, ...prev])
@@ -562,7 +576,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
         // In a real app, this would be a server call
 
         setPosts((prev) =>
-          prev.map((post) => (post.id === postId ? { ...post, likes: [...post.likes, currentUser.id] } : post)),
+          prev.map((post) => (post.id === postId ? { ...post, likes: post.likes + 1, isLiked: true } : post)),
         )
 
         return true
@@ -593,7 +607,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         setPosts((prev) =>
           prev.map((post) =>
-            post.id === postId ? { ...post, likes: post.likes.filter((id) => id !== currentUser.id) } : post,
+            post.id === postId ? { ...post, likes: Math.max(0, post.likes - 1), isLiked: false } : post,
           ),
         )
 
@@ -623,16 +637,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         // In a real app, this would be a server call
 
-        const newComment = {
-          id: uuidv4(),
-          userId: currentUser.id,
-          content,
-          timestamp: new Date().toISOString(),
-          user: currentUser,
-        }
-
         setPosts((prev) =>
-          prev.map((post) => (post.id === postId ? { ...post, comments: [...post.comments, newComment] } : post)),
+          prev.map((post) => (post.id === postId ? { ...post, comments: post.comments + 1 } : post)),
         )
 
         return true
@@ -641,7 +647,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         toast({
           title: "Error",
-          description: "Failed to add comment. Please try again.",
+          description: "Failed to comment on post. Please try again.",
           variant: "destructive",
         })
 
@@ -651,30 +657,27 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     [currentUser, toast],
   )
 
-  const deletePost = useCallback(
+  const sharePost = useCallback(
     async (postId: string): Promise<boolean> => {
       if (!currentUser) return false
 
       try {
         // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 500))
+        await new Promise((resolve) => setTimeout(resolve, 300))
 
         // In a real app, this would be a server call
 
-        setPosts((prev) => prev.filter((post) => post.id !== postId))
-
-        toast({
-          title: "Post deleted",
-          description: "Your post has been deleted.",
-        })
+        setPosts((prev) =>
+          prev.map((post) => (post.id === postId ? { ...post, shares: post.shares + 1 } : post)),
+        )
 
         return true
       } catch (error) {
-        console.error("Error deleting post:", error)
+        console.error("Error sharing post:", error)
 
         toast({
           title: "Error",
-          description: "Failed to delete post. Please try again.",
+          description: "Failed to share post. Please try again.",
           variant: "destructive",
         })
 
@@ -686,9 +689,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
   // Events
   const createEvent = useCallback(
-    async (
-      eventData: Omit<Event, "id" | "creatorId" | "attendees" | "interestedUsers" | "invitedUsers">,
-    ): Promise<boolean> => {
+    async (eventData: Omit<Event, 'id'>): Promise<boolean> => {
       if (!currentUser) return false
 
       try {
@@ -699,14 +700,12 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         const newEvent: Event = {
           id: uuidv4(),
-          creatorId: currentUser.id,
           ...eventData,
+          organizerId: currentUser.id,
           attendees: [currentUser.id],
-          interestedUsers: [],
-          invitedUsers: [],
         }
 
-        setEvents((prev) => [...prev, newEvent])
+        setEvents((prev) => [newEvent, ...prev])
 
         toast({
           title: "Event created",
@@ -729,49 +728,128 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     [currentUser, toast],
   )
 
-  const inviteToEvent = useCallback(
-    async (eventId: string, userIds: string[]): Promise<boolean> => {
+  const joinEvent = useCallback(
+    async (eventId: string): Promise<boolean> => {
       if (!currentUser) return false
 
       try {
         // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 500))
+        await new Promise((resolve) => setTimeout(resolve, 300))
 
         // In a real app, this would be a server call
 
-        // Update event invitees
         setEvents((prev) =>
           prev.map((event) =>
             event.id === eventId
-              ? {
-                  ...event,
-                  invitedUsers: [...new Set([...event.invitedUsers, ...userIds])],
-                }
+              ? { ...event, attendees: [...event.attendees, currentUser.id] }
               : event,
           ),
         )
 
-        // Create notifications for invited users
+        // Create notification for event organizer
         const event = events.find((e) => e.id === eventId)
-
-        if (event) {
-          const newNotifications: Notification[] = userIds.map((userId) => ({
+        if (event && event.organizerId !== currentUser.id) {
+          const newNotification: Notification = {
             id: uuidv4(),
-            userId,
-            type: "event_invite",
-            content: `${currentUser.fullName} invited you to ${event.title}`,
-            relatedUserId: currentUser.id,
-            relatedItemId: eventId,
+            userId: event.organizerId,
+            type: "event",
+            title: "Event Response",
+            message: `${currentUser.fullName} joined your event: ${event.title}`,
             timestamp: new Date().toISOString(),
             isRead: false,
-          }))
+          }
 
-          setNotifications((prev) => [...prev, ...newNotifications])
+          setNotifications((prev) => [...prev, newNotification])
         }
 
         toast({
-          title: "Invitations sent",
-          description: `Invited ${userIds.length} people to the event.`,
+          title: "Event joined",
+          description: "You have joined the event.",
+        })
+
+        return true
+      } catch (error) {
+        console.error("Error joining event:", error)
+
+        toast({
+          title: "Error",
+          description: "Failed to join event. Please try again.",
+          variant: "destructive",
+        })
+
+        return false
+      }
+    },
+    [currentUser, events, toast],
+  )
+
+  const leaveEvent = useCallback(
+    async (eventId: string): Promise<boolean> => {
+      if (!currentUser) return false
+
+      try {
+        // Simulate API call delay
+        await new Promise((resolve) => setTimeout(resolve, 300))
+
+        // In a real app, this would be a server call
+
+        setEvents((prev) =>
+          prev.map((event) =>
+            event.id === eventId
+              ? { ...event, attendees: event.attendees.filter((id) => id !== currentUser.id) }
+              : event,
+          ),
+        )
+
+        toast({
+          title: "Event left",
+          description: "You have left the event.",
+        })
+
+        return true
+      } catch (error) {
+        console.error("Error leaving event:", error)
+
+        toast({
+          title: "Error",
+          description: "Failed to leave event. Please try again.",
+          variant: "destructive",
+        })
+
+        return false
+      }
+    },
+    [currentUser, toast],
+  )
+
+  const inviteToEvent = useCallback(
+    async (eventId: string, userId: string): Promise<boolean> => {
+      if (!currentUser) return false
+
+      try {
+        // Simulate API call delay
+        await new Promise((resolve) => setTimeout(resolve, 300))
+
+        // In a real app, this would be a server call
+
+        const event = events.find((e) => e.id === eventId)
+        if (event) {
+          const newNotification: Notification = {
+            id: uuidv4(),
+            userId,
+            type: "event",
+            title: "Event Invitation",
+            message: `${currentUser.fullName} invited you to ${event.title}`,
+            timestamp: new Date().toISOString(),
+            isRead: false,
+          }
+
+          setNotifications((prev) => [...prev, newNotification])
+        }
+
+        toast({
+          title: "Invitation sent",
+          description: "Event invitation has been sent.",
         })
 
         return true
@@ -780,7 +858,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         toast({
           title: "Error",
-          description: "Failed to send invitations. Please try again.",
+          description: "Failed to send invitation. Please try again.",
           variant: "destructive",
         })
 
@@ -791,7 +869,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   )
 
   const respondToEvent = useCallback(
-    async (eventId: string, response: "attending" | "interested" | "declined"): Promise<boolean> => {
+    async (eventId: string, response: 'attending' | 'interested' | 'not_attending'): Promise<boolean> => {
       if (!currentUser) return false
 
       try {
@@ -800,41 +878,16 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
         // In a real app, this would be a server call
 
-        setEvents((prev) =>
-          prev.map((event) => {
-            if (event.id !== eventId) return event
-
-            const updatedEvent = { ...event }
-
-            if (response === "attending") {
-              updatedEvent.attendees = [...new Set([...event.attendees, currentUser.id])]
-              updatedEvent.interestedUsers = event.interestedUsers.filter((id) => id !== currentUser.id)
-            } else if (response === "interested") {
-              updatedEvent.interestedUsers = [...new Set([...event.interestedUsers, currentUser.id])]
-              updatedEvent.attendees = event.attendees.filter((id) => id !== currentUser.id)
-            } else {
-              updatedEvent.attendees = event.attendees.filter((id) => id !== currentUser.id)
-              updatedEvent.interestedUsers = event.interestedUsers.filter((id) => id !== currentUser.id)
-            }
-
-            return updatedEvent
-          }),
-        )
-
-        // Create notification for event creator
         const event = events.find((e) => e.id === eventId)
-
-        if (event && event.creatorId !== currentUser.id) {
-          const responseText =
-            response === "attending" ? "is attending" : response === "interested" ? "is interested in" : "declined"
+        if (event && event.organizerId !== currentUser.id) {
+          const responseText = response === 'attending' ? 'will attend' : response === 'interested' ? 'is interested in' : 'will not attend'
 
           const newNotification: Notification = {
             id: uuidv4(),
-            userId: event.creatorId,
-            type: "system",
-            content: `${currentUser.fullName} ${responseText} your event: ${event.title}`,
-            relatedUserId: currentUser.id,
-            relatedItemId: eventId,
+            userId: event.organizerId,
+            type: "event",
+            title: "Event Response",
+            message: `${currentUser.fullName} ${responseText} your event: ${event.title}`,
             timestamp: new Date().toISOString(),
             isRead: false,
           }
@@ -905,6 +958,7 @@ export function SocialProvider({ children }: { children: ReactNode }) {
   const value = {
     users,
     conversations,
+    messages: mockMessages, // Using mock messages for now
     notifications,
     posts,
     events,
@@ -924,6 +978,14 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     blockUser,
     unblockUser,
     sendMessage,
+    markConversationAsRead: (conversationId: string) => {
+      // Mark conversation as read
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv,
+        ),
+      )
+    },
     markMessageAsRead,
     getConversation,
     getMessages,
@@ -931,13 +993,24 @@ export function SocialProvider({ children }: { children: ReactNode }) {
     likePost,
     unlikePost,
     commentOnPost,
-    deletePost,
+    sharePost,
+    followUser: (userId: string) => {
+      // Follow user implementation
+      console.log('Follow user:', userId)
+    },
+    unfollowUser: (userId: string) => {
+      // Unfollow user implementation
+      console.log('Unfollow user:', userId)
+    },
     createEvent,
+    joinEvent,
+    leaveEvent,
     inviteToEvent,
     respondToEvent,
     markNotificationAsRead,
     markAllNotificationsAsRead,
     fetchMorePosts,
+    currentUser,
   }
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>
@@ -945,10 +1018,8 @@ export function SocialProvider({ children }: { children: ReactNode }) {
 
 export function useSocial() {
   const context = useContext(SocialContext)
-
   if (context === undefined) {
     throw new Error("useSocial must be used within a SocialProvider")
   }
-
   return context
 }

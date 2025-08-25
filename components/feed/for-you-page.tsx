@@ -102,8 +102,8 @@ export function ForYouPage() {
       engagement: { likes: 89, views: 1247, shares: 45, comments: 23 },
       metadata: {
         url: '/blog/the-future-of-independent-music',
-        tags: ['Independent Music', 'Digital Age', 'Music Industry'],
-        reading_time: 14
+        tags: ['Independent Music', 'Digital Age', 'Music Industry']
+        // reading_time: 14
       },
       relevance_score: 0.95
     }
@@ -222,7 +222,7 @@ export function ForYouPage() {
                   metadata: {
                     ...blog.metadata,
                     url: blog.metadata?.url || `/blog/${blog.slug}`,
-                    reading_time: blog.metadata?.reading_time || 5
+                    // reading_time: blog.metadata?.reading_time || 5
                   },
                   relevance_score: blog.relevance_score || 0.85
                 }))
@@ -234,7 +234,7 @@ export function ForYouPage() {
             }
           } catch (blogsError) {
             console.error('[FYP] Blog posts fetch failed in hybrid mode:', blogsError)
-            console.error('[FYP] Blog posts fetch error details:', blogsError.message)
+            console.error('[FYP] Blog posts fetch error details:', blogsError instanceof Error ? blogsError.message : blogsError)
           }
         }
         
@@ -313,7 +313,7 @@ export function ForYouPage() {
         metadata: {
           url: '/blog/the-future-of-independent-music',
           tags: ['Independent Music', 'Digital Age', 'Music Industry'],
-          reading_time: 14
+          // reading_time: 14
         },
         relevance_score: 0.95
       },
@@ -816,8 +816,8 @@ export function ForYouPage() {
                               title: item.metadata?.forum?.name || ''
                             }}
                             title={item.title}
-                            kind={item.metadata?.kind as any || 'text'}
-                            contentMd={item.metadata?.kind === 'text' ? item.description : undefined}
+                            kind={'text'}
+                            contentMd={item.description}
                             linkUrl={item.metadata?.url}
                             author={{
                               id: item.author?.id || '',
@@ -845,7 +845,7 @@ export function ForYouPage() {
                                   if (target.closest('button') || target.closest('a') || target.closest('[role="button"]')) {
                                     return
                                   }
-                                  window.location.href = item.metadata!.url
+                                  window.location.href = item.metadata?.url || '#'
                                 }}
                                 title="Read full blog post"
                               />
@@ -890,7 +890,7 @@ export function ForYouPage() {
                                   )}
                                 </h3>
 
-                                {item.type === 'forum' && item.metadata?.forum && (
+                                {item.metadata?.forum && (
                                   <div className="mb-2 text-xs md:text-sm text-slate-400">
                                     in <a className="text-purple-300 hover:text-purple-200" href={`/forums/${item.metadata.forum.slug}`}>{item.metadata.forum.name}</a>
                                   </div>
@@ -910,7 +910,7 @@ export function ForYouPage() {
                                       <span>{Math.floor(item.metadata.duration / 60)}:{String(item.metadata.duration % 60).padStart(2, '0')}</span>
                                     </div>
                                   )}
-                                  {item.type === 'forum' && (
+                                  {item.metadata?.forum && (
                                     <a className="flex items-center gap-1 text-purple-300 hover:text-purple-200" href={`/forums/${item.metadata?.forum?.slug}/thread/${item.id.replace('thread_','')}`}>
                                       <MessageCircle className="h-3 w-3" />
                                       <span>Open thread</span>

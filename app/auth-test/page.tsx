@@ -1,5 +1,8 @@
 "use client"
 
+// Prevent prerendering since this page requires auth context
+export const dynamic = 'force-dynamic'
+
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"

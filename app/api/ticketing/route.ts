@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const event_id = searchParams.get('event_id')
     const ticket_type_id = searchParams.get('ticket_type_id')
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     if (action === 'availability') {
       // Check ticket availability
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action, ...data } = body
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     if (action === 'purchase') {
       const validatedData = purchaseTicketSchema.parse(data)

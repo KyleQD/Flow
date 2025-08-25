@@ -56,5 +56,5 @@ export function getProfilePath(profile: ProfileData | null | undefined): string 
  * Validates if a username is valid for profile URLs
  */
 export function isValidProfileUsername(username: string): boolean {
-  return username && username.length > 0 && username !== 'user'
+  return Boolean(username && username.length > 0 && username !== 'user')
 } 

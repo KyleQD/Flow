@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { supabase } from '@/lib/supabase'
 import { z } from 'zod'
 
 // Workflow status definitions
@@ -67,7 +67,7 @@ export interface WorkflowAction {
 }
 
 export class OnboardingWorkflowService {
-  private supabase = createClient()
+  private supabase = supabase
 
   /**
    * Initialize a new workflow for a candidate

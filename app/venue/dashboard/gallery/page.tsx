@@ -1,5 +1,5 @@
-import { PageHeader } from "../../../components/navigation/page-header"
-import { FeatureTabs } from "../../../components/navigation/feature-tabs"
+import { PageHeader } from "../../components/navigation/page-header"
+import { FeatureTabs } from "../../components/navigation/feature-tabs"
 import { Button } from "@/components/ui/button"
 import { Plus, ImageIcon, Video, Music, Filter, Grid3X3, LayoutList } from "lucide-react"
 

@@ -39,7 +39,8 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { rbacService } from '@/lib/services/rbac.service'
-import type { SystemRole, SYSTEM_ROLES } from '@/types/rbac'
+import type { SystemRole } from '@/types/rbac'
+import { SYSTEM_ROLES } from '@/types/rbac'
 
 interface SignupFormData {
   email: string

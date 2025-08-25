@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
       console.log('[Feed Posts API] Found posts:', posts.length)
 
       // Enrich with profile data in a separate, RLS-safe query
-      const userIds = Array.from(new Set(posts.map(p => p.user_id).filter(Boolean)))
+      const userIds = Array.from(new Set(posts.map((p: any) => p.user_id).filter(Boolean)))
       let profileById: Record<string, any> = {}
       if (userIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Normalize shape for DashboardFeed which expects a `profiles` field
-      const normalized = posts.map(p => ({
+      const normalized = posts.map((p: any) => ({
         id: p.id,
         user_id: p.user_id,
         content: p.content,

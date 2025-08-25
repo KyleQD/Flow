@@ -1,6 +1,6 @@
 "use client"
 import { motion } from "framer-motion"
-import type { ProfileData } from "@/lib/types"
+import type { ProfileData } from "@/lib/venue/types"
 
 interface ProfileStatsProps {
   stats: ProfileData["stats"]

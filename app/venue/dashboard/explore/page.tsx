@@ -1,8 +1,11 @@
 "use client"
 
+// Prevent pre-rendering since this page requires client-side features
+export const dynamic = 'force-dynamic'
+
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useAuth } from "../../../context/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 import { FeedLayout } from "../../components/social/feed-layout"
 import { PostCreatorLayout } from "../../components/social/post-creator-layout"
 import { UserRecommendation } from "../../components/user-discovery/user-recommendation"

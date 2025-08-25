@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Check, Globe, Link, Music, Video } from "lucide-react"
-import { useProfile } from "@/context/profile-context"
+import { useProfile } from "@/context/venue/profile-context"
 import { useToast } from "@/hooks/use-toast"
 
 interface EPKUpgradeModalProps {

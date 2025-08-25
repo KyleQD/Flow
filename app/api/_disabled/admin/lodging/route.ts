@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-import { authenticateApiRequest, checkAdminPermissions } from '@/lib/auth'
+import { authenticateApiRequest, checkAdminPermissions } from '@/lib/auth/api-auth'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
   try {
     // Authenticate request
     const authResult = await authenticateApiRequest(request)
-    if (!authResult.success) {
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -276,12 +276,12 @@ export async function POST(request: NextRequest) {
   try {
     // Authenticate and check admin permissions
     const authResult = await authenticateApiRequest(request)
-    if (!authResult.success) {
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const adminCheck = await checkAdminPermissions(authResult.userId)
-    if (!adminCheck.success) {
+    const adminAllowed = await checkAdminPermissions(authResult.user)
+    if (!adminAllowed) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
@@ -419,12 +419,12 @@ export async function PUT(request: NextRequest) {
   try {
     // Authenticate and check admin permissions
     const authResult = await authenticateApiRequest(request)
-    if (!authResult.success) {
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const adminCheck = await checkAdminPermissions(authResult.userId)
-    if (!adminCheck.success) {
+    const adminAllowed = await checkAdminPermissions(authResult.user)
+    if (!adminAllowed) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
@@ -525,12 +525,12 @@ export async function DELETE(request: NextRequest) {
   try {
     // Authenticate and check admin permissions
     const authResult = await authenticateApiRequest(request)
-    if (!authResult.success) {
+    if (!authResult) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const adminCheck = await checkAdminPermissions(authResult.userId)
-    if (!adminCheck.success) {
+    const adminAllowed = await checkAdminPermissions(authResult.user)
+    if (!adminAllowed) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 

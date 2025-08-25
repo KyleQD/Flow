@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
-import { ImageIcon, VideoIcon, MapPinIcon, PollIcon, CalendarIcon, Globe2Icon, LockIcon, UsersIcon } from "lucide-react"
+import { ImageIcon, VideoIcon, MapPinIcon, BarChart3, CalendarIcon, Globe2Icon, LockIcon, UsersIcon } from "lucide-react"
 import { useSocial } from "@/contexts/social"
 import { useAuth } from "@/contexts/auth"
 import { cn } from "@/lib/utils"
@@ -65,7 +65,7 @@ export function PostCreator({
       aspectRatio: 16 / 9, // You would calculate this from the actual file
       alt: file.name
     }))
-    setMedia([...media, ...newMedia])
+    setMedia([...media, ...newMedia] as any)
   }
 
   const handleMediaClick = () => {
@@ -171,7 +171,7 @@ export function PostCreator({
                       size="sm"
                       className="text-gray-400 hover:text-white"
                     >
-                      <PollIcon className="h-4 w-4" />
+                      <BarChart3 className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
                   <DialogContent>

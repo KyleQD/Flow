@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
-const supabase = await createClient()
+// Create Supabase client per action (no top-level await)
 
 const uploadSchema = z.object({
   venueId: z.string().uuid(),
@@ -14,6 +14,7 @@ const uploadSchema = z.object({
 })
 
 export async function uploadVenueDocument(input: { venueId: string; file: File; name?: string; documentType?: string; isPublic?: boolean }) {
+  const supabase = await createClient()
   const parsed = uploadSchema.safeParse({ venueId: input.venueId, name: input.name || input.file.name, documentType: (input.documentType as any) || 'other', isPublic: !!input.isPublic })
   if (!parsed.success) return { success: false, error: 'Invalid input' }
   const { venueId, name, documentType, isPublic } = parsed.data
@@ -49,6 +50,7 @@ export async function uploadVenueDocument(input: { venueId: string; file: File; 
 }
 
 export async function deleteVenueDocument(docId: string) {
+  const supabase = await createClient()
   // Fetch document to delete storage object too
   const { data: doc, error } = await supabase.from('venue_documents').select('*').eq('id', docId).single()
   if (error || !doc) return { success: false, error: error?.message || 'Not found' }

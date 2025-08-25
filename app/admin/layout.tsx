@@ -1,5 +1,8 @@
 "use client"
 
+// Prevent prerendering since this layout requires MultiAccountProvider context
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMultiAccount } from '@/hooks/use-multi-account'

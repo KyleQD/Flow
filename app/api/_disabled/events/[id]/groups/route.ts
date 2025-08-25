@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/supabase/auth"
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -25,13 +25,13 @@ export async function POST(
       include: {
         staff: {
           where: {
-            userId: session.user.id,
+            userId: (session.user as any).id,
           },
         },
       },
     })
 
-    if (!event || (event.userId !== session.user.id && event.staff.length === 0)) {
+    if (!event || event.staff.length === 0) {
       return NextResponse.json(
         { error: "Unauthorized to create groups for this event" },
         { status: 403 }
@@ -48,7 +48,7 @@ export async function POST(
           create: [
             // Add the creator as an admin
             {
-              userId: session.user.id,
+              userId: (session.user as any).id,
               role: "admin",
             },
             // Add the selected members
@@ -86,7 +86,7 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -103,7 +103,7 @@ export async function GET(
         eventId: params.id,
         members: {
           some: {
-            userId: session.user.id,
+            userId: (session.user as any).id,
           },
         },
       },

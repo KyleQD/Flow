@@ -25,7 +25,7 @@ const JobPostingSchema = z.object({
   urgent: z.boolean().default(false)
 })
 
-export const createJobPostingAction = action(JobPostingSchema, async (input) => {
+export const createJobPostingAction = action.schema(JobPostingSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
@@ -38,23 +38,23 @@ export const createJobPostingAction = action(JobPostingSchema, async (input) => 
   const { error, data } = await supabase
     .from('job_posting_templates')
     .insert({
-      venue_id: input.venueId,
+      venue_id: parsedInput.venueId,
       created_by: user.id,
-      title: input.title,
-      description: input.description,
-      department: input.department,
-      position: input.position,
-      employment_type: input.employment_type,
-      location: input.location,
-      number_of_positions: input.number_of_positions,
-      salary_range: input.salary_range,
-      requirements: input.requirements,
-      responsibilities: input.responsibilities,
-      benefits: input.benefits,
-      skills: input.skills,
-      experience_level: input.experience_level,
-      remote: input.remote,
-      urgent: input.urgent,
+      title: parsedInput.title,
+      description: parsedInput.description,
+      department: parsedInput.department,
+      position: parsedInput.position,
+      employment_type: parsedInput.employment_type,
+      location: parsedInput.location,
+      number_of_positions: parsedInput.number_of_positions,
+      salary_range: parsedInput.salary_range,
+      requirements: parsedInput.requirements,
+      responsibilities: parsedInput.responsibilities,
+      benefits: parsedInput.benefits,
+      skills: parsedInput.skills,
+      experience_level: parsedInput.experience_level,
+      remote: parsedInput.remote,
+      urgent: parsedInput.urgent,
       status: 'draft',
       applications_count: 0,
       views_count: 0
@@ -71,7 +71,7 @@ const SubmitApplicationSchema = z.object({
   form_responses: z.record(z.any())
 })
 
-export const submitJobApplicationAction = action(SubmitApplicationSchema, async ({ job_posting_id, form_responses }) => {
+export const submitJobApplicationAction = action.schema(SubmitApplicationSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
@@ -79,26 +79,26 @@ export const submitJobApplicationAction = action(SubmitApplicationSchema, async 
   const { data: job, error: jobError } = await supabase
     .from('job_posting_templates')
     .select('id, venue_id, status, applications_count')
-    .eq('id', job_posting_id)
+    .eq('id', parsedInput.job_posting_id)
     .single()
 
   if (jobError || !job || job.status !== 'published') return { success: false, error: 'Job not open for applications' }
 
-  const applicant_name = String(form_responses.full_name || form_responses.name || '')
-  const applicant_email = String(form_responses.email || user.email || '')
-  const applicant_phone = String(form_responses.phone || '')
+  const applicant_name = String(parsedInput.form_responses.full_name || parsedInput.form_responses.name || '')
+  const applicant_email = String(parsedInput.form_responses.email || user.email || '')
+  const applicant_phone = String(parsedInput.form_responses.phone || '')
 
   const { data: application, error } = await supabase
     .from('job_applications')
     .insert({
       venue_id: job.venue_id,
-      job_posting_id,
+      job_posting_id: parsedInput.job_posting_id,
       applicant_id: user.id,
       applicant_name,
       applicant_email,
       applicant_phone,
       status: 'pending',
-      form_responses
+      form_responses: parsedInput.form_responses
     })
     .select()
     .single()
@@ -108,7 +108,7 @@ export const submitJobApplicationAction = action(SubmitApplicationSchema, async 
   await supabase
     .from('job_posting_templates')
     .update({ applications_count: (job.applications_count || 0) + 1 })
-    .eq('id', job_posting_id)
+    .eq('id', parsedInput.job_posting_id)
 
   return { success: true, data: application }
 })
@@ -120,7 +120,7 @@ const ReviewApplicationSchema = z.object({
   rating: z.number().int().min(1).max(5).optional()
 })
 
-export const reviewJobApplicationAction = action(ReviewApplicationSchema, async ({ application_id, status, feedback, rating }) => {
+export const reviewJobApplicationAction = action.schema(ReviewApplicationSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
@@ -129,7 +129,7 @@ export const reviewJobApplicationAction = action(ReviewApplicationSchema, async 
   const { data: app, error: appErr } = await supabase
     .from('job_applications')
     .select('id, venue_id')
-    .eq('id', application_id)
+    .eq('id', parsedInput.application_id)
     .single()
   if (appErr || !app) return { success: false, error: 'Application not found' }
 
@@ -139,8 +139,8 @@ export const reviewJobApplicationAction = action(ReviewApplicationSchema, async 
 
   const { data, error } = await supabase
     .from('job_applications')
-    .update({ status, feedback, rating, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
-    .eq('id', application_id)
+    .update({ status: parsedInput.status, feedback: parsedInput.feedback, rating: parsedInput.rating, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+    .eq('id', parsedInput.application_id)
     .select()
     .single()
 

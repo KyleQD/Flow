@@ -289,7 +289,7 @@ export function MarketingTools({
                 <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                   <Calendar
                     mode="single"
-                    selected={new Date(newCampaign.start_date)}
+                    selected={new Date(newCampaign.start_date || new Date())}
                     onSelect={(date) => setNewCampaign({ ...newCampaign, start_date: format(date || new Date(), "yyyy-MM-dd") })}
                     initialFocus
                     className="bg-slate-900"
@@ -315,7 +315,7 @@ export function MarketingTools({
                 <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                   <Calendar
                     mode="single"
-                    selected={new Date(newCampaign.end_date)}
+                    selected={new Date(newCampaign.end_date || new Date())}
                     onSelect={(date) => setNewCampaign({ ...newCampaign, end_date: format(date || new Date(), "yyyy-MM-dd") })}
                     initialFocus
                     className="bg-slate-900"
@@ -399,7 +399,7 @@ export function MarketingTools({
                 <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                   <Calendar
                     mode="single"
-                    selected={new Date(newPromoCode.start_date)}
+                    selected={new Date(newPromoCode.start_date || new Date())}
                     onSelect={(date) => setNewPromoCode({ ...newPromoCode, start_date: format(date || new Date(), "yyyy-MM-dd") })}
                     initialFocus
                     className="bg-slate-900"
@@ -425,7 +425,7 @@ export function MarketingTools({
                 <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                   <Calendar
                     mode="single"
-                    selected={new Date(newPromoCode.end_date)}
+                    selected={new Date(newPromoCode.end_date || new Date())}
                     onSelect={(date) => setNewPromoCode({ ...newPromoCode, end_date: format(date || new Date(), "yyyy-MM-dd") })}
                     initialFocus
                     className="bg-slate-900"

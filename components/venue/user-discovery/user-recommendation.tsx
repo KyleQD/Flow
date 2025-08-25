@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { UserCard } from "@/components/user-card"
-import { LoadingSpinner } from "@/components/loading-spinner"
-import { useAuth } from "@/context/auth-context"
+import { UserCard } from "../user-card"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { useAuth } from "@/contexts/auth-context"
 import { useSocial } from "@/context/social-context"
 import { Sparkles, RefreshCw } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -26,7 +26,9 @@ export function UserRecommendation({
   filter = "all",
 }: UserRecommendationProps) {
   const { user: currentUser } = useAuth()
-  const { users, loadingUsers } = useSocial()
+  const { } = useSocial()
+  const [users] = useState<any[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
   const [recommendations, setRecommendations] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -48,9 +50,9 @@ export function UserRecommendation({
       let filteredUsers = users.filter((u) => u.id !== currentUser?.id)
 
       // Apply specific filters
-      if (filter === "sameRole" && currentUser?.title) {
-        filteredUsers = filteredUsers.filter((u) => u.title === currentUser.title)
-      } else if (filter === "complementaryRole" && currentUser?.title) {
+      if (filter === "sameRole" && (currentUser as any)?.title) {
+        filteredUsers = filteredUsers.filter((u) => u.title === (currentUser as any).title)
+      } else if (filter === "complementaryRole" && (currentUser as any)?.title) {
         // Define complementary roles
         const roleMap: Record<string, string[]> = {
           "Tour Manager": ["Sound Engineer", "Lighting Designer", "Stage Manager"],
@@ -62,10 +64,10 @@ export function UserRecommendation({
           "Venue Manager": ["Booking Agent", "Event Producer", "Stage Manager"],
         }
 
-        const complementaryRoles = roleMap[currentUser.title] || []
+        const complementaryRoles = roleMap[(currentUser as any)?.title] || []
         filteredUsers = filteredUsers.filter((u) => complementaryRoles.includes(u.title))
-      } else if (filter === "sameLocation" && currentUser?.location) {
-        filteredUsers = filteredUsers.filter((u) => u.location === currentUser.location)
+      } else if (filter === "sameLocation" && (currentUser as any)?.location) {
+        filteredUsers = filteredUsers.filter((u) => u.location === (currentUser as any).location)
       }
 
       // Calculate similarity scores
@@ -73,12 +75,12 @@ export function UserRecommendation({
         let score = 0
 
         // Same location
-        if (user.location === currentUser?.location) {
+        if (user.location === (currentUser as any)?.location) {
           score += 10
         }
 
         // Similar title
-        if (user.title === currentUser?.title) {
+        if (user.title === (currentUser as any)?.title) {
           score += 5
         }
 
@@ -137,7 +139,7 @@ export function UserRecommendation({
         </CardHeader>
         <CardContent>
           <div className="flex justify-center items-center py-8">
-            <LoadingSpinner size="md" />
+            <LoadingSpinner />
           </div>
         </CardContent>
       </Card>

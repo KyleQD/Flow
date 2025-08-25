@@ -244,7 +244,10 @@ export async function GET(request: NextRequest) {
           .select('category')
           .neq('category', null)
 
-        const uniqueCategories = [...new Set(categories?.map((item: any) => item.category))] || []
+        const categoryList: Array<{ category?: string | null }> = (categories as Array<{ category?: string | null }>) || []
+        const uniqueCategories = categoryList.length > 0
+          ? Array.from(new Set(categoryList.map((item) => item.category).filter((c): c is string => typeof c === 'string')))
+          : []
 
         return NextResponse.json({ categories: uniqueCategories })
 

@@ -564,8 +564,8 @@ export default function EnhancedTeamManagement({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Departments</SelectItem>
-                    {departments.map(dept => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    {departments.filter(Boolean).map(dept => (
+                      <SelectItem key={dept!} value={dept!}>{dept!}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

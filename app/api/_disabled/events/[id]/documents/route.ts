@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/supabase/auth"
 import { writeFile } from "fs/promises"
 import { join } from "path"
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -18,7 +18,7 @@ export async function GET(
       )
     }
 
-    const documents = await prisma.document.findMany({
+    const documents = await prisma.eventDocument.findMany({
       where: { eventId: params.id },
       include: {
         uploader: {
@@ -46,7 +46,7 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -77,14 +77,14 @@ export async function POST(
     const path = join(process.cwd(), "public", "uploads", fileName)
     await writeFile(path, buffer)
 
-    const document = await prisma.document.create({
+    const document = await prisma.eventDocument.create({
       data: {
         title,
         description,
         type,
         url: `/uploads/${fileName}`,
         eventId: params.id,
-        uploadedBy: session.user.id,
+        uploadedBy: (session.user as any).id,
       },
       include: {
         uploader: {

@@ -21,8 +21,8 @@ export default function TestIntegration() {
     setTestResults({})
 
     try {
-      const results = {
-        dashboardStats: null,
+      const results: any = {
+        dashboardStats: {},
         jobPostings: null,
         applications: null,
         candidates: null,
@@ -38,7 +38,7 @@ export default function TestIntegration() {
         console.log('✅ Dashboard stats loaded successfully')
       } catch (error) {
         console.error('❌ Dashboard stats failed:', error)
-        results.dashboardStats = { error: error.message }
+        results.dashboardStats = { error: (error as Error)?.message ?? 'Unknown error' }
       }
 
       // Test 2: Job Postings
@@ -47,7 +47,7 @@ export default function TestIntegration() {
         console.log('✅ Job postings loaded successfully')
       } catch (error) {
         console.error('❌ Job postings failed:', error)
-        results.jobPostings = { error: error.message }
+        results.jobPostings = { error: (error as Error)?.message ?? 'Unknown error' }
       }
 
       // Test 3: Applications
@@ -56,7 +56,7 @@ export default function TestIntegration() {
         console.log('✅ Applications loaded successfully')
       } catch (error) {
         console.error('❌ Applications failed:', error)
-        results.applications = { error: error.message }
+        results.applications = { error: (error as Error)?.message ?? 'Unknown error' }
       }
 
       // Test 4: Candidates
@@ -65,7 +65,7 @@ export default function TestIntegration() {
         console.log('✅ Candidates loaded successfully')
       } catch (error) {
         console.error('❌ Candidates failed:', error)
-        results.candidates = { error: error.message }
+        results.candidates = { error: (error as Error)?.message ?? 'Unknown error' }
       }
 
       // Test 5: Staff Members
@@ -74,7 +74,7 @@ export default function TestIntegration() {
         console.log('✅ Staff members loaded successfully')
       } catch (error) {
         console.error('❌ Staff members failed:', error)
-        results.staffMembers = { error: error.message }
+        results.staffMembers = { error: (error as Error)?.message ?? 'Unknown error' }
       }
 
       // Test 6: Create Job Posting (mock data)
@@ -86,6 +86,7 @@ export default function TestIntegration() {
           position: 'Security Guard',
           employment_type: 'part_time',
           location: 'Test Location',
+          number_of_positions: 1,
           requirements: ['Test requirement'],
           responsibilities: ['Test responsibility'],
           benefits: ['Test benefit'],
@@ -93,9 +94,15 @@ export default function TestIntegration() {
           experience_level: 'entry',
           remote: false,
           urgent: false,
+          required_certifications: [],
+          background_check_required: false,
+          drug_test_required: false,
+          uniform_provided: false,
+          training_provided: false,
           application_form_template: {
             fields: [
               {
+                id: 'cover_letter',
                 name: 'cover_letter',
                 label: 'Cover Letter',
                 type: 'textarea',
@@ -110,15 +117,17 @@ export default function TestIntegration() {
         console.log('✅ Job posting created successfully')
       } catch (error) {
         console.error('❌ Create job posting failed:', error)
-        results.createJobPosting = { error: error.message }
+        results.createJobPosting = { error: (error as Error)?.message ?? 'Unknown error' }
       }
 
       setTestResults(results)
 
       // Count successful tests
-      const successfulTests = Object.values(results).filter(result => 
-        result && !result.error
-      ).length
+      const successfulTests = Object.values(results).filter((result: any) => {
+        if (!result) return false
+        const r = result as any
+        return !(r && typeof r === 'object' && 'error' in r)
+      }).length
 
       const totalTests = Object.keys(results).length
 

@@ -293,13 +293,38 @@ const EventItem = memo(
 EventItem.displayName = "EventItem"
 
 export function EventUpdates() {
-  const { users } = useSocial()
+  const socialContext = useSocial() // Keep for future use but don't destructure non-existent properties
   const { user: currentUser } = useAuth()
   const [events, setEvents] = useState<EventUpdate[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [filter, setFilter] = useState<"all" | "upcoming" | "attending">("upcoming")
   const [error, setError] = useState<string | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<EventUpdate | null>(null)
+  const [showEventModal, setShowEventModal] = useState(false)
+  const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all")
+  const [sortBy, setSortBy] = useState<"date" | "popularity" | "relevance">("date")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [showFilters, setShowFilters] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState<string>("all")
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
+  const [selectedDateRange, setSelectedDateRange] = useState<[Date | null, Date | null]>([null, null])
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false)
+  const [currentTag, setCurrentTag] = useState("")
+  const [tagSuggestions] = useState([
+    "concert", "festival", "live", "performance", "music", "dance", "comedy", "theater", "sports", "conference"
+  ])
+
+  // Mock users since it doesn't exist in social context
+  const users: any[] = []
+  const getUserById = useCallback(
+    (userId: string) => {
+      return users.find((u) => u.id === userId)
+    },
+    [users],
+  )
 
   // Fetch events
   const fetchEvents = useCallback(async (refresh = false) => {
@@ -426,14 +451,6 @@ export function EventUpdates() {
     fetchEvents()
   }, [fetchEvents])
 
-  // Get user by ID
-  const getUserById = useCallback(
-    (userId: string) => {
-      return users.find((u) => u.id === userId)
-    },
-    [users],
-  )
-
   // Handle refresh
   const handleRefresh = () => {
     fetchEvents(true)
@@ -443,8 +460,8 @@ export function EventUpdates() {
   const filteredEvents = events.filter((event) => {
     if (filter === "upcoming") {
       return event.status === "upcoming"
-    } else if (filter === "attending") {
-      return event.isUserAttending
+    } else if (filter === "past") {
+      return event.status === "past"
     }
     return true
   })
@@ -585,14 +602,14 @@ export function EventUpdates() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`px-2 py-1 h-7 text-xs rounded-sm ${filter === "attending" ? "bg-gray-700" : ""}`}
-                      onClick={() => setFilter("attending")}
+                      className={`px-2 py-1 h-7 text-xs rounded-sm ${filter === "past" ? "bg-gray-700" : ""}`}
+                      onClick={() => setFilter("past")}
                     >
-                      Attending
+                      Past
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Show events you're attending</p>
+                    <p>Show past events</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

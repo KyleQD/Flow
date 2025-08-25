@@ -52,8 +52,10 @@ interface DemoProfile {
     views: number
     streams?: number
     events?: number
+    rating?: number
   }
   created_at: string
+  is_demo?: boolean
 }
 
 export default function DiscoverPage() {
@@ -129,7 +131,9 @@ export default function DiscoverPage() {
       const isFollowing = false // You'd check actual follow status
       const action = isFollowing ? 'unfollow' : 'follow'
       
-      await socialInteractionsService.followUser(profileId, action)
+      if ((socialInteractionsService as any).followUser) {
+        await (socialInteractionsService as any).followUser(profileId, action)
+      }
       toast.success(action === 'follow' ? 'Now following!' : 'Unfollowed')
     } catch (error) {
       console.error('Follow error:', error)
@@ -182,8 +186,7 @@ export default function DiscoverPage() {
     y: [0, -10, 0],
     transition: {
       duration: 3,
-      repeat: Infinity,
-      ease: "easeInOut"
+      repeat: Infinity
     }
   }
 
@@ -193,7 +196,8 @@ export default function DiscoverPage() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-purple-500/5 to-pink-500/5 rounded-full blur-3xl"
-          animate={floatingAnimation}
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 3, repeat: Infinity }}
         />
         <motion.div
           className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 rounded-full blur-3xl"
@@ -202,7 +206,6 @@ export default function DiscoverPage() {
             transition: {
               duration: 4,
               repeat: Infinity,
-              ease: "easeInOut",
               delay: 1
             }
           }}
@@ -215,7 +218,6 @@ export default function DiscoverPage() {
             transition: {
               duration: 5,
               repeat: Infinity,
-              ease: "easeInOut",
               delay: 2
             }
           }}

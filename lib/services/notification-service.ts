@@ -485,7 +485,7 @@ export class NotificationService {
       await this.logDelivery(notification.id, notification.user_id, 'email', 'sent')
     } catch (error) {
       console.error('Error sending email notification:', error)
-      await this.logDelivery(notification.id, notification.user_id, 'email', 'failed', error.message)
+      await this.logDelivery(notification.id, notification.user_id, 'email', 'failed', error instanceof Error ? error.message : 'Unknown error')
     }
   }
 
@@ -505,7 +505,7 @@ export class NotificationService {
       await this.logDelivery(notification.id, notification.user_id, 'push', 'sent')
     } catch (error) {
       console.error('Error sending push notification:', error)
-      await this.logDelivery(notification.id, notification.user_id, 'push', 'failed', error.message)
+      await this.logDelivery(notification.id, notification.user_id, 'push', 'failed', error instanceof Error ? error.message : 'Unknown error')
     }
   }
 
@@ -524,7 +524,7 @@ export class NotificationService {
       await this.logDelivery(notification.id, notification.user_id, 'sms', 'sent')
     } catch (error) {
       console.error('Error sending SMS notification:', error)
-      await this.logDelivery(notification.id, notification.user_id, 'sms', 'failed', error.message)
+      await this.logDelivery(notification.id, notification.user_id, 'sms', 'failed', error instanceof Error ? error.message : 'Unknown error')
     }
   }
 

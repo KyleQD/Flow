@@ -102,7 +102,7 @@ export function SearchResultItem({
             {result.verified && (
               <Verified className="h-4 w-4 text-blue-500 fill-current flex-shrink-0" />
             )}
-            {result.is_demo && (
+            {(result as any).is_demo && (
               <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5 bg-orange-50 text-orange-600 border-orange-200">
                 Demo
               </Badge>

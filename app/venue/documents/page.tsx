@@ -155,6 +155,10 @@ export default function DocumentsPage() {
       // Mock enhanced document data with additional fields
       const enhancedDocuments: Document[] = documentsData.map((doc, i) => ({
         ...doc,
+        description: doc.description || undefined,
+        file_size: doc.file_size || 0,
+        mime_type: doc.mime_type || 'application/octet-stream',
+        uploaded_by: doc.uploaded_by || 'Unknown',
         tags: i % 3 === 0 ? ["Important", "Updated"] : i % 2 === 0 ? ["Draft"] : [],
         version: Math.floor(Math.random() * 3) + 1,
         download_count: Math.floor(Math.random() * 50),

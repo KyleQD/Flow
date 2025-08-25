@@ -36,7 +36,10 @@ const jobPostingSchema = z.object({
   skills: z.array(z.string()),
   experience_level: z.enum(['entry', 'mid', 'senior', 'executive']),
   remote: z.boolean(),
-  urgent: z.boolean()
+  urgent: z.boolean(),
+  application_form_template: z.object({
+    fields: z.array(z.any()).optional()
+  }).optional()
 })
 
 type JobPostingFormData = z.infer<typeof jobPostingSchema>
@@ -563,7 +566,10 @@ export default function JobPostingForm({ onSubmit, onCancel, initialData, isLoad
                       <button
                         key={skill}
                         type="button"
-                        onClick={() => addSkill() || setSkillInput(skill)}
+                        onClick={() => {
+                          addSkill()
+                          setSkillInput(skill)
+                        }}
                         className="text-purple-400 hover:text-purple-300 mr-2"
                       >
                         {skill}
@@ -608,7 +614,10 @@ export default function JobPostingForm({ onSubmit, onCancel, initialData, isLoad
                       <button
                         key={benefit}
                         type="button"
-                        onClick={() => addBenefit() || setBenefitInput(benefit)}
+                        onClick={() => {
+                          addBenefit()
+                          setBenefitInput(benefit)
+                        }}
                         className="text-purple-400 hover:text-purple-300 mr-2"
                       >
                         {benefit}

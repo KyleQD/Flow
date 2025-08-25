@@ -376,7 +376,7 @@ export function NotificationSettings() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-11">
                     <FormField
                       control={form.control}
-                      name={`preferences.${type.key}.email`}
+                      name={`preferences.${type.key}.email` as any}
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                           <div className="space-y-0.5">
@@ -398,7 +398,7 @@ export function NotificationSettings() {
 
                     <FormField
                       control={form.control}
-                      name={`preferences.${type.key}.push`}
+                      name={`preferences.${type.key}.push` as any}
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                           <div className="space-y-0.5">
@@ -417,7 +417,7 @@ export function NotificationSettings() {
 
                     <FormField
                       control={form.control}
-                      name={`preferences.${type.key}.sms`}
+                      name={`preferences.${type.key}.sms` as any}
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                           <div className="space-y-0.5">

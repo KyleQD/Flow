@@ -85,7 +85,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') || 'overview'
-    const event_id = searchParams.get('event_id')
+    const event_idParam = searchParams.get('event_id')
+    const event_id = event_idParam === null ? undefined : event_idParam
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')
 

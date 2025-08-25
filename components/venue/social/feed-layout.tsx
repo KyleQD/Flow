@@ -6,13 +6,13 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { EnhancedFeed } from "@/components/social/enhanced-feed"
-import { PostCreatorLayout } from "@/components/social/post-creator-layout"
-import { UserRecommendation } from "@/components/user-discovery/user-recommendation"
-import { TrendingTopics } from "@/components/social/trending-topics"
-import { UpcomingEvents } from "@/components/social/upcoming-events"
-import { useAuth } from "@/context/auth-context"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { EnhancedFeed } from "./enhanced-feed"
+import { PostCreatorLayout } from "./post-creator-layout"
+import { UserRecommendation } from "../user-discovery/user-recommendation"
+import { TrendingTopics } from "./trending-topics"
+import { UpcomingEvents } from "./upcoming-events"
+import { useAuth } from "@/contexts/auth-context"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useRouter } from "next/navigation"
 import { Globe, Users, TrendingUp, Clock, Music, Calendar, Search, Filter, X, ArrowUp, Compass } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -55,7 +55,7 @@ export function FeedLayout({
     router.push("/login")
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     )
   }

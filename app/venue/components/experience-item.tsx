@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Trash2 } from "lucide-react"
-import type { ProfileData } from "@/lib/types"
+import type { ProfileData } from "@/lib/venue/types"
 import { motion } from "framer-motion"
-import { ConfirmDialog } from "@/components/confirm-dialog"
+import { ConfirmDialog } from "./confirm-dialog"
 
 interface ExperienceItemProps {
   experience: ProfileData["experience"][0]

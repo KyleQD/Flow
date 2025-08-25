@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: any
 ) {
   try {
     const supabase = createRouteHandlerClient({ cookies })
@@ -79,7 +79,7 @@ export async function GET(
     }
 
     // Transform tracks to include artist name and format stats
-    const transformedTracks = (tracks || []).map(track => ({
+    const transformedTracks = (tracks || []).map((track: any) => ({
       ...track,
       artist: artistProfile.artist_name,
       play_count: track.stats?.plays || 0,

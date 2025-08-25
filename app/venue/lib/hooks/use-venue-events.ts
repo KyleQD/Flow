@@ -59,5 +59,5 @@ export function useVenueEvents() {
     fetchEvents()
   }, [])
 
-  return { events, isLoading, error, filterEvents }
+  return { events, setEvents, isLoading, error, filterEvents }
 } 

@@ -154,7 +154,7 @@ export function RevenueAnalytics({ revenueBySource, revenueOverTime, isCompact }
                     <Legend />
                     <Line type="monotone" dataKey="revenue" stroke="#8b5cf6" strokeWidth={2} activeDot={{ r: 8 }} />
                     <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} />
-                    <Line type="monotone" dataKey stroke="#ef4444" strokeWidth={2} />
+                    <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} />
                     <Line type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>

@@ -37,9 +37,9 @@ import {
 import type { 
   TourManagementRole, 
   TourManagementPermission,
-  PERMISSIONS,
   PERMISSION_CATEGORIES
 } from '@/types/rbac'
+import { PERMISSIONS } from '@/types/rbac'
 
 interface PermissionMatrixProps {
   onPermissionChange?: (roleId: string, permissionId: string, granted: boolean) => void
@@ -411,7 +411,7 @@ export default function PermissionsMatrix({ onPermissionChange }: PermissionMatr
                                       onCheckedChange={(checked) => 
                                         handlePermissionToggle(role.id, permission.id, checked)
                                       }
-                                      size="sm"
+
                                     />
                                   ) : (
                                     <div className={`w-6 h-6 rounded-full flex items-center justify-center ${

@@ -101,10 +101,10 @@ export class VerificationService {
 
     if (error) throw error
     return {
-      is_verified: data.is_verified,
-      badges: data.badges || [],
-      pending_requests: data.pending_requests,
-      verification_score: data.verification_score
+      is_verified: (data as any).is_verified,
+      badges: (data as any).badges || [],
+      pending_requests: (data as any).pending_requests,
+      verification_score: (data as any).verification_score
     }
   }
 
@@ -316,7 +316,9 @@ export class VerificationService {
       socialData
     )
 
-    return this.getVerificationRequest(requestId)!
+    const request = await this.getVerificationRequest(requestId)
+    if (!request) throw new Error('Verification request not found')
+    return request
   }
 
   /**
@@ -352,7 +354,9 @@ export class VerificationService {
       businessData
     )
 
-    return this.getVerificationRequest(requestId)!
+    const request = await this.getVerificationRequest(requestId)
+    if (!request) throw new Error('Verification request not found')
+    return request
   }
 
   /**

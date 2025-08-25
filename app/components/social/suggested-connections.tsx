@@ -4,11 +4,13 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useSocial } from "@/context/social-context"
+import { useSocial } from "@/contexts/social-context"
 import { Users } from "lucide-react"
 
 export function SuggestedConnections() {
-  const { users, sendConnectionRequest } = useSocial()
+  const social = useSocial() as any
+  const users = (social?.users || []) as any[]
+  const sendConnectionRequest = social?.sendConnectionRequest || ((_id: string) => {})
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
@@ -27,7 +29,7 @@ export function SuggestedConnections() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {users.map((user) => (
+          {users.map((user: any) => (
             <div key={user.id} className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Avatar>

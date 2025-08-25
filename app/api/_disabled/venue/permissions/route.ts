@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { VenueRolesPermissionsService } from '@/lib/services/venue-roles-permissions.service'
-import { authenticateUser } from '@/lib/auth/api-auth'
+import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await authenticateUser()
+    const auth = await authenticateApiRequest(request)
+    const user = auth?.user
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

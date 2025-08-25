@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/supabase/auth"
 
 export async function GET() {
   try {
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
 
     // Check if user is pro
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: (session.user as any).id },
       select: { isPro: true }
     })
 
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         description,
         budget,
         location,
-        userId: session.user.id,
+        userId: (session.user as any).id,
         questions: {
           create: questions.map((q: string) => ({
             text: q,

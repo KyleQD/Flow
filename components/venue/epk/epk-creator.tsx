@@ -7,11 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useProfile } from "@/context/profile-context"
+import { useProfile } from "@/context/venue/profile-context"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import { FileText, ImageIcon, Music, Plus, Video } from "lucide-react"
-import { EPKUpgradeModal } from "@/components/epk/epk-upgrade-modal"
+import { EPKUpgradeModal } from "./epk-upgrade-modal"
 
 export function EPKCreator() {
   const { profile, createEPK } = useProfile()
@@ -133,7 +133,7 @@ export function EPKCreator() {
                 <Label>Photos</Label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {profile?.gallery && profile.gallery.length > 0 ? (
-                    profile.gallery.slice(0, 3).map((item) => (
+                    profile.gallery.slice(0, 3).map((item: any) => (
                       <div key={item.id} className="relative aspect-square rounded-md overflow-hidden">
                         <img
                           src={item.url || "/placeholder.svg"}

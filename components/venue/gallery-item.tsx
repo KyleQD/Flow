@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Trash2, Move, ZoomIn } from "lucide-react"
-import { OptimizedImage } from "@/components/optimized-image"
+import { OptimizedImage } from "./optimized-image"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { motion } from "framer-motion"
 

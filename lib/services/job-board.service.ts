@@ -390,8 +390,6 @@ export class JobBoardService {
         position: 'Security Guard',
         employment_type: 'part_time',
         location: 'Los Angeles, CA',
-        organization_id: 'mock-org-1',
-        organization_name: 'Event Security Pro',
         number_of_positions: 5,
         requirements: ['Security License', 'First Aid/CPR', 'Background Check'],
         responsibilities: ['Monitor event areas', 'Handle security incidents', 'Assist with crowd control'],
@@ -411,7 +409,8 @@ export class JobBoardService {
         applications_count: 12,
         views_count: 45,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        application_form_template: { fields: [] }
       }
     ]
   }
@@ -431,8 +430,6 @@ export class JobBoardService {
         position: 'Bartender',
         employment_type: 'part_time',
         location: 'Los Angeles, CA',
-        organization_id: organizationId,
-        organization_name: 'Event Security Pro',
         number_of_positions: 3,
         requirements: ['Alcohol Serving License', 'Food Handler Certificate', 'Customer Service Experience'],
         responsibilities: ['Prepare and serve drinks', 'Maintain bar cleanliness', 'Handle customer requests'],
@@ -452,7 +449,8 @@ export class JobBoardService {
         applications_count: 8,
         views_count: 23,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        application_form_template: { fields: [] }
       }
     ]
   }

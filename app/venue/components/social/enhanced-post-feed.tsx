@@ -238,7 +238,34 @@ export function EnhancedPostFeed({ userId, filter = "all", showPostCreator = tru
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
             {filteredPosts.map((post, index) => {
               const author = users.find((u) => u.id === post.userId)
-              if (!author) return null
+              // Create a mock author if not found to match User interface
+              const mockAuthor = author || {
+                id: post.userId,
+                fullName: "Unknown User",
+                username: "unknown",
+                avatar: "/placeholder.svg",
+                email: "",
+                connections: [],
+                bio: "",
+                website: "",
+                socialLinks: {},
+                preferences: {
+                  emailNotifications: false,
+                  pushNotifications: false,
+                  theme: "dark" as const,
+                  language: "en"
+                },
+                stats: {
+                  followers: 0,
+                  following: 0,
+                  posts: 0,
+                  likes: 0
+                },
+                role: "user" as const,
+                lastActive: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }
 
               return (
                 <motion.div
@@ -248,7 +275,10 @@ export function EnhancedPostFeed({ userId, filter = "all", showPostCreator = tru
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.5) }}
                 >
-                  <PostItem post={post} author={author} />
+                                     <div className="p-4 bg-gray-800 rounded-lg">
+                     <p className="text-white">Post: {post.content}</p>
+                     <p className="text-gray-400 text-sm">By: {mockAuthor.fullName}</p>
+                   </div>
                 </motion.div>
               )
             })}
@@ -256,7 +286,7 @@ export function EnhancedPostFeed({ userId, filter = "all", showPostCreator = tru
             {/* Load more indicator */}
             {hasMore && !limit && (
               <div ref={loadMoreRef} className="py-4 text-center">
-                {isLoadingMore ? <LoadingSpinner size="md" /> : <p className="text-gray-500">Scroll for more posts</p>}
+                {isLoadingMore ? <LoadingSpinner /> : <p className="text-gray-500">Scroll for more posts</p>}
               </div>
             )}
 

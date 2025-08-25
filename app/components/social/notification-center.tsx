@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { LoadingSpinner } from "@/components/loading-spinner"
-import { useSocial } from "@/context/social-context"
-import { useAuth } from "@/context/auth-context"
+import { LoadingSpinner } from "../loading-spinner"
+import { useSocial } from "@/contexts/social-context"
+import { useAuth } from "@/contexts/auth-context"
 import { motion, AnimatePresence } from "framer-motion"
 import { Bell, CheckCircle, Clock } from "lucide-react"
 import { NotificationItem } from "./notification-item"
@@ -28,7 +28,11 @@ interface NotificationCenterProps {
 
 export function NotificationCenter({ className = "" }: NotificationCenterProps) {
   const { user: currentUser } = useAuth()
-  const { users, notifications, markNotificationAsRead, markAllNotificationsAsRead } = useSocial()
+  const social = useSocial() as any
+  const users = social.users || []
+  const notifications = social.notifications || []
+  const markNotificationAsRead = social.markNotificationAsRead || ((_id: string) => {})
+  const markAllNotificationsAsRead = social.markAllNotificationsAsRead || (() => {})
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all")
   const [isLoading, setIsLoading] = useState(true)
 
@@ -52,14 +56,14 @@ export function NotificationCenter({ className = "" }: NotificationCenterProps) 
   // Filter notifications based on active tab
   const filteredNotifications = useCallback(() => {
     if (activeTab === "unread") {
-      return notifications.filter((n) => !n.isRead)
+      return (notifications as any[]).filter((n: any) => !n.isRead)
     }
-    return notifications
+    return notifications as any[]
   }, [notifications, activeTab])
 
   // Get user by ID
   const getUserById = (userId: string) => {
-    return users.find((u) => u.id === userId)
+    return (users as any[]).find((u: any) => u.id === userId)
   }
 
   // Handle mark as read
@@ -92,7 +96,7 @@ export function NotificationCenter({ className = "" }: NotificationCenterProps) 
     )
   }
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length
+  const unreadCount = (notifications as any[]).filter((n: any) => !n.isRead).length
 
   return (
     <Card className={`bg-gray-900 text-white border-gray-800 ${className}`}>

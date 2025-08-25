@@ -48,12 +48,12 @@ export async function GET(request: NextRequest) {
       totalRevenue = (bookings || []).reduce((sum, b: any) => sum + (b.amount || 0), 0)
 
       // Trend by day
-      revenueTrend = (bookings || []).reduce((acc: Record<string, number>, b: any) => {
+      const trendMap: Record<string, number> = (bookings || []).reduce((acc: Record<string, number>, b: any) => {
         const key = new Date(b.created_at).toISOString().split('T')[0]
         acc[key] = (acc[key] || 0) + (b.amount || 0)
         return acc
       }, {})
-      revenueTrend = Object.entries(revenueTrend).map(([date, revenue]) => ({ date, revenue: revenue as number }))
+      revenueTrend = Object.entries(trendMap).map(([date, revenue]) => ({ date, revenue: revenue as number }))
 
       // Status distribution
       statusDistribution = (bookings || []).reduce((acc: Record<string, number>, b: any) => {

@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { Suspense, lazy, type ComponentType } from "react"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 interface LazyComponentProps {
   importFunc: () => Promise<{ default: ComponentType<any> }>

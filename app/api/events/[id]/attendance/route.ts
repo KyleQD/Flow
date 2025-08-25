@@ -6,7 +6,7 @@ async function resolveEventId(param: string, supabase: any) {
   return data?.id || null
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: any) {
   try {
     const { authenticateApiRequest } = await import('@/lib/auth/api-auth')
     const auth = await authenticateApiRequest(request)
@@ -33,17 +33,16 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     // Return counts (mock or real)
     let counts = { attending: 0, interested: 0, not_going: 0 }
-    const { data: agg } = await supabase
+    const { data: rows } = await supabase
       .from('event_attendance')
-      .select('status, count:count(*)')
+      .select('status')
       .eq('event_id', eventId)
-      .group('status')
 
-    if (agg?.length) {
-      for (const row of agg) {
-        if (row.status === 'attending') counts.attending = row.count
-        if (row.status === 'interested') counts.interested = row.count
-        if (row.status === 'not_going') counts.not_going = row.count
+    if (rows?.length) {
+      for (const row of rows as Array<{ status: string }>) {
+        if (row.status === 'attending') counts.attending++
+        else if (row.status === 'interested') counts.interested++
+        else if (row.status === 'not_going') counts.not_going++
       }
     }
 
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 }
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params }: any) {
   try {
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
@@ -62,17 +61,16 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     if (!eventId) return NextResponse.json({ counts: { attending: 0, interested: 0, not_going: 0 } })
 
     let counts = { attending: 0, interested: 0, not_going: 0 }
-    const { data: agg } = await supabase
+    const { data: rows } = await supabase
       .from('event_attendance')
-      .select('status, count:count(*)')
+      .select('status')
       .eq('event_id', eventId)
-      .group('status')
 
-    if (agg?.length) {
-      for (const row of agg) {
-        if (row.status === 'attending') counts.attending = row.count
-        if (row.status === 'interested') counts.interested = row.count
-        if (row.status === 'not_going') counts.not_going = row.count
+    if (rows?.length) {
+      for (const row of rows as Array<{ status: string }>) {
+        if (row.status === 'attending') counts.attending++
+        else if (row.status === 'interested') counts.interested++
+        else if (row.status === 'not_going') counts.not_going++
       }
     }
 

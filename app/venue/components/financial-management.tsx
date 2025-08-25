@@ -1215,4 +1215,61 @@ export function FinancialManagement() {
                   <SelectTrigger className="w-[150px] bg-gray-800 border-gray-700">
                     <SelectValue placeholder="Type" />
                   </SelectTrigger>
-\
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="income">Income</SelectItem>
+                    <SelectItem value="expense">Expense</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="p-0">
+                <div className="relative overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="text-xs uppercase bg-gray-700">
+                      <tr>
+                        <th scope="col" className="px-4 py-3">Date</th>
+                        <th scope="col" className="px-4 py-3">Description</th>
+                        <th scope="col" className="px-4 py-3">Category</th>
+                        <th scope="col" className="px-4 py-3 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mockTransactions.map((transaction) => (
+                        <tr key={transaction.id} className="border-b border-gray-700 bg-gray-800 hover:bg-gray-750">
+                          <td className="px-4 py-3">{formatDate(transaction.date)}</td>
+                          <td className="px-4 py-3">{transaction.description}</td>
+                          <td className="px-4 py-3 capitalize">{transaction.category}</td>
+                          <td className={`px-4 py-3 text-right ${getTransactionTypeColor(transaction.type)}`}>
+                            {transaction.type === "income" ? "+" : "-"}
+                            {formatCurrency(transaction.amount)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-4">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Reports</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 text-sm text-gray-400">
+                Generate and download financial reports here.
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  )
+}

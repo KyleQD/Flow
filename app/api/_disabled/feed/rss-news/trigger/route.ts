@@ -33,7 +33,19 @@ const musicRSSFeeds = [
   }
 ]
 
-async function fetchRSSFeed(feedUrl: string, sourceName: string) {
+interface RssItem {
+  id: string
+  title: string
+  description: string
+  link: string
+  pubDate?: string
+  author?: string
+  category?: string
+  image?: string
+  source: string
+}
+
+async function fetchRSSFeed(feedUrl: string, sourceName: string): Promise<RssItem[]> {
   try {
     console.log(`🔍 Fetching RSS feed: ${sourceName} from ${feedUrl}`)
     
@@ -56,7 +68,7 @@ async function fetchRSSFeed(feedUrl: string, sourceName: string) {
     console.log(`📄 Received ${xmlText.length} characters from ${sourceName}`)
 
     // Simple XML parsing using regex
-    const items = []
+    const items: RssItem[] = []
     const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/g
     let match
 
@@ -102,7 +114,7 @@ async function fetchRSSFeed(feedUrl: string, sourceName: string) {
     return items
   } catch (error) {
     console.error(`❌ Error fetching RSS feed ${feedUrl}:`, error)
-    return []
+    return [] as RssItem[]
   }
 }
 
@@ -128,8 +140,8 @@ async function triggerRSSFetch() {
   try {
     console.log('🚀 Triggering RSS feed fetch...')
     
-    let allItems = []
-    const feedResults = []
+    let allItems: RssItem[] = []
+    const feedResults: Array<{ source: string; itemsCount: number; status: string; error?: string }> = []
 
     // Fetch from all feeds concurrently
     const feedPromises = musicRSSFeeds.map(async (feed) => {
@@ -142,7 +154,7 @@ async function triggerRSSFetch() {
       return items
     })
 
-    const results = await Promise.allSettled(feedPromises)
+    const results = await Promise.allSettled<RssItem[]>(feedPromises)
     
     results.forEach((result, index) => {
       if (result.status === 'fulfilled') {
@@ -154,9 +166,9 @@ async function triggerRSSFetch() {
     })
 
     // Sort by publication date (newest first)
-    allItems.sort((a, b) => {
-      const dateA = new Date(a.pubDate).getTime()
-      const dateB = new Date(b.pubDate).getTime()
+    allItems.sort((a: RssItem, b: RssItem) => {
+      const dateA = a.pubDate ? new Date(a.pubDate).getTime() : 0
+      const dateB = b.pubDate ? new Date(b.pubDate).getTime() : 0
       return dateB - dateA
     })
 

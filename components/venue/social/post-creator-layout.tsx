@@ -4,10 +4,10 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useAuth } from "@/context/auth-context"
-import { EnhancedPostCreator } from "@/components/social/enhanced-post-creator"
-import { UserRecommendation } from "@/components/user-discovery/user-recommendation"
-import { TrendingTopics } from "@/components/social/trending-topics"
+import { useAuth } from "@/contexts/auth-context"
+import { EnhancedPostCreator } from "./enhanced-post-creator"
+import { UserRecommendation } from "../user-discovery/user-recommendation"
+import { TrendingTopics } from "./trending-topics"
 import { Globe, Calendar, Users, Lightbulb } from "lucide-react"
 
 interface PostCreatorLayoutProps {
@@ -44,15 +44,12 @@ export function PostCreatorLayout({
               <CardTitle className="text-xl">Create Post</CardTitle>
               <div className="flex items-center space-x-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.avatar} alt={user.fullName} />
+                  <AvatarImage src="/placeholder.svg" alt="User" />
                   <AvatarFallback>
-                    {user.fullName
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                    {user?.email?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium hidden sm:inline-block">{user.fullName}</span>
+                <span className="text-sm font-medium hidden sm:inline-block">{user?.email || "User"}</span>
               </div>
             </div>
           </CardHeader>

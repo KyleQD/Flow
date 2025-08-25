@@ -83,6 +83,7 @@ interface VenueProfileProps {
   isOwnProfile?: boolean
   onFollow?: () => void
   onMessage?: () => void
+  portfolio?: Array<{ id: string; type?: string; media?: any[]; title?: string; description?: string }>
 }
 
 interface VenueSpecs {
@@ -119,7 +120,7 @@ interface VenueEvent {
   ticket_url?: string
 }
 
-export function VenueProfileEnhanced({ profile, isOwnProfile = false, onFollow, onMessage }: VenueProfileProps) {
+export function VenueProfileEnhanced({ profile, isOwnProfile = false, onFollow, onMessage, portfolio }: VenueProfileProps) {
   const [activeTab, setActiveTab] = useState("overview")
   const [venueSpecs, setVenueSpecs] = useState<VenueSpecs | null>(null)
   const [amenities, setAmenities] = useState<Amenity[]>([])
@@ -136,6 +137,17 @@ export function VenueProfileEnhanced({ profile, isOwnProfile = false, onFollow, 
     try {
       setLoading(true)
       
+      // Prefer provided portfolio items for gallery
+      if (portfolio && portfolio.length > 0) {
+        const images: string[] = []
+        portfolio.forEach(it => {
+          if (!Array.isArray(it.media)) return
+          it.media.forEach((m: any) => { if (m?.kind === 'image' && m.url) images.push(m.url) })
+        })
+        if (images.length > 0) setGallery(images.slice(0, 12))
+      }
+      
+      // Fallback mock venue specs/amenities/events if none provided elsewhere
       // TODO: Replace with real API calls
       // Mock venue specifications
       const mockSpecs: VenueSpecs = {

@@ -256,7 +256,7 @@ export function ArtistContentOverview({
                     <h4 className="font-medium text-white text-sm">{item.title}</h4>
                     <div className="flex items-center gap-4 text-xs text-gray-400">
                       <span>
-                        {item.plays ? `${(item.plays / 1000).toFixed(1)}K plays` : `${(item.views / 1000).toFixed(1)}K views`}
+                        {item.plays ? `${(item.plays / 1000).toFixed(1)}K plays` : `${((item.views || 0) / 1000).toFixed(1)}K views`}
                       </span>
                       <span>{format(item.uploadDate, 'MMM d')}</span>
                     </div>

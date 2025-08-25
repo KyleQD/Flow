@@ -1,12 +1,11 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { z } from 'zod'
 import { EventFormData } from '../components/create-event-modal'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
-const supabase = createClient()
+// Create Supabase client per function to avoid top-level await issues
 
 const eventSchema = z.object({
   id: z.string(),
@@ -24,6 +23,7 @@ const eventSchema = z.object({
 
 export async function updateEvent(eventData: EventFormData) {
   try {
+    const supabase = await createClient()
     // Validate the event data
     const validatedData = eventSchema.parse(eventData)
     await supabase.from('events').update({
@@ -56,6 +56,7 @@ export async function updateEvent(eventData: EventFormData) {
 
 export async function deleteEvent(eventId: string) {
   try {
+    const supabase = await createClient()
     await supabase.from('events').delete().eq('id', eventId)
     
     // Revalidate the venue page to show updated data
@@ -93,6 +94,7 @@ const approveSchema = z.object({
 })
 
 export async function approveBookingAndMaybeCreateEvent(input: { requestId: string; createEvent?: boolean }) {
+  const supabase = await createClient()
   const { requestId, createEvent } = approveSchema.parse(input)
   // Use RPC to approve
   const { error: rpcError } = await supabase.rpc('respond_to_booking_request', { p_request_id: requestId, p_status: 'approved', p_response_message: null })

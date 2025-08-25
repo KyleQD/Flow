@@ -86,7 +86,7 @@ export function QuickThreadComposer({ onCreated }: QuickThreadComposerProps) {
             <Combobox
               items={forums}
               value={forumValue}
-              onChange={setForumValue}
+              onChange={(value) => setForumValue(value || '')}
               placeholder="Select forum"
             />
           </div>

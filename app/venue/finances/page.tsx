@@ -51,6 +51,7 @@ import {
   ArrowDownRight,
   Filter,
   Search,
+  Package,
 } from "lucide-react"
 
 interface Transaction {

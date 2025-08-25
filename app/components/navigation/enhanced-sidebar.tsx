@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { useAuth } from "@/context/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 import { cn } from "@/lib/utils"
 import {
   Home,
@@ -246,8 +246,8 @@ export function EnhancedSidebar({ className = "", defaultCollapsed = false }: En
               {/* User avatar would go here */}
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-white">{user.name}</span>
-              <span className="text-xs text-gray-400">{user.email}</span>
+              <span className="text-sm font-medium text-white">{(user as any).name || (user as any).user_metadata?.full_name || (user as any).user_metadata?.name || (user as any).email}</span>
+              <span className="text-xs text-gray-400">{(user as any).email}</span>
             </div>
           </div>
         </div>

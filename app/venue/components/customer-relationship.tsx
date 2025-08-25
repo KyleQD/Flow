@@ -315,7 +315,7 @@ export function CustomerRelationship() {
                               src={getCustomer(selectedCustomer)?.avatar || "/placeholder.svg"}
                               alt={getCustomer(selectedCustomer)?.name}
                             />
-                            <AvatarFallback>{getCustomer(selectedCustomer)?.name.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{(getCustomer(selectedCustomer)?.name ?? "").charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div>
                             <h2 className="text-xl font-bold">{getCustomer(selectedCustomer)?.name}</h2>
@@ -323,8 +323,7 @@ export function CustomerRelationship() {
                               variant="outline"
                               className={getCustomerTypeColor(getCustomer(selectedCustomer)?.type || "")}
                             >
-                              {getCustomer(selectedCustomer)?.type.charAt(0).toUpperCase() +
-                                getCustomer(selectedCustomer)?.type.slice(1)}
+                              {(() => { const t = getCustomer(selectedCustomer)?.type ?? ""; return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Unknown" })()}
                             </Badge>
                           </div>
                         </div>
@@ -472,14 +471,14 @@ export function CustomerRelationship() {
                     <div className="flex items-start gap-3">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={customer?.avatar || "/placeholder.svg"} alt={customer?.name} />
-                        <AvatarFallback>{customer?.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{(customer?.name ?? "").charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium">{customer?.name}</h4>
                             <Badge variant="outline" className={getCustomerTypeColor(customer?.type || "")}>
-                              {customer?.type.charAt(0).toUpperCase() + customer?.type.slice(1)}
+                              {(() => { const t = customer?.type ?? ""; return t ? t.charAt(0).toUpperCase() + t.slice(1) : "Unknown" })()}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-2">

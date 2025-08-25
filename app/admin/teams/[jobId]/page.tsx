@@ -82,9 +82,9 @@ export default function TeamManagementPage() {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [activeTab, setActiveTab] = useState('team')
   const { toast } = useToast()
-  const { currentVenue } = useCurrentVenue()
+  const { venue } = useCurrentVenue()
 
-  const venueId = currentVenue?.id || 'mock-venue-id'
+  const venueId = venue?.id || 'mock-venue-id'
 
   useEffect(() => {
     loadTeamData()

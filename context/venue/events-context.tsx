@@ -1,16 +1,16 @@
 "use client"
 
 import { createContext, useContext, type ReactNode } from "react"
-import { useVenueEvents, type VenueEvent } from "@/lib/hooks/use-venue-events"
+import { useVenueEvents, type VenueEvent } from "@/app/venue/lib/hooks/use-venue-events"
 
 interface EventsContextType {
   events: VenueEvent[]
   isLoading: boolean
-  error: string | null
+  error: Error | null
   createEvent: (eventData: VenueEvent) => Promise<void>
-  updateEvent: (id: number, eventData: Partial<VenueEvent>) => Promise<void>
-  deleteEvent: (id: number) => Promise<void>
-  getEventById: (id: number) => VenueEvent | undefined
+  updateEvent: (id: string, eventData: Partial<VenueEvent>) => Promise<void>
+  deleteEvent: (id: string) => Promise<void>
+  getEventById: (id: string) => VenueEvent | undefined
 }
 
 const EventsContext = createContext<EventsContextType | undefined>(undefined)
@@ -23,7 +23,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     // Generate a new ID if one isn't provided
     const newEvent = {
       ...eventData,
-      id: eventData.id || Math.floor(Math.random() * 10000),
+      id: eventData.id || Math.floor(Math.random() * 10000).toString(),
     }
 
     // Add the new event to the events array
@@ -31,17 +31,17 @@ export function EventsProvider({ children }: { children: ReactNode }) {
   }
 
   // Update an existing event
-  const updateEvent = async (id: number, eventData: Partial<VenueEvent>): Promise<void> => {
+  const updateEvent = async (id: string, eventData: Partial<VenueEvent>): Promise<void> => {
     setEvents((prevEvents) => prevEvents.map((event) => (event.id === id ? { ...event, ...eventData } : event)))
   }
 
   // Delete an event
-  const deleteEvent = async (id: number): Promise<void> => {
+  const deleteEvent = async (id: string): Promise<void> => {
     setEvents((prevEvents) => prevEvents.filter((event) => event.id !== id))
   }
 
   // Get event by ID
-  const getEventById = (id: number): VenueEvent | undefined => {
+  const getEventById = (id: string): VenueEvent | undefined => {
     return events.find((event) => event.id === id)
   }
 

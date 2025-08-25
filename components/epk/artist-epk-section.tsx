@@ -226,8 +226,8 @@ export function ArtistEPKSection({ profile }: ArtistEPKSectionProps) {
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-white">Social Media & Streaming</h3>
             <div className="flex flex-wrap gap-2">
-              {Object.entries(profile.social_links).map(([platform, url]) => (
-                url && (
+              {Object.entries(profile.social_links).map(([platform, url]) => 
+                url ? (
                   <Badge
                     key={platform}
                     variant="outline"
@@ -237,8 +237,8 @@ export function ArtistEPKSection({ profile }: ArtistEPKSectionProps) {
                     <ExternalLink className="h-3 w-3 mr-1" />
                     {platform.charAt(0).toUpperCase() + platform.slice(1).replace('_', ' ')}
                   </Badge>
-                )
-              ))}
+                ) : null
+              )}
             </div>
           </div>
         )}

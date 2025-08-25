@@ -22,8 +22,8 @@ export default function EquipmentPage() {
         />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <PageHeader
-            heading="Equipment Management"
-            subheading="Track, maintain, and rent your venue's equipment inventory"
+            title="Equipment Management"
+            description="Track, maintain, and rent your venue's equipment inventory"
           />
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm">

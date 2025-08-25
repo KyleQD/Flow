@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -210,7 +210,7 @@ export function EnhancedSidebar({ isOpen, onClose }: EnhancedSidebarProps) {
 
 interface NavItemProps {
   href: string
-  icon: React.ElementType
+  icon: React.ComponentType<{ className?: string }>
   title: string
   badge?: number | string
   active?: boolean

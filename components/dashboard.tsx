@@ -86,14 +86,15 @@ export default function Dashboard() {
     const particleCount = 80
 
     class Particle {
-      x: number
-      y: number
-      size: number
-      speedX: number
-      speedY: number
-      color: string
+      x: number = 0
+      y: number = 0
+      size: number = 0
+      speedX: number = 0
+      speedY: number = 0
+      color: string = 'rgba(255, 255, 255, 0.1)'
 
       constructor() {
+        if (!canvas) return
         this.x = Math.random() * canvas.width
         this.y = Math.random() * canvas.height
         this.size = Math.random() * 2 + 0.5
@@ -103,6 +104,7 @@ export default function Dashboard() {
       }
 
       update() {
+        if (!canvas) return
         this.x += this.speedX
         this.y += this.speedY
 
@@ -1024,11 +1026,11 @@ function UpcomingTask({
 }
 
 // Add missing imports
-function Info(props) {
+function Info(props: any) {
   return <AlertCircle {...props} />
 }
 
-function Check(props) {
+function Check(props: any) {
   return <CheckCircle {...props} />
 }
 

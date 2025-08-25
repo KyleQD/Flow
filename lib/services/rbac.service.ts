@@ -11,11 +11,9 @@ import type {
   RoleAssignmentPayload,
   PermissionValidationResult,
   TourAccessLevel,
-  UserTourAccess,
-  PERMISSIONS,
-  SYSTEM_ROLES,
-  TOUR_ACCESS_LEVELS
+  UserTourAccess
 } from '@/types/rbac'
+import { PERMISSIONS, SYSTEM_ROLES, TOUR_ACCESS_LEVELS } from '@/types/rbac'
 
 export class RBACService {
   private static instance: RBACService
@@ -133,11 +131,11 @@ export class RBACService {
       },
 
       hasAnyPermission: (permissions: Permission[], specificTourId?: string) => {
-        return permissions.some(p => this.hasPermission(p, specificTourId))
+        return permissions.some(p => context.permissions.includes(p))
       },
 
       hasAllPermissions: (permissions: Permission[], specificTourId?: string) => {
-        return permissions.every(p => this.hasPermission(p, specificTourId))
+        return permissions.every(p => context.permissions.includes(p))
       },
 
       hasRole: (role: SystemRole, specificTourId?: string) => {
@@ -391,7 +389,7 @@ export class RBACService {
       throw error
     }
 
-    return data?.map(rp => rp.tour_management_permissions).filter(Boolean) || []
+    return (data?.map(rp => rp.tour_management_permissions).filter(Boolean).flat() as TourManagementPermission[]) || []
   }
 
   // Update role permissions

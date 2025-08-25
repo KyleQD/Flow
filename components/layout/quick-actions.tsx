@@ -304,7 +304,7 @@ export function QuickActions({ user, variant = 'floating', size = 'md' }: QuickA
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <Button
-            size={size}
+            size={size === 'md' ? 'default' : size}
             className={`rounded-full shadow-lg hover:shadow-xl transition-all duration-200 ${
               size === 'lg' ? 'h-14 w-14' : size === 'md' ? 'h-12 w-12' : 'h-10 w-10'
             } bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0`}

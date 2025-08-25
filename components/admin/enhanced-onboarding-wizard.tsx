@@ -273,7 +273,7 @@ export default function EnhancedOnboardingWizard({
       const documentUrl = await onUploadDocument(candidate.id, selectedDocumentType, file)
       
       // Update form data with document URL
-      setValue(`documents.${selectedDocumentType}`, documentUrl)
+      setValue(`documents.${selectedDocumentType}` as any, documentUrl)
       
       toast({
         title: "Document Uploaded",

@@ -12,8 +12,8 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
 export default function NewJobPostingPage() {
-  const { currentVenue } = useCurrentVenue()
-  const venueId = currentVenue?.id || 'mock-venue-id'
+  const { venue } = useCurrentVenue()
+  const venueId = venue?.id || 'mock-venue-id'
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 

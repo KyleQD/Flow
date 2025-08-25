@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/supabase/auth"
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -18,7 +18,7 @@ export async function POST(
 
     // Check if user is pro
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: (session.user as any).id },
       select: { isPro: true }
     })
 
@@ -36,7 +36,7 @@ export async function POST(
     const application = await prisma.application.create({
       data: {
         jobId: params.id,
-        userId: session.user.id,
+        userId: (session.user as any).id,
         answers: {
           create: answers.map((answer: { questionId: string; text: string }) => ({
             text: answer.text,
@@ -68,7 +68,7 @@ export async function POST(
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -81,7 +81,7 @@ export async function GET(
 
     // Check if user is pro
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: (session.user as any).id },
       select: { isPro: true }
     })
 

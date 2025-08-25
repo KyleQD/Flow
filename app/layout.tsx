@@ -6,6 +6,9 @@ import { AuthProvider } from "@/contexts/auth-context"
 import { MultiAccountProvider } from "@/hooks/use-multi-account"
 import { Nav } from "@/components/nav"
 import { Toaster } from "sonner"
+import { warnMissingEnv } from "@/lib/utils/env-check"
+import { DemoBannerWrapper } from "@/components/layout/demo-banner-wrapper"
+import { isDemoMode } from "@/lib/utils/demo-mode"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,19 +23,25 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  if (process.env.NODE_ENV !== 'production') warnMissingEnv()
+  
+  const LayoutWrapper = isDemoMode ? DemoBannerWrapper : ({ children }: { children: React.ReactNode }) => <>{children}</>
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen bg-gradient-to-br from-indigo-950 to-slate-900 text-slate-100`}>
         <ThemeProvider defaultTheme="dark">
           <AuthProvider>
             <MultiAccountProvider>
-              <div className="flex flex-col min-h-screen">
-                <Nav />
-                <main className="flex-1">
-                  {children}
-                </main>
-                <Toaster richColors position="top-right" />
-              </div>
+              <LayoutWrapper>
+                <div className="flex flex-col min-h-screen">
+                  <Nav />
+                  <main className="flex-1">
+                    {children}
+                  </main>
+                  <Toaster richColors position="top-right" />
+                </div>
+              </LayoutWrapper>
             </MultiAccountProvider>
           </AuthProvider>
         </ThemeProvider>

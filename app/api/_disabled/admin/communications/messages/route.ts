@@ -46,7 +46,7 @@ const messageQuerySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     
     // Parse and validate query parameters
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
         total: count || 0,
         limit: params.limit,
         offset: params.offset,
-        hasMore: (messages?.length || 0) === resolvedParams.limit
+        hasMore: (messages?.length || 0) === params.limit
       }
     })
 
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get message ID from URL
     const url = new URL(request.url)
@@ -413,7 +413,7 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get message ID from URL
     const url = new URL(request.url)

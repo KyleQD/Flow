@@ -119,29 +119,29 @@ export async function GET(request: NextRequest) {
 
     // Group statistics
     const totalGroups = groups.length
-    const totalTravelers = groups.reduce((sum, group) => sum + (group.total_members || 0), 0)
-    const confirmedTravelers = groups.reduce((sum, group) => sum + (group.confirmed_members || 0), 0)
-    const fullyCoordinatedGroups = groups.filter(g => g.coordination_status === 'complete').length
+    const totalTravelers = (groups as Array<{ total_members?: number }>).reduce((sum: number, group: { total_members?: number }) => sum + (group.total_members || 0), 0)
+    const confirmedTravelers = (groups as Array<{ confirmed_members?: number }>).reduce((sum: number, group: { confirmed_members?: number }) => sum + (group.confirmed_members || 0), 0)
+    const fullyCoordinatedGroups = (groups as Array<{ coordination_status?: string }>).filter((g: { coordination_status?: string }) => g.coordination_status === 'complete').length
     const coordinationCompletionRate = totalGroups > 0 ? Math.round((fullyCoordinatedGroups / totalGroups) * 100) : 0
 
     // Flight statistics
     const totalFlights = flights.length
-    const activeFlights = flights.filter(f => f.status === 'scheduled' || f.status === 'confirmed').length
-    const completedFlights = flights.filter(f => f.status === 'landed' || f.status === 'completed').length
-    const totalFlightSeats = flights.reduce((sum, flight) => sum + (flight.total_seats || 0), 0)
-    const bookedFlightSeats = flights.reduce((sum, flight) => sum + (flight.booked_seats || 0), 0)
+    const activeFlights = (flights as Array<{ status?: string }>).filter((f: { status?: string }) => f.status === 'scheduled' || f.status === 'confirmed').length
+    const completedFlights = (flights as Array<{ status?: string }>).filter((f: { status?: string }) => f.status === 'landed' || f.status === 'completed').length
+    const totalFlightSeats = (flights as Array<{ total_seats?: number }>).reduce((sum: number, flight: { total_seats?: number }) => sum + (flight.total_seats || 0), 0)
+    const bookedFlightSeats = (flights as Array<{ booked_seats?: number }>).reduce((sum: number, flight: { booked_seats?: number }) => sum + (flight.booked_seats || 0), 0)
     const flightUtilizationRate = totalFlightSeats > 0 ? Math.round((bookedFlightSeats / totalFlightSeats) * 100) : 0
 
     // Transportation statistics
     const totalTransportRuns = transportation.length
-    const activeTransport = transportation.filter(t => t.status === 'scheduled' || t.status === 'en_route').length
-    const completedTransport = transportation.filter(t => t.status === 'completed').length
-    const totalTransportCapacity = transportation.reduce((sum, transport) => sum + (transport.vehicle_capacity || 0), 0)
-    const assignedPassengers = transportation.reduce((sum, transport) => sum + (transport.assigned_passengers || 0), 0)
+    const activeTransport = (transportation as Array<{ status?: string }>).filter((t: { status?: string }) => t.status === 'scheduled' || t.status === 'en_route').length
+    const completedTransport = (transportation as Array<{ status?: string }>).filter((t: { status?: string }) => t.status === 'completed').length
+    const totalTransportCapacity = (transportation as Array<{ vehicle_capacity?: number }>).reduce((sum: number, transport: { vehicle_capacity?: number }) => sum + (transport.vehicle_capacity || 0), 0)
+    const assignedPassengers = (transportation as Array<{ assigned_passengers?: number }>).reduce((sum: number, transport: { assigned_passengers?: number }) => sum + (transport.assigned_passengers || 0), 0)
     const transportUtilizationRate = totalTransportCapacity > 0 ? Math.round((assignedPassengers / totalTransportCapacity) * 100) : 0
 
     // Recent activity processing
-    const processedActivity = recentActivity.map(activity => ({
+    const processedActivity = (recentActivity as Array<any>).map((activity: any) => ({
       id: activity.id,
       type: activity.entry_type,
       title: activity.title,
@@ -152,28 +152,28 @@ export async function GET(request: NextRequest) {
     }))
 
     // Group by type for quick insights
-    const groupsByType = groups.reduce((acc, group) => {
+    const groupsByType = (groups as Array<{ group_type?: string }>).reduce((acc: Record<string, any[]>, group: { group_type?: string }) => {
       const type = group.group_type || 'other'
       if (!acc[type]) acc[type] = []
-      acc[type].push(group)
+      acc[type].push(group as any)
       return acc
     }, {} as Record<string, any[]>)
 
     const groupTypeStats = Object.entries(groupsByType).map(([type, typeGroups]) => ({
       type,
       count: typeGroups.length,
-      totalMembers: typeGroups.reduce((sum, group) => sum + (group.total_members || 0), 0),
-      confirmedMembers: typeGroups.reduce((sum, group) => sum + (group.confirmed_members || 0), 0)
+      totalMembers: (typeGroups as Array<{ total_members?: number }>).reduce((sum: number, group: { total_members?: number }) => sum + (group.total_members || 0), 0),
+      confirmedMembers: (typeGroups as Array<{ confirmed_members?: number }>).reduce((sum: number, group: { confirmed_members?: number }) => sum + (group.confirmed_members || 0), 0)
     }))
 
     // Upcoming coordination needs
-    const upcomingFlights = flights.filter(f => {
-      const departureTime = new Date(f.departure_time)
+    const upcomingFlights = (flights as Array<{ departure_time?: string }>).filter((f: { departure_time?: string }) => {
+      const departureTime = new Date(f.departure_time as string)
       return departureTime > now && departureTime <= new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
     })
 
-    const upcomingTransport = transportation.filter(t => {
-      const pickupTime = new Date(t.pickup_time)
+    const upcomingTransport = (transportation as Array<{ pickup_time?: string }>).filter((t: { pickup_time?: string }) => {
+      const pickupTime = new Date(t.pickup_time as string)
       return pickupTime > now && pickupTime <= new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
     })
 
@@ -199,21 +199,21 @@ export async function GET(request: NextRequest) {
       breakdowns: {
         groupTypes: groupTypeStats,
         flightStatus: {
-          scheduled: flights.filter(f => f.status === 'scheduled').length,
-          confirmed: flights.filter(f => f.status === 'confirmed').length,
-          boarding: flights.filter(f => f.status === 'boarding').length,
-          inFlight: flights.filter(f => f.status === 'in_flight').length,
-          landed: flights.filter(f => f.status === 'landed').length,
-          delayed: flights.filter(f => f.status === 'delayed').length,
-          cancelled: flights.filter(f => f.status === 'cancelled').length
+          scheduled: (flights as Array<{ status?: string }>).filter((f: { status?: string }) => f.status === 'scheduled').length,
+          confirmed: (flights as Array<{ status?: string }>).filter((f: { status?: string }) => f.status === 'confirmed').length,
+          boarding: (flights as Array<{ status?: string }>).filter((f: { status?: string }) => f.status === 'boarding').length,
+          inFlight: (flights as Array<{ status?: string }>).filter((f: { status?: string }) => f.status === 'in_flight').length,
+          landed: (flights as Array<{ status?: string }>).filter((f: { status?: string }) => f.status === 'landed').length,
+          delayed: (flights as Array<{ status?: string }>).filter((f: { status?: string }) => f.status === 'delayed').length,
+          cancelled: (flights as Array<{ status?: string }>).filter((f: { status?: string }) => f.status === 'cancelled').length
         },
         transportStatus: {
-          scheduled: transportation.filter(t => t.status === 'scheduled').length,
-          enRoute: transportation.filter(t => t.status === 'en_route').length,
-          arrived: transportation.filter(t => t.status === 'arrived').length,
-          completed: transportation.filter(t => t.status === 'completed').length,
-          delayed: transportation.filter(t => t.status === 'delayed').length,
-          cancelled: transportation.filter(t => t.status === 'cancelled').length
+          scheduled: (transportation as Array<{ status?: string }>).filter((t: { status?: string }) => t.status === 'scheduled').length,
+          enRoute: (transportation as Array<{ status?: string }>).filter((t: { status?: string }) => t.status === 'en_route').length,
+          arrived: (transportation as Array<{ status?: string }>).filter((t: { status?: string }) => t.status === 'arrived').length,
+          completed: (transportation as Array<{ status?: string }>).filter((t: { status?: string }) => t.status === 'completed').length,
+          delayed: (transportation as Array<{ status?: string }>).filter((t: { status?: string }) => t.status === 'delayed').length,
+          cancelled: (transportation as Array<{ status?: string }>).filter((t: { status?: string }) => t.status === 'cancelled').length
         }
       },
 
@@ -232,12 +232,13 @@ export async function GET(request: NextRequest) {
       trends: analytics.length > 0 ? {
         lastWeek: analytics.slice(0, 7),
         lastMonth: analytics.slice(0, 30),
-        coordinationTrend: analytics.map(a => ({
-          date: a.date,
-          completionRate: a.coordination_completion_rate,
-          totalGroups: a.total_groups,
-          totalTravelers: a.total_travelers
-        }))
+        coordinationTrend: (analytics as Array<{ date?: string; coordination_completion_rate?: number; total_groups?: number; total_travelers?: number }>).
+          map((a: { date?: string; coordination_completion_rate?: number; total_groups?: number; total_travelers?: number }) => ({
+            date: a.date,
+            completionRate: a.coordination_completion_rate,
+            totalGroups: a.total_groups,
+            totalTravelers: a.total_travelers
+          }))
       } : null
     }
 

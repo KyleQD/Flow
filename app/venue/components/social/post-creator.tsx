@@ -231,16 +231,16 @@ export function PostCreator({
 
       <CardContent className="p-4">
         <TabsContent value="post" className={!showTabs ? "mt-0" : undefined}>
-          <div className="flex space-x-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={user.avatar} alt={user.fullName} />
-              <AvatarFallback>
-                {user.fullName
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
+                     <div className="flex space-x-3">
+             <Avatar className="h-10 w-10">
+               <AvatarImage src="/placeholder.svg" alt="User" />
+               <AvatarFallback>
+                 {"User"
+                   .split(" ")
+                   .map((n) => n[0])
+                   .join("")}
+               </AvatarFallback>
+             </Avatar>
 
             <div className="flex-1 space-y-3">
               <div className="relative">

@@ -7,10 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
-import { useAuth } from "@/context/auth-context"
-import { useSocial } from "@/context/social-context"
+import { useAuth } from "@/contexts/auth-context"
+import { useSocial } from "@/contexts/social-context"
 import { useToast } from "@/hooks/use-toast"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { LoadingSpinner } from "../loading-spinner"
 import {
   Heart,
   MessageSquare,
@@ -60,7 +60,10 @@ export function PostItem({
   className = "",
 }: PostItemProps) {
   const { user: currentUser } = useAuth()
-  const { likePost, unlikePost, addComment } = useSocial()
+  const social = useSocial() as any
+  const likePost = social.likePost || (async (_id: string) => {})
+  const unlikePost = social.unlikePost || (async (_id: string) => {})
+  const addComment = social.addComment || (async (_id: string, _text: string) => {})
   const { toast } = useToast()
   const router = useRouter()
 
@@ -77,10 +80,10 @@ export function PostItem({
     try {
       if (isLiked) {
         await unlikePost(post.id)
-        setLikeCount((prev) => prev - 1)
+        setLikeCount((prev: number) => prev - 1)
       } else {
         await likePost(post.id)
-        setLikeCount((prev) => prev + 1)
+        setLikeCount((prev: number) => prev + 1)
       }
       setIsLiked(!isLiked)
     } catch (error) {

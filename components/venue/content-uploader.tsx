@@ -9,8 +9,18 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { mockProfessions } from "@/lib/mock-data"
-import type { ProfessionAssignment } from "@/lib/mock-data"
+
+interface Profession {
+  id: string
+  name: string
+  category?: string
+}
+
+interface ProfessionAssignment {
+  professionId: string
+}
+
+const MOCK_PROFESSIONS: Profession[] = []
 import Image from "next/image"
 
 interface ContentUploaderProps {
@@ -185,11 +195,11 @@ export default function ContentUploader({ userId, userProfessions = [], onUpload
     userProfessions.length > 0
       ? userProfessions
           .map((up) => {
-            const profession = mockProfessions.find((p) => p.id === up.professionId)
+            const profession = MOCK_PROFESSIONS.find((p) => p.id === up.professionId)
             return profession
           })
           .filter(Boolean)
-      : mockProfessions
+      : MOCK_PROFESSIONS
 
   return (
     <div className="space-y-6 p-4 border rounded-lg bg-card">

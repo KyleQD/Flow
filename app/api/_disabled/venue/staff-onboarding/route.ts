@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     // Check if user has access to this venue
     const { data: venueAccess, error: venueError } = await supabase
       .from('venue_profiles')
-      .select('id, user_id')
+      .select('id, user_id, name')
       .eq('id', validatedData.venue_id)
       .single()
 
@@ -216,6 +216,7 @@ export async function POST(request: NextRequest) {
       const { error: emailError } = await supabase.auth.admin.generateLink({
         type: 'signup',
         email: validatedData.email,
+        password: tempPassword,
         options: {
           data: {
             full_name: validatedData.name,

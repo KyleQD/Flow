@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useCommandSearch } from "@/hooks/use-command-search"
+import { useCommandSearch } from "@/hooks/venue/use-command-search"
 import { Search } from "lucide-react"
 
 export function CommandSearchButton() {

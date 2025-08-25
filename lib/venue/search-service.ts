@@ -74,21 +74,20 @@ export function searchUsers(
       (user) =>
         user.fullName.toLowerCase().includes(normalizedQuery) ||
         user.username.toLowerCase().includes(normalizedQuery) ||
-        user.title.toLowerCase().includes(normalizedQuery) ||
-        user.location.toLowerCase().includes(normalizedQuery) ||
-        user.bio.toLowerCase().includes(normalizedQuery),
+        (user.location && user.location.toLowerCase().includes(normalizedQuery)) ||
+        (user.bio && user.bio.toLowerCase().includes(normalizedQuery)),
     )
   }
 
   // Filter by location
   if (filters.location && filters.location !== "any") {
-    results = results.filter((user) => user.location.toLowerCase().includes(filters.location!.toLowerCase()))
+    results = results.filter((user) => user.location && user.location.toLowerCase().includes(filters.location!.toLowerCase()))
   }
 
-  // Filter by title
-  if (filters.title && filters.title !== "any") {
-    results = results.filter((user) => user.title.toLowerCase().includes(filters.title!.toLowerCase()))
-  }
+  // Filter by title - removed since title doesn't exist in ExtendedUser
+  // if (filters.title && filters.title !== "any") {
+  //   results = results.filter((user) => user.title.toLowerCase().includes(filters.title!.toLowerCase()))
+  // }
 
   // Filter by skills
   if (filters.skills && filters.skills.length > 0) {
@@ -113,7 +112,7 @@ export function searchUsers(
         results.sort((a, b) => a.fullName.localeCompare(b.fullName))
         break
       case "recent":
-        results.sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime())
+        results.sort((a, b) => new Date(b.lastSeen || 0).getTime() - new Date(a.lastSeen || 0).getTime())
         break
       // For 'relevance', we keep the original order from the basic search
     }

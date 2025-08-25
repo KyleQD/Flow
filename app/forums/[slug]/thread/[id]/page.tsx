@@ -2,32 +2,39 @@ import { createClient } from '@/lib/supabase/server'
 import { ForumThreadCard } from '@/components/forums/forum-thread-card'
 import { CommentComposer } from '@/components/forums/comment-composer'
 
-export default async function ThreadPage({ params }: { params: { slug: string, id: string } }) {
+export default async function ThreadPage({ params }: { params: Promise<{ slug: string, id: string }> }) {
+  const { slug, id } = await params
   const supabase = await createClient()
 
   const { data: forum } = await supabase
     .from('forums')
     .select('id, slug, name')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .maybeSingle()
   if (!forum) return <div className="max-w-3xl mx-auto px-4 py-8 text-slate-300">Forum not found</div>
 
   const { data: thread } = await supabase
     .from('forum_threads')
     .select('id, title, body, url, score, comments_count, created_at, author:author_id(id, username, avatar_url, is_verified)')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle()
   if (!thread) return <div className="max-w-3xl mx-auto px-4 py-8 text-slate-300">Thread not found</div>
 
   const { data: comments } = await supabase
     .from('forum_comments')
     .select('id, body, score, parent_comment_id, created_at, author:author_id(id, username, avatar_url, is_verified)')
-    .eq('thread_id', params.id)
+    .eq('thread_id', id)
     .order('created_at', { ascending: true })
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-4">
       <div className="bg-slate-900/50 border border-slate-800/60 rounded-2xl p-6">
+        {(() => {
+          // Normalize author which may be an array from a relation
+          const normalizedAuthor = Array.isArray(thread.author) ? thread.author[0] : thread.author
+          ;(thread as any).normalizedAuthor = normalizedAuthor
+          return null
+        })()}
         <div className="text-xs text-slate-400 mb-2">
           in <a href={`/forums/${forum.slug}`} className="text-purple-300 hover:text-purple-200">{forum.name}</a>
         </div>
@@ -46,8 +53,8 @@ export default async function ThreadPage({ params }: { params: { slug: string, i
           <div>{thread.score || 0} points</div>
           <div>{thread.comments_count || 0} comments</div>
           <div>{new Date(thread.created_at).toLocaleString()}</div>
-          {thread.author && (
-            <div>by {thread.author.username}</div>
+          {(thread as any).normalizedAuthor?.username && (
+            <div>by {(thread as any).normalizedAuthor.username}</div>
           )}
         </div>
       </div>

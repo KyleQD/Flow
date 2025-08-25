@@ -1,5 +1,8 @@
 "use client"
 
+// Prevent pre-rendering since this component requires profile context
+export const dynamic = 'force-dynamic'
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,14 +14,14 @@ import { ArrowLeft, Camera, MapPin, Save, Plus, Search, Moon, Sun } from "lucide
 import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Image from "next/image"
-import { useProfile } from "@/context/profile-context"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { useProfile } from "@/context/venue/profile-context"
+import { LoadingSpinner } from "./loading-spinner"
 import { useState, type FormEvent, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { SkillBadge } from "@/components/skill-badge"
-import { ExperienceItem } from "@/components/experience-item"
-import { CertificationItem } from "@/components/certification-item"
-import { ErrorBoundary } from "@/components/error-boundary"
+import { SkillBadge } from "./skill-badge"
+import { ExperienceItem } from "./experience-item"
+import { CertificationItem } from "./certification-item"
+import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { motion, AnimatePresence } from "framer-motion"
 
 export default function EditProfileContent() {
@@ -46,8 +49,10 @@ export default function EditProfileContent() {
   const [newExperience, setNewExperience] = useState({
     title: "",
     company: "",
-    period: "",
+    startDate: "",
+    endDate: "",
     description: "",
+    current: false,
   })
   const [newCertification, setNewCertification] = useState({
     title: "",
@@ -110,8 +115,10 @@ export default function EditProfileContent() {
       setNewExperience({
         title: "",
         company: "",
-        period: "",
+        startDate: "",
+        endDate: "",
         description: "",
+        current: false,
       })
     }
   }
@@ -211,9 +218,9 @@ export default function EditProfileContent() {
                     <AvatarImage src={profile.avatar || "/placeholder.svg"} alt="Profile Picture" />
                     <AvatarFallback>
                       {profile.fullName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
+                        ?.split(" ")
+                        .map((n: string) => n[0])
+                        .join("") || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <Button
@@ -373,7 +380,7 @@ export default function EditProfileContent() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <AnimatePresence>
-                        {profile.experience.map((job) => (
+                        {profile.experience.map((job: any) => (
                           <ExperienceItem
                             key={job.id}
                             experience={job}
@@ -415,13 +422,14 @@ export default function EditProfileContent() {
                           </div>
 
                           <div className="space-y-1">
-                            <Label htmlFor="new-period">Time Period</Label>
+                                                          <Label htmlFor="new-startDate">Start Date</Label>
                             <Input
-                              id="new-period"
-                              value={newExperience.period}
-                              onChange={(e) => setNewExperience({ ...newExperience, period: e.target.value })}
+                              id="new-startDate"
+                              type="date"
+                              value={newExperience.startDate}
+                              onChange={(e) => setNewExperience({ ...newExperience, startDate: e.target.value })}
                               className={`${profile.theme === "dark" ? "bg-gray-800 border-gray-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
-                              aria-label="Time period"
+                              aria-label="Start date"
                             />
                           </div>
 
@@ -468,7 +476,7 @@ export default function EditProfileContent() {
                     <CardContent>
                       <div className="flex flex-wrap gap-2 mb-4">
                         <AnimatePresence>
-                          {profile.skills.map((skill) => (
+                          {profile.skills.map((skill: string) => (
                             <SkillBadge key={skill} skill={skill} onRemove={removeSkill} isEditable={true} />
                           ))}
                         </AnimatePresence>
@@ -560,7 +568,7 @@ export default function EditProfileContent() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <AnimatePresence>
-                        {profile.certifications.map((cert) => (
+                        {profile.certifications.map((cert: any) => (
                           <CertificationItem
                             key={cert.id}
                             certification={cert}

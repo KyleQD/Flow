@@ -26,9 +26,8 @@ export function VirtualizedList<T>({
   const containerRef = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [containerHeight, setContainerHeight] = useState(0)
-  const [endRef, isEndVisible] = useIntersectionObserver<HTMLDivElement>({
-    threshold: endReachedThreshold,
-  })
+  const endRef = useRef<HTMLDivElement>(null)
+  const isEndVisible = useIntersectionObserver(endRef, { threshold: endReachedThreshold })
 
   useEffect(() => {
     if (isEndVisible && onEndReached) {

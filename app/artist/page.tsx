@@ -734,7 +734,7 @@ export default function ArtistDashboard() {
                             </div>
                             <div className="flex items-center gap-1">
                               <DollarSign className="h-4 w-4" />
-                              ${upcomingEventsSummary.nextEvent.revenue.toLocaleString()}
+                              ${((upcomingEventsSummary.nextEvent?.revenue || 0)).toLocaleString()}
                             </div>
                           </div>
                         </div>
@@ -1033,8 +1033,23 @@ export default function ArtistDashboard() {
           >
             <ArtistSmartRecommendations 
               artistStats={stats}
-              recentContent={mockContentPerformance}
-              upcomingEvents={mockUpcomingEvents}
+              recentContent={mockContentPerformance.map((c) => ({
+                id: c.id,
+                title: c.title,
+                type: c.type as 'track' | 'video' | 'photo' | 'blog',
+                views: (c as any).views ?? (c as any).plays ?? 0,
+                likes: (c as any).likes ?? 0,
+                shares: (c as any).shares ?? 0,
+                createdAt: new Date((c as any).uploadDate).toISOString()
+              }))}
+              upcomingEvents={mockUpcomingEvents.map(e => ({
+                id: e.id,
+                title: e.title,
+                date: e.date.toISOString(),
+                venue: e.venue,
+                ticketSales: e.ticketSales,
+                capacity: e.capacity
+              }))}
             />
           </motion.div>
 

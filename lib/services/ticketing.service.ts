@@ -204,7 +204,7 @@ export class TicketingService {
       // Get event and ticket information
       const eventData = await this.getEventTickets(eventId)
       const event = eventData.ticket_types[0]?.events
-      const ticketType = ticketTypeId ? eventData.ticket_types.find(t => t.id === ticketTypeId) : null
+      const ticketType = ticketTypeId ? eventData.ticket_types.find((t: any) => t.id === ticketTypeId) : null
 
       // Create post content
       const postContent = message || this.generateTicketPostContent(event, ticketType)
@@ -233,7 +233,7 @@ export class TicketingService {
       await this.shareTicket({
         event_id: eventId,
         ticket_type_id: ticketTypeId,
-        platform: 'feed',
+        platform: 'instagram',
         share_text: postContent,
         share_url: `${window.location.origin}/events/${eventId}`
       })
@@ -267,7 +267,7 @@ export class TicketingService {
     try {
       const eventData = await this.getEventTickets(eventId)
       const event = eventData.ticket_types[0]?.events
-      const ticketType = ticketTypeId ? eventData.ticket_types.find(t => t.id === ticketTypeId) : null
+      const ticketType = ticketTypeId ? eventData.ticket_types.find((t: any) => t.id === ticketTypeId) : null
 
       const messageContent = message || this.generateTicketMessageContent(event, ticketType)
 
@@ -296,7 +296,7 @@ export class TicketingService {
       await this.shareTicket({
         event_id: eventId,
         ticket_type_id: ticketTypeId,
-        platform: 'message',
+        platform: 'email',
         share_text: messageContent,
         share_url: `${window.location.origin}/events/${eventId}`
       })

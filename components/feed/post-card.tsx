@@ -35,7 +35,7 @@ import Link from 'next/link'
 
 // Extend the base interface to include additional media properties
 interface ExtendedPost extends BaseExtendedPost {
-  media_urls?: string[]
+  media_urls: string[] | null
   media?: any[]
   media_items?: any[]
 }
@@ -270,7 +270,7 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
             <div className="flex gap-3">
               <Link href={getProfileUrl(post.profiles?.username)} className="flex-shrink-0">
                 <Avatar className="h-12 w-12 cursor-pointer hover:ring-2 hover:ring-purple-500/50 transition-all duration-200">
-                  <AvatarImage src={post.profiles?.avatar_url} />
+                  <AvatarImage src={post.profiles?.avatar_url || undefined} />
                   <AvatarFallback>
                     {post.profiles?.full_name?.[0] || post.profiles?.username?.[0] || 'U'}
                   </AvatarFallback>

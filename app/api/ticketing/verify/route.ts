@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 })
     }
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Get the sale details from metadata
     const { sale_id, order_number } = session.metadata || {}

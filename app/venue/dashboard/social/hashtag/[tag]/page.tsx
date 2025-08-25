@@ -85,7 +85,12 @@ export default function HashtagPage() {
               hashtagPosts.map(post => {
                 const author = users.find(u => u.id === post.userId)
                 return author ? (
-                  <PostItem key={post.id} post={post} author={author} />
+                  <PostItem key={post.id} post={post} author={{
+                    id: author.id,
+                    name: author.fullName,
+                    username: author.username,
+                    avatar: author.avatar || ''
+                  }} />
                 ) : null
               })
             ) : (

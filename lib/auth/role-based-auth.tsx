@@ -167,33 +167,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
   })
 
   // Using imported supabase instance
-
+  
   // =============================================================================
   // UTILITY FUNCTIONS
   // =============================================================================
-
+  
   const getUserPermissions = (role: UserRole): Permission[] => {
     return ROLE_PERMISSIONS[role] || []
   }
-
+  
   const hasPermission = (permission: Permission): boolean => {
     if (authState.user?.role === 'admin') return true
     return authState.permissions.includes(permission)
   }
-
+  
   const hasAnyPermission = (permissions: Permission[]): boolean => {
     if (authState.user?.role === 'admin') return true
     return permissions.some(permission => authState.permissions.includes(permission))
   }
-
+  
   const hasRole = (role: UserRole): boolean => {
     return authState.user?.role === role
   }
-
+  
   const refreshUser = async (): Promise<void> => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }))
-
+      
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
       
       if (authError || !authUser) {
@@ -205,14 +205,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         })
         return
       }
-
+      
       // Get user profile with role information
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, display_name, role, avatar_url')
         .eq('id', authUser.id)
         .single()
-
+      
       if (profileError || !profile) {
         console.error('Error fetching user profile:', profileError)
         setAuthState({
@@ -223,7 +223,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         })
         return
       }
-
+      
       const userProfile: UserProfile = {
         id: profile.id,
         display_name: profile.display_name,
@@ -231,16 +231,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         email: authUser.email,
         avatar_url: profile.avatar_url
       }
-
+      
       const permissions = getUserPermissions(userProfile.role)
-
+      
       setAuthState({
         user: userProfile,
         isLoading: false,
         isAuthenticated: true,
         permissions
       })
-
+      
     } catch (error) {
       console.error('Error refreshing user:', error)
       setAuthState({
@@ -251,7 +251,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
     }
   }
-
+  
   const signOut = async (): Promise<void> => {
     try {
       await supabase.auth.signOut()
@@ -265,18 +265,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error('Error signing out:', error)
     }
   }
-
+  
   // =============================================================================
   // EFFECTS
   // =============================================================================
-
+  
   useEffect(() => {
     // Initial auth state check
     refreshUser()
-
+    
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event) => {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           await refreshUser()
         } else if (event === 'SIGNED_OUT') {
@@ -289,14 +289,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       }
     )
-
+    
     return () => subscription.unsubscribe()
   }, [])
-
+  
   // =============================================================================
   // CONTEXT VALUE
   // =============================================================================
-
+  
   const contextValue = {
     ...authState,
     hasPermission,
@@ -305,7 +305,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signOut,
     refreshUser
   }
-
+  
   return (
     <AuthContext.Provider value={contextValue}>
       {children}
@@ -338,7 +338,7 @@ export function useRequireAuth(redirectTo = '/login') {
       window.location.href = redirectTo
     }
   }, [isAuthenticated, isLoading, redirectTo])
-
+  
   return { isAuthenticated, isLoading }
 }
 
@@ -530,3 +530,5 @@ export function getPermissionDescription(permission: Permission): string {
   
   return descriptions[permission] || permission
 }
+
+

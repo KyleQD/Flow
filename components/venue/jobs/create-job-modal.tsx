@@ -15,10 +15,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useProfile } from "@/context/profile-context"
+import { useProfile } from "@/context/venue/profile-context"
 import { useToast } from "@/hooks/use-toast"
 import { Briefcase, DollarSign, MapPin, Plus, X } from "lucide-react"
-import type { JobPosting } from "@/lib/types"
+import type { JobPosting } from "@/lib/venue/types"
 
 interface CreateJobModalProps {
   isOpen: boolean

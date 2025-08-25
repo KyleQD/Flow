@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
-import { SidebarNavigation } from "@/components/navigation/sidebar-navigation"
+import { SidebarNavigation } from "../navigation/sidebar-navigation"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"

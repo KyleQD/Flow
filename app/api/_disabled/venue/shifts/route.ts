@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { VenueSchedulingService } from '@/lib/services/venue-scheduling.service'
-import { authenticateUser } from '@/lib/auth/api-auth'
+import { authenticateApiRequest } from '@/lib/auth/api-auth'
 import { z } from 'zod'
 
 // Validation schemas
@@ -37,7 +37,8 @@ const getShiftsSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await authenticateUser(request)
+    const auth = await authenticateApiRequest(request)
+    const user = auth?.user
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -68,9 +69,9 @@ export async function GET(request: NextRequest) {
     const shifts = await VenueSchedulingService.getShifts(validatedData.venue_id, {
       startDate: validatedData.start_date,
       endDate: validatedData.end_date,
-      status: validatedData.status,
+      status: validatedData.status as any,
       department: validatedData.department,
-      staffMemberId: validatedData.staff_member_id
+      staffMemberId: validatedData.staff_member_id as any
     })
 
     return NextResponse.json({ shifts })
@@ -89,7 +90,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await authenticateUser(request)
+    const auth = await authenticateApiRequest(request)
+    const user = auth?.user
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -117,9 +119,31 @@ export async function POST(request: NextRequest) {
     }
 
     const shift = await VenueSchedulingService.createShift({
-      ...validatedData,
-      created_by: user.id
-    })
+      venue_id: validatedData.venue_id,
+      event_id: validatedData.event_id ?? null,
+      shift_title: validatedData.shift_title,
+      shift_description: validatedData.shift_description ?? null,
+      shift_date: validatedData.shift_date,
+      start_time: validatedData.start_time,
+      end_time: validatedData.end_time,
+      location: validatedData.location ?? null,
+      department: validatedData.department ?? null,
+      role_required: validatedData.role_required ?? null,
+      staff_needed: validatedData.staff_needed,
+      staff_assigned: 0,
+      hourly_rate: validatedData.hourly_rate ?? null,
+      flat_rate: validatedData.flat_rate ?? null,
+      is_recurring: validatedData.is_recurring ?? false,
+      recurring_pattern: validatedData.recurring_pattern ?? null,
+      shift_status: 'open',
+      priority: validatedData.priority,
+      dress_code: validatedData.dress_code ?? null,
+      special_requirements: validatedData.special_requirements ?? null,
+      notes: validatedData.notes ?? null,
+      created_by: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    } as any)
 
     return NextResponse.json({ shift }, { status: 201 })
   } catch (error) {

@@ -260,7 +260,7 @@ export function ShiftCalendar({ venueId }: ShiftCalendarProps) {
     }
   }
 
-  const getStatusColor = (status: ShiftStatus) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'bg-blue-500'
       case 'filled': return 'bg-green-500'

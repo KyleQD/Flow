@@ -6,7 +6,7 @@ async function resolveEventId(param: string, supabase: any) {
   return data?.id || null
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: any) {
   try {
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
@@ -42,7 +42,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: any) {
   try {
     const { authenticateApiRequest } = await import('@/lib/auth/api-auth')
     const auth = await authenticateApiRequest(request)

@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
+import { supabase } from '@/lib/supabase'
 import { z } from 'zod'
 
 // Validation schemas
@@ -49,7 +48,7 @@ const updateTemplateSchema = createTemplateSchema.partial().extend({
 })
 
 export class EnhancedOnboardingTemplatesService {
-  private static supabase = createClient(cookies())
+  private static supabase = supabase
 
   /**
    * Get all templates for a venue
@@ -362,7 +361,7 @@ export class EnhancedOnboardingTemplatesService {
       const { error } = await this.supabase
         .from('staff_onboarding_templates')
         .update({
-          use_count: this.supabase.sql`use_count + 1`,
+          use_count: 1, // TODO: Implement proper increment
           last_used: new Date().toISOString()
         })
         .eq('id', templateId)

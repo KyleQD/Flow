@@ -220,7 +220,7 @@ export function ApplicationForm({ jobPosting, onSubmit, onCancel, isLoading }: A
               className="bg-slate-700 border-slate-600 text-white"
             />
             {fieldError && (
-              <p className="text-red-400 text-sm">{fieldError.message}</p>
+              <p className="text-red-400 text-sm">{String(fieldError?.message || 'Invalid input')}</p>
             )}
           </div>
         )
@@ -238,7 +238,7 @@ export function ApplicationForm({ jobPosting, onSubmit, onCancel, isLoading }: A
               className="bg-slate-700 border-slate-600 text-white min-h-[120px]"
             />
             {fieldError && (
-              <p className="text-red-400 text-sm">{fieldError.message}</p>
+              <p className="text-red-400 text-sm">{String(fieldError?.message || 'Invalid input')}</p>
             )}
           </div>
         )
@@ -257,7 +257,7 @@ export function ApplicationForm({ jobPosting, onSubmit, onCancel, isLoading }: A
               className="bg-slate-700 border-slate-600 text-white"
             />
             {fieldError && (
-              <p className="text-red-400 text-sm">{fieldError.message}</p>
+              <p className="text-red-400 text-sm">{String(fieldError?.message || 'Invalid input')}</p>
             )}
           </div>
         )
@@ -281,7 +281,7 @@ export function ApplicationForm({ jobPosting, onSubmit, onCancel, isLoading }: A
               </SelectContent>
             </Select>
             {fieldError && (
-              <p className="text-red-400 text-sm">{fieldError.message}</p>
+              <p className="text-red-400 text-sm">{String(fieldError?.message || 'Invalid input')}</p>
             )}
           </div>
         )
@@ -314,7 +314,7 @@ export function ApplicationForm({ jobPosting, onSubmit, onCancel, isLoading }: A
               ))}
             </div>
             {fieldError && (
-              <p className="text-red-400 text-sm">{fieldError.message}</p>
+              <p className="text-red-400 text-sm">{String(fieldError?.message || 'Invalid input')}</p>
             )}
           </div>
         )
@@ -331,7 +331,7 @@ export function ApplicationForm({ jobPosting, onSubmit, onCancel, isLoading }: A
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
             {fieldError && (
-              <p className="text-red-400 text-sm">{fieldError.message}</p>
+              <p className="text-red-400 text-sm">{String(fieldError?.message || 'Invalid input')}</p>
             )}
           </div>
         )
@@ -375,7 +375,7 @@ export function ApplicationForm({ jobPosting, onSubmit, onCancel, isLoading }: A
               )}
             </div>
             {fieldError && (
-              <p className="text-red-400 text-sm">{fieldError.message}</p>
+              <p className="text-red-400 text-sm">{String(fieldError?.message || 'Invalid input')}</p>
             )}
           </div>
         )

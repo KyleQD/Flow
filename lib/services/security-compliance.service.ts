@@ -2,10 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 import type { 
   JobApplication, 
   OnboardingCandidate, 
-  StaffMember,
-  AuditLogEntry,
-  ComplianceCheck,
-  SecurityPolicy
+  StaffMember
 } from '@/types/admin-onboarding'
 
 export class SecurityComplianceService {
@@ -211,7 +208,13 @@ export class SecurityComplianceService {
     try {
       console.log('🔧 [Security Compliance Service] Running compliance checks...')
       
-      const complianceChecks: ComplianceCheck[] = []
+      const complianceChecks: any = {
+        totalChecks: 0,
+        highSeverity: 0,
+        mediumSeverity: 0,
+        lowSeverity: 0,
+        checks: []
+      }
 
       // Check for missing background checks
       const { data: candidatesWithoutBackgroundCheck, error: bgError } = await supabase
@@ -284,9 +287,9 @@ export class SecurityComplianceService {
 
       return {
         totalChecks: complianceChecks.length,
-        highSeverity: complianceChecks.filter(c => c.severity === 'high').length,
-        mediumSeverity: complianceChecks.filter(c => c.severity === 'medium').length,
-        lowSeverity: complianceChecks.filter(c => c.severity === 'low').length,
+        highSeverity: complianceChecks.filter((c: any) => c.severity === 'high').length,
+        mediumSeverity: complianceChecks.filter((c: any) => c.severity === 'medium').length,
+        lowSeverity: complianceChecks.filter((c: any) => c.severity === 'low').length,
         checks: complianceChecks
       }
     } catch (error) {
@@ -346,7 +349,7 @@ export class SecurityComplianceService {
   /**
    * Apply security policies
    */
-  static async applySecurityPolicies(venueId: string, policies: SecurityPolicy[]) {
+  static async applySecurityPolicies(venueId: string, policies: any[]) {
     try {
       console.log('🔧 [Security Compliance Service] Applying security policies...')
       
@@ -376,11 +379,11 @@ export class SecurityComplianceService {
   }
 
   // Helper methods
-  private static calculateComplianceScore(complianceChecks: ComplianceCheck[]) {
-    const totalIssues = complianceChecks.reduce((sum, check) => sum + check.count, 0)
+  private static calculateComplianceScore(complianceChecks: any) {
+    const totalIssues = complianceChecks.reduce((sum: any, check: any) => sum + check.count, 0)
     const highSeverityIssues = complianceChecks
-      .filter(check => check.severity === 'high')
-      .reduce((sum, check) => sum + check.count, 0)
+      .filter((check: any) => check.severity === 'high')
+      .reduce((sum: any, check: any) => sum + check.count, 0)
 
     // Calculate score based on severity and number of issues
     let score = 100
@@ -390,10 +393,10 @@ export class SecurityComplianceService {
     return Math.max(0, Math.min(100, score))
   }
 
-  private static generateRecommendations(complianceChecks: ComplianceCheck[]) {
+  private static generateRecommendations(complianceChecks: any) {
     const recommendations = []
 
-    if (complianceChecks.some(c => c.type === 'background_check')) {
+    if (complianceChecks.some((c: any) => c.type === 'background_check')) {
       recommendations.push({
         priority: 'high',
         action: 'Complete background checks for all pending candidates',
@@ -401,7 +404,7 @@ export class SecurityComplianceService {
       })
     }
 
-    if (complianceChecks.some(c => c.type === 'expired_certifications')) {
+    if (complianceChecks.some((c: any) => c.type === 'expired_certifications')) {
       recommendations.push({
         priority: 'medium',
         action: 'Renew expired certifications or update staff assignments',
@@ -409,7 +412,7 @@ export class SecurityComplianceService {
       })
     }
 
-    if (complianceChecks.some(c => c.type === 'incomplete_training')) {
+    if (complianceChecks.some((c: any) => c.type === 'incomplete_training')) {
       recommendations.push({
         priority: 'medium',
         action: 'Complete required training for all staff members',
@@ -420,19 +423,19 @@ export class SecurityComplianceService {
     return recommendations
   }
 
-  private static async applyDataRetentionPolicy(venueId: string, policy: SecurityPolicy) {
+  private static async applyDataRetentionPolicy(venueId: string, policy: any) {
     // Implementation for data retention policy
     console.log('Applying data retention policy...')
     return { success: true, policy: 'data_retention' }
   }
 
-  private static async applyAccessControlPolicy(venueId: string, policy: SecurityPolicy) {
+  private static async applyAccessControlPolicy(venueId: string, policy: any) {
     // Implementation for access control policy
     console.log('Applying access control policy...')
     return { success: true, policy: 'access_control' }
   }
 
-  private static async applyEncryptionPolicy(venueId: string, policy: SecurityPolicy) {
+  private static async applyEncryptionPolicy(venueId: string, policy: any) {
     // Implementation for encryption policy
     console.log('Applying encryption policy...')
     return { success: true, policy: 'encryption' }

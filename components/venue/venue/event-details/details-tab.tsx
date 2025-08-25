@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Event } from "@/types/events"
+import type { VenueEvent } from "@/lib/venue/hooks/use-venue-events"
 import { Separator } from "@/components/ui/separator"
 import { Users, DollarSign, MapPin, Clock, Calendar, Tag, Info } from "lucide-react"
 
 interface DetailsTabProps {
-  event: Event
+  event: VenueEvent
 }
 
 export default function DetailsTab({ event }: DetailsTabProps) {
@@ -19,7 +19,7 @@ export default function DetailsTab({ event }: DetailsTabProps) {
 
         <div>
           <h3 className="text-lg font-medium mb-2">Notes</h3>
-          <p className="text-muted-foreground">{event.notes || "No additional notes."}</p>
+          <p className="text-muted-foreground">No additional notes.</p>
         </div>
       </div>
 
@@ -61,7 +61,7 @@ export default function DetailsTab({ event }: DetailsTabProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-lg font-medium">{event.location || "Main Venue"}</p>
+            <p className="text-lg font-medium">Main Venue</p>
             <p className="text-xs text-muted-foreground">Event location</p>
           </CardContent>
         </Card>
@@ -79,7 +79,7 @@ export default function DetailsTab({ event }: DetailsTabProps) {
               <div>
                 <p className="font-medium">Date</p>
                 <p className="text-muted-foreground">
-                  {new Date(event.date).toLocaleDateString("en-US", {
+                  {new Date(event.date || new Date()).toLocaleDateString("en-US", {
                     weekday: "long",
                     year: "numeric",
                     month: "long",

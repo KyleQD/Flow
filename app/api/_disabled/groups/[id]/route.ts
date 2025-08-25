@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/supabase/auth"
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -43,7 +43,7 @@ export async function GET(
 
     // Check if user is a member
     const isMember = group.members.some(
-      (member) => member.user.id === session.user.id
+      (member) => member.user.id === (session.user as any).id
     )
 
     if (!isMember) {

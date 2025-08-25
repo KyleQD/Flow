@@ -38,6 +38,9 @@ export default function ProfilePage() {
   const username = params.username as string
   
   const [profile, setProfile] = useState<ProfileData | null>(null)
+  const [portfolio, setPortfolio] = useState<any[]>([])
+  const [experiences, setExperiences] = useState<any[]>([])
+  const [certifications, setCertifications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
@@ -85,6 +88,9 @@ export default function ProfilePage() {
         const data = await response.json()
         if (data.profile) {
           setProfile(data.profile)
+          setPortfolio(data.portfolio || [])
+          setExperiences(data.experiences || [])
+          setCertifications(data.certifications || [])
           setIsOwnProfile(false)
         } else {
           setError('Profile not found')
@@ -233,6 +239,10 @@ export default function ProfilePage() {
         onFollow={handleFollow}
         onMessage={handleMessage}
         onShare={handleShare}
+        // @ts-ignore pass-through extended props
+        portfolio={portfolio}
+        experiences={experiences}
+        certifications={certifications}
       />
 
       {/* Message Modal */}

@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { VenueSchedulingService } from '@/lib/services/venue-scheduling.service'
-import { authenticateUser } from '@/lib/auth/api-auth'
+import { authenticateApiRequest } from '@/lib/auth/api-auth'
 import { z } from 'zod'
 
 // Validation schemas
 const createAssignmentSchema = z.object({
   shift_id: z.string().uuid(),
   staff_member_id: z.string().uuid(),
-  assigned_by: z.string().uuid(),
   notes: z.string().optional()
 })
 
@@ -20,7 +19,8 @@ const updateAssignmentSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await authenticateUser(request)
+    const auth = await authenticateApiRequest(request)
+    const user = auth?.user
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -49,7 +49,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await authenticateUser(request)
+    const auth = await authenticateApiRequest(request)
+    const user = auth?.user
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -74,9 +75,12 @@ export async function POST(request: NextRequest) {
     }
 
     const assignment = await VenueSchedulingService.assignStaffToShift({
-      ...validatedData,
-      assigned_by: user.id
-    })
+      shift_id: validatedData.shift_id,
+      staff_member_id: validatedData.staff_member_id,
+      assigned_by: user.id,
+      assignment_status: 'assigned',
+      notes: validatedData.notes || undefined
+    } as any)
 
     return NextResponse.json({ assignment }, { status: 201 })
   } catch (error) {
@@ -94,7 +98,8 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await authenticateUser(request)
+    const auth = await authenticateApiRequest(request)
+    const user = auth?.user
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -104,7 +109,7 @@ export async function PATCH(request: NextRequest) {
 
     const assignment = await VenueSchedulingService.updateAssignmentStatus(
       validatedData.assignment_id,
-      validatedData.status,
+      validatedData.status as any,
       {
         declineReason: validatedData.decline_reason,
         notes: validatedData.notes

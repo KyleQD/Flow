@@ -174,6 +174,7 @@ export class StaffOnboardingService {
       const { error: emailError } = await supabase.auth.admin.generateLink({
         type: 'signup',
         email: staff.email,
+        password: tempPassword || 'temp123',
         options: {
           data: {
             full_name: staff.name,

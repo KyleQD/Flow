@@ -298,7 +298,7 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
       if (!groups[date]) {
         groups[date] = []
       }
-      groups[date].push(message)
+      groups[date].push(message as any)
     })
 
     return groups
@@ -368,10 +368,10 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
                               <div className="mt-1 p-3 bg-muted rounded-md">
                                 <div className="flex items-center mb-1">
                                   <div
-                                    className={`h-2 w-2 rounded-full mr-2 ${getPriorityColor(message.priority || "medium")}`}
+                                    className={`h-2 w-2 rounded-full mr-2 ${getPriorityColor((message as any).priority || "medium")}`}
                                   />
                                   <span className="text-xs font-medium uppercase">
-                                    {message.priority === "high" ? "Important" : "Announcement"}
+                                    {(message as any).priority === "high" ? "Important" : "Announcement"}
                                   </span>
                                 </div>
                                 <p className="text-sm">{message.content}</p>
@@ -379,10 +379,10 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
                             ) : (
                               <p className="text-sm mt-1">{message.content}</p>
                             )}
-                            {message.attachment && (
+                            {(message as any).attachment && (
                               <div className="mt-2 flex items-center bg-muted rounded-md p-2 text-sm">
-                                {getAttachmentIcon(message.attachment.type)}
-                                <span className="ml-2">{message.attachment.name}</span>
+                                                                  {getAttachmentIcon((message as any).attachment.type)}
+                                  <span className="ml-2">{(message as any).attachment.name}</span>
                               </div>
                             )}
                           </div>
@@ -491,7 +491,7 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
               <Card key={announcement.id} className="overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-start space-x-4">
-                    <div className={`h-10 w-1 rounded-full ${getPriorityColor(announcement.priority || "medium")}`} />
+                    <div className={`h-10 w-1 rounded-full ${getPriorityColor((announcement as any).priority || "medium")}`} />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
@@ -511,7 +511,7 @@ export function TeamCommunication({ teamId }: TeamCommunicationProps) {
                             <span className="font-medium text-sm">{announcement.sender.name}</span>
                             <div className="flex items-center">
                               <Badge variant="outline" className="text-xs mr-2">
-                                {announcement.priority === "high" ? "Important" : "Announcement"}
+                                {(announcement as any).priority === "high" ? "Important" : "Announcement"}
                               </Badge>
                               <span className="text-xs text-muted-foreground">
                                 {new Date(announcement.timestamp).toLocaleString()}

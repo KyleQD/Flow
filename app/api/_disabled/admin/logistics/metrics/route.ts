@@ -93,39 +93,39 @@ export async function GET(request: NextRequest) {
     const calculateMetrics = () => {
       // Transportation metrics
       const transportTotal = transportation.length
-      const transportCompleted = transportation.filter(t => t.status === 'completed').length
+      const transportCompleted = (transportation as Array<{ status?: string }>).filter((t: { status?: string }) => t.status === 'completed').length
       const transportPercentage = transportTotal > 0 ? Math.round((transportCompleted / transportTotal) * 100) : 0
       const transportStatus = transportPercentage === 100 ? 'Completed' : transportPercentage > 50 ? 'In Progress' : 'Not Started'
 
       // Equipment metrics
       const equipTotal = equipment.length
-      const equipAssigned = equipment.filter(e => e.status === 'assigned').length
+      const equipAssigned = (equipment as Array<{ status?: string }>).filter((e: { status?: string }) => e.status === 'assigned').length
       const equipPercentage = equipTotal > 0 ? Math.round((equipAssigned / equipTotal) * 100) : 0
       const equipStatus = equipPercentage === 100 ? 'Completed' : equipPercentage > 50 ? 'In Progress' : 'Not Started'
 
       // Backline metrics
-      const backlineEquipment = equipment.filter(e => e.category === 'backline' || e.category === 'instruments')
+      const backlineEquipment = (equipment as Array<{ category?: string; status?: string }>).filter((e: { category?: string }) => e.category === 'backline' || e.category === 'instruments')
       const backlineTotal = backlineEquipment.length
-      const backlineAssigned = backlineEquipment.filter(e => e.status === 'assigned').length
+      const backlineAssigned = (backlineEquipment as Array<{ status?: string }>).filter((e: { status?: string }) => e.status === 'assigned').length
       const backlinePercentage = backlineTotal > 0 ? Math.round((backlineAssigned / backlineTotal) * 100) : 0
       const backlineStatus = backlinePercentage === 100 ? 'Completed' : backlinePercentage > 50 ? 'In Progress' : 'Not Started'
 
       // Rental metrics
-      const activeRentals = rentals.filter(r => r.status === 'active' || r.status === 'confirmed').length
-      const totalRentalRevenue = rentals.reduce((sum, r) => sum + (r.total_amount || 0), 0)
+      const activeRentals = (rentals as Array<{ status?: string }>).filter((r: { status?: string }) => r.status === 'active' || r.status === 'confirmed').length
+      const totalRentalRevenue = (rentals as Array<{ total_amount?: number }>).reduce((sum: number, r: { total_amount?: number }) => sum + (r.total_amount || 0), 0)
       const rentalPercentage = activeRentals > 0 ? Math.min(100, Math.round((activeRentals / 10) * 100)) : 0
       const rentalStatus = activeRentals > 0 ? 'Active' : 'No Rentals'
 
       // Lodging metrics
-      const activeLodgingBookings = lodging.filter(b => b.status === 'confirmed' || b.status === 'checked_in').length
-      const totalLodgingRevenue = lodging.reduce((sum, b) => sum + (b.total_amount || 0), 0)
+      const activeLodgingBookings = (lodging as Array<{ status?: string }>).filter((b: { status?: string }) => b.status === 'confirmed' || b.status === 'checked_in').length
+      const totalLodgingRevenue = (lodging as Array<{ total_amount?: number }>).reduce((sum: number, b: { total_amount?: number }) => sum + (b.total_amount || 0), 0)
       const lodgingPercentage = activeLodgingBookings > 0 ? Math.min(100, Math.round((activeLodgingBookings / 20) * 100)) : 0
       const lodgingStatus = activeLodgingBookings > 0 ? 'Active' : 'No Bookings'
 
       // Travel coordination metrics
       const totalTravelGroups = travelGroups.length
-      const totalTravelers = travelGroups.reduce((sum, group) => sum + (group.total_members || 0), 0)
-      const fullyCoordinatedGroups = travelGroups.filter(g => g.coordination_status === 'complete').length
+      const totalTravelers = (travelGroups as Array<{ total_members?: number }>).reduce((sum: number, group: { total_members?: number }) => sum + (group.total_members || 0), 0)
+      const fullyCoordinatedGroups = (travelGroups as Array<{ coordination_status?: string }>).filter((g: { coordination_status?: string }) => g.coordination_status === 'complete').length
       const travelCoordinationPercentage = totalTravelGroups > 0 ? Math.round((fullyCoordinatedGroups / totalTravelGroups) * 100) : 0
       const travelCoordinationStatus = travelCoordinationPercentage === 100 ? 'Complete' : travelCoordinationPercentage > 50 ? 'In Progress' : 'Not Started'
 

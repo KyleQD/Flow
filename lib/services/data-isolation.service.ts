@@ -5,9 +5,9 @@ import type {
   SystemRole,
   DataIsolationContext,
   Tour,
-  TourEvent,
-  PERMISSIONS
+  TourEvent
 } from '@/types/rbac'
+import { PERMISSIONS } from '@/types/rbac'
 
 export interface DataAccessPolicy {
   userId: string

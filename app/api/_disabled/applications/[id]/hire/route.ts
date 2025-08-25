@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/supabase/auth"
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -43,7 +43,8 @@ export async function POST(
     }
 
     // Verify the user has permission to hire for this job
-    if (application.job.userId !== session.user.id) {
+    const sessionUserId = (session.user as any).id
+    if (!sessionUserId || application.job.userId !== sessionUserId) {
       return NextResponse.json(
         { error: "Unauthorized to hire for this job" },
         { status: 403 }
@@ -66,7 +67,7 @@ export async function POST(
         userId: application.userId,
         eventId,
         role,
-        hiredById: session.user.id, // Track who hired this staff member
+        hiredById: sessionUserId, // Track who hired this staff member
       },
       include: {
         user: {

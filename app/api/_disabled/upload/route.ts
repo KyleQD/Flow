@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/supabase/auth"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 import { v4 as uuidv4 } from "uuid"
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const key = `${session.user.id}/${uuidv4()}-${file.name}`
+    const key = `${(session.user as any).id}/${uuidv4()}-${file.name}`
 
     await s3Client.send(
       new PutObjectCommand({

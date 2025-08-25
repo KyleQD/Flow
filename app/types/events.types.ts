@@ -7,5 +7,15 @@ export interface Event {
   total_tickets: number;
   tickets_sold: number;
   venue_id?: string; // Example of another potential field
+  // Optional fields used by UI components
+  capacity?: number;
+  notes?: string;
+  ticketPrice?: number;
+  location?: string;
+  date?: string | Date;
+  startTime?: string;
+  endTime?: string;
+  type?: string;
+  status?: string;
   // Add other relevant event fields here
 } 

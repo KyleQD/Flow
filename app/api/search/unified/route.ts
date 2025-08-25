@@ -110,29 +110,32 @@ export async function GET(request: NextRequest) {
         .range(0, Math.max(0, limit - results.length - 1))
 
       if (!artistError && artistProfiles) {
-        const convertedArtists = artistProfiles.map(artist => ({
-          id: artist.id,
-          username: artist.profiles?.username || `artist-${artist.id.slice(0, 8)}`,
-          account_type: 'artist' as const,
-          profile_data: {
-            artist_name: artist.artist_name,
-            name: artist.artist_name,
-            genres: artist.genres
-          },
-          avatar_url: artist.profiles?.avatar_url,
-          verified: artist.verification_status === 'verified',
-          bio: artist.bio,
-          social_links: artist.social_links,
-          stats: {
-            followers: 0,
-            following: 0,
-            posts: 0,
-            likes: 0,
-            views: 0
-          },
-          created_at: artist.created_at,
-          is_demo: false
-        }))
+        const convertedArtists = artistProfiles.map(artist => {
+          const baseProfile = Array.isArray((artist as any).profiles) ? (artist as any).profiles[0] : (artist as any).profiles
+          return {
+            id: artist.id,
+            username: baseProfile?.username || `artist-${String(artist.id).slice(0, 8)}`,
+            account_type: 'artist' as const,
+            profile_data: {
+              artist_name: artist.artist_name,
+              name: artist.artist_name,
+              genres: artist.genres
+            },
+            avatar_url: baseProfile?.avatar_url,
+            verified: artist.verification_status === 'verified',
+            bio: artist.bio,
+            social_links: artist.social_links,
+            stats: {
+              followers: 0,
+              following: 0,
+              posts: 0,
+              likes: 0,
+              views: 0
+            },
+            created_at: artist.created_at,
+            is_demo: false
+          }
+        })
 
         results.push(...convertedArtists)
       }
@@ -174,31 +177,34 @@ export async function GET(request: NextRequest) {
         .range(0, Math.max(0, limit - results.length - 1))
 
       if (!venueError && venueProfiles) {
-        const convertedVenues = venueProfiles.map(venue => ({
-          id: venue.id,
-          username: venue.profiles?.username || `venue-${venue.id.slice(0, 8)}`,
-          account_type: 'venue' as const,
-          profile_data: {
-            venue_name: venue.venue_name,
-            name: venue.venue_name,
-            capacity: venue.capacity,
-            venue_types: venue.venue_types
-          },
-          avatar_url: venue.profiles?.avatar_url,
-          verified: venue.verification_status === 'verified',
-          bio: venue.description,
-          location: venue.city && venue.state ? `${venue.city}, ${venue.state}` : venue.city || venue.state,
-          stats: {
-            followers: 0,
-            following: 0,
-            posts: 0,
-            likes: 0,
-            views: 0,
-            events: 0
-          },
-          created_at: venue.created_at,
-          is_demo: false
-        }))
+        const convertedVenues = venueProfiles.map(venue => {
+          const baseProfile = Array.isArray((venue as any).profiles) ? (venue as any).profiles[0] : (venue as any).profiles
+          return {
+            id: venue.id,
+            username: baseProfile?.username || `venue-${String(venue.id).slice(0, 8)}`,
+            account_type: 'venue' as const,
+            profile_data: {
+              venue_name: venue.venue_name,
+              name: venue.venue_name,
+              capacity: venue.capacity,
+              venue_types: venue.venue_types
+            },
+            avatar_url: baseProfile?.avatar_url,
+            verified: venue.verification_status === 'verified',
+            bio: venue.description,
+            location: venue.city && venue.state ? `${venue.city}, ${venue.state}` : venue.city || venue.state,
+            stats: {
+              followers: 0,
+              following: 0,
+              posts: 0,
+              likes: 0,
+              views: 0,
+              events: 0
+            },
+            created_at: venue.created_at,
+            is_demo: false
+          }
+        })
 
         results.push(...convertedVenues)
       }

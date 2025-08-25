@@ -94,7 +94,7 @@ export default function AlbumDetailDialog({ open, album, onClose }: AlbumDetailD
     setSelectedIdx(to)
   }
 
-  function handleDragStart(e: React.DragEvent<HTMLImageElement>, idx: number) {
+  function handleDragStart(e: React.DragEvent<HTMLElement>, idx: number) {
     e.dataTransfer.setData("fromIdx", idx.toString())
   }
 

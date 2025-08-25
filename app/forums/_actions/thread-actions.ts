@@ -46,7 +46,7 @@ const reportSchema = z.object({
 // THREAD ACTIONS
 // ========================================
 
-export const createThreadAction = action(createThreadSchema, async (input) => {
+export const createThreadAction = action.schema(createThreadSchema).action(async ({ parsedInput }) => {
   try {
     const supabase = await createClient()
     const { data: user } = await supabase.auth.getUser()
@@ -61,15 +61,15 @@ export const createThreadAction = action(createThreadSchema, async (input) => {
     if (!res.success) return { ok: false, error: 'rate_limited' }
 
     // Validate content based on kind
-    if (input.kind === 'text' && !input.contentMd?.trim()) {
+    if (parsedInput.kind === 'text' && !parsedInput.contentMd?.trim()) {
       return { ok: false, error: 'empty_body' }
     }
     
-    if ((input.kind === 'link' || input.kind === 'media') && !input.linkUrl) {
+    if ((parsedInput.kind === 'link' || parsedInput.kind === 'media') && !parsedInput.linkUrl) {
       return { ok: false, error: 'missing_link' }
     }
 
-    if (input.kind === 'crosspost' && !input.contentRefId) {
+    if (parsedInput.kind === 'crosspost' && !parsedInput.contentRefId) {
       return { ok: false, error: 'missing_content_ref' }
     }
 
@@ -77,7 +77,7 @@ export const createThreadAction = action(createThreadSchema, async (input) => {
     const { data: forum } = await supabase
       .from('forums_v2')
       .select('id, kind')
-      .eq('id', input.forumId)
+      .eq('id', parsedInput.forumId)
       .single()
 
     if (!forum) {
@@ -88,12 +88,12 @@ export const createThreadAction = action(createThreadSchema, async (input) => {
     const { data: thread, error } = await supabase
       .from('forum_threads_v2')
       .insert({
-        forum_id: input.forumId,
-        title: input.title,
-        kind: input.kind,
-        content_md: input.contentMd,
-        link_url: input.linkUrl,
-        content_ref_id: input.contentRefId,
+        forum_id: parsedInput.forumId,
+        title: parsedInput.title,
+        kind: parsedInput.kind,
+        content_md: parsedInput.contentMd,
+        link_url: parsedInput.linkUrl,
+        content_ref_id: parsedInput.contentRefId,
         created_by: user.user.id
       })
       .select('id')
@@ -105,8 +105,8 @@ export const createThreadAction = action(createThreadSchema, async (input) => {
     }
 
     // Add tags if provided
-    if (input.tagIds?.length) {
-      const tagRows = input.tagIds.map(tagId => ({ 
+    if (parsedInput.tagIds?.length) {
+      const tagRows = parsedInput.tagIds.map(tagId => ({ 
         thread_id: thread.id, 
         tag_id: tagId 
       }))
@@ -119,11 +119,10 @@ export const createThreadAction = action(createThreadSchema, async (input) => {
     // Auto-subscribe user to their thread
     await supabase
       .from('forum_subscriptions_v2')
-      .insert({
+      .upsert({
         user_id: user.user.id,
         thread_id: thread.id
-      })
-      .onConflict('user_id,thread_id')
+      }, { onConflict: 'user_id,thread_id' })
 
     revalidatePath('/forums')
     revalidatePath(`/forums/${forum.id}`)
@@ -135,7 +134,7 @@ export const createThreadAction = action(createThreadSchema, async (input) => {
   }
 })
 
-export const updateThreadAction = action(
+export const updateThreadAction = action.schema(
   z.object({
     threadId: z.string().uuid(),
     title: z.string().min(3).max(180).optional(),
@@ -143,8 +142,8 @@ export const updateThreadAction = action(
     linkUrl: z.string().url().optional(),
     isPinned: z.boolean().optional(),
     isLocked: z.boolean().optional()
-  }),
-  async (input) => {
+  }))
+  .action(async ({ parsedInput }) => {
     try {
       const supabase = await createClient()
       const { data: user } = await supabase.auth.getUser()
@@ -156,34 +155,33 @@ export const updateThreadAction = action(
       const { error } = await supabase
         .from('forum_threads_v2')
         .update({
-          ...(input.title && { title: input.title }),
-          ...(input.contentMd !== undefined && { content_md: input.contentMd }),
-          ...(input.linkUrl !== undefined && { link_url: input.linkUrl }),
-          ...(input.isPinned !== undefined && { is_pinned: input.isPinned }),
-          ...(input.isLocked !== undefined && { is_locked: input.isLocked }),
+          ...(parsedInput.title && { title: parsedInput.title }),
+          ...(parsedInput.contentMd !== undefined && { content_md: parsedInput.contentMd }),
+          ...(parsedInput.linkUrl !== undefined && { link_url: parsedInput.linkUrl }),
+          ...(parsedInput.isPinned !== undefined && { is_pinned: parsedInput.isPinned }),
+          ...(parsedInput.isLocked !== undefined && { is_locked: parsedInput.isLocked }),
           updated_at: new Date().toISOString()
         })
-        .eq('id', input.threadId)
+        .eq('id', parsedInput.threadId)
 
       if (error) {
         console.error('Thread update error:', error)
         return { ok: false, error: 'update_failed' }
       }
 
-      revalidatePath(`/forums/t/${input.threadId}`)
+      revalidatePath(`/forums/t/${parsedInput.threadId}`)
       return { ok: true }
     } catch (error) {
       console.error('Update thread action error:', error)
       return { ok: false, error: 'unexpected_error' }
     }
-  }
-)
+  })
 
 // ========================================
 // VOTING ACTIONS
 // ========================================
 
-export const voteAction = action(voteSchema, async (input) => {
+export const voteAction = action.schema(voteSchema).action(async ({ parsedInput }) => {
   try {
     const supabase = await createClient()
     const { data: user } = await supabase.auth.getUser()
@@ -202,12 +200,12 @@ export const voteAction = action(voteSchema, async (input) => {
       .from('forum_votes_v2')
       .select('id, kind')
       .eq('user_id', user.user.id)
-      .eq('target_kind', input.targetKind)
-      .eq('target_id', input.targetId)
+      .eq('target_kind', parsedInput.targetKind)
+      .eq('target_id', parsedInput.targetId)
       .single()
 
     if (existingVote) {
-      if (existingVote.kind === input.kind) {
+      if (existingVote.kind === parsedInput.kind) {
         // Remove vote (toggle off)
         const { error } = await supabase
           .from('forum_votes_v2')
@@ -223,7 +221,7 @@ export const voteAction = action(voteSchema, async (input) => {
         // Change vote
         const { error } = await supabase
           .from('forum_votes_v2')
-          .update({ kind: input.kind })
+          .update({ kind: parsedInput.kind })
           .eq('id', existingVote.id)
 
         if (error) {
@@ -238,9 +236,9 @@ export const voteAction = action(voteSchema, async (input) => {
         .from('forum_votes_v2')
         .insert({
           user_id: user.user.id,
-          target_kind: input.targetKind,
-          target_id: input.targetId,
-          kind: input.kind
+          target_kind: parsedInput.targetKind,
+          target_id: parsedInput.targetId,
+          kind: parsedInput.kind
         })
 
       if (error) {
@@ -259,7 +257,7 @@ export const voteAction = action(voteSchema, async (input) => {
 // SUBSCRIPTION ACTIONS  
 // ========================================
 
-export const subscribeAction = action(subscribeSchema, async (input) => {
+export const subscribeAction = action.schema(subscribeSchema).action(async ({ parsedInput }) => {
   try {
     const supabase = await createClient()
     const { data: user } = await supabase.auth.getUser()
@@ -276,7 +274,7 @@ export const subscribeAction = action(subscribeSchema, async (input) => {
       .from('forum_subscriptions_v2')
       .select('user_id')
       .eq('user_id', user.user.id)
-      .eq(input.forumId ? 'forum_id' : 'thread_id', input.forumId || input.threadId!)
+      .eq(parsedInput.forumId ? 'forum_id' : 'thread_id', parsedInput.forumId || parsedInput.threadId!)
       .single()
 
     if (existing) {
@@ -285,7 +283,7 @@ export const subscribeAction = action(subscribeSchema, async (input) => {
         .from('forum_subscriptions_v2')
         .delete()
         .eq('user_id', user.user.id)
-        .eq(input.forumId ? 'forum_id' : 'thread_id', input.forumId || input.threadId!)
+        .eq(parsedInput.forumId ? 'forum_id' : 'thread_id', parsedInput.forumId || parsedInput.threadId!)
 
       if (error) {
         return { ok: false, error: 'unsubscribe_failed' }
@@ -298,8 +296,8 @@ export const subscribeAction = action(subscribeSchema, async (input) => {
         .from('forum_subscriptions_v2')
         .insert({
           user_id: user.user.id,
-          forum_id: input.forumId || null,
-          thread_id: input.threadId || null
+          forum_id: parsedInput.forumId || null,
+          thread_id: parsedInput.threadId || null
         })
 
       if (error) {
@@ -318,7 +316,7 @@ export const subscribeAction = action(subscribeSchema, async (input) => {
 // REPORTING ACTIONS
 // ========================================
 
-export const reportAction = action(reportSchema, async (input) => {
+export const reportAction = action.schema(reportSchema).action(async ({ parsedInput }) => {
   try {
     const supabase = await createClient()
     const { data: user } = await supabase.auth.getUser()
@@ -332,8 +330,8 @@ export const reportAction = action(reportSchema, async (input) => {
       .from('forum_reports')
       .select('id')
       .eq('reporter_id', user.user.id)
-      .eq('target_kind', input.targetKind)
-      .eq('target_id', input.targetId)
+      .eq('target_kind', parsedInput.targetKind)
+      .eq('target_id', parsedInput.targetId)
       .single()
 
     if (existing) {
@@ -344,10 +342,10 @@ export const reportAction = action(reportSchema, async (input) => {
       .from('forum_reports')
       .insert({
         reporter_id: user.user.id,
-        target_kind: input.targetKind,
-        target_id: input.targetId,
-        reason: input.reason,
-        description: input.description
+        target_kind: parsedInput.targetKind,
+        target_id: parsedInput.targetId,
+        reason: parsedInput.reason,
+        description: parsedInput.description
       })
 
     if (error) {

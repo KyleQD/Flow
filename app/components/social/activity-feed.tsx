@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useSocial } from "@/context/social-context"
-import { useAuth } from "@/context/auth-context"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { useSocial } from "@/contexts/social-context"
+import { useAuth } from "@/contexts/auth-context"
+import { LoadingSpinner } from "../loading-spinner"
 import { formatDistanceToNow } from "date-fns"
 import { Heart, MessageSquare, UserPlus, Calendar, Award } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -21,7 +21,7 @@ interface ActivityItem {
 }
 
 export function ActivityFeed() {
-  const { users } = useSocial()
+  const social = useSocial() as any
   const { user: currentUser } = useAuth()
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -98,7 +98,8 @@ export function ActivityFeed() {
 
   // Get user by ID
   const getUserById = (userId: string) => {
-    return users.find((u) => u.id === userId)
+    const list = social.users || []
+    return list.find((u: any) => u.id === userId)
   }
 
   // Render activity icon
@@ -246,7 +247,7 @@ export function ActivityFeed() {
                           <AvatarFallback>
                             {user.fullName
                               .split(" ")
-                              .map((n) => n[0])
+                              .map((n: string) => n[0])
                               .join("")}
                           </AvatarFallback>
                         </Avatar>

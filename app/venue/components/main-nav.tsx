@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { CommandSearchButton } from "@/components/command-search-button"
+import { CommandSearchButton } from "./command-search-button"
 import {
   Bell,
   Calendar,

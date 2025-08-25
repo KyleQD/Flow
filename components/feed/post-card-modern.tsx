@@ -194,10 +194,10 @@ export function PostCardModern({
                     poster={item.thumbnail_url}
                   />
                 )}
-                {index === 3 && post.media_items.length > 4 && (
+                {index === 3 && (post.media_items?.length || 0) > 4 && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                     <span className="text-white text-xl font-bold">
-                      +{post.media_items.length - 4}
+                      +{(post.media_items?.length || 0) - 4}
                     </span>
                   </div>
                 )}

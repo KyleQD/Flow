@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from '@/lib/supabase';
 import type { Profile, ArtistProfile, VenueProfile, ProfileData } from '@/types/profile';
 
 export async function getProfileData(userId: string): Promise<ProfileData> {

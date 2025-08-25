@@ -9,9 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { CheckCircle2, Clock, Download, Search, UserPlus, X } from "lucide-react"
+import { CheckCircle2, Clock, Download, Search, UserPlus, X, QrCode } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import QRCode from "./qr-code-scanner"
+import QRCodeScanner from "./qr-code-scanner"
 import { useRouter } from "next/navigation"
 
 interface Attendee {
@@ -241,7 +241,7 @@ export default function AttendanceTracker({ eventId, eventTitle, eventDate, capa
 
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setShowScanner(true)}>
-            <QRCode className="h-4 w-4 mr-2" />
+            <QrCode className="h-4 w-4 mr-2" />
             Scan QR Code
           </Button>
           <Button variant="outline" onClick={handleAddAttendee}>
@@ -265,7 +265,7 @@ export default function AttendanceTracker({ eventId, eventTitle, eventDate, capa
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <QRCode onScan={handleScanResult} />
+            <QRCodeScanner onScan={handleScanResult} />
             <p className="text-sm text-center mt-4 text-muted-foreground">
               Position the QR code within the scanner area
             </p>

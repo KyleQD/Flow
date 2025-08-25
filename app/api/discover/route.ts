@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
       .limit(4)
 
     // Transform real artists to unified format
-    const transformedRealArtists = (realArtists || []).map(artist => ({
+    const transformedRealArtists = (realArtists || []).map((artist: any) => ({
       id: artist.id,
       username: artist.profiles?.username || `artist-${artist.id.slice(0, 8)}`,
       account_type: 'artist' as const,
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
     }))
 
     // Transform real venues to unified format
-    const transformedRealVenues = (realVenues || []).map(venue => ({
+    const transformedRealVenues = (realVenues || []).map((venue: any) => ({
       id: venue.id,
       username: venue.profiles?.username || `venue-${venue.id.slice(0, 8)}`,
       account_type: 'venue' as const,
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
     }))
 
     // Transform real posts to unified format
-    const transformedRealPosts = (realPosts || []).map(post => ({
+    const transformedRealPosts = (realPosts || []).map((post: any) => ({
       id: post.id,
       content: post.content,
       likes_count: post.likes_count,
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
     }))
 
     // Transform promotion posts to unified format
-    const transformedPromotionPosts = (promotionPosts || []).map(post => ({
+    const transformedPromotionPosts = (promotionPosts || []).map((post: any) => ({
       id: post.id,
       content: post.content || post.title,
       likes_count: 0,
@@ -194,7 +194,7 @@ export async function GET(request: NextRequest) {
     }))
 
     // Transform real events to unified format
-    const transformedRealEvents = (realEvents || []).map(event => ({
+    const transformedRealEvents = (realEvents || []).map((event: any) => ({
       id: event.id,
       name: event.name,
       title: event.name,
@@ -209,12 +209,12 @@ export async function GET(request: NextRequest) {
     // Combine real and demo data
     const combinedArtists = [
       ...transformedRealArtists,
-      ...(demoArtists || []).map(artist => ({ ...artist, is_demo: true }))
+      ...(demoArtists || []).map((artist: any) => ({ ...artist, is_demo: true }))
     ].slice(0, 8)
 
     const combinedVenues = [
       ...transformedRealVenues,
-      ...(demoVenues || []).map(venue => ({ ...venue, is_demo: true }))
+      ...(demoVenues || []).map((venue: any) => ({ ...venue, is_demo: true }))
     ].slice(0, 8)
 
     const combinedPosts = [

@@ -65,11 +65,11 @@ export default function SkillsMatcher() {
 
     // Calculate match scores for each job
     const jobsWithScores = data?.map(job => {
-      const requirements = job.requirements.split(",").map(req => req.trim().toLowerCase())
+      const requirements = job.requirements.split(",").map((req: string) => req.trim().toLowerCase())
       const userSkillNames = userSkills.map(skill => skill.name.toLowerCase())
       
       // Calculate match score based on required skills
-      const matchingSkills = requirements.filter(req => 
+      const matchingSkills = requirements.filter((req: string) => 
         userSkillNames.some(skill => skill.includes(req) || req.includes(skill))
       )
       const matchScore = (matchingSkills.length / requirements.length) * 100

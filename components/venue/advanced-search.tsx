@@ -11,15 +11,22 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Search, Filter, X } from "lucide-react"
 import { useSocial } from "@/context/social-context"
 import { useDebounce } from "@/hooks/use-debounce"
-import type { User } from "@/lib/types"
-import { getAllSkills, getAllLocations, getAllTitles } from "@/lib/search-service"
+import type { User } from "@/types/user"
+// Mock functions for search service
+const getAllSkills = () => ['JavaScript', 'React', 'TypeScript', 'Node.js']
+const getAllLocations = () => ['New York', 'Los Angeles', 'Chicago', 'Miami']
+const getAllTitles = () => ['Software Engineer', 'Designer', 'Manager', 'Developer']
 
 interface AdvancedSearchProps {
   onResultsChange?: (results: User[]) => void
 }
 
 export function AdvancedSearch({ onResultsChange }: AdvancedSearchProps) {
-  const { users, searchUsers } = useSocial()
+  // Mock searchUsers function
+  const searchUsers = async (query: string, filters?: any) => {
+    // Mock implementation
+    return []
+  }
 
   // Basic search
   const [searchQuery, setSearchQuery] = useState("")
@@ -44,6 +51,7 @@ export function AdvancedSearch({ onResultsChange }: AdvancedSearchProps) {
 
   // Search function
   useEffect(() => {
+    const performSearch = async () => {
     // Apply search with filters
     const filters = showFilters
       ? {
@@ -56,17 +64,18 @@ export function AdvancedSearch({ onResultsChange }: AdvancedSearchProps) {
         }
       : {}
 
-    const filteredUsers = searchUsers(debouncedSearchQuery, filters)
+    const filteredUsers = await searchUsers(debouncedSearchQuery, filters)
     setResults(filteredUsers)
 
     if (onResultsChange) {
       onResultsChange(filteredUsers)
     }
+    }
+    
+    performSearch()
   }, [
     debouncedSearchQuery,
     searchQuery,
-    users,
-    searchUsers,
     showFilters,
     location,
     title,

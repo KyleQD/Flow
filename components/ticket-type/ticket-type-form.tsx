@@ -73,19 +73,19 @@ export function TicketTypeForm({ eventId, onTicketTypeCreated }: TicketTypeFormP
         // currency: data.currency || 'usd', // Pass currency if it's part of the form
       })
 
-      if (result.success && result.ticketType) {
+      if ((result as any).success && (result as any).ticketType) {
         toast({
           title: 'Ticket Type Created',
-          description: `Successfully created ${result.ticketType.name}.`,
+          description: `Successfully created ${(result as any).ticketType.name}.`,
         })
         form.reset()
         if (onTicketTypeCreated) {
-          onTicketTypeCreated(result.ticketType as TicketType)
+          onTicketTypeCreated((result as any).ticketType as TicketType)
         }
       } else {
         toast({
           title: 'Error',
-          description: result.error || 'Failed to create ticket type.',
+          description: (result as any).error || 'Failed to create ticket type.',
           variant: 'destructive',
         })
       }

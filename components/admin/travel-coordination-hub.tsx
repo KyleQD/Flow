@@ -39,7 +39,7 @@ import {
   Coffee,
   Utensils,
   Bed,
-  Shower,
+  Droplets,
   Tv,
   AirVent,
   Snowflake,

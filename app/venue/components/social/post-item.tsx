@@ -146,7 +146,7 @@ export function PostItem({
   const { toast } = useToast()
   const router = useRouter()
 
-  const [isLiked, setIsLiked] = useState(post.likes.includes(currentUser?.id))
+  const [isLiked, setIsLiked] = useState(post.likes.includes(currentUser?.id || ""))
   const [likeCount, setLikeCount] = useState(post.likes.length)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [showCommentForm, setShowCommentForm] = useState(showComments)
@@ -533,11 +533,11 @@ export function PostItem({
   const renderComments = () => {
     if (!showCommentForm && !showComments) return null
 
-    const commentsToShow = showAllComments ? post.comments : post.comments.slice(0, 2)
+    const commentsToShow = showAllComments ? (Array.isArray(post.comments) ? post.comments : []) : (Array.isArray(post.comments) ? post.comments.slice(0, 2) : [])
 
     return (
       <div className="mt-4">
-        {post.comments.length > 0 && (
+        {Array.isArray(post.comments) && post.comments.length > 0 && (
           <>
             <Separator className="my-3 bg-gray-800" />
             <div className="space-y-3">
@@ -826,7 +826,7 @@ export function PostItem({
               }}
             >
               <MessageSquare className="h-4 w-4" />
-              <span>{post.comments.length > 0 ? post.comments.length : ""}</span>
+              <span>{Array.isArray(post.comments) && post.comments.length > 0 ? post.comments.length : ""}</span>
             </Button>
 
             <Button

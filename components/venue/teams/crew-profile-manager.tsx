@@ -281,7 +281,7 @@ const SkillLevel = ({ level }: { level: number }) => {
 
   return (
     <div className="flex items-center gap-2 w-full">
-      <Progress value={level} className="h-2" indicatorClassName={color} />
+      <Progress value={level} className={`h-2 ${color}`} />
       <span className="text-xs font-medium w-8">{level}%</span>
     </div>
   )

@@ -160,9 +160,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error:', error)
+    const message = (error as Error)?.message ?? 'Unknown error'
     return NextResponse.json({
       success: false,
-      error: error.message
+      error: message
     }, { status: 500 })
   }
 } 

@@ -1,7 +1,16 @@
 export interface ModeratedContent {
-  id: string
-  content: string
-  status: 'approved' | 'rejected' | 'pending'
+  original: string
+  moderated: string
+  isSafe: boolean
+  flags: {
+    profanity: boolean
+    harassment: boolean
+    hate: boolean
+    selfHarm: boolean
+    sexualContent: boolean
+    violence: boolean
+  }
+  score: number
 }
 
 export interface ModerationHistoryItem {

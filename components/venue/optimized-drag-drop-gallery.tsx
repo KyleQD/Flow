@@ -1,15 +1,22 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import type { ProfileData } from "@/lib/types"
-import { ConfirmDialog } from "@/components/confirm-dialog"
-import { GalleryItem } from "@/components/gallery-item"
+// Define gallery item type locally
+interface GalleryItem {
+  id: string
+  url: string
+  title?: string
+  description?: string
+  alt?: string
+}
+import { ConfirmDialog } from "./confirm-dialog"
+import { GalleryItem } from "./gallery-item"
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
 
 interface OptimizedDragDropGalleryProps {
-  items: ProfileData["gallery"]
+  items: GalleryItem[]
   onRemove: (id: string) => void
-  onReorder: (newOrder: ProfileData["gallery"]) => void
+  onReorder: (newOrder: GalleryItem[]) => void
 }
 
 export function OptimizedDragDropGallery({ items, onRemove, onReorder }: OptimizedDragDropGalleryProps) {
@@ -53,7 +60,7 @@ export function OptimizedDragDropGallery({ items, onRemove, onReorder }: Optimiz
                       <GalleryItem
                         id={item.id}
                         url={item.url}
-                        alt={item.alt}
+                        alt={item.alt || "Gallery item"}
                         onRemove={handleRemoveClick}
                         isDragging={snapshot.isDragging}
                         dragHandleProps={provided.dragHandleProps}

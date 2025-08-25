@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { createClient } from "@/lib/supabase/server"
+import { authenticateApiRequest } from "@/lib/auth/api-auth"
 import { VenueSchedulingService } from "@/lib/services/venue-scheduling.service"
 
 const createRequestSchema = z.object({
@@ -18,7 +18,9 @@ const updateRequestSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const auth = await authenticateApiRequest(request)
+    const user = auth?.user
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const { searchParams } = new URL(request.url)
     
     const venueId = searchParams.get("venue_id")
@@ -29,25 +31,25 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status")
     const staffId = searchParams.get("staff_id")
     const requestType = searchParams.get("request_type")
-    const limit = parseInt(searchParams.get("limit") || "50")
-    const offset = parseInt(searchParams.get("offset") || "0")
-
-    const schedulingService = new VenueSchedulingService(supabase)
-    
     // Check permissions
-    const hasPermission = await schedulingService.checkVenuePermission(venueId)
+    const hasPermission = await VenueSchedulingService.checkVenuePermission(
+      user.id,
+      venueId,
+      'shifts.view'
+    )
     if (!hasPermission) {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
     }
 
-    const requests = await schedulingService.getShiftRequests({
+    let requests = await VenueSchedulingService.getShiftRequests(
       venueId,
-      status: status as any,
-      staffId,
-      requestType: requestType as any,
-      limit,
-      offset
-    })
+      {
+        status: status ? [status as any] : undefined,
+        staffMemberId: staffId || undefined
+      }
+    )
+
+    if (requestType) requests = requests.filter(r => r.request_type === requestType)
 
     return NextResponse.json({ requests })
   } catch (error) {
@@ -61,20 +63,24 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const auth = await authenticateApiRequest(request)
+    const user = auth?.user
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const body = await request.json()
     
     const validatedData = createRequestSchema.parse(body)
-    const schedulingService = new VenueSchedulingService(supabase)
-
     // Get shift to check venue and validate request
-    const shift = await schedulingService.getShift(validatedData.shift_id)
+    const shift = await VenueSchedulingService.getShiftWithDetails(validatedData.shift_id)
     if (!shift) {
       return NextResponse.json({ error: "Shift not found" }, { status: 404 })
     }
 
     // Check permissions
-    const hasPermission = await schedulingService.checkVenuePermission(shift.venue_id)
+    const hasPermission = await VenueSchedulingService.checkVenuePermission(
+      user.id,
+      shift.venue_id,
+      'shifts.requests'
+    )
     if (!hasPermission) {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
     }
@@ -82,47 +88,42 @@ export async function POST(request: NextRequest) {
     // Validate request type logic
     if (validatedData.request_type === "drop") {
       // Check if staff is assigned to the shift
-      const isAssigned = await schedulingService.isStaffAssignedToShift(
-        validatedData.staff_id,
-        validatedData.shift_id
-      )
+      const assignments = await VenueSchedulingService.getShiftAssignments(validatedData.shift_id)
+      const isAssigned = assignments.some(a => a.staff_member_id === validatedData.staff_id)
       if (!isAssigned) {
         return NextResponse.json({ error: "You are not assigned to this shift" }, { status: 400 })
       }
     } else if (validatedData.request_type === "pickup") {
       // Check if staff is already assigned to the shift
-      const isAssigned = await schedulingService.isStaffAssignedToShift(
-        validatedData.staff_id,
-        validatedData.shift_id
-      )
+      const assignments2 = await VenueSchedulingService.getShiftAssignments(validatedData.shift_id)
+      const isAssigned = assignments2.some(a => a.staff_member_id === validatedData.staff_id)
       if (isAssigned) {
         return NextResponse.json({ error: "You are already assigned to this shift" }, { status: 400 })
       }
 
       // Check if shift is full
-      const assignments = await schedulingService.getShiftAssignments(validatedData.shift_id)
-      if (assignments.length >= shift.staff_needed) {
+      const assignments3 = await VenueSchedulingService.getShiftAssignments(validatedData.shift_id)
+      if (assignments3.length >= (shift.staff_needed || 0)) {
         return NextResponse.json({ error: "This shift is already full" }, { status: 400 })
       }
     }
 
     // Check for existing pending requests
-    const existingRequests = await schedulingService.getShiftRequests({
-      venueId: shift.venue_id,
-      staffId: validatedData.staff_id,
-      status: "pending"
-    })
+    const existingRequests = await VenueSchedulingService.getShiftRequests(
+      shift.venue_id,
+      { staffMemberId: validatedData.staff_id, status: ['pending'] as any }
+    )
     
     if (existingRequests.length > 0) {
       return NextResponse.json({ error: "You already have a pending request" }, { status: 400 })
     }
 
-    const shiftRequest = await schedulingService.createShiftRequest({
-      staffId: validatedData.staff_id,
-      shiftId: validatedData.shift_id,
-      requestType: validatedData.request_type,
-      reason: validatedData.reason
-    })
+    const shiftRequest = await VenueSchedulingService.requestShiftChange({
+      staff_member_id: validatedData.staff_id,
+      shift_id: validatedData.shift_id,
+      request_type: validatedData.request_type as any,
+      request_reason: validatedData.reason
+    } as any)
 
     return NextResponse.json({ request: shiftRequest }, { status: 201 })
   } catch (error) {
@@ -143,36 +144,16 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const auth = await authenticateApiRequest(request)
+    const user = auth?.user
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const body = await request.json()
     
     const validatedData = updateRequestSchema.parse(body)
-    const schedulingService = new VenueSchedulingService(supabase)
-
-    // Get the request to check permissions
-    const shiftRequest = await schedulingService.getShiftRequest(validatedData.request_id)
-    if (!shiftRequest) {
-      return NextResponse.json({ error: "Shift request not found" }, { status: 404 })
-    }
-
-    // Get shift to check venue
-    const shift = await schedulingService.getShift(shiftRequest.shift_id)
-    if (!shift) {
-      return NextResponse.json({ error: "Shift not found" }, { status: 404 })
-    }
-
-    // Check permissions
-    const hasPermission = await schedulingService.checkVenuePermission(shift.venue_id)
-    if (!hasPermission) {
-      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
-    }
-
     // Update the request status
-    const updatedRequest = await schedulingService.updateShiftRequestStatus(
-      validatedData.request_id,
-      validatedData.status,
-      validatedData.response_note
-    )
+    const updatedRequest = validatedData.status === 'approved'
+      ? await VenueSchedulingService.approveShiftRequest(validatedData.request_id, user.id)
+      : await VenueSchedulingService.denyShiftRequest(validatedData.request_id, user.id, validatedData.response_note || '')
 
     return NextResponse.json({ request: updatedRequest })
   } catch (error) {

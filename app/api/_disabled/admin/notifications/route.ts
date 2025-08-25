@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data for frontend
-    const transformedNotifications = notifications?.map(notification => ({
+    const transformedNotifications = (notifications || []).map((notification: any) => ({
       id: notification.id,
       type: notification.type,
       title: notification.title,

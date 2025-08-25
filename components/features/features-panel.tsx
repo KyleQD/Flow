@@ -289,7 +289,7 @@ export function FeaturesPanel({ open, onOpenChange }: FeaturesPanelProps) {
                             className="h-auto p-4 justify-start border-[#2a2f3e] hover:bg-[#2a2f3e] hover:text-white"
                           >
                             <div className="flex items-start gap-3">
-                              <feature.icon className="h-5 w-5 text-purple-400 mt-0.5" />
+                              {React.createElement(feature.icon as React.ComponentType<any>, { className: "h-5 w-5 text-purple-400 mt-0.5" })}
                               <div className="text-left">
                                 <div className="flex items-center gap-2">
                                   <span className="font-medium">{feature.name}</span>

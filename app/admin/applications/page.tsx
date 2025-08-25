@@ -44,7 +44,7 @@ import {
   ExternalLink
 } from 'lucide-react'
 import { AdminOnboardingStaffService } from '@/lib/services/admin-onboarding-staff.service'
-import { useCurrentVenue } from '@/hooks/venue/use-current-venue'
+import { useCurrentVenue as useCurrentVenueRoot } from '@/hooks/use-venue'
 import type { JobApplication, JobPostingTemplate } from '@/types/admin-onboarding'
 
 interface ApplicationWithJob extends JobApplication {
@@ -69,9 +69,9 @@ export default function ApplicationsPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
-  const { currentVenue } = useCurrentVenue()
+  const { venue } = useCurrentVenueRoot()
 
-  const venueId = currentVenue?.id || 'mock-venue-id'
+  const venueId = venue?.id || 'mock-venue-id'
 
   useEffect(() => {
     loadApplications()

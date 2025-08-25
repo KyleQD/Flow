@@ -8,7 +8,7 @@ import { Plus, Users, Settings, ClipboardList, AlertTriangle } from "lucide-reac
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
-interface StaffMember {
+export interface StaffMember {
   id: string
   name: string
   role: string
@@ -16,7 +16,7 @@ interface StaffMember {
   contact: string
 }
 
-interface Task {
+export interface Task {
   id: string
   title: string
   assigned_to: string
@@ -25,7 +25,7 @@ interface Task {
   priority: 'low' | 'medium' | 'high'
 }
 
-interface Equipment {
+export interface Equipment {
   id: string
   name: string
   quantity: number

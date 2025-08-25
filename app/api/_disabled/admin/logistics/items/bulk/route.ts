@@ -88,10 +88,10 @@ export async function PUT(request: NextRequest) {
           .in('id', itemIds)
         
         if (currentItems) {
-          updateData.tags = currentItems.map(item => {
-            const currentTags = item.tags || []
-            const newTags = Array.isArray(value) ? value : [value]
-            return [...new Set([...currentTags, ...newTags])]
+          updateData.tags = (currentItems as Array<{ id: string; tags?: string[] }>).map((item: { id: string; tags?: string[] }) => {
+            const currentTags: string[] = item.tags || []
+            const newTags: string[] = Array.isArray(value) ? (value as string[]) : [value as string]
+            return [...new Set<string>([...currentTags, ...newTags])]
           })
         }
         break
@@ -103,10 +103,10 @@ export async function PUT(request: NextRequest) {
           .in('id', itemIds)
         
         if (itemsWithTags) {
-          updateData.tags = itemsWithTags.map(item => {
-            const currentTags = item.tags || []
-            const tagsToRemove = Array.isArray(value) ? value : [value]
-            return currentTags.filter(tag => !tagsToRemove.includes(tag))
+          updateData.tags = (itemsWithTags as Array<{ id: string; tags?: string[] }>).map((item: { id: string; tags?: string[] }) => {
+            const currentTags: string[] = item.tags || []
+            const tagsToRemove: string[] = Array.isArray(value) ? (value as string[]) : [value as string]
+            return currentTags.filter((tag: string) => !tagsToRemove.includes(tag))
           })
         }
         break
@@ -215,14 +215,14 @@ export async function POST(request: NextRequest) {
     const { items } = validationResult.data
 
     // Prepare items for insertion
-    const itemsToInsert = items.map(item => ({
+    const itemsToInsert = (items as Array<Record<string, any>>).map((item: Record<string, any>) => ({
       ...item,
       created_by: user.id,
       updated_by: user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }))
-
+    
     // Insert items
     const { data: newItems, error } = await supabase
       .from('logistics_items')

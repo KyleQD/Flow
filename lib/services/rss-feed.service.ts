@@ -166,7 +166,7 @@ class RSSFeedService {
       results.forEach((result, index) => {
         if (result.status === 'fulfilled' && result.value) {
           const feed = result.value
-          const items = feed.items.map(item => ({
+          const items = (feed.items || []).map(item => ({
             ...item,
             source: this.musicRSSFeeds[index].name
           }))

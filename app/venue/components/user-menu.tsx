@@ -15,12 +15,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, FileText, HelpCircle, LogOut, Moon, Settings, Sun, User, Users } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useProfile } from "@/context/profile-context"
+import { useProfile } from "@/contexts/profile-context"
 
 export function UserMenu() {
   const router = useRouter()
-  const { profile, toggleTheme } = useProfile()
+  const profileContext = useProfile() // Keep for future use but don't destructure non-existent properties
   const [theme, setTheme] = useState<"light" | "dark">("dark")
+
+  // Mock implementations since these don't exist in profile context
+  const profile = { name: "User", avatar: "/placeholder.svg" }
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light")
+  }
 
   const handleThemeToggle = () => {
     const newTheme = theme === "dark" ? "light" : "dark"

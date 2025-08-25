@@ -14,7 +14,7 @@ const onboardingResponseSchema = z.object({
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: any
 ) {
   try {
     // Get the staff invitation
@@ -100,7 +100,7 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: any
 ) {
   try {
     const body = await req.json()

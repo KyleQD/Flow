@@ -3,9 +3,9 @@
 import type React from "react"
 
 import { useState } from "react"
-import { PageHeader } from "@/components/navigation/page-header"
-import { FeatureTabs } from "@/components/navigation/feature-tabs"
-import { QuickAccess } from "@/components/navigation/quick-access"
+import { PageHeader } from "../navigation/page-header"
+import { FeatureTabs } from "../navigation/feature-tabs"
+import { QuickAccess } from "../navigation/quick-access"
 import { BarChart3, Calendar, Clock, Users, Music, Building, Briefcase } from "lucide-react"
 
 interface DashboardLayoutProps {

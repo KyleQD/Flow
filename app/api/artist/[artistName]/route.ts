@@ -3,12 +3,11 @@ import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ artistName: string }> }
+  { params }: any
 ) {
   try {
     const authResult = await authenticateApiRequest(request)
-    const resolvedParams = await params
-    const artistName = decodeURIComponent(resolvedParams.artistName)
+    const artistName = decodeURIComponent(params.artistName)
 
     console.log('[Artist API] Fetching artist profile for artist name:', artistName)
 
@@ -117,10 +116,33 @@ export async function GET(
         .select('likes_count')
         .eq('user_id', mainProfile.id)
 
-      stats.likes = posts?.reduce((sum, post) => sum + (post.likes_count || 0), 0) || 0
+      stats.likes = posts?.reduce((sum: number, post: any) => sum + (post.likes_count || 0), 0) || 0
     } catch (error) {
       console.log('[Artist API] Could not fetch likes data')
     }
+
+    // Load public content: portfolio (music/video preferred), experiences, certifications, top skills
+    let portfolio: any[] = []
+    let experiences: any[] = []
+    let certifications: any[] = []
+    let topSkills: Array<{ name: string; endorsed_count: number }> = []
+
+    try {
+      const [{ data: portfolioRows }, { data: expRows }, { data: certRows }, { data: endorsements }, { data: top }] = await Promise.all([
+        supabase.from('portfolio_items').select('*').eq('user_id', mainProfile.id).eq('is_public', true).order('order_index', { ascending: true }),
+        supabase.from('profile_experiences').select('*').eq('user_id', mainProfile.id).eq('is_visible', true).order('order_index', { ascending: true }),
+        supabase.from('profile_certifications').select('*').eq('user_id', mainProfile.id).eq('is_public', true).order('issue_date', { ascending: false }),
+        supabase.from('skill_endorsements').select('skill').eq('endorsed_id', mainProfile.id),
+        supabase.from('profiles').select('top_skills').eq('id', mainProfile.id).single()
+      ])
+      portfolio = (portfolioRows || []).filter((it: any) => ['music','video','link','text','image'].includes(it.type || ''))
+      experiences = expRows || []
+      certifications = certRows || []
+      const countMap: Record<string, number> = {}
+      ;(endorsements || []).forEach((e: any) => { countMap[e.skill] = (countMap[e.skill] || 0) + 1 })
+      const topList: string[] = (top as any)?.top_skills || []
+      topSkills = topList.map(name => ({ name, endorsed_count: countMap[name] || 0 }))
+    } catch {}
 
     // Build the artist profile response
     const profileWithStats = {
@@ -156,7 +178,7 @@ export async function GET(
 
     console.log('[Artist API] Returning artist profile with stats')
 
-    return NextResponse.json({ profile: profileWithStats })
+    return NextResponse.json({ profile: profileWithStats, portfolio, experiences, certifications, top_skills: topSkills })
   } catch (error) {
     console.error('[Artist API] Error:', error)
     return NextResponse.json(

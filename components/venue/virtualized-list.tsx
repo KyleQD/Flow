@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState, useRef, useEffect, useCallback } from "react"
+import React, { useState, useRef, useEffect, useCallback } from "react"
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
 
 interface VirtualizedListProps<T> {
@@ -26,7 +25,8 @@ export function VirtualizedList<T>({
   const containerRef = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [containerHeight, setContainerHeight] = useState(0)
-  const [endRef, isEndVisible] = useIntersectionObserver<HTMLDivElement>({
+  const endRef = React.useRef<HTMLDivElement>(null)
+  const isEndVisible = useIntersectionObserver(endRef, {
     threshold: endReachedThreshold,
   })
 

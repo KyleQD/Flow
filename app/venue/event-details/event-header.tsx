@@ -1,12 +1,13 @@
 "use client"
 
-import type { Event } from "@/types/events"
+import type { Event } from "@/app/types/events.types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, Clock, Edit2Icon, Trash2Icon } from "lucide-react"
 import { format } from "date-fns"
 import { useState } from "react"
 import { CreateEventModal } from "../components/events/create-event-modal"
+import { DeleteEventDialog } from "../components/event-details/delete-event-dialog"
 
 interface EventHeaderProps {
   event: Event
@@ -52,10 +53,10 @@ export default function EventHeader({ event }: EventHeaderProps) {
     <>
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{event.title}</h1>
+          <h1 className="text-2xl font-bold">{event.name}</h1>
           <div className="flex items-center gap-2 text-muted-foreground mt-1">
             <CalendarIcon className="h-4 w-4" />
-            <span>{format(new Date(event.date), "EEEE, MMMM d, yyyy")}</span>
+            <span>{format(new Date(event.date || event.start_date), "EEEE, MMMM d, yyyy")}</span>
             <Clock className="h-4 w-4 ml-2" />
             <span>
               {event.startTime} - {event.endTime}
@@ -76,10 +77,8 @@ export default function EventHeader({ event }: EventHeaderProps) {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Badge className={getStatusColor(event.status)}>{event.status}</Badge>
-        <Badge className={getTypeColor(event.type)}>{event.type}</Badge>
-        {event.isPublic && <Badge variant="outline">Public Event</Badge>}
-        {!event.isPublic && <Badge variant="outline">Private Event</Badge>}
+        <Badge className={getStatusColor(event.status || 'pending')}>{event.status || 'Pending'}</Badge>
+        <Badge className={getTypeColor(event.type || 'other')}>{event.type || 'Other'}</Badge>
       </div>
 
       {showEditModal && (

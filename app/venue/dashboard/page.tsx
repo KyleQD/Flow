@@ -1,5 +1,8 @@
 "use client"
 
+// Prevent pre-rendering since this page requires profile context
+export const dynamic = 'force-dynamic'
+
 import type React from "react"
 
 import { useState } from "react"

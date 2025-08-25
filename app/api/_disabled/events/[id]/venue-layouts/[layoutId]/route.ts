@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/supabase/auth"
 import { unlink } from "fs/promises"
 import { join } from "path"
 
 export async function DELETE(
   req: Request,
-  { params }: { params: Promise<{ id: string; layoutId: string }> }
+  { params }: { params: { id: string; layoutId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -18,11 +18,12 @@ export async function DELETE(
       )
     }
 
-    // Get the layout to find the image path
-    const layout = await prisma.venueLayout.findUnique({
+    // Get the layout document to find the image path
+    const layout = await prisma.eventDocument.findFirst({
       where: {
         id: params.layoutId,
         eventId: params.id,
+        type: "layout",
       },
     })
 
@@ -34,15 +35,15 @@ export async function DELETE(
     }
 
     // Delete the image file
-    const imagePath = join(process.cwd(), "public", layout.imageUrl)
+    const imagePath = join(process.cwd(), "public", layout.url)
     try {
       await unlink(imagePath)
     } catch (error) {
       console.error("Error deleting image file:", error)
     }
 
-    // Delete the layout from the database
-    await prisma.venueLayout.delete({
+    // Delete the layout document from the database
+    await prisma.eventDocument.delete({
       where: {
         id: params.layoutId,
       },

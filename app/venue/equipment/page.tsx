@@ -117,7 +117,11 @@ export default function EquipmentPage() {
     try {
       setIsLoading(true)
       const equipmentData = await venueService.getVenueEquipment(venue.id)
-      setEquipment(equipmentData)
+      setEquipment(equipmentData.map(item => ({
+        ...item,
+        description: item.description || '',
+        condition: item.condition || 'good'
+      })))
     } catch (error) {
       console.error('Error fetching equipment:', error)
     toast({

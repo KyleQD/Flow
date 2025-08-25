@@ -12,10 +12,7 @@ const prisma = new PrismaClient()
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('STRIPE_SECRET_KEY is not set in environment variables')
 }
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-04-10', // Use the latest API version
-  typescript: true,
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 // Define your action client if you're using next-safe-action
 // If not, you'd export plain async functions.
@@ -43,16 +40,17 @@ interface CreateTicketTypeOutput {
   error?: string
 }
 
-export const createTicketTypeAction = action(
-  CreateTicketTypeSchema,
-  async ({
-    eventId,
-    name,
-    price,
-    currency = 'usd',
-    quantity,
-    requiresRegistration = false,
-  }): Promise<CreateTicketTypeOutput> => {
+export const createTicketTypeAction = action
+  .schema(CreateTicketTypeSchema)
+  .action(async ({ parsedInput }): Promise<CreateTicketTypeOutput> => {
+    const {
+      eventId,
+      name,
+      price,
+      currency = 'usd',
+      quantity,
+      requiresRegistration = false,
+    } = parsedInput
     try {
       const event = await prisma.event.findUnique({
         where: { id: eventId },
@@ -104,17 +102,16 @@ export const createTicketTypeAction = action(
       console.error('Error creating ticket type:', error)
       // Basic error handling. In a real app, you might try to clean up Stripe entities
       // if the DB operation fails, or use a more robust transactional pattern.
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        // Handle specific Prisma errors
-        return { success: false, error: `Database error: ${error.message}` }
+      // Handle Prisma-like errors without depending on class types
+      if ((error as any)?.code && (error as any)?.message) {
+        return { success: false, error: `Database error: ${(error as any).message}` }
       }
       if (error.type && error.type.startsWith('Stripe')) { // Check if it's a Stripe error
         return { success: false, error: `Stripe error: ${error.message}` }
       }
       return { success: false, error: 'An unexpected error occurred.' }
     }
-  }
-)
+  })
 
 // TODO:
 // - updateTicketTypeAction:

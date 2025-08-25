@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/supabase/auth"
 
 export async function DELETE(
   req: Request,
-  { params }: { params: Promise<{ id: string; skillId: string }> }
+  { params }: { params: { id: string; skillId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)

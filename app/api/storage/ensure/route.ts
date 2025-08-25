@@ -4,8 +4,7 @@ import { cookies } from 'next/headers'
 
 export async function POST(_req: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ cookies })
 
     // Check if buckets exist by trying to list them
     const { data: musicBucket } = await supabase.storage.getBucket('artist-music')

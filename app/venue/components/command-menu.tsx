@@ -10,7 +10,7 @@ import {
   CommandSeparator,
   CommandDialog,
 } from "@/components/ui/command"
-import { useCommandMenu } from "@/hooks/use-command-menu"
+import { useCommandMenu } from "@/hooks/venue/use-command-menu"
 import dynamic from "next/dynamic"
 
 // Dynamically import all Lucide icons

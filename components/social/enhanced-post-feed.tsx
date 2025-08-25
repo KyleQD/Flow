@@ -11,7 +11,7 @@ import { PostItem } from "./post-item"
 import { PostCreator } from "./post-creator"
 import { RefreshCw, ArrowUp } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { useIntersectionObserver } from "@/hooks/use-intersection-observer"
+import { useInView } from "react-intersection-observer"
 import { cn } from "@/lib/utils"
 import { PostFeedProps } from "./types"
 
@@ -27,7 +27,7 @@ export function EnhancedPostFeed({ userId, filter = "all", showPostCreator = tru
   const [showScrollTop, setShowScrollTop] = useState(false)
 
   // Ref for infinite scrolling
-  const [loadMoreRef, isLoadMoreVisible] = useIntersectionObserver({
+  const [loadMoreRef, isLoadMoreVisible] = useInView({
     threshold: 0.5,
     rootMargin: "100px",
   })
@@ -237,10 +237,10 @@ export function EnhancedPostFeed({ userId, filter = "all", showPostCreator = tru
                   <PostItem
                     post={post}
                     user={user}
-                    onLike={() => {}}
-                    onUnlike={() => {}}
-                    onComment={() => {}}
-                    onShare={() => {}}
+                    onLike={async () => {}}
+                    onUnlike={async () => {}}
+                    onComment={async () => {}}
+                    onShare={async () => {}}
                     isLiked={currentUser ? post.likes.includes(currentUser.id) : false}
                   />
                 </motion.div>
@@ -252,7 +252,7 @@ export function EnhancedPostFeed({ userId, filter = "all", showPostCreator = tru
         {!loadingPosts && hasMore && (
           <div ref={loadMoreRef} className="flex justify-center py-4">
             {isLoadingMore ? (
-              <LoadingSpinner size="lg" />
+              <LoadingSpinner />
             ) : (
               <Button
                 variant="outline"

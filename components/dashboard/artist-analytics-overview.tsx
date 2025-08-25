@@ -527,29 +527,29 @@ export function ArtistAnalyticsOverview({
                 <>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Listeners</span>
-                    <span className="text-white">{stats.listeners?.toLocaleString()}</span>
+                    <span className="text-white">{('listeners' in stats ? stats.listeners : 0)?.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Streams</span>
-                    <span className="text-white">{stats.streams?.toLocaleString()}</span>
+                    <span className="text-white">{('streams' in stats ? stats.streams : 0)?.toLocaleString()}</span>
                   </div>
                 </>
               ) : platform === 'youtube' ? (
                 <>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Subscribers</span>
-                    <span className="text-white">{stats.subscribers?.toLocaleString()}</span>
+                    <span className="text-white">{('subscribers' in stats ? stats.subscribers : 0)?.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Views</span>
-                    <span className="text-white">{stats.views?.toLocaleString()}</span>
+                    <span className="text-white">{('views' in stats ? stats.views : 0)?.toLocaleString()}</span>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Followers</span>
-                    <span className="text-white">{stats.followers?.toLocaleString()}</span>
+                    <span className="text-white">{('followers' in stats ? stats.followers : 0)?.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">
@@ -557,8 +557,8 @@ export function ArtistAnalyticsOverview({
                     </span>
                     <span className="text-white">
                       {platform === 'instagram' 
-                        ? `${stats.engagement}%` 
-                        : stats.views?.toLocaleString()
+                        ? `${('engagement' in stats ? stats.engagement : 0)}%` 
+                        : ('views' in stats ? stats.views : 0)?.toLocaleString()
                       }
                     </span>
                   </div>

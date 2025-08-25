@@ -300,14 +300,14 @@ export function RobustPostCreator({
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user?.avatar_url} />
+            <AvatarImage src={user?.user_metadata?.avatar_url} />
             <AvatarFallback className="bg-purple-600 text-white">
-              {user?.username?.charAt(0).toUpperCase() || 'U'}
+              {user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U'}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1">
-            <div className="font-medium text-white">{user?.username || 'User'}</div>
+            <div className="font-medium text-white">{user?.user_metadata?.username || user?.email || 'User'}</div>
             <div className="text-sm text-gray-400">
               {postData.scheduledFor ? 'Scheduled post' : 'Create a post'}
             </div>

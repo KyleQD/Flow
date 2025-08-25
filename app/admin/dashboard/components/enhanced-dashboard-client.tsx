@@ -229,7 +229,7 @@ export default function EnhancedDashboardClient() {
               </div>
             )}
             {!tasksLoading && tasksError && (
-              <EmptyState icon={AlertCircle} title="Failed to load tasks" subtitle={tasksError} actionLabel="Retry" onAction={() => location.reload()} />
+              <EmptyState icon={AlertCircle} title="Failed to load tasks" subtitle={tasksError} actionLabel="Retry" onAction={() => window.location.reload()} />
             )}
             {!tasksLoading && !tasksError && upcomingTasks.length === 0 && (
               <EmptyState icon={CheckCircle} title="No tasks for this range" subtitle="Great job!" actionLabel="Create task" onAction={() => (window.location.href = '/admin/dashboard/staff/tasks/new')} />
@@ -274,7 +274,7 @@ export default function EnhancedDashboardClient() {
               </div>
             )}
             {!threadsLoading && threadsError && (
-              <EmptyState icon={AlertCircle} title="Failed to load messages" subtitle={threadsError} actionLabel="Retry" onAction={() => location.reload()} />
+              <EmptyState icon={AlertCircle} title="Failed to load messages" subtitle={threadsError} actionLabel="Retry" onAction={() => window.location.reload()} />
             )}
             {!threadsLoading && !threadsError && groupMessages.length === 0 && (
               <EmptyState icon={MessageSquare} title="No recent group messages" subtitle="Start a broadcast to reach your team" actionLabel="Broadcast" onAction={() => (window.location.href = '/admin/dashboard/messages/new')} />

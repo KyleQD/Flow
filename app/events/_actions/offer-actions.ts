@@ -12,14 +12,14 @@ const createOfferSchema = z.object({
   terms: z.record(z.any()).default({})
 })
 
-export const createOfferAction = action(createOfferSchema, async (input) => {
+export const createOfferAction = action.schema(createOfferSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
 
   const { data, error } = await supabase
     .from('offers')
-    .insert({ event_id: input.eventId, currency: input.currency, terms: input.terms, created_by: user.user.id })
+    .insert({ event_id: parsedInput.eventId, currency: parsedInput.currency, terms: parsedInput.terms, created_by: user.user.id })
     .select('id')
     .single()
 
@@ -33,14 +33,14 @@ const addSignatureSchema = z.object({
   signerRole: z.string().min(3)
 })
 
-export const addSignatureAction = action(addSignatureSchema, async (input) => {
+export const addSignatureAction = action.schema(addSignatureSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
 
   const { error } = await supabase
     .from('signatures')
-    .insert({ offer_id: input.offerId, signer_email: input.signerEmail, signer_role: input.signerRole })
+    .insert({ offer_id: parsedInput.offerId, signer_email: parsedInput.signerEmail, signer_role: parsedInput.signerRole })
 
   if (error) return { ok: false, error: 'create_failed' }
   return { ok: true }

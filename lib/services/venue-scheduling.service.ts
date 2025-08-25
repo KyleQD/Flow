@@ -151,7 +151,7 @@ export class VenueSchedulingService {
     const newShiftData: CreateShiftData = {
       ...shiftData,
       shift_date: newDate,
-      staff_assigned: 0,
+      event_id: event_id || '',
       created_by
     }
 
@@ -417,14 +417,19 @@ export class VenueSchedulingService {
     // Update the shift assignments
     await this.updateAssignmentStatus(
       swap.original_shift_id,
-      'cancelled',
+      AssignmentStatus.CANCELLED,
       { notes: 'Cancelled due to shift swap' }
     )
 
     await this.assignStaffToShift({
       shift_id: swap.original_shift_id,
       staff_member_id: swap.requested_staff_id,
-      assigned_by: approvedBy
+      assigned_by: approvedBy,
+      notes: '',
+      confirmed_at: null,
+      decline_reason: null,
+      assignment_status: AssignmentStatus.ASSIGNED,
+      declined_at: null
     })
 
     return updatedSwap
@@ -538,7 +543,12 @@ export class VenueSchedulingService {
       await this.assignStaffToShift({
         shift_id: request.shift_id,
         staff_member_id: request.staff_member_id,
-        assigned_by: approvedBy
+        assigned_by: approvedBy,
+        notes: '',
+        confirmed_at: null,
+        decline_reason: null,
+        assignment_status: AssignmentStatus.ASSIGNED,
+        declined_at: null
       })
     }
 
@@ -748,21 +758,27 @@ export class VenueSchedulingService {
 
     // Check for overlapping shifts
     const existingAssignments = await this.getShiftAssignmentsByStaff(staffMemberId)
-    const overlappingShifts = existingAssignments.filter(assignment => {
-      const assignmentShift = this.getShiftById(assignment.shift_id)
-      if (!assignmentShift) return false
+    const overlappingShifts = await Promise.all(
+      existingAssignments.map(async assignment => {
+        const assignmentShift = await this.getShiftById(assignment.shift_id)
+        if (!assignmentShift) return null
 
-      return (
-        assignmentShift.shift_date === shift.shift_date &&
-        assignmentShift.shift_status !== 'cancelled' &&
-        assignment.assignment_status !== 'cancelled' &&
-        (
-          (assignmentShift.start_time < shift.end_time && assignmentShift.end_time > shift.start_time)
+        const hasOverlap = (
+          assignmentShift.shift_date === shift.shift_date &&
+          assignmentShift.shift_status !== 'cancelled' &&
+          assignment.assignment_status !== 'cancelled' &&
+          (
+            (assignmentShift.start_time < shift.end_time && assignmentShift.end_time > shift.start_time)
+          )
         )
-      )
-    })
 
-    if (overlappingShifts.length > 0) {
+        return hasOverlap ? assignment : null
+      })
+    )
+
+    const validOverlappingShifts = overlappingShifts.filter(Boolean)
+
+    if (validOverlappingShifts.length > 0) {
       conflicts.push({
         shift_id: shiftId,
         staff_member_id: staffMemberId,
@@ -854,7 +870,12 @@ export class VenueSchedulingService {
         const assignment = await this.assignStaffToShift({
           shift_id: shiftId,
           staff_member_id: staff.id,
-          assigned_by: 'system'
+          assigned_by: 'system',
+          notes: '',
+          confirmed_at: null,
+          decline_reason: null,
+          assignment_status: AssignmentStatus.ASSIGNED,
+          declined_at: null
         })
         assignments.push(assignment)
       }

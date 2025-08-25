@@ -16,11 +16,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { useProfile } from "../../context/profile-context"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar, Clock, DollarSign, MapPin, Upload, Users } from "lucide-react"
-import type { EventData } from "@/lib/types"
-import { CreateEventModal } from "@/venue/components/events/create-event-modal"
+import type { EventData } from "@/lib/services/artist.service"
+import { artistService } from "@/lib/services/artist.service"
 
 interface CreateEventModalProps {
   isOpen: boolean
@@ -28,18 +27,17 @@ interface CreateEventModalProps {
 }
 
 export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
-  const { createEvent } = useProfile()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState<EventData>({
-    title: "",
+    name: "",
     description: "",
-    startDate: "",
-    endDate: "",
+    date: "",
     location: "",
     venue: "",
-    isPublic: true,
     capacity: 0,
+    status: "draft",
+    type: "concert",
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -59,7 +57,7 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.title.trim() || !formData.startDate || !formData.venue) {
+    if (!formData.name.trim() || !formData.date || !formData.venue) {
       toast({
         title: "Missing required fields",
         description: "Please fill in all required fields.",
@@ -71,23 +69,24 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
     setIsSubmitting(true)
 
     try {
-      const success = await createEvent(formData)
+      const result = await artistService.createEvent(formData)
+      const success = result.success
 
       if (success) {
         toast({
           title: "Event created",
-          description: `Your event "${formData.title}" has been created successfully.`,
+          description: `Your event "${formData.name}" has been created successfully.`,
         })
         onClose()
         setFormData({
-          title: "",
+          name: "",
           description: "",
-          startDate: "",
-          endDate: "",
+          date: "",
           location: "",
           venue: "",
-          isPublic: true,
           capacity: 0,
+          status: "draft",
+          type: "concert",
         })
       }
     } catch (error) {
@@ -114,11 +113,11 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Event Title*</Label>
+            <Label htmlFor="name">Event Name*</Label>
             <Input
-              id="title"
-              name="title"
-              value={formData.title}
+              id="name"
+              name="name"
+              value={formData.name}
               onChange={handleChange}
               placeholder="Enter event title"
               className="bg-gray-800 border-gray-700"
@@ -140,14 +139,14 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date & Time*</Label>
+              <Label htmlFor="date">Event Date & Time*</Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
-                  id="startDate"
-                  name="startDate"
+                  id="date"
+                  name="date"
                   type="datetime-local"
-                  value={formData.startDate}
+                  value={formData.date}
                   onChange={handleChange}
                   className="bg-gray-800 border-gray-700 pl-10"
                   required
@@ -155,23 +154,6 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="endDate">End Date & Time</Label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="endDate"
-                  name="endDate"
-                  type="datetime-local"
-                  value={formData.endDate}
-                  onChange={handleChange}
-                  className="bg-gray-800 border-gray-700 pl-10"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="venue">Venue*</Label>
               <div className="relative">
@@ -187,7 +169,9 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
                 />
               </div>
             </div>
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="location">Location</Label>
               <div className="relative">
@@ -223,30 +207,22 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ticketPrice">Ticket Price</Label>
+              <Label htmlFor="ticket_price">Ticket Price</Label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
-                  id="ticketPrice"
-                  name="ticketPrice"
+                  id="ticket_price"
+                  name="ticket_price"
                   type="number"
                   min="0"
                   step="0.01"
-                  value={formData.ticketPrice || ""}
+                  value={formData.ticket_price || ""}
                   onChange={handleNumberChange}
                   placeholder="0.00"
                   className="bg-gray-800 border-gray-700 pl-10"
                 />
               </div>
             </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="isPublic">Public Event</Label>
-              <p className="text-sm text-gray-400">Event will be visible on the heatmap</p>
-            </div>
-            <Switch id="isPublic" checked={formData.isPublic} onCheckedChange={handleSwitchChange} />
           </div>
 
           <div className="border border-dashed border-gray-700 rounded-lg p-6 text-center">

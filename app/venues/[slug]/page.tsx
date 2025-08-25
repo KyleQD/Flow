@@ -210,7 +210,8 @@ export default function VenueProfilePage() {
       instagram: Instagram,
       facebook: Facebook,
       twitter: Twitter,
-      tiktok: TikTok,
+      // Fallback icon for TikTok since no explicit TikTok icon is imported
+      tiktok: ExternalLink,
       youtube: Youtube,
       linkedin: Linkedin,
     }

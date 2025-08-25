@@ -44,14 +44,12 @@ import {
   Truck,
   Music
 } from 'lucide-react'
+import { PERMISSIONS } from '@/types/rbac'
 import type { 
   SystemRole, 
   Permission, 
   TourManagementRole, 
-  TourManagementPermission,
-  SYSTEM_ROLES,
-  PERMISSIONS,
-  PERMISSION_CATEGORIES
+  TourManagementPermission
 } from '@/types/rbac'
 
 // Permission category icons

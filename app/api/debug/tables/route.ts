@@ -14,11 +14,11 @@ export async function GET(request: NextRequest) {
       .limit(1)
 
     // Check what tables are available by testing common ones
-    const tableTests = {
+    const tableTests: { post_comments: string; posts: string; profiles: string; post_likes: string } = {
       post_comments: commentsError ? 'ERROR: ' + commentsError.message : 'EXISTS',
-      posts: null,
-      profiles: null,
-      post_likes: null
+      posts: 'UNKNOWN',
+      profiles: 'UNKNOWN',
+      post_likes: 'UNKNOWN'
     }
 
     // Test posts table
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Also test the structure of post_comments if it exists
-    let commentsStructure = null
+    let commentsStructure: string | string[] | null = null
     if (!commentsError) {
       try {
         const { data: sampleComment } = await supabase

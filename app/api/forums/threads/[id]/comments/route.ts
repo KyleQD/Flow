@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateApiRequest, withAuth } from '@/lib/auth/api-auth'
 
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: any) {
   try {
     const auth = await authenticateApiRequest(request)
     let supabase

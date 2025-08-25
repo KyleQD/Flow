@@ -55,7 +55,7 @@ export default function ApplyToJobPage() {
   }, [session])
 
   // Fetch job details
-  useState(() => {
+  useEffect(() => {
     const fetchJob = async () => {
       try {
         const response = await fetch(`/api/jobs/${params.id}`)
@@ -257,7 +257,7 @@ export default function ApplyToJobPage() {
               </div>
             </div>
 
-            {session.user.id === job?.userId && (
+            {session?.user && (session.user as any).id === (job as any)?.userId && (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Hire Applicant</h3>
                 <div className="grid gap-4">

@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     console.log('[Feed Blogs API] Found blog posts:', posts?.length || 0)
 
     // Transform posts to match expected format
-    const transformedPosts = (posts || []).map(post => ({
+    const transformedPosts = (posts || []).map((post: any) => ({
       id: post.id,
       content: post.content,
       media_urls: post.media_urls,

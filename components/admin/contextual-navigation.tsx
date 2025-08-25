@@ -323,12 +323,12 @@ export function ContextualNavigation({ tourId, eventId, className = "" }: Contex
     if (currentTour) {
       breadcrumbs.push(
         { label: "Tours", href: "/admin/dashboard/tours", icon: Globe },
-        { label: currentTour.name, href: `/admin/dashboard/tours/${currentTour.id}`, icon: null }
+        { label: currentTour.name, href: `/admin/dashboard/tours/${currentTour.id}`, icon: Globe }
       )
     } else if (currentEvent) {
       breadcrumbs.push(
         { label: "Events", href: "/admin/dashboard/events", icon: Calendar },
-        { label: currentEvent.name, href: `/admin/dashboard/events/${currentEvent.id}`, icon: null }
+        { label: currentEvent.name, href: `/admin/dashboard/events/${currentEvent.id}`, icon: Calendar }
       )
     }
 

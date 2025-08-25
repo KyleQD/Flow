@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     const ticket_type_id = searchParams.get('ticket_type_id')
     const include_analytics = searchParams.get('include_analytics') === 'true'
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     if (action === 'event_tickets') {
       // Get all ticket types for an event with enhanced data
@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action, ...data } = body
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     if (action === 'purchase') {
       const validatedData = purchaseTicketSchema.parse(data)

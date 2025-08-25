@@ -2,7 +2,13 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useCallback } from "react"
-import type { Toast } from "@/hooks/use-toast"
+interface Toast {
+  id: string
+  title: string
+  description?: string
+  variant?: "default" | "destructive" | "success"
+  action?: React.ReactNode
+}
 
 interface ToastContextType {
   toasts: Toast[]

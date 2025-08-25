@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { ProfessionSelector } from "../../../components/profession-selector"
+import ProfessionSelector from "../../components/profession-selector"
 import { mockProfessions } from "../../../lib/mock-data"
-import type { UserProfession } from "@/lib/types"
+import type { UserProfession } from "@/lib/venue/types"
 import { useToast } from "@/hooks/use-toast"
 
 // Add this interface and mock data for placeholder

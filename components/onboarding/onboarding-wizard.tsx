@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -480,7 +480,7 @@ export default function OnboardingWizard({ candidateId, token, onComplete }: Onb
                         <div key={day} className="flex items-center space-x-2">
                           <Checkbox
                             id={day}
-                            {...register(`employment_info.availability.${day}`)}
+                            {...register(`employment_info.availability.${day}` as any)}
                           />
                           <Label htmlFor={day} className="text-slate-300 capitalize">
                             {day}
@@ -506,7 +506,7 @@ export default function OnboardingWizard({ candidateId, token, onComplete }: Onb
                         <div key={doc.key} className="flex items-center space-x-2">
                           <Checkbox
                             id={doc.key}
-                            {...register(`documents.${doc.key}`)}
+                            {...register(`documents.${doc.key}` as any)}
                           />
                           <Label htmlFor={doc.key} className="text-slate-300">
                             {doc.label}
@@ -605,7 +605,7 @@ export default function OnboardingWizard({ candidateId, token, onComplete }: Onb
                         <div key={ack.key} className="flex items-center space-x-2">
                           <Checkbox
                             id={ack.key}
-                            {...register(`acknowledgments.${ack.key}`)}
+                            {...register(`acknowledgments.${ack.key}` as any)}
                           />
                           <Label htmlFor={ack.key} className="text-slate-300">
                             {ack.label}

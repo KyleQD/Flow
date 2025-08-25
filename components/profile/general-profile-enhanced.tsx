@@ -471,13 +471,9 @@ export function GeneralProfileEnhanced({ profile, isOwnProfile = false, onFollow
                         <div key={skill.name} className="p-3 bg-white/5 rounded-xl">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-white font-medium">{skill.name}</span>
-                            <Badge className={cn("text-white text-xs", getSkillColor(skill.level))}>
-                              {skill.level}%
+                            <Badge className="text-white text-xs bg-white/10 border-white/20">
+                              {skill.endorsed_count || 0} endorsements
                             </Badge>
-                          </div>
-                          <Progress value={skill.level} className="h-2 bg-white/20" />
-                          <div className="text-xs text-white/60 mt-1">
-                            {skill.endorsed_count} endorsements
                           </div>
                         </div>
                       ))}
@@ -691,17 +687,11 @@ export function GeneralProfileEnhanced({ profile, isOwnProfile = false, onFollow
                             <div key={skill.name} className="p-4 bg-white/5 rounded-xl">
                               <div className="flex items-center justify-between mb-3">
                                 <span className="text-white font-medium">{skill.name}</span>
-                                <div className="flex items-center gap-2">
-                                  <Badge className={cn("text-white", getSkillColor(skill.level))}>
-                                    {skill.level}%
-                                  </Badge>
-                                  <div className="flex items-center gap-1 text-white/60">
-                                    <ThumbsUp className="h-3 w-3" />
-                                    <span className="text-xs">{skill.endorsed_count}</span>
-                                  </div>
-                                </div>
+                                <Badge className="text-white text-xs bg-white/10 border-white/20">
+                                  <ThumbsUp className="h-3 w-3 mr-1" />
+                                  {skill.endorsed_count || 0} endorsements
+                                </Badge>
                               </div>
-                              <Progress value={skill.level} className="h-3 bg-white/20" />
                             </div>
                           ))}
                         </div>

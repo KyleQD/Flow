@@ -1,6 +1,6 @@
 "use client"
 
-import type { Event } from "@/types/events"
+import type { Event } from "@/app/types/events.types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, Clock, Edit2Icon, Trash2Icon } from "lucide-react"

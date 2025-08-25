@@ -40,7 +40,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
 interface NavItemProps {
   href: string
-  icon: React.ElementType
+  icon: React.ComponentType<{ className?: string }>
   label: string
 }
 

@@ -86,6 +86,36 @@ const LogoAnimations = {
     .logo-breathe {
       animation: logoBreathe 4s ease-in-out infinite;
     }
+  `,
+  
+  particles: `
+    @keyframes logoPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+    .logo-particles {
+      animation: logoPulse 2s ease-in-out infinite;
+    }
+  `,
+  
+  waves: `
+    @keyframes logoPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+    .logo-waves {
+      animation: logoPulse 2s ease-in-out infinite;
+    }
+  `,
+  
+  orbit: `
+    @keyframes logoPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+    .logo-orbit {
+      animation: logoPulse 2s ease-in-out infinite;
+    }
   `
 }
 

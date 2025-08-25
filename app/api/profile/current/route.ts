@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
         full_name,
         bio,
         avatar_url,
+        cover_image,
         location,
         website,
         is_verified,
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
         .select('likes_count')
         .eq('user_id', profile.id)
 
-      stats.likes = posts?.reduce((sum, post) => sum + (post.likes_count || 0), 0) || 0
+      stats.likes = posts?.reduce((sum: number, post: any) => sum + (post.likes_count || 0), 0) || 0
     } catch (error) {
       console.log('[Profile Current API] Could not fetch likes data')
     }
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
         website: profile.website
       },
       avatar_url: profile.avatar_url,
-      cover_image: null,
+      cover_image: (profile as any).cover_image || (profile as any).header_url || null,
       verified: profile.is_verified,
       bio: profile.bio,
       location: profile.location,

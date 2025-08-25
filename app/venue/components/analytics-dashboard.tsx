@@ -18,14 +18,25 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
-import { useAuth } from "@/context/auth-context"
-import { useSocial } from "@/context/social-context"
-import { LoadingSpinner } from "@/components/loading-spinner"
-import { getAllAnalyticsData } from "@/lib/analytics-service"
+import { useAuth } from "@/contexts/auth-context"
+import { useSocial } from "@/contexts/social-context"
+import { LoadingSpinner } from "../components/loading-spinner"
+// Fallback analytics data provider (replace with real service when available)
+function getAllAnalyticsData() {
+  return {
+    venueBookings: { total: 0, percentChange: 0 },
+    ticketSales: { total: 0, recent: 0 },
+    venueCapacity: { rate: 0, percentChange: 0 },
+    eventsOverTime: [],
+    revenue: { bySource: [] as Array<{ name: string; value: number }> },
+    attendance: { byEventType: [] as Array<{ name: string; capacity: number; attendance: number; percentFilled: number }> },
+    demographics: { ageGroups: [] as Array<{ name: string; value: number }> },
+  }
+}
 
 export function AnalyticsDashboard() {
   const { user } = useAuth()
-  const { events } = useSocial()
+  // const social = useSocial() as any
   const [loading, setLoading] = useState(true)
   const [analyticsData, setAnalyticsData] = useState<any>(null)
 

@@ -5,13 +5,18 @@ import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Trash2, Move } from "lucide-react"
-import type { ProfileData } from "@/lib/types"
-import { ConfirmDialog } from "@/components/confirm-dialog"
+import { ConfirmDialog } from "./confirm-dialog"
+
+interface GalleryItem {
+  id: string
+  url: string
+  alt: string
+}
 
 interface DragDropGalleryProps {
-  items: ProfileData["gallery"]
+  items: GalleryItem[]
   onRemove: (id: string) => void
-  onReorder: (newOrder: ProfileData["gallery"]) => void
+  onReorder: (newOrder: GalleryItem[]) => void
 }
 
 export function DragDropGallery({ items, onRemove, onReorder }: DragDropGalleryProps) {

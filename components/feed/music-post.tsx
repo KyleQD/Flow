@@ -78,9 +78,9 @@ export function MusicPost({
   className = ''
 }: MusicPostProps) {
   const [isLiked, setIsLiked] = useState(false)
-  const [likesCount, setLikesCount] = useState(post.metadata?.likes_count || 0)
-  const [commentsCount, setCommentsCount] = useState(post.metadata?.comments_count || 0)
-  const [sharesCount, setSharesCount] = useState(post.metadata?.shares_count || 0)
+  const [likesCount, setLikesCount] = useState(0)
+  const [commentsCount, setCommentsCount] = useState(0)
+  const [sharesCount, setSharesCount] = useState(0)
 
   const handleLike = async () => {
     try {

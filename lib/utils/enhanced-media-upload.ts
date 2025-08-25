@@ -232,7 +232,8 @@ export async function uploadMediaFiles(options: UploadOptions): Promise<UploadRe
       // Create thumbnail for video
       let thumbnailUrl: string | undefined
       if (type === 'video') {
-        thumbnailUrl = await createThumbnail(file, type)
+        const thumbnail = await createThumbnail(file, type)
+        thumbnailUrl = thumbnail || undefined
       }
 
       // Update progress

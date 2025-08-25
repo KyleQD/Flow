@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { LoadingSpinner } from "@/components/loading-spinner"
-import { useSocial } from "@/context/social-context"
-import { useAuth } from "@/context/auth-context"
+import { LoadingSpinner } from "../loading-spinner"
+import { useSocial } from "@/contexts/social-context"
+import { useAuth } from "@/contexts/auth-context"
 import { useInView } from "react-intersection-observer"
 import { motion, AnimatePresence } from "framer-motion"
 import { TrendingUp, Clock, Star, Users } from "lucide-react"
@@ -34,7 +34,7 @@ interface EnhancedFeedProps {
 
 export function EnhancedFeed({ initialTab = "trending", showTabs = true, className = "" }: EnhancedFeedProps) {
   const { user: currentUser } = useAuth()
-  const { posts, users, loadMorePosts } = useSocial()
+  const social = useSocial() as any
   const [activeTab, setActiveTab] = useState(initialTab)
   const [isLoading, setIsLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
@@ -70,7 +70,7 @@ export function EnhancedFeed({ initialTab = "trending", showTabs = true, classNa
       try {
         // In a real app, this would be an API call
         await new Promise((resolve) => setTimeout(resolve, 1000))
-        const filtered = filterPosts(posts)
+        const filtered = filterPosts(social.posts || [])
         setFeedPosts(filtered)
         setHasMore(filtered.length >= 10)
       } catch (error) {
@@ -81,7 +81,7 @@ export function EnhancedFeed({ initialTab = "trending", showTabs = true, classNa
     }
 
     loadInitialPosts()
-  }, [posts, filterPosts])
+  }, [social.posts, filterPosts])
 
   // Handle infinite scroll
   useEffect(() => {
@@ -89,7 +89,7 @@ export function EnhancedFeed({ initialTab = "trending", showTabs = true, classNa
       const loadMore = async () => {
         setIsLoading(true)
         try {
-          const newPosts = await loadMorePosts()
+          const newPosts = await (social.loadMorePosts ? social.loadMorePosts() : Promise.resolve([]))
           if (newPosts.length === 0) {
             setHasMore(false)
           } else {
@@ -105,11 +105,11 @@ export function EnhancedFeed({ initialTab = "trending", showTabs = true, classNa
 
       loadMore()
     }
-  }, [inView, isLoading, hasMore, loadMorePosts, filterPosts])
+  }, [inView, isLoading, hasMore, social.loadMorePosts, filterPosts])
 
   // Get user by ID
   const getUserById = (userId: string) => {
-    return users.find((u) => u.id === userId)
+    return (social.users || []).find((u: any) => u.id === userId)
   }
 
   // Loading state

@@ -43,6 +43,7 @@ interface Announcement {
   venue_id?: string
   expires_at?: string
   is_published: boolean
+  acknowledgment_required?: boolean
   created_by: string
   created_at: string
   created_by_profile?: {

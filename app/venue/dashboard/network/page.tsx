@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useAuth } from "../../../context/auth-context"
+import { useAuth } from "../../context/auth-context"
 import { Users, UserPlus, UserCheck } from "lucide-react"
 import { LoadingSpinner } from "../../components/loading-spinner"
 import { useRouter } from "next/navigation"
@@ -13,16 +13,16 @@ import { AdvancedSearch } from "../../components/advanced-search"
 // Prevent pre-rendering since this page requires authentication
 export const dynamic = 'force-dynamic'
 
-interface User {
-  id: string
-  name: string
-  email: string
+interface SimpleUser { 
+  id: string; 
+  username?: string; 
+  full_name?: string 
 }
 
 export default function NetworkPage() {
   const { user } = useAuth()
   const router = useRouter()
-  const [searchResults, setSearchResults] = useState<User[]>([])
+  const [searchResults, setSearchResults] = useState<SimpleUser[]>([])
 
   if (!user) {
     router.push("/login")
@@ -65,7 +65,17 @@ export default function NetworkPage() {
                   {searchResults.map((user) => (
                     <UserCard
                       key={user.id}
-                      user={user}
+                      user={{
+                        id: user.id,
+                        fullName: user.full_name || user.username || 'Unknown User',
+                        username: user.username || 'unknown',
+                        avatar: '',
+                        title: '',
+                        location: '',
+                        email: '',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                      }}
                       // In a real app, you would check if the user is connected or has a pending request
                       isConnected={false}
                       isPending={false}

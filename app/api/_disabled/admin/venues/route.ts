@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data for frontend
-    const transformedVenues = venues?.map(venue => ({
+    const transformedVenues = (venues || []).map((venue: any) => ({
       id: venue.id,
       name: venue.venue_name,
       description: venue.description,

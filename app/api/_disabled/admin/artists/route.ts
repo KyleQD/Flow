@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data for frontend
-    const transformedArtists = artists?.map(artist => ({
+    const transformedArtists = (artists ?? []).map((artist: any) => ({
       id: artist.id,
       name: artist.artist_name,
       bio: artist.bio,

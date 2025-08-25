@@ -27,8 +27,8 @@ import { PlatformOverviewStep } from "./steps/platform-overview-step"
 import { FirstTourCreationStep } from "./steps/first-tour-creation-step"
 import { EventManagementStep } from "./steps/event-management-step"
 import { TeamSetupStep } from "./steps/team-setup-step"
-import { AnalyticsTrainingStep } from "./steps/analytics-training-step"
-import { CompletionStep } from "./steps/completion-step"
+
+
 
 interface OnboardingWizardProps {
   onComplete?: () => void
@@ -43,7 +43,7 @@ export function OnboardingWizard({ onComplete, onCancel }: OnboardingWizardProps
   const [progress, setProgress] = useState({
     current_step: 1,
     total_steps: 7,
-    completed_steps: [],
+    completed_steps: [] as number[],
     progress_percentage: 0,
     is_completed: false
   })
@@ -154,9 +154,11 @@ export function OnboardingWizard({ onComplete, onCancel }: OnboardingWizardProps
       case 5:
         return <TeamSetupStep onNext={handleNext} />
       case 6:
-        return <AnalyticsTrainingStep onNext={handleNext} />
-      case 7:
-        return <CompletionStep onComplete={onComplete} />
+        return <div className="text-center p-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Onboarding Complete!</h2>
+          <p className="text-slate-400 mb-6">You're all set to start managing your tours and events.</p>
+          <Button onClick={onComplete}>Get Started</Button>
+        </div>
       default:
         return <div>Step not found</div>
     }

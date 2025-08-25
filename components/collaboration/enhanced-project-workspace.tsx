@@ -50,7 +50,7 @@ import {
   Headphones,
   Mic,
   Music,
-  Waveform
+  BarChart3
 } from "lucide-react"
 import { formatDistanceToNow, format } from "date-fns"
 

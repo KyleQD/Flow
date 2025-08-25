@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, FileText, HelpCircle, LogOut, Moon, Settings, Sun, User, Users } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useProfile } from "@/context/profile-context"
+import { useProfile } from "@/context/venue/profile-context"
 
 export function UserMenu() {
   const router = useRouter()

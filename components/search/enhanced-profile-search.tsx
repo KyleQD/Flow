@@ -281,9 +281,9 @@ export function EnhancedProfileSearch({
   const toggleArrayFilter = (key: keyof SearchFilters, value: string) => {
     setFilters(prev => ({
       ...prev,
-      [key]: prev[key].includes(value) 
+      [key]: Array.isArray(prev[key]) && prev[key].includes(value) 
         ? prev[key].filter(item => item !== value)
-        : [...prev[key], value]
+        : [...(Array.isArray(prev[key]) ? prev[key] : []), value]
     }))
   }
 

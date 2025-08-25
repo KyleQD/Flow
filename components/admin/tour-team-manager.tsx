@@ -81,7 +81,7 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
       role: member.role,
       email: member.email,
       phone: member.phone || '',
-      status: member.status,
+      status: member.status as "pending",
       arrival_date: member.arrival_date || '',
       departure_date: member.departure_date || '',
       responsibilities: member.responsibilities || ''

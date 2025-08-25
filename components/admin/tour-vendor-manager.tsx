@@ -83,10 +83,10 @@ export function TourVendorManager({ tourId, vendors, onVendorsUpdate }: TourVend
       contact_name: vendor.contact_name,
       contact_email: vendor.contact_email,
       contact_phone: vendor.contact_phone || '',
-      status: vendor.status,
+      status: vendor.status as "pending",
       services: vendor.services,
       contract_amount: vendor.contract_amount || 0,
-      payment_status: vendor.payment_status,
+      payment_status: vendor.payment_status as "pending",
       notes: vendor.notes || ''
     })
     setIsEditDialogOpen(true)

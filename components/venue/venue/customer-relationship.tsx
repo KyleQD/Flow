@@ -323,8 +323,8 @@ export function CustomerRelationship() {
                               variant="outline"
                               className={getCustomerTypeColor(getCustomer(selectedCustomer)?.type || "")}
                             >
-                              {getCustomer(selectedCustomer)?.type.charAt(0).toUpperCase() +
-                                getCustomer(selectedCustomer)?.type.slice(1)}
+                              {(getCustomer(selectedCustomer)?.type || "").charAt(0).toUpperCase() +
+                                (getCustomer(selectedCustomer)?.type || "").slice(1)}
                             </Badge>
                           </div>
                         </div>
@@ -479,7 +479,7 @@ export function CustomerRelationship() {
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium">{customer?.name}</h4>
                             <Badge variant="outline" className={getCustomerTypeColor(customer?.type || "")}>
-                              {customer?.type.charAt(0).toUpperCase() + customer?.type.slice(1)}
+                              {(customer?.type || "").charAt(0).toUpperCase() + (customer?.type || "").slice(1)}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-2">

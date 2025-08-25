@@ -27,20 +27,16 @@ export default function DocumentsPage() {
       <PageHeader
         title="Documents"
         description="Manage your contracts, riders, and other documents"
-        breadcrumbs={[
-          { label: "Resources", href: "/resources" },
-          { label: "Documents", href: "/documents" },
-        ]}
         actions={
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            <span>Upload Document</span>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Upload Document
           </Button>
         }
       />
 
       <div className="flex items-center justify-between">
-        <FeatureTabs tabs={tabs} defaultTab="all" className="flex-1" />
+        <FeatureTabs />
         <div className="relative w-64">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input type="search" placeholder="Search documents..." className="pl-8 bg-muted/50 border-muted" />

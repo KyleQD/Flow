@@ -13,17 +13,17 @@ const createScheduleSchema = z.object({
   name: z.string().min(2)
 })
 
-export const createScheduleAction = action(createScheduleSchema, async (input) => {
+export const createScheduleAction = action.schema(createScheduleSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
   const { data, error } = await supabase
     .from('schedules')
-    .insert({ event_id: input.eventId, date: input.date, name: input.name })
+    .insert({ event_id: parsedInput.eventId, date: parsedInput.date, name: parsedInput.name })
     .select('id')
     .single()
   if (error) return { ok: false, error: 'create_failed' }
-  revalidatePath(`/events/${input.eventId}/schedule`)
+  revalidatePath(`/events/${parsedInput.eventId}/schedule`)
   return { ok: true, scheduleId: data.id }
 })
 
@@ -38,12 +38,12 @@ const addItemsSchema = z.object({
   })).min(1)
 })
 
-export const addScheduleItemsAction = action(addItemsSchema, async (input) => {
+export const addScheduleItemsAction = action.schema(addItemsSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
-  const rows = input.items.map(i => ({
-    schedule_id: input.scheduleId,
+  const rows = parsedInput.items.map(i => ({
+    schedule_id: parsedInput.scheduleId,
     start_at: i.startAt,
     end_at: i.endAt,
     title: i.title,

@@ -5,13 +5,21 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Trash2 } from "lucide-react"
-import type { ProfileData } from "@/lib/types"
+
 import { motion } from "framer-motion"
-import { ConfirmDialog } from "@/components/confirm-dialog"
+import { ConfirmDialog } from "./confirm-dialog"
+
+interface Certification {
+  id: string
+  title: string
+  organization: string
+  year: string
+  url?: string
+}
 
 interface CertificationItemProps {
-  certification: ProfileData["certifications"][0]
-  onUpdate: (id: string, certification: Partial<Omit<ProfileData["certifications"][0], "id">>) => void
+  certification: Certification
+  onUpdate: (id: string, certification: Partial<Omit<Certification, "id">>) => void
   onRemove: (id: string) => void
   isEditable?: boolean
 }

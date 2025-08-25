@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -44,7 +45,6 @@ import {
   Zap,
   Brain,
   Heart,
-  Certificate,
   FileCheck,
   CalendarDays,
   UserPlus,
@@ -167,6 +167,16 @@ export default function EnhancedStaffManagement() {
         description: "Failed to update staff profile. Please try again.",
         variant: "destructive"
       })
+    }
+  }
+
+  const handleSaveStaff = async (data: CreateStaffProfileData | UpdateStaffProfileData) => {
+    if ('venue_id' in data) {
+      // This is CreateStaffProfileData
+      await handleCreateStaff(data as CreateStaffProfileData)
+    } else {
+      // This is UpdateStaffProfileData
+      await handleUpdateStaff(data as UpdateStaffProfileData)
     }
   }
 
@@ -364,9 +374,9 @@ export default function EnhancedStaffManagement() {
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700">
                       <SelectItem value="all">All Roles</SelectItem>
-                      {roleCategories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category.toUpperCase()}
+                      {roleCategories.filter((category) => category !== null).map((category) => (
+                        <SelectItem key={category!} value={category!}>
+                          {category!.toUpperCase()}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -377,9 +387,9 @@ export default function EnhancedStaffManagement() {
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700">
                       <SelectItem value="all">All Departments</SelectItem>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
+                      {departments.filter((dept) => dept !== null).map((dept) => (
+                        <SelectItem key={dept!} value={dept!}>
+                          {dept!}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -530,13 +540,13 @@ export default function EnhancedStaffManagement() {
                   {roleCategories.map((category) => {
                     const count = staff.filter(s => s.role_category === category).length
                     const percentage = (count / totalStaff) * 100
-                    const Icon = getRoleCategoryIcon(category)
+                    const Icon = getRoleCategoryIcon(category || 'other')
                     
                     return (
                       <div key={category} className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <Icon className="h-5 w-5 text-gray-400" />
-                          <span className="text-white capitalize">{category.replace('_', ' ')}</span>
+                          <span className="text-white capitalize">{(category || 'other').replace('_', ' ')}</span>
                         </div>
                         <div className="flex items-center space-x-3">
                           <div className="w-32 bg-gray-700 rounded-full h-2">
@@ -643,7 +653,7 @@ export default function EnhancedStaffManagement() {
           </DialogHeader>
           <StaffProfileForm
             venueId={venueId}
-            onSave={handleCreateStaff}
+            onSave={handleSaveStaff}
             onCancel={() => setIsCreateDialogOpen(false)}
             isEditing={false}
           />

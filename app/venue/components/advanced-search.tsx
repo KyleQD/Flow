@@ -9,18 +9,20 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Search, Filter, X } from "lucide-react"
-import { useSocial } from "@/context/social-context"
+import { useSocial } from "@/contexts/social-context"
 import { useDebounce } from "@/hooks/use-debounce"
-import type { User } from "@/lib/types"
 import { getAllSkills, getAllLocations, getAllTitles } from "../lib/search-service"
 import { search } from "../lib/search-service"
 
+interface SimpleUser { id: string; username?: string; full_name?: string }
 interface AdvancedSearchProps {
-  onResultsChange?: (results: User[]) => void
+  onResultsChange?: (results: SimpleUser[]) => void
 }
 
 export function AdvancedSearch({ onResultsChange }: AdvancedSearchProps) {
-  const { users, searchUsers } = useSocial()
+  const social = useSocial() as any
+  const users = social?.users || []
+  const searchUsers = social?.searchUsers || ((query: string, _filters?: any) => users)
 
   // Basic search
   const [searchQuery, setSearchQuery] = useState("")
@@ -36,7 +38,7 @@ export function AdvancedSearch({ onResultsChange }: AdvancedSearchProps) {
   const [sortBy, setSortBy] = useState("relevance")
 
   // Results
-  const [results, setResults] = useState<User[]>([])
+  const [results, setResults] = useState<SimpleUser[]>([])
 
   // Available data
   const availableSkills = getAllSkills()

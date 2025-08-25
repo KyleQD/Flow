@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
-export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(request: NextRequest, context: any) {
   try {
     const auth = await authenticateApiRequest(request)
     let supabase
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
     const { data: forum } = await supabase
       .from('forums')
       .select('id, slug, name, description')
-      .eq('slug', params.slug)
+      .eq('slug', context?.params?.slug)
       .maybeSingle()
     if (!forum) return NextResponse.json({ error: 'Forum not found' }, { status: 404 })
 

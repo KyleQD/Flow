@@ -1,8 +1,9 @@
 "use client"
 
 import { ThemeProvider } from "@/components/theme-provider"
-import { AuthProvider } from "@/context/auth"
-import { SocialProvider } from "@/context/social"
+import { AuthProvider } from "./context/auth-context"
+import { SocialProvider } from "./context/social-context"
+import { ProfileProvider } from "./context/profile-context"
 
 export function VenueProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -14,7 +15,9 @@ export function VenueProviders({ children }: { children: React.ReactNode }) {
     >
       <AuthProvider>
         <SocialProvider>
-          {children}
+          <ProfileProvider>
+            {children}
+          </ProfileProvider>
         </SocialProvider>
       </AuthProvider>
     </ThemeProvider>

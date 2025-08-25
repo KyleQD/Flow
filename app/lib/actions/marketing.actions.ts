@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 
 const action = createSafeActionClient()
 
-export const upsertCampaignAction = action(z.object({
+export const upsertCampaignAction = action.schema(z.object({
   id: z.string().uuid().optional(),
   name: z.string().min(1),
   type: z.enum(['song_release','album_release','tour_promotion','brand_awareness','engagement','custom']),
@@ -20,13 +20,13 @@ export const upsertCampaignAction = action(z.object({
   content_types: z.array(z.string()).default([]),
   description: z.string().optional(),
   metrics: z.any().optional(),
-}), async (input) => {
+})).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
-  if (input.id) {
-    const { id, ...update } = input
+  if (parsedInput.id) {
+    const { id, ...update } = parsedInput
     const { error, data } = await supabase
       .from('artist_marketing_campaigns')
       .update({ ...update, updated_at: new Date().toISOString() })
@@ -40,14 +40,14 @@ export const upsertCampaignAction = action(z.object({
 
   const { error, data } = await supabase
     .from('artist_marketing_campaigns')
-    .insert({ ...input, user_id: user.id })
+    .insert({ ...parsedInput, user_id: user.id })
     .select()
     .single()
   if (error) return { success: false, error: error.message }
   return { success: true, data }
 })
 
-export const createSocialPostAction = action(z.object({
+export const createSocialPostAction = action.schema(z.object({
   platform: z.enum(['instagram','facebook','twitter','youtube','tiktok']),
   content: z.string().min(1),
   media_type: z.enum(['text','image','video','audio']),
@@ -57,21 +57,21 @@ export const createSocialPostAction = action(z.object({
   campaign_id: z.string().uuid().optional(),
   hashtags: z.array(z.string()).default([]),
   mentions: z.array(z.string()).default([]),
-}), async (input) => {
+})).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   const { error, data } = await supabase
     .from('artist_social_posts')
-    .insert({ ...input, user_id: user.id })
+    .insert({ ...parsedInput, user_id: user.id })
     .select()
     .single()
   if (error) return { success: false, error: error.message }
   return { success: true, data }
 })
 
-export const updateSocialPostAction = action(z.object({
+export const updateSocialPostAction = action.schema(z.object({
   id: z.string().uuid(),
   platform: z.enum(['instagram','facebook','twitter','youtube','tiktok']).optional(),
   content: z.string().optional(),
@@ -82,12 +82,12 @@ export const updateSocialPostAction = action(z.object({
   campaign_id: z.string().uuid().optional(),
   hashtags: z.array(z.string()).optional(),
   mentions: z.array(z.string()).optional(),
-}), async (input) => {
+})).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
-  const { id, ...update } = input
+  const { id, ...update } = parsedInput
   const { error, data } = await supabase
     .from('artist_social_posts')
     .update(update)
@@ -99,7 +99,7 @@ export const updateSocialPostAction = action(z.object({
   return { success: true, data }
 })
 
-export const deleteSocialPostAction = action(z.object({ id: z.string().uuid() }), async ({ id }) => {
+export const deleteSocialPostAction = action.schema(z.object({ id: z.string().uuid() })).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
@@ -107,13 +107,13 @@ export const deleteSocialPostAction = action(z.object({ id: z.string().uuid() })
   const { error } = await supabase
     .from('artist_social_posts')
     .delete()
-    .eq('id', id)
+    .eq('id', parsedInput.id)
     .eq('user_id', user.id)
   if (error) return { success: false, error: error.message }
   return { success: true }
 })
 
-export const deleteCampaignAction = action(z.object({ id: z.string().uuid() }), async ({ id }) => {
+export const deleteCampaignAction = action.schema(z.object({ id: z.string().uuid() })).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
@@ -122,28 +122,28 @@ export const deleteCampaignAction = action(z.object({ id: z.string().uuid() }), 
   await supabase
     .from('artist_social_posts')
     .delete()
-    .eq('campaign_id', id)
+    .eq('campaign_id', parsedInput.id)
     .eq('user_id', user.id)
 
   const { error } = await supabase
     .from('artist_marketing_campaigns')
     .delete()
-    .eq('id', id)
+    .eq('id', parsedInput.id)
     .eq('user_id', user.id)
   if (error) return { success: false, error: error.message }
   return { success: true }
 })
 
-export const toggleCampaignPauseAction = action(z.object({ id: z.string().uuid(), pause: z.boolean() }), async ({ id, pause }) => {
+export const toggleCampaignPauseAction = action.schema(z.object({ id: z.string().uuid(), pause: z.boolean() })).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
-  const status = pause ? 'paused' : 'active'
+  const status = parsedInput.pause ? 'paused' : 'active'
   const { error, data } = await supabase
     .from('artist_marketing_campaigns')
     .update({ status, updated_at: new Date().toISOString() })
-    .eq('id', id)
+    .eq('id', parsedInput.id)
     .eq('user_id', user.id)
     .select()
     .single()

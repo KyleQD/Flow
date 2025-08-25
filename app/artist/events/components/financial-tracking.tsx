@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
-import { Calendar as CalendarIcon, Plus, DollarSign, CreditCard, Cash, Banknote, AlertCircle } from "lucide-react"
+import { Calendar as CalendarIcon, Plus, DollarSign, CreditCard, Banknote, AlertCircle } from "lucide-react"
 import { cn, formatCurrency } from "@/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -298,7 +298,7 @@ export function FinancialTracking({ eventId, expenses = [], budgets = [], onAddE
                 <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                   <Calendar
                     mode="single"
-                    selected={new Date(newExpense.date)}
+                    selected={new Date(newExpense.date || new Date())}
                     onSelect={(date) => setNewExpense({ ...newExpense, date: format(date || new Date(), "yyyy-MM-dd") })}
                     initialFocus
                     className="bg-slate-900"
@@ -373,7 +373,7 @@ export function FinancialTracking({ eventId, expenses = [], budgets = [], onAddE
                 <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                   <Calendar
                     mode="single"
-                    selected={new Date(newBudget.start_date)}
+                    selected={new Date(newBudget.start_date || new Date())}
                     onSelect={(date) => setNewBudget({ ...newBudget, start_date: format(date || new Date(), "yyyy-MM-dd") })}
                     initialFocus
                     className="bg-slate-900"
@@ -399,7 +399,7 @@ export function FinancialTracking({ eventId, expenses = [], budgets = [], onAddE
                 <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-700">
                   <Calendar
                     mode="single"
-                    selected={new Date(newBudget.end_date)}
+                    selected={new Date(newBudget.end_date || new Date())}
                     onSelect={(date) => setNewBudget({ ...newBudget, end_date: format(date || new Date(), "yyyy-MM-dd") })}
                     initialFocus
                     className="bg-slate-900"

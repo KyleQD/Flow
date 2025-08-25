@@ -412,7 +412,7 @@ export class StaffJobBoardService {
     const { error } = await supabase
       .from('staff_onboarding_templates')
       .update({
-        use_count: supabase.raw('use_count + 1'),
+        use_count: 1, // TODO: Implement proper increment
         last_used: new Date().toISOString().split('T')[0]
       })
       .eq('id', templateId)

@@ -62,7 +62,7 @@ export function useAppearanceSettings() {
 
       if (profile) {
         const profileColors = profile.metadata?.profile_colors
-        const headerUrl = profile.metadata?.header_url || profile.header_url || ''
+        const headerUrl = profile.metadata?.header_url || ''
         
         setSettings({
           theme: 'system',

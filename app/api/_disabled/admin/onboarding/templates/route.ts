@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
 
     const template = await OnboardingTemplatesService.createTemplate({
       ...validatedData,
+      description: validatedData.description ?? '',
+      is_default: validatedData.is_default ?? false,
       created_by: user.id,
       use_count: 0
     })

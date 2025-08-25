@@ -14,14 +14,14 @@ const createCalendarSchema = z.object({
   color: z.string().optional()
 })
 
-export const createCalendarAction = action(createCalendarSchema, async (input) => {
+export const createCalendarAction = action.schema(createCalendarSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
 
   const { data, error } = await supabase
     .from('calendars')
-    .insert({ org_id: input.orgId, venue_id: input.venueId ?? null, name: input.name, color: input.color ?? null })
+    .insert({ org_id: parsedInput.orgId, venue_id: parsedInput.venueId ?? null, name: parsedInput.name, color: parsedInput.color ?? null })
     .select('id')
     .single()
 
@@ -39,24 +39,24 @@ const createEventSchema = z.object({
   venueId: z.string().uuid().optional()
 })
 
-export const createEventAction = action(createEventSchema, async (input) => {
+export const createEventAction = action.schema(createEventSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
 
-  const slug = input.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60)
+  const slug = parsedInput.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60)
 
   const { data, error } = await supabase
     .from('events_v2')
     .insert({
-      org_id: input.orgId,
-      venue_id: input.venueId ?? null,
-      title: input.title,
+      org_id: parsedInput.orgId,
+      venue_id: parsedInput.venueId ?? null,
+      title: parsedInput.title,
       slug,
       status: 'inquiry',
-      start_at: input.startAt,
-      end_at: input.endAt,
-      timezone: input.timezone,
+      start_at: parsedInput.startAt,
+      end_at: parsedInput.endAt,
+      timezone: parsedInput.timezone,
       created_by: user.user.id
     })
     .select('id, slug')
@@ -72,18 +72,18 @@ const updateStatusSchema = z.object({
   status: z.enum(['inquiry','hold','offer','confirmed','advancing','onsite','settled','archived'])
 })
 
-export const updateEventStatusAction = action(updateStatusSchema, async (input) => {
+export const updateEventStatusAction = action.schema(updateStatusSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
 
   const { error } = await supabase
     .from('events_v2')
-    .update({ status: input.status })
-    .eq('id', input.eventId)
+    .update({ status: parsedInput.status })
+    .eq('id', parsedInput.eventId)
 
   if (error) return { ok: false, error: 'update_failed' }
-  revalidatePath(`/events/${input.eventId}`)
+  revalidatePath(`/events/${parsedInput.eventId}`)
   return { ok: true }
 })
 
@@ -96,7 +96,7 @@ const createHoldSchema = z.object({
   note: z.string().optional()
 })
 
-export const createHoldAction = action(createHoldSchema, async (input) => {
+export const createHoldAction = action.schema(createHoldSchema).action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: user } = await supabase.auth.getUser()
   if (!user?.user) return { ok: false, error: 'not_authenticated' }
@@ -104,12 +104,12 @@ export const createHoldAction = action(createHoldSchema, async (input) => {
   const { error } = await supabase
     .from('holds')
     .insert({
-      org_id: input.orgId,
-      calendar_id: input.calendarId,
-      start_at: input.startAt,
-      end_at: input.endAt,
-      status: input.status,
-      note: input.note ?? null,
+      org_id: parsedInput.orgId,
+      calendar_id: parsedInput.calendarId,
+      start_at: parsedInput.startAt,
+      end_at: parsedInput.endAt,
+      status: parsedInput.status,
+      note: parsedInput.note ?? null,
       created_by: user.user.id
     })
 

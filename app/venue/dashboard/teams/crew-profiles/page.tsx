@@ -24,7 +24,7 @@ export default function CrewProfilesPage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href="/teams/crew-profiles" isActive>
+            <BreadcrumbLink href="/teams/crew-profiles">
               Crew Profiles
             </BreadcrumbLink>
           </BreadcrumbItem>

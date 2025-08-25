@@ -152,13 +152,10 @@ export function EventBoard({ event, onTaskUpdate, onTaskCreate, onTaskDelete }: 
                         {getTasksByStatus("todo").map((task, index) => (
                           <Draggable key={task.id} draggableId={task.id} index={index}>
                             {(provided, snapshot) => (
-                              <motion.div
+                              <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, height: 0 }}
                                 className={`p-3 mb-2 rounded-md ${snapshot.isDragging ? "bg-gray-700" : "bg-gray-800"}`}
                               >
                                 <div className="flex justify-between items-start">
@@ -200,7 +197,7 @@ export function EventBoard({ event, onTaskUpdate, onTaskCreate, onTaskDelete }: 
                                     </span>
                                   </div>
                                 )}
-                              </motion.div>
+                              </div>
                             )}
                           </Draggable>
                         ))}
@@ -230,13 +227,10 @@ export function EventBoard({ event, onTaskUpdate, onTaskCreate, onTaskDelete }: 
                         {getTasksByStatus("in-progress").map((task, index) => (
                           <Draggable key={task.id} draggableId={task.id} index={index}>
                             {(provided, snapshot) => (
-                              <motion.div
+                              <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, height: 0 }}
                                 className={`p-3 mb-2 rounded-md ${snapshot.isDragging ? "bg-gray-700" : "bg-gray-800"}`}
                               >
                                 <div className="flex justify-between items-start">
@@ -278,7 +272,7 @@ export function EventBoard({ event, onTaskUpdate, onTaskCreate, onTaskDelete }: 
                                     </span>
                                   </div>
                                 )}
-                              </motion.div>
+                              </div>
                             )}
                           </Draggable>
                         ))}
@@ -308,13 +302,10 @@ export function EventBoard({ event, onTaskUpdate, onTaskCreate, onTaskDelete }: 
                         {getTasksByStatus("completed").map((task, index) => (
                           <Draggable key={task.id} draggableId={task.id} index={index}>
                             {(provided, snapshot) => (
-                              <motion.div
+                              <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, height: 0 }}
                                 className={`p-3 mb-2 rounded-md ${snapshot.isDragging ? "bg-gray-700" : "bg-gray-800"}`}
                               >
                                 <div className="flex justify-between items-start">
@@ -356,7 +347,7 @@ export function EventBoard({ event, onTaskUpdate, onTaskCreate, onTaskDelete }: 
                                     </span>
                                   </div>
                                 )}
-                              </motion.div>
+                              </div>
                             )}
                           </Draggable>
                         ))}

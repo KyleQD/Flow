@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ImageUpload } from "@/components/ui/image-upload"
-import { Gallery, Image, Video, Music, FileText } from "lucide-react"
+import { Images as Gallery, Image, Video, Music, FileText } from "lucide-react"
 
 interface PortfolioItem {
   id: string

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { hasEntityPermission } from '@/lib/services/rbac'
 
 const schema = z.object({
-  venueId: z.string().uuid().optional(),
+  venueId: z.string().uuid(),
   title: z.string().min(1),
   description: z.string().min(10),
   department: z.string().min(1),

@@ -137,7 +137,7 @@ export function VenueDashboard() {
       <CreateEventDialog
         open={isCreateEventOpen}
         onOpenChange={setIsCreateEventOpen}
-        onSuccess={handleCreateEventSuccess}
+        onEventCreated={handleCreateEventSuccess}
       />
     </div>
   )

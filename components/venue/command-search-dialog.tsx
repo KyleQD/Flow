@@ -25,7 +25,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command"
-import { useCommandSearch } from "@/hooks/use-command-search"
+import { useCommandSearch } from "@/hooks/venue/use-command-search"
 
 export function CommandSearchDialog() {
   const router = useRouter()

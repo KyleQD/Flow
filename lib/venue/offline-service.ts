@@ -343,8 +343,13 @@ export async function requestBackgroundSync(tag: string): Promise<boolean> {
   if ("serviceWorker" in navigator && "SyncManager" in window) {
     try {
       const registration = await navigator.serviceWorker.ready
-      await registration.sync.register(tag)
-      return true
+      // Type assertion for background sync API
+      const syncManager = (registration as any).sync
+      if (syncManager) {
+        await syncManager.register(tag)
+        return true
+      }
+      return false
     } catch (error) {
       console.error("Background sync registration failed:", error)
       return false

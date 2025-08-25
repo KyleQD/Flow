@@ -4,14 +4,14 @@ import { authenticateApiRequest } from '@/lib/auth/api-auth'
 export async function GET(request: NextRequest) {
   try {
     // Authenticate the request
-    const { user, supabase } = await authenticateApiRequest(request)
-    
-    if (!user) {
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult || !authResult.user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const { user, supabase } = authResult
 
     // Get the user's profile with metadata
     const { data: profile, error } = await supabase

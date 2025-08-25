@@ -14,15 +14,24 @@ const createIncidentSchema = z.object({
   notes: z.string().optional()
 })
 
-export const createIncidentAction = action(createIncidentSchema, async (input) => {
-  const supabase = await createClient()
-  const { data: user } = await supabase.auth.getUser()
-  if (!user?.user) return { ok: false, error: 'not_authenticated' }
-  const { error } = await supabase
-    .from('incidents')
-    .insert({ org_id: input.orgId, event_id: input.eventId, severity: input.severity, title: input.title, notes: input.notes ?? null, reported_by: user.user.id })
-  if (error) return { ok: false, error: 'create_failed' }
-  return { ok: true }
-})
+export const createIncidentAction = action
+  .schema(createIncidentSchema)
+  .action(async ({ parsedInput }) => {
+    const supabase = await createClient()
+    const { data: user } = await supabase.auth.getUser()
+    if (!user?.user) return { ok: false, error: 'not_authenticated' }
+    const { error } = await supabase
+      .from('incidents')
+      .insert({
+        org_id: parsedInput.orgId,
+        event_id: parsedInput.eventId,
+        severity: parsedInput.severity,
+        title: parsedInput.title,
+        notes: parsedInput.notes ?? null,
+        reported_by: user.user.id
+      })
+    if (error) return { ok: false, error: 'create_failed' }
+    return { ok: true }
+  })
 
 

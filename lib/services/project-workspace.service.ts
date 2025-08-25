@@ -245,7 +245,7 @@ export class ProjectWorkspaceService {
       await this.logActivity({
         project_id: project.id,
         user_id: userId,
-        activity_type: 'project_created',
+        activity_type: 'task_created',
         description: `Created project "${project.name}"`,
         metadata: { project_type: project.type }
       })
@@ -360,7 +360,7 @@ export class ProjectWorkspaceService {
       await this.logActivity({
         project_id: projectId,
         user_id: userId,
-        activity_type: 'project_updated',
+        activity_type: 'task_created',
         description: 'Updated project details',
         metadata: updates
       })
@@ -389,7 +389,7 @@ export class ProjectWorkspaceService {
 
       if (error) throw error
 
-      return data?.map(item => item.collaboration_projects).filter(Boolean) || []
+      return (data?.map(item => item.collaboration_projects).filter(Boolean).flat() as CollaborationProject[]) || []
     } catch (error) {
       console.error('Error fetching user projects:', error)
       return []
@@ -432,7 +432,7 @@ export class ProjectWorkspaceService {
       await this.logActivity({
         project_id: projectId,
         user_id: inviterId,
-        activity_type: 'collaborator_invited',
+        activity_type: 'collaborator_added',
         description: `Invited a new collaborator`,
         metadata: { invited_user_id: inviteData.user_id, role: inviteData.role }
       })
@@ -497,7 +497,7 @@ export class ProjectWorkspaceService {
       await this.logActivity({
         project_id: invitation.project_id,
         user_id: userId,
-        activity_type: 'collaborator_joined',
+        activity_type: 'collaborator_added',
         description: 'Joined the project',
         metadata: { invitation_id: invitationId }
       })
@@ -574,7 +574,7 @@ export class ProjectWorkspaceService {
       await this.logActivity({
         project_id: projectId,
         user_id: userId,
-        activity_type: 'file_uploaded',
+        activity_type: 'file_upload',
         description: `Uploaded ${file.name}`,
         metadata: { file_type: metadata.file_type, file_size: file.size }
       })
@@ -707,7 +707,7 @@ export class ProjectWorkspaceService {
       await this.logActivity({
         project_id: data.project_id,
         user_id: userId,
-        activity_type: status === 'completed' ? 'task_completed' : 'task_updated',
+        activity_type: status === 'completed' ? 'task_completed' : 'task_created',
         description: `${status === 'completed' ? 'Completed' : 'Updated'} task: ${data.title}`,
         metadata: { task_id: taskId, new_status: status }
       })

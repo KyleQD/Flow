@@ -53,10 +53,10 @@ function ViewProfileButton() {
     if (currentAccount?.account_type === 'artist') {
       return currentAccount.profile_data?.artist_name?.toLowerCase().replace(/\s+/g, '') || 
              currentAccount.profile_data?.stage_name?.toLowerCase().replace(/\s+/g, '') || 
-             currentAccount.username || 
+                           currentAccount.profile_data?.username ||  
              'neon_pulse_official' // Fallback to demo artist for testing
     }
-    return currentAccount?.username || 'neon_pulse_official' // Fallback to demo artist for testing
+    return currentAccount?.profile_data?.username || 'neon_pulse_official' // Fallback to demo artist for testing
   }
 
   const username = getUsername()

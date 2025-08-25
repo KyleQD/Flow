@@ -491,7 +491,7 @@ export default function RoleManagement() {
                       <div 
                         className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                         style={{ 
-                          width: `${(getPermissionCount(role.permissions) / Object.keys(PERMISSION_CATEGORIES).reduce((sum, cat) => sum + PERMISSION_CATEGORIES[cat].length, 0)) * 100}%` 
+                          width: `${(getPermissionCount(role.permissions) / Object.keys(PERMISSION_CATEGORIES).reduce((sum, cat) => sum + (PERMISSION_CATEGORIES[cat as keyof typeof PERMISSION_CATEGORIES]?.length || 0), 0)) * 100}%` 
                         }}
                       ></div>
                     </div>

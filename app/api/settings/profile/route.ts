@@ -68,24 +68,49 @@ export async function PUT(request: NextRequest) {
     console.log('[Settings Profile API] Updating profile for user:', user.id)
 
     // Update the user's profile
+    const updatePayload: any = {
+      username: body.username,
+      bio: body.bio,
+      location: body.location,
+      full_name: body.full_name,
+      title: body.title,
+      company: body.company,
+      experience_level: body.experience_level,
+      availability_status: body.availability_status,
+      hourly_rate: body.hourly_rate,
+      skills: body.skills,
+      preferred_project_types: body.preferred_project_types,
+      show_email: body.show_email,
+      show_phone: body.show_phone,
+      show_location: body.show_location,
+      show_hourly_rate: body.show_hourly_rate,
+      show_availability: body.show_availability,
+      allow_project_offers: body.allow_project_offers,
+      public_profile: body.public_profile,
+      instagram: body.instagram,
+      twitter: body.twitter,
+      profile_data: {
+        ...(body.profile_data || {}),
+        name: body.full_name,
+        phone: body.phone,
+        website: body.website
+      },
+      social_links: {
+        ...(body.social_links || {}),
+        instagram: body.instagram,
+        twitter: body.twitter,
+        website: body.website,
+        linkedin: body.linkedin,
+        github: body.github,
+        behance: body.behance,
+        dribbble: body.dribbble
+      },
+      updated_at: new Date().toISOString()
+    }
+
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .update({
-        username: body.username,
-        bio: body.bio,
-        location: body.location,
-        profile_data: {
-          name: body.full_name,
-          phone: body.phone,
-          website: body.website
-        },
-        social_links: {
-          instagram: body.instagram,
-          twitter: body.twitter,
-          website: body.website
-        },
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', user.id)
       .select()
       .single()

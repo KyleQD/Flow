@@ -57,6 +57,7 @@ import {
   HelpCircle,
   Info,
   AlertTriangle,
+  AlertCircle,
   CheckCircle,
   XCircle
 } from "lucide-react"

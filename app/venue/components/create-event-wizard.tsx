@@ -306,8 +306,8 @@ export function CreateEventWizard({
     { id: "review", title: "Review & Create", icon: CheckCircle, description: "Final review and publish" },
   ]
 
-  const updateFormData = (field: keyof EventFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+  const updateFormData = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value } as EventFormData))
   }
 
   const nextStep = () => {

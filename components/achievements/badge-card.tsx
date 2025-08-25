@@ -103,22 +103,27 @@ const categoryConfig = {
 const rarityConfig = {
   common: {
     color: 'bg-gray-500',
+    borderColor: 'border-gray-400',
     textColor: 'text-gray-600'
   },
   uncommon: {
     color: 'bg-green-500',
+    borderColor: 'border-green-400',
     textColor: 'text-green-600'
   },
   rare: {
     color: 'bg-blue-500',
+    borderColor: 'border-blue-400',
     textColor: 'text-blue-600'
   },
   epic: {
     color: 'bg-purple-500',
+    borderColor: 'border-purple-400',
     textColor: 'text-purple-600'
   },
   legendary: {
     color: 'bg-yellow-500',
+    borderColor: 'border-yellow-400',
     textColor: 'text-yellow-600'
   }
 }

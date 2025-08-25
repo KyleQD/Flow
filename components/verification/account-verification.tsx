@@ -272,7 +272,7 @@ export function AccountVerification({ accountId, accountType, onVerificationComp
             </div>
           </div>
           
-          {verificationStatus?.pending_requests > 0 && (
+          {verificationStatus?.pending_requests && verificationStatus.pending_requests > 0 && (
             <Alert className="mt-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>

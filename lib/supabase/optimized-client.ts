@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/database.types'
+// Types will be imported as needed
 
 // =============================================================================
 // OPTIMIZED SUPABASE CLIENT CONFIGURATION
@@ -34,7 +34,7 @@ const optimizedClientConfig = {
     timeout: 20000, // 20 seconds timeout
     
     // Enhanced error handling
-    logger: process.env.NODE_ENV === 'development' ? console : undefined,
+    logger: process.env.NODE_ENV === 'development' ? console.log : undefined,
     
     // Connection pooling for better performance
     params: {
@@ -43,7 +43,7 @@ const optimizedClientConfig = {
     },
     
     // Custom transport options
-    transport: 'websocket' as const,
+    transport: undefined,
     encode: (payload: any, callback: (encoded: string) => void) => {
       // Custom encoding for better performance
       callback(JSON.stringify(payload))
@@ -61,7 +61,7 @@ const optimizedClientConfig = {
   
   // Database query optimizations
   db: {
-    schema: 'public'
+    schema: 'public' as const
   },
   
   // Global fetch configuration
@@ -89,22 +89,11 @@ const optimizedClientConfig = {
 // =============================================================================
 
 export const createOptimizedClient = () => {
-  const client = createClient<Database>(supabaseUrl, supabaseAnonKey, optimizedClientConfig)
+  const client = createClient<any>(supabaseUrl, supabaseAnonKey, optimizedClientConfig)
   
   // Add performance monitoring
   if (process.env.NODE_ENV === 'development') {
-    // Monitor real-time connection status
-    client.realtime.onOpen(() => {
-      console.log('✅ Supabase real-time connected')
-    })
-    
-    client.realtime.onClose(() => {
-      console.log('❌ Supabase real-time disconnected')
-    })
-    
-    client.realtime.onError((error) => {
-      console.error('🚨 Supabase real-time error:', error)
-    })
+    console.log('✅ Optimized Supabase client created')
   }
   
   return client

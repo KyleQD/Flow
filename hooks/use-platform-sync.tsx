@@ -1,6 +1,4 @@
-"use client"
-
-import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react'
+import React, { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react'
 import { useRealTimeCommunications } from './use-real-time-communications'
 import { createCommunicationsClient, createAnalyticsClient, SupabasePerformanceMonitor } from '@/lib/supabase/optimized-client'
 import { useAuth } from '@/lib/auth/role-based-auth'
@@ -216,7 +214,7 @@ export function PlatformSyncProvider({
 
       setPlatformState(prev => ({
         ...prev,
-        tours: data || [],
+        tours: (data as Tour[]) || [],
         lastUpdate: new Date()
       }))
 
@@ -244,7 +242,7 @@ export function PlatformSyncProvider({
 
       setPlatformState(prev => ({
         ...prev,
-        events: data || [],
+        events: (data as Event[]) || [],
         lastUpdate: new Date()
       }))
 
@@ -266,11 +264,10 @@ export function PlatformSyncProvider({
           id, name, role, department, status,
           created_at, updated_at
         `)
-        .eq('status', 'active')
 
       if (error) throw error
 
-      const staffMembers: StaffMember[] = (data || []).map(member => ({
+      const staffMembers: StaffMember[] = ((data as any[]) || []).map(member => ({
         id: member.id,
         name: member.name,
         role: member.role,
@@ -308,7 +305,7 @@ export function PlatformSyncProvider({
 
       setPlatformState(prev => ({
         ...prev,
-        venues: data || [],
+        venues: (data as Venue[]) || [],
         lastUpdate: new Date()
       }))
 
@@ -338,25 +335,25 @@ export function PlatformSyncProvider({
 
       // Calculate analytics
       const tourStats = {
-        total: toursData.data?.length || 0,
-        active: toursData.data?.filter(t => t.status === 'active').length || 0,
-        completed: toursData.data?.filter(t => t.status === 'completed').length || 0,
-        revenue_total: toursData.data?.reduce((sum, t) => sum + (t.revenue || 0), 0) || 0
+        total: (toursData.data as any[])?.length || 0,
+        active: (toursData.data as any[])?.filter(t => t.status === 'active').length || 0,
+        completed: (toursData.data as any[])?.filter(t => t.status === 'completed').length || 0,
+        revenue_total: (toursData.data as any[])?.reduce((sum, t) => sum + (t.revenue || 0), 0) || 0
       }
 
       const eventStats = {
-        total: eventsData.data?.length || 0,
-        upcoming: eventsData.data?.filter(e => e.status === 'scheduled').length || 0,
-        completed: eventsData.data?.filter(e => e.status === 'completed').length || 0,
-        capacity_utilization: eventsData.data?.length > 0 
-          ? eventsData.data.reduce((sum, e) => sum + (e.tickets_sold / e.capacity), 0) / eventsData.data.length 
+        total: (eventsData.data as any[])?.length || 0,
+        upcoming: (eventsData.data as any[])?.filter(e => e.status === 'scheduled').length || 0,
+        completed: (eventsData.data as any[])?.filter(e => e.status === 'completed').length || 0,
+        capacity_utilization: (eventsData.data as any[])?.length > 0 
+          ? (eventsData.data as any[]).reduce((sum, e) => sum + (e.tickets_sold / e.capacity), 0) / (eventsData.data as any[]).length 
           : 0
       }
 
       const staffStats = {
-        total: staffData.data?.length || 0,
-        active: staffData.data?.filter(s => s.status === 'active').length || 0,
-        departments: staffData.data?.reduce((acc, s) => {
+        total: (staffData.data as any[])?.length || 0,
+        active: (staffData.data as any[])?.filter(s => s.status === 'active').length || 0,
+        departments: (staffData.data as any[])?.reduce((acc, s) => {
           if (s.department) {
             acc[s.department] = (acc[s.department] || 0) + 1
           }
@@ -655,3 +652,5 @@ export function useCrossFeatureSync(tourId?: string, eventId?: string) {
     }
   }
 }
+
+

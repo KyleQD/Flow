@@ -27,7 +27,7 @@ import {
 interface FeatureCard {
   title: string
   description: string
-  icon: React.ElementType
+  icon: LucideIcon
   href: string
   isPro?: boolean
 }

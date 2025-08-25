@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Loader2, Music, MapPin, Users, DollarSign, Clock, Phone, Mail, Mic, Lightbulb, Stage, AlertCircle } from "lucide-react"
+import { CalendarIcon, Loader2, Music, MapPin, Users, DollarSign, Clock, Phone, Mail, Mic, Lightbulb, AlertCircle } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 

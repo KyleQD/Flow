@@ -257,7 +257,7 @@ export async function GET(request: NextRequest) {
 
         // Get current month summary
         const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
-        const currentMonthData = analytics?.find(a => a.month === currentMonth) || {
+        const currentMonthData = (analytics as Array<{ month?: string; total_rentals?: number; total_revenue?: number; active_rentals?: number; overdue_rentals?: number }>)?.find((a: { month?: string }) => a.month === currentMonth) || {
           total_rentals: 0,
           total_revenue: 0,
           active_rentals: 0,

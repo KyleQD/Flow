@@ -130,7 +130,10 @@ export function FeedList({ feedType = 'all', showPostCreator = true }: FeedListP
                 transition={{ duration: 0.3, delay: index * 0.05 }}
               >
                 <PostCard
-                  post={post}
+                  post={{
+                    ...post,
+                    media_urls: post.media_urls || null
+                  }}
                   onCommentClick={() => {
                     // TODO: Open comments modal or navigate to post detail
                   }}

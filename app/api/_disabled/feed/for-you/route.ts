@@ -66,11 +66,13 @@ export async function GET(request: NextRequest) {
       if (musicError) {
         console.error('[For You API] Music query error:', musicError)
       } else if (music) {
+        const pickProfile = (p: any) => Array.isArray(p) ? p[0] : p
         allContent.push(...music.map(item => {
           // Calculate relevance score based on user interests
           const genreMatch = userInterests.includes(item.genre) ? 0.3 : 0
           const followingMatch = followingIds.includes(item.user_id) ? 0.4 : 0
           const recencyScore = Math.max(0, 1 - (Date.now() - new Date(item.created_at).getTime()) / (7 * 24 * 60 * 60 * 1000)) * 0.3
+          const prof = pickProfile(item.profiles)
           
           return {
             id: item.id,
@@ -78,11 +80,11 @@ export async function GET(request: NextRequest) {
             title: item.title,
             description: item.description,
             author: {
-              id: item.profiles.id,
-              name: item.profiles.full_name || item.profiles.username,
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url,
-              is_verified: item.profiles.is_verified
+              id: prof?.id,
+              name: prof?.full_name || prof?.username,
+              username: prof?.username,
+              avatar_url: prof?.avatar_url,
+              is_verified: prof?.is_verified
             },
             cover_image: item.cover_art_url,
             created_at: item.created_at,
@@ -104,7 +106,7 @@ export async function GET(request: NextRequest) {
         .from('events')
         .select(`
           id,
-          title as name,
+          title,
           description,
           event_date,
           venue_name,
@@ -128,21 +130,23 @@ export async function GET(request: NextRequest) {
       if (mainEventsError) {
         console.error('[For You API] Main events query error:', mainEventsError)
       } else if (mainEvents) {
+        const pickProfile = (p: any) => Array.isArray(p) ? p[0] : p
         allContent.push(...mainEvents.map(item => {
           const followingMatch = followingIds.includes(item.user_id) ? 0.5 : 0
           const upcomingScore = Math.max(0, 1 - (new Date(item.event_date).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)) * 0.5
+          const prof = pickProfile(item.profiles)
           
           return {
             id: item.id,
             type: 'event',
-            title: item.name,
+            title: item.title,
             description: item.description,
             author: {
-              id: item.profiles.id,
-              name: item.profiles.full_name || item.profiles.username,
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url,
-              is_verified: item.profiles.is_verified
+              id: prof?.id,
+              name: prof?.full_name || prof?.username,
+              username: prof?.username,
+              avatar_url: prof?.avatar_url,
+              is_verified: prof?.is_verified
             },
             created_at: item.created_at,
             engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
@@ -163,7 +167,7 @@ export async function GET(request: NextRequest) {
         .from('artist_events')
         .select(`
           id,
-          title as name,
+          title,
           description,
           event_date,
           venue_name,
@@ -188,21 +192,23 @@ export async function GET(request: NextRequest) {
       if (artistEventsError) {
         console.error('[For You API] Artist events query error:', artistEventsError)
       } else if (artistEvents) {
+        const pickProfile = (p: any) => Array.isArray(p) ? p[0] : p
         allContent.push(...artistEvents.map(item => {
           const followingMatch = followingIds.includes(item.user_id) ? 0.5 : 0
           const upcomingScore = Math.max(0, 1 - (new Date(item.event_date).getTime() - Date.now()) / (30 * 24 * 60 * 60 * 1000)) * 0.5
+          const prof = pickProfile(item.profiles)
           
           return {
             id: `artist_${item.id}`,
             type: 'event',
-            title: item.name,
+            title: item.title,
             description: item.description,
             author: {
-              id: item.profiles.id,
-              name: item.profiles.full_name || item.profiles.username,
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url,
-              is_verified: item.profiles.is_verified
+              id: prof?.id,
+              name: prof?.full_name || prof?.username,
+              username: prof?.username,
+              avatar_url: prof?.avatar_url,
+              is_verified: prof?.is_verified
             },
             created_at: item.created_at,
             engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
@@ -248,9 +254,11 @@ export async function GET(request: NextRequest) {
       if (toursError) {
         console.error('[For You API] Tours query error:', toursError)
       } else if (tours) {
+        const pickProfile = (p: any) => Array.isArray(p) ? p[0] : p
         allContent.push(...tours.map(item => {
           const followingMatch = followingIds.includes(item.created_by) ? 0.6 : 0
           const upcomingScore = Math.max(0, 1 - (new Date(item.start_date).getTime() - Date.now()) / (60 * 24 * 60 * 60 * 1000)) * 0.4
+          const prof = pickProfile(item.profiles)
           
           return {
             id: item.id,
@@ -258,11 +266,11 @@ export async function GET(request: NextRequest) {
             title: item.name,
             description: item.description,
             author: {
-              id: item.profiles.id,
-              name: item.profiles.full_name || item.profiles.username,
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url,
-              is_verified: item.profiles.is_verified
+              id: prof?.id,
+              name: prof?.full_name || prof?.username,
+              username: prof?.username,
+              avatar_url: prof?.avatar_url,
+              is_verified: prof?.is_verified
             },
             created_at: item.created_at,
             engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
@@ -304,9 +312,11 @@ export async function GET(request: NextRequest) {
       if (postsError) {
         console.error('[For You API] Posts query error:', postsError)
       } else if (posts) {
+        const pickProfile = (p: any) => Array.isArray(p) ? p[0] : p
         allContent.push(...posts.map(item => {
           const followingMatch = followingIds.includes(item.user_id) ? 0.6 : 0
           const recencyScore = Math.max(0, 1 - (Date.now() - new Date(item.created_at).getTime()) / (7 * 24 * 60 * 60 * 1000)) * 0.4
+          const prof = pickProfile(item.profiles)
           
           return {
             id: item.id,
@@ -314,11 +324,11 @@ export async function GET(request: NextRequest) {
             title: item.content.substring(0, 100) + (item.content.length > 100 ? '...' : ''),
             description: item.content,
             author: {
-              id: item.profiles.id,
-              name: item.profiles.full_name || item.profiles.username,
-              username: item.profiles.username,
-              avatar_url: item.profiles.avatar_url,
-              is_verified: item.profiles.is_verified
+              id: prof?.id,
+              name: prof?.full_name || prof?.username,
+              username: prof?.username,
+              avatar_url: prof?.avatar_url,
+              is_verified: prof?.is_verified
             },
             created_at: item.created_at,
             engagement: { likes: 0, views: 0, shares: 0, comments: 0 },

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
+import { authOptions } from "@/lib/supabase/auth"
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -16,25 +16,24 @@ export async function GET(
       )
     }
 
-    const availability = await prisma.staffAvailability.findMany({
-      where: {
-        staff: {
-          eventId: params.id,
-        },
-      },
+    const availability = await prisma.schedule.findMany({
+      where: { eventId: params.id },
       include: {
         staff: {
           select: {
             id: true,
-            name: true,
-            image: true,
             role: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
           },
         },
       },
-      orderBy: {
-        startTime: "asc",
-      },
+      orderBy: { startTime: "asc" },
     })
 
     return NextResponse.json(availability)
@@ -49,7 +48,7 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -78,20 +77,28 @@ export async function POST(
       )
     }
 
-    const availability = await prisma.staffAvailability.create({
+    const availability = await prisma.schedule.create({
       data: {
-        staffId,
+        title: "Availability",
+        description: status ?? null,
         startTime: new Date(startTime),
         endTime: new Date(endTime),
-        status,
+        location: null,
+        eventId: params.id,
+        staffId,
       },
       include: {
         staff: {
           select: {
             id: true,
-            name: true,
-            image: true,
             role: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
           },
         },
       },

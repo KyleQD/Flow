@@ -1,0 +1,69 @@
+"use client"
+
+import { useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { AlertTriangle } from "lucide-react"
+import type { Event } from "@/app/types/events.types"
+
+interface DeleteEventDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  event: Event
+  redirectAfterDelete?: boolean
+}
+
+export function DeleteEventDialog({ open, onOpenChange, event, redirectAfterDelete = false }: DeleteEventDialogProps) {
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      // Mock delete operation - in a real app this would call an API
+      console.log("Deleting event:", event.id)
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      
+      if (redirectAfterDelete) {
+        // Redirect to events list
+        window.location.href = "/venue/events"
+      } else {
+        onOpenChange(false)
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+            Delete Event
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="py-4">
+          <p className="text-sm text-muted-foreground mb-4">
+            Are you sure you want to delete <strong>{event.name}</strong>? This action cannot be undone.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            This will permanently remove the event and all associated data including tickets, attendees, and analytics.
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+            {isDeleting ? "Deleting..." : "Delete Event"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

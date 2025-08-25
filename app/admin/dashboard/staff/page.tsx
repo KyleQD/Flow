@@ -1,5 +1,8 @@
 "use client"
 
+// Prevent prerendering since this page requires MultiAccountProvider context
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

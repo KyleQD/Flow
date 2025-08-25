@@ -6,8 +6,15 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Smile, Clock } from "lucide-react"
-import data from "@emoji-mart/data"
-import Picker from "@emoji-mart/react"
+let Picker: any = null
+let data: any = null
+if (typeof window !== 'undefined') {
+  // Lazy load to avoid type dependency at build time
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  data = require('@emoji-mart/data')
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  Picker = require('@emoji-mart/react')
+}
 
 interface EmojiPickerProps {
   onEmojiSelect?: (emoji: any) => void
@@ -93,14 +100,18 @@ export function EmojiPicker({ onEmojiSelect, triggerClassName = "", disabled = f
           </div>
           <TabsContent value="all" className="p-0">
             <ScrollArea className="h-[300px]">
-              <Picker
-                data={data}
-                onEmojiSelect={handleEmojiSelect}
-                theme="dark"
-                skinTonePosition="none"
-                previewPosition="none"
-                searchPosition="none"
-              />
+              {Picker && data ? (
+                <Picker
+                  data={data}
+                  onEmojiSelect={handleEmojiSelect}
+                  theme="dark"
+                  skinTonePosition="none"
+                  previewPosition="none"
+                  searchPosition="none"
+                />
+              ) : (
+                <div className="p-4 text-center text-sm text-gray-500">Emoji picker unavailable</div>
+              )}
             </ScrollArea>
           </TabsContent>
           <TabsContent value="recent" className="p-4">

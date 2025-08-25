@@ -45,6 +45,8 @@ import {
   XCircle,
   Clock3,
   FileText,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 
 interface BookingRequest {
@@ -130,7 +132,12 @@ export default function BookingsPage() {
     try {
       setIsLoading(true)
       const bookingData = await venueService.getVenueBookingRequests(venue.id)
-      setBookings(bookingData)
+      const normalized = (bookingData || []).map((b: any) => ({
+        ...b,
+        expected_attendance: b.expected_attendance ?? 0,
+        response_message: b.response_message || "",
+      })) as BookingRequest[]
+      setBookings(normalized)
     } catch (error) {
       console.error('Error fetching bookings:', error)
       toast({
@@ -995,7 +1002,7 @@ export default function BookingsPage() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => handleBookingAction(selectedBooking.id, responseAction, responseMessage)}
+                  onClick={() => handleBookingAction(selectedBooking.id, (responseAction === "approve" ? "approved" : "rejected"), responseMessage)}
                   className={responseAction === "approve" ? "bg-green-600 hover:bg-green-700" : ""}
                   variant={responseAction === "reject" ? "destructive" : "default"}
                 >

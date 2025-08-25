@@ -9,7 +9,7 @@ import { Search, Bell, Moon, Sun, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { useCommandSearch } from "@/hooks/use-command-search"
+import { useCommandSearch } from "@/hooks/venue/use-command-search"
 import { useTheme } from "@/hooks/use-theme"
 
 interface VenueHeaderProps {
@@ -125,7 +125,7 @@ export function VenueHeader({ venueName, venueType = "Music Venue" }: VenueHeade
             className="hidden md:flex items-center gap-2 border-gray-700 text-white hover:bg-gray-800 hover:text-white"
             asChild
           >
-            <Link href="/venues/the-echo-lounge">
+            <Link href={`/venue/${encodeURIComponent(venueName)}`}>
               <Eye className="h-4 w-4" />
               <span>View Public Profile</span>
             </Link>

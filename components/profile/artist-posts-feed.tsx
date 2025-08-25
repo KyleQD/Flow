@@ -202,13 +202,16 @@ export function ArtistPostsFeed({
                   </AvatarFallback>
                 </Avatar>
                 <motion.div className="flex-1">
-                  <Button 
-                    variant="ghost" 
-                    className="w-full text-left text-white/60 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-pink-500/10 justify-start border border-white/10 hover:border-purple-500/30 transition-all duration-300"
+                                    <motion.div
                     whileHover={{ scale: 1.01 }}
                   >
-                    What's on your mind, {artistName}?
-                  </Button>
+                    <Button
+                      variant="ghost" 
+                      className="w-full text-left text-white/60 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-pink-500/10 justify-start border border-white/10 hover:border-purple-500/30 transition-all duration-300"
+                    >
+                                          What's on your mind, {artistName}?
+                    </Button>
+                  </motion.div>
                 </motion.div>
               </div>
               <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">

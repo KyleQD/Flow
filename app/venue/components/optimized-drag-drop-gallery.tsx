@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import type { ProfileData } from "@/lib/types"
-import { ConfirmDialog } from "@/components/confirm-dialog"
-import { GalleryItem } from "@/components/gallery-item"
+import type { ProfileData } from "@/lib/venue/types"
+import { ConfirmDialog } from "./confirm-dialog"
+import { GalleryItem } from "./gallery-item"
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd"
 
 interface OptimizedDragDropGalleryProps {

@@ -33,6 +33,8 @@ export interface CreateStaffProfileData {
   role_level?: 'entry' | 'mid' | 'senior' | 'manager' | 'director'
   employment_type?: 'full_time' | 'part_time' | 'contractor' | 'volunteer'
   hourly_rate?: number
+  salary?: number
+  pay_frequency?: 'hourly' | 'weekly' | 'biweekly' | 'monthly'
   hire_date?: string
   pronouns?: string
   bio?: string

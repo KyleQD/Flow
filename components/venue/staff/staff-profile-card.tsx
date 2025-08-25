@@ -60,7 +60,8 @@ import {
   Medal,
   Trophy,
   Gem,
-  Sparkles
+  Sparkles,
+  Award
 } from "lucide-react"
 import { StaffProfileData } from "@/lib/services/enhanced-staff-profiles.service"
 

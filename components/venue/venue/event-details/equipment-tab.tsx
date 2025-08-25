@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Event } from "@/types/events"
+import type { Event } from "@/app/types/events.types"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, AlertCircle } from "lucide-react"
 
@@ -82,5 +82,31 @@ export default function EquipmentTab({ event }: EquipmentTabProps) {
               Unavailable Items
             </CardTitle>
           </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Check maintenance schedule</p>
+          </CardContent>
+        </Card>
+      </div>
 
-\
+      {/* Equipment List */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Equipment Assignments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {mockEquipment.map(item => (
+              <div key={item.id} className="flex items-center justify-between rounded-md border p-3">
+                <div>
+                  <div className="font-medium">{item.name}</div>
+                  <div className="text-xs text-muted-foreground">{item.category}</div>
+                </div>
+                {getStatusBadge(item.status)}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

@@ -8,7 +8,7 @@ import { Bell, Grid3X3, MessageSquare, Moon, Music, Search, Sun, User, Users, Tr
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { MegaMenu } from "@/components/navigation/mega-menu"
+import { MegaMenu } from "../navigation/mega-menu"
 import { useToast } from "@/hooks/use-toast"
 
 interface MainLayoutProps {
@@ -345,12 +345,9 @@ export function MainLayout({ children }: MainLayoutProps) {
               <div className="space-y-2">
                 {["TourLife", "SummerFestivals", "SoundEngineering", "MusicProduction"].map((tag) => (
                   <div key={tag} className="flex justify-between items-center">
-                    <Badge
-                      variant="outline"
-                      className="bg-purple-900/20 hover:bg-purple-900/30 text-purple-400 border-purple-500/20 cursor-pointer"
-                    >
+                    <span className="bg-purple-900/20 hover:bg-purple-900/30 text-purple-400 border border-purple-500/20 cursor-pointer px-2 py-1 rounded-full text-sm">
                       #{tag}
-                    </Badge>
+                    </span>
                     <span className="text-xs text-gray-500">{Math.floor(Math.random() * 1000) + 100} posts</span>
                   </div>
                 ))}

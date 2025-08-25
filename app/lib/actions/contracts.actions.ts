@@ -23,14 +23,16 @@ const ContractSchema = z.object({
   document_url: z.string().url().optional().or(z.literal('')),
 })
 
-export const createContractAction = action(ContractSchema.omit({ id: true }), async (input) => {
+export const createContractAction = action
+  .schema(ContractSchema.omit({ id: true }))
+  .action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   const { error, data } = await supabase
     .from('artist_contracts')
-    .insert({ ...input, user_id: user.id })
+    .insert({ ...parsedInput, user_id: user.id })
     .select()
     .single()
 
@@ -38,12 +40,14 @@ export const createContractAction = action(ContractSchema.omit({ id: true }), as
   return { success: true, data }
 })
 
-export const updateContractAction = action(ContractSchema.required({ id: true }), async (input) => {
+export const updateContractAction = action
+  .schema(ContractSchema.required({ id: true }))
+  .action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
-  const { id, ...update } = input
+  const { id, ...update } = parsedInput
   const { error, data } = await supabase
     .from('artist_contracts')
     .update({ ...update, updated_at: new Date().toISOString() })
@@ -56,7 +60,9 @@ export const updateContractAction = action(ContractSchema.required({ id: true })
   return { success: true, data }
 })
 
-export const deleteContractAction = action(z.object({ id: z.string().uuid() }), async ({ id }) => {
+export const deleteContractAction = action
+  .schema(z.object({ id: z.string().uuid() }))
+  .action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
@@ -64,22 +70,24 @@ export const deleteContractAction = action(z.object({ id: z.string().uuid() }), 
   const { error } = await supabase
     .from('artist_contracts')
     .delete()
-    .eq('id', id)
+    .eq('id', parsedInput.id)
     .eq('user_id', user.id)
 
   if (error) return { success: false, error: error.message }
   return { success: true }
 })
 
-export const updateContractStatusAction = action(z.object({ id: z.string().uuid(), status: z.enum(['draft','sent','signed','expired','cancelled']) }), async ({ id, status }) => {
+export const updateContractStatusAction = action
+  .schema(z.object({ id: z.string().uuid(), status: z.enum(['draft','sent','signed','expired','cancelled']) }))
+  .action(async ({ parsedInput }) => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
   const { error, data } = await supabase
     .from('artist_contracts')
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq('id', id)
+    .update({ status: parsedInput.status, updated_at: new Date().toISOString() })
+    .eq('id', parsedInput.id)
     .eq('user_id', user.id)
     .select()
     .single()

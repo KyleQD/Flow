@@ -247,9 +247,37 @@ export function AdvancedAnalytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-800 border-gray
-### Enhanced Venue Management Features
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">Revenue Breakdown</CardTitle>
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                      <SelectTrigger className="w-[120px] h-8 text-xs bg-gray-700 border-gray-600">
+                        <SelectValue placeholder="Select month" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-700 border-gray-600">
+                        <SelectItem value="may">May 2024</SelectItem>
+                        <SelectItem value="april">April 2024</SelectItem>
+                        <SelectItem value="march">March 2024</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="h-80 flex items-center justify-center">
+                    <div className="text-center text-gray-500">
+                      <LineChart className="h-16 w-16 mx-auto mb-4" />
+                      <p>Chart visualization would appear here</p>
+                      <p className="text-sm">Showing revenue sources over time</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-Let's continue building out the Tourify platform with more advanced features that venue owners and event organizers need. I'll focus on creating an equipment management system, advanced analytics dashboard, and financial management tools.
-
-\
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  )
+}

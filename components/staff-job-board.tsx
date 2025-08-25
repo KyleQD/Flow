@@ -119,7 +119,7 @@ export default function StaffJobBoard() {
       case "reviewing":
         return <Badge variant="default">Reviewing</Badge>
       case "accepted":
-        return <Badge variant="success">Accepted</Badge>
+        return <Badge variant="default">Accepted</Badge>
       case "rejected":
         return <Badge variant="destructive">Rejected</Badge>
       default:

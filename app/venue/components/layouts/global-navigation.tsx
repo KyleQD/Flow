@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
-import { MainSidebar } from "@/components/navigation/main-sidebar"
-import { TopNavigation } from "@/components/navigation/top-navigation"
-import { MobileNavigation } from "@/components/navigation/mobile-navigation"
-import { CommandMenu } from "@/components/navigation/command-menu"
+import { MainSidebar } from "../navigation/main-sidebar"
+import { TopNavigation } from "../navigation/top-navigation"
+import { MobileNavigation } from "../navigation/mobile-navigation"
+import { CommandMenu } from "../navigation/command-menu"
 
 export function GlobalNavigation() {
   const [sidebarOpen, setSidebarOpen] = useState(false)

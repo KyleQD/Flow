@@ -13,7 +13,22 @@
     "setup:auth": "chmod +x scripts/setup-auth.sh && ./scripts/setup-auth.sh",
     "setup:deps": "./scripts/setup-auth.sh deps",
     "setup:env": "./scripts/setup-auth.sh env",
-    "check:db": "./scripts/setup-auth.sh db"
+    "check:db": "./scripts/setup-auth.sh db",
+    "deploy:setup": "./scripts/deploy.sh setup",
+    "deploy:production": "./scripts/deploy.sh deploy production",
+    "deploy:demo": "./scripts/deploy.sh deploy demo",
+    "deploy:build:production": "./scripts/deploy.sh build production",
+    "deploy:build:demo": "./scripts/deploy.sh build demo",
+    "deploy:start:production": "./scripts/deploy.sh start production",
+    "deploy:start:demo": "./scripts/deploy.sh start demo",
+    "deploy:stop:production": "./scripts/deploy.sh stop production",
+    "deploy:stop:demo": "./scripts/deploy.sh stop demo",
+    "deploy:restart:production": "./scripts/deploy.sh restart production",
+    "deploy:restart:demo": "./scripts/deploy.sh restart demo",
+    "deploy:status:production": "./scripts/deploy.sh status production",
+    "deploy:status:demo": "./scripts/deploy.sh status demo",
+    "deploy:logs:production": "./scripts/deploy.sh logs production",
+    "deploy:logs:demo": "./scripts/deploy.sh logs demo"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.0",
@@ -75,7 +90,9 @@
     "next-safe-action": "^8.0.10",
     "next-themes": "^0.2.1",
     "node-fetch": "^3.3.2",
+    "otplib": "^12.0.1",
     "puppeteer": "^24.15.0",
+    "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-day-picker": "8.10.1",
@@ -93,7 +110,8 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.1.0",
     "vaul": "^0.9.6",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
@@ -101,6 +119,7 @@
     "@types/jest": "^29.5.14",
     "@types/lodash": "^4.17.16",
     "@types/node": "^22.15.3",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/uuid": "^10.0.0",

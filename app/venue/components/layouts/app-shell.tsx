@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { GlobalNavigation } from "@/components/layouts/global-navigation"
+import { GlobalNavigation } from "./global-navigation"
 
 interface AppShellProps {
   children: React.ReactNode

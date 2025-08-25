@@ -201,8 +201,12 @@ export default function PromotionsPage() {
         promo.contentType.toLowerCase().includes(searchQuery.toLowerCase())),
   )
 
-  const handleCreatePromotion = (content: typeof selectedContent) => {
-    setSelectedContent(content)
+  const handleCreatePromotion = (content: { id: string; type: string; title: string; date: string; status: string }) => {
+    setSelectedContent({
+      id: content.id,
+      type: content.type as "event" | "post" | "profile" | "job",
+      title: content.title
+    })
     setShowCreateModal(true)
   }
 
@@ -400,9 +404,6 @@ export default function PromotionsPage() {
           setShowCreateModal(false)
           setSelectedContent(null)
         }}
-        contentId={selectedContent?.id}
-        contentType={selectedContent?.type as any}
-        contentTitle={selectedContent?.title}
       />
     </div>
   )

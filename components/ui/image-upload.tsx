@@ -78,11 +78,11 @@ export function ImageUpload({ type, currentImageUrl, onImageChange, className }:
     } catch (error) {
       console.error('Upload error:', error)
       console.error('Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
       })
-      alert(`Failed to upload image: ${error.message || 'Unknown error'}`)
+              alert(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setUploading(false)
     }

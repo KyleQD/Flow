@@ -1,17 +1,18 @@
+export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
 export async function POST(request: NextRequest) {
   try {
     // Authenticate the request
-    const { user, supabase } = await authenticateApiRequest(request)
-    
-    if (!user) {
+    const authResult = await authenticateApiRequest(request)
+    if (!authResult || !authResult.user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       )
     }
+    const { user, supabase } = authResult
 
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Create the storage bucket if it doesn't exist
     const { data: buckets } = await supabase.storage.listBuckets()
-    const profileImagesBucket = buckets?.find(b => b.name === 'profile-images')
+    const profileImagesBucket = buckets?.find((b: any) => b.name === 'profile-images')
     
     if (!profileImagesBucket) {
       console.log('Creating profile-images bucket...')
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
     // First, try updating the specific column
     const updateData = type === 'avatar' 
       ? { avatar_url: publicUrl }
-      : { header_url: publicUrl }
+      : { cover_image: publicUrl }
 
     const { error: profileError } = await supabase
       .from('profiles')
@@ -148,8 +149,8 @@ export async function POST(request: NextRequest) {
     if (profileError) {
       console.error('Profile update error:', profileError)
       
-      // If header_url column doesn't exist, try using metadata approach
-      if (profileError.message.includes('header_url') && type === 'header') {
+      // If cover_image column doesn't exist (older env), try using metadata approach
+      if (type === 'header') {
         console.log('Trying metadata approach for header_url...')
         
         // Get existing profile data
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
 
         const existingMetadata = existingProfile?.metadata || {}
         
-        // Update metadata with header URL
+        // Update metadata with header URL and attempt a secondary write to cover_image if it exists now
         const { error: metadataError } = await supabase
           .from('profiles')
           .update({
@@ -182,6 +183,11 @@ export async function POST(request: NextRequest) {
           profileUpdateSuccess = true
           console.log('Profile updated successfully using metadata approach')
           console.log('Header URL saved to metadata:', publicUrl)
+          // Best-effort: try to set cover_image in case migration ran after first attempt
+          await supabase
+            .from('profiles')
+            .update({ cover_image: publicUrl })
+            .eq('id', user.id)
         }
       } else {
         return NextResponse.json(

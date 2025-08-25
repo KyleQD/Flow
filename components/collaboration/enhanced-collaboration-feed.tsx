@@ -37,7 +37,6 @@ import {
   Award,
   CheckCircle,
   Verified,
-  Lightning,
   AlertCircle
 } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
@@ -118,19 +117,32 @@ const mockCollaborations: (ArtistJob & {
     id: '1',
     title: 'Looking for Vocalist - Indie Rock Project',
     description: 'Seeking a versatile vocalist with strong harmonizing skills for our upcoming indie rock album. We have 8 tracks ready and need someone who can bring emotional depth to the lyrics.',
+    category_id: 'collaboration',
+    posted_by: 'user-123',
+    posted_by_type: 'artist',
+    poster_profile_id: 'profile-123',
     job_type: 'collaboration',
-    instruments_needed: ['Vocals', 'Harmonies'],
-    genre: ['Indie Rock', 'Alternative'],
     payment_type: 'revenue_share',
     payment_amount: null,
-    location_type: 'remote',
+    payment_currency: 'USD',
+    payment_description: 'Revenue share from album sales',
     location: 'Remote',
-    experience_level: 'intermediate',
+    location_type: 'remote',
+    city: null,
+    state: null,
+    country: null,
+    event_date: null,
+    event_time: null,
+    duration_hours: null,
     deadline: '2024-02-15',
-    created_at: '2024-01-10T10:00:00Z',
-    updated_at: '2024-01-10T10:00:00Z',
-    posted_by: 'user-123',
-    status: 'active',
+    required_skills: ['Vocals', 'Harmonizing'],
+    required_equipment: ['Microphone', 'Audio Interface'],
+    required_experience: 'intermediate',
+    required_genres: ['Indie Rock'],
+    age_requirement: null,
+    instruments_needed: ['Vocals', 'Harmonies'],
+    genre: 'Indie Rock',
+    attachments: {},
     collaboration_details: {
       project_timeline: '3 months',
       estimated_hours: '40-60 hours',
@@ -138,6 +150,19 @@ const mockCollaborations: (ArtistJob & {
       file_sharing_preferences: 'Google Drive',
       communication_preferences: 'Discord, Email'
     },
+    benefits: ['Creative freedom', 'Revenue share'],
+    special_requirements: null,
+    contact_email: 'contact@example.com',
+    contact_phone: null,
+    external_link: null,
+    status: 'open',
+    priority: 'normal',
+    featured: false,
+    applications_count: 5,
+    views_count: 25,
+    created_at: '2024-01-10T10:00:00Z',
+    updated_at: '2024-01-10T10:00:00Z',
+    expires_at: null,
     isHot: true,
     artistVerified: true,
     responseRate: 95,
@@ -147,19 +172,32 @@ const mockCollaborations: (ArtistJob & {
     id: '2',
     title: 'Electronic Producer Needed - Ambient/Downtempo',
     description: 'Working on a series of ambient electronic pieces that blend organic and synthetic elements. Looking for a producer skilled in sound design and atmospheric textures.',
-    job_type: 'collaboration',
-    instruments_needed: ['Production', 'Sound Design', 'Synthesizers'],
-    genre: ['Electronic', 'Ambient', 'Downtempo'],
-    payment_type: 'flat_rate',
-    payment_amount: 1500,
-    location_type: 'hybrid',
-    location: 'Los Angeles, CA',
-    experience_level: 'advanced',
-    deadline: '2024-03-01',
-    created_at: '2024-01-08T14:30:00Z',
-    updated_at: '2024-01-08T14:30:00Z',
+    category_id: 'collaboration',
     posted_by: 'user-456',
-    status: 'active',
+    posted_by_type: 'artist',
+    poster_profile_id: 'profile-456',
+    job_type: 'collaboration',
+    payment_type: 'paid',
+    payment_amount: 1500,
+    payment_currency: 'USD',
+    payment_description: 'Flat rate payment for project completion',
+    location: 'Los Angeles, CA',
+    location_type: 'hybrid',
+    city: 'Los Angeles',
+    state: 'CA',
+    country: 'USA',
+    event_date: null,
+    event_time: null,
+    duration_hours: null,
+    deadline: '2024-03-01',
+    required_skills: ['Production', 'Sound Design'],
+    required_equipment: ['DAW', 'Synthesizers'],
+    required_experience: 'professional',
+    required_genres: ['Electronic', 'Ambient'],
+    age_requirement: null,
+    instruments_needed: ['Production', 'Sound Design', 'Synthesizers'],
+    genre: 'Electronic',
+    attachments: {},
     collaboration_details: {
       project_timeline: '6 weeks',
       estimated_hours: '80-100 hours',
@@ -167,6 +205,19 @@ const mockCollaborations: (ArtistJob & {
       file_sharing_preferences: 'Dropbox',
       communication_preferences: 'Slack, Video calls'
     },
+    benefits: ['Creative collaboration', 'Professional networking'],
+    special_requirements: null,
+    contact_email: 'producer@example.com',
+    contact_phone: null,
+    external_link: null,
+    status: 'open',
+    priority: 'high',
+    featured: false,
+    applications_count: 3,
+    views_count: 18,
+    created_at: '2024-01-08T14:30:00Z',
+    updated_at: '2024-01-08T14:30:00Z',
+    expires_at: null,
     isUrgent: true,
     artistVerified: false,
     responseRate: 87,
@@ -241,7 +292,7 @@ function CollaborationCard({
         <div className="absolute top-3 right-3 flex items-center space-x-2 z-10">
           {collaboration.isHot && (
             <Badge className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-xs">
-              <Lightning className="h-3 w-3 mr-1" />
+              <Zap className="h-3 w-3 mr-1" />
               Hot
             </Badge>
           )}
@@ -314,7 +365,7 @@ function CollaborationCard({
                 {instrument}
               </Badge>
             ))}
-            {collaboration.genre?.map(genre => (
+            {collaboration.required_genres?.map(genre => (
               <Badge key={genre} variant="outline" className="text-xs bg-slate-800/50 text-slate-300 border-slate-600">
                 {genre}
               </Badge>
@@ -443,7 +494,7 @@ export function EnhancedCollaborationFeed({
       filtered = filtered.filter(collab => 
         collab.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         collab.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        collab.genre?.some(g => g.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        collab.required_genres?.some(g => g.toLowerCase().includes(searchQuery.toLowerCase())) ||
         collab.instruments_needed?.some(i => i.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     }

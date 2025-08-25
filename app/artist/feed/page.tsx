@@ -34,7 +34,7 @@ import {
 import { CleanPostCreator } from '@/components/feed/clean-post-creator'
 import { MediaDisplay } from '@/components/feed/media-display'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Database } from '@/types/database.types'
+// Database type not used; removed invalid import
 import { useAuth } from '@/contexts/auth-context'
 import { useArtist } from '@/contexts/artist-context'
 import { toast } from 'sonner'
@@ -69,7 +69,7 @@ export default function ArtistFeedPage() {
   const [isLoadingNetwork, setIsLoadingNetwork] = useState(true)
   const [activeTab, setActiveTab] = useState('live')
   const [feedFilter, setFeedFilter] = useState<'all' | 'following' | 'trending'>('all')
-  const supabase = createClientComponentClient<Database>()
+  const supabase = createClientComponentClient()
 
   // Fetch user's own posts
   const fetchPosts = async () => {
@@ -632,7 +632,7 @@ export default function ArtistFeedPage() {
                   user={{
                     id: user?.id || '',
                     username: displayName,
-                    avatar_url: artistProfile?.avatar_url
+                    avatar_url: (artistProfile as any)?.avatar_url || undefined
                   }}
                 />
               </motion.div>
@@ -860,10 +860,10 @@ export default function ArtistFeedPage() {
                                           poster={item.thumbnail_url}
                                         />
                                       )}
-                                      {index === 3 && post.media_items.length > 4 && (
+                                      {index === 3 && (post.media_items?.length || 0) > 4 && (
                                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                                           <span className="text-white text-xl font-bold">
-                                            +{post.media_items.length - 4}
+                                            +{(post.media_items?.length || 0) - 4}
                                           </span>
                                         </div>
                                       )}

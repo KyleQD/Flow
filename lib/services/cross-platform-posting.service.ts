@@ -320,9 +320,16 @@ export class CrossPlatformPostingService {
    * Use a template (increment usage count)
    */
   async useTemplate(templateId: string): Promise<PostTemplate> {
+    // First get the current usage count
+    const { data: currentTemplate } = await this.supabase
+      .from('post_templates')
+      .select('usage_count')
+      .eq('id', templateId)
+      .single()
+
     const { data, error } = await this.supabase
       .from('post_templates')
-      .update({ usage_count: this.supabase.sql`usage_count + 1` })
+      .update({ usage_count: (currentTemplate?.usage_count || 0) + 1 })
       .eq('id', templateId)
       .select()
       .single()
@@ -456,7 +463,7 @@ export class CrossPlatformPostingService {
       .single()
 
     if (error) throw error
-    return data
+    return data as CrossPostAnalytics
   }
 
   /**
@@ -502,11 +509,12 @@ export class CrossPlatformPostingService {
     
     data?.forEach(record => {
       const accountId = record.account_id
+      const accountData = Array.isArray(record.accounts) ? record.accounts[0] : record.accounts
       if (!accountMap.has(accountId)) {
         accountMap.set(accountId, {
           account_id: accountId,
-          account_type: record.accounts.account_type,
-          display_name: record.accounts.display_name,
+          account_type: accountData?.account_type || 'unknown',
+          display_name: accountData?.display_name || 'Unknown',
           total_posts: 0,
           total_engagement: 0,
           total_reach: 0,

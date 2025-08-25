@@ -15,7 +15,8 @@ import { useSession } from "next-auth/react"
 
 export default function NewJobPage() {
   const router = useRouter()
-  const { data: session } = useSession()
+  const sessionResult = useSession()
+  const session = sessionResult?.data
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [budget, setBudget] = useState("")

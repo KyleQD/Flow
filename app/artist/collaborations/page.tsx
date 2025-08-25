@@ -102,11 +102,15 @@ export default function CollaborationsPage() {
     }
   }
 
-  const handleApplyToCollaboration = async (applicationData: CreateCollaborationApplicationFormData) => {
+  const handleApplyToCollaboration = async (applicationData: CreateCollaborationApplicationFormData | string) => {
     if (!user) return
     
     try {
-      await ArtistJobsService.applyToCollaboration(applicationData, user.id)
+      if (typeof applicationData === 'string') {
+        await ArtistJobsService.applyToCollaboration({ job_id: applicationData, contact_email: user.email || '' }, user.id)
+      } else {
+        await ArtistJobsService.applyToCollaboration(applicationData, user.id)
+      }
       loadMyApplications()
       loadStats()
     } catch (error) {

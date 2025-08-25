@@ -353,7 +353,7 @@ export default function StaffManagementPage() {
                         <h3 className="text-lg font-semibold text-white">{application.applicant_name}</h3>
                         <p className="text-slate-400 text-sm">{application.applicant_email}</p>
                         <p className="text-slate-400 text-sm">
-                          Applied for: {application.job_posting?.title || 'Unknown Position'}
+                          Applied for: {jobPostings.find(j => j.id === application.job_posting_id)?.title || 'Unknown Position'}
                         </p>
                         <div className="flex gap-2">
                           {getStatusBadge(application.status)}

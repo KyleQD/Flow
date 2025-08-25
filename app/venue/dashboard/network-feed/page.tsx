@@ -3,5 +3,5 @@
 import { FeedLayout } from "../../components/social/feed-layout"
 
 export default function NetworkFeedPage() {
-  return <FeedLayout defaultTab="following" showPostCreator={true} showSidebar={true} />
+  return <FeedLayout defaultTab="following" showPostCreator={true} />
 }

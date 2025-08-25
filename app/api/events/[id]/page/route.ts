@@ -26,7 +26,7 @@ async function fetchCreatorInfo(userId: string, supabase: any) {
   return data
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: any) {
   try {
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
@@ -80,7 +80,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       }
     }
 
-    if (creator) response.event.creator = creator
+    if (creator) (response as any).event.creator = creator
 
     return NextResponse.json(response)
   } catch (error) {

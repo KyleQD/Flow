@@ -5,19 +5,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Trash2 } from "lucide-react"
-import type { ProfileData } from "@/lib/types"
+// Minimal local type to avoid external dependency
+interface Certification {
+  id: string
+  title: string
+  organization?: string
+  year?: string
+}
 import { motion } from "framer-motion"
-import { ConfirmDialog } from "@/components/confirm-dialog"
 
 interface CertificationItemProps {
-  certification: ProfileData["certifications"][0]
-  onUpdate: (id: string, certification: Partial<Omit<ProfileData["certifications"][0], "id">>) => void
+  certification: Certification
+  onUpdate: (id: string, certification: Partial<Omit<Certification, "id">>) => void
   onRemove: (id: string) => void
   isEditable?: boolean
 }
 
 export function CertificationItem({ certification, onUpdate, onRemove, isEditable = true }: CertificationItemProps) {
-  const [showConfirm, setShowConfirm] = React.useState(false)
 
   if (!isEditable) {
     return (
@@ -42,7 +46,10 @@ export function CertificationItem({ certification, onUpdate, onRemove, isEditabl
         variant="ghost"
         size="icon"
         className="absolute top-2 right-2 h-6 w-6 text-gray-400 hover:text-red-500"
-        onClick={() => setShowConfirm(true)}
+        onClick={() => {
+          const confirmed = window.confirm('Remove this certification?')
+          if (confirmed) onRemove(certification.id)
+        }}
         aria-label="Remove certification"
       >
         <Trash2 className="h-4 w-4" />
@@ -83,16 +90,7 @@ export function CertificationItem({ certification, onUpdate, onRemove, isEditabl
         </div>
       </div>
 
-      <ConfirmDialog
-        isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
-        onConfirm={() => onRemove(certification.id)}
-        title="Remove Certification"
-        description="Are you sure you want to remove this certification from your profile? This action cannot be undone."
-        confirmText="Remove"
-        cancelText="Cancel"
-        variant="destructive"
-      />
+
     </motion.div>
   )
 }

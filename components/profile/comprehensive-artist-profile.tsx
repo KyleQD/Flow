@@ -33,7 +33,6 @@ import {
   Twitter,
   Youtube,
   Apple,
-  Soundcloud,
   Globe,
   Mail,
   Phone,
@@ -44,7 +43,6 @@ import {
   Ticket,
   Mic,
   Guitar,
-  Stage,
   FileText,
   Sparkles,
   Zap,
@@ -53,7 +51,8 @@ import {
   ArrowUpRight,
   Music2,
   Album,
-  User
+  User,
+  Plus
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -61,7 +60,7 @@ interface ComprehensiveArtistProfileProps {
   profile: {
     id: string
     username: string
-    artist_name: string
+    artist_name?: string
     account_type: 'artist'
     profile_data: {
       artist_name?: string
@@ -112,6 +111,9 @@ interface ComprehensiveArtistProfileProps {
   onFollow?: (userId: string) => void
   onMessage?: (userId: string) => void
   onShare?: (profile: any) => void
+  portfolio?: Array<{ id: string; title: string; description?: string; media?: any[]; links?: any[]; type?: string }>
+  experiences?: Array<{ id: string; title: string; organization?: string; description?: string; start_date?: string; end_date?: string }>
+  certifications?: Array<{ id: string; name: string; authority?: string; issue_date?: string; credential_url?: string }>
 }
 
 export function ComprehensiveArtistProfile({ 
@@ -119,14 +121,17 @@ export function ComprehensiveArtistProfile({
   isOwnProfile = false, 
   onFollow, 
   onMessage, 
-  onShare 
+  onShare,
+  portfolio,
+  experiences,
+  certifications: certs
 }: ComprehensiveArtistProfileProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<string | null>(null)
 
   const artistName = profile.profile_data?.artist_name || profile.artist_name || 'Artist'
   const bio = profile.profile_data?.bio || 'No bio available'
-  const location = profile.profile_data?.location || profile.location
+  const location = profile.profile_data?.location || 'Location not specified'
   const genres = profile.profile_data?.genres || (profile.profile_data?.genre ? [profile.profile_data.genre] : [])
 
   // Social media icons mapping
@@ -136,7 +141,7 @@ export function ComprehensiveArtistProfile({
     youtube: Youtube,
     spotify: Music,
     apple_music: Apple,
-    soundcloud: Soundcloud,
+    soundcloud: ExternalLink,
     website: Globe
   }
 
@@ -500,7 +505,7 @@ export function ComprehensiveArtistProfile({
                 <Card className="bg-white/5 backdrop-blur border-white/10">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
-                      <Stage className="h-5 w-5" />
+                      <Mic className="h-5 w-5" />
                       Notable Performances
                     </CardTitle>
                   </CardHeader>
@@ -529,8 +534,83 @@ export function ComprehensiveArtistProfile({
                 </Card>
               )}
 
+              {/* Portfolio (Music/Video emphasis) */}
+              {portfolio && portfolio.length > 0 && (
+                <Card className="bg-white/5 backdrop-blur border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Music className="h-5 w-5" />
+                      Featured Works
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {portfolio.map(item => (
+                        <div key={item.id} className="p-4 rounded-xl bg-white/5 border border-white/10">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="text-white font-semibold">{item.title}</h4>
+                              {item.description && (
+                                <p className="text-white/70 text-sm mt-1">{item.description}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Experiences */}
+              {experiences && experiences.length > 0 && (
+                <Card className="bg-white/5 backdrop-blur border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Experience
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {experiences.map(exp => (
+                        <div key={exp.id} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <div className="text-white font-medium">{exp.title}</div>
+                          {exp.organization && <div className="text-white/70 text-sm">{exp.organization}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Certifications */}
+              {certs && certs.length > 0 && (
+                <Card className="bg-white/5 backdrop-blur border-white/10">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Award className="h-5 w-5" />
+                      Certifications
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {certs.map(c => (
+                        <div key={c.id} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <div className="text-white font-medium">{c.name}</div>
+                          {c.authority && <div className="text-white/70 text-sm">{c.authority}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Electronic Press Kit */}
-              <ArtistEPKSection profile={profile} />
+              <ArtistEPKSection profile={{
+                ...profile,
+                artist_name: profile.artist_name || profile.profile_data?.artist_name || 'Artist'
+              }} />
             </div>
 
             {/* Right Sidebar */}

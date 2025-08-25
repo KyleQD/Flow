@@ -17,7 +17,15 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    const results = {
+    const results: {
+      artists: any[]
+      venues: any[]
+      events: any[]
+      users: any[]
+      music: any[]
+      posts: any[]
+      total: number
+    } = {
       artists: [],
       venues: [],
       events: [],

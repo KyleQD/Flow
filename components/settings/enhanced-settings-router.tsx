@@ -36,6 +36,11 @@ import { EnhancedVenueSettings } from "./enhanced-venue-settings"
 import { EnhancedGeneralSettings } from "./enhanced-general-settings"
 import { ColorPicker } from "@/components/ui/color-picker"
 import { ImageUpload } from "@/components/ui/image-upload"
+import { SkillsSettings } from "./skills-settings"
+import { PortfolioSettings } from "./portfolio-settings"
+import { ExperienceSettings } from "./experience-settings"
+import { CertificationsSettings } from "./certifications-settings"
+import { AboutSettings } from "./about-settings"
 
 interface AccountInfo {
   id: string
@@ -224,6 +229,41 @@ export function EnhancedSettingsRouter() {
             Profile
           </TabsTrigger>
           <TabsTrigger 
+            value="about" 
+            className="data-[state=active]:bg-white data-[state=active]:text-black text-white rounded-xl transition-all duration-200 hover:bg-white/10"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            About
+          </TabsTrigger>
+          <TabsTrigger 
+            value="skills" 
+            className="data-[state=active]:bg-white data-[state=active]:text-black text-white rounded-xl transition-all duration-200 hover:bg-white/10"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Skills
+          </TabsTrigger>
+          <TabsTrigger 
+            value="portfolio" 
+            className="data-[state=active]:bg-white data-[state=active]:text-black text-white rounded-xl transition-all duration-200 hover:bg-white/10"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Portfolio
+          </TabsTrigger>
+          <TabsTrigger 
+            value="experience" 
+            className="data-[state=active]:bg-white data-[state=active]:text-black text-white rounded-xl transition-all duration-200 hover:bg-white/10"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Experience
+          </TabsTrigger>
+          <TabsTrigger 
+            value="certs" 
+            className="data-[state=active]:bg-white data-[state=active]:text-black text-white rounded-xl transition-all duration-200 hover:bg-white/10"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Certifications
+          </TabsTrigger>
+          <TabsTrigger 
             value="notifications" 
             className="data-[state=active]:bg-white data-[state=active]:text-black text-white rounded-xl transition-all duration-200 hover:bg-white/10"
           >
@@ -276,6 +316,26 @@ export function EnhancedSettingsRouter() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="skills" className="space-y-6">
+          <SkillsSettings />
+        </TabsContent>
+
+        <TabsContent value="about" className="space-y-6">
+          <AboutSettings />
+        </TabsContent>
+
+        <TabsContent value="portfolio" className="space-y-6">
+          <PortfolioSettings />
+        </TabsContent>
+
+        <TabsContent value="experience" className="space-y-6">
+          <ExperienceSettings />
+        </TabsContent>
+
+        <TabsContent value="certs" className="space-y-6">
+          <CertificationsSettings />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">

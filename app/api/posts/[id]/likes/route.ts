@@ -4,13 +4,13 @@ import { parseAuthFromCookies } from '@/lib/auth/api-auth'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: any
 ) {
   try {
-    const resolvedParams = await params
-    const postId = resolvedParams.id
+    const postId = params.id
     const supabase = createServiceRoleClient()
-    const user = parseAuthFromCookies(request)
+    const auth = await parseAuthFromCookies(request as any)
+    const user = auth?.user
 
     if (!postId) {
       return NextResponse.json({ error: 'Post ID is required' }, { status: 400 })
@@ -26,7 +26,7 @@ export async function GET(
 
     // Check if current user has liked the post
     let isLiked = false
-    if (user) {
+    if (user?.id) {
       const { data: userLike } = await supabase
         .from('post_likes')
         .select('id')
@@ -52,15 +52,15 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: any
 ) {
   try {
-    const resolvedParams = await params
-    const postId = resolvedParams.id
+    const postId = params.id
     const supabase = createServiceRoleClient()
-    const user = parseAuthFromCookies(request)
+    const auth = await parseAuthFromCookies(request as any)
+    const user = auth?.user
 
-    if (!user) {
+    if (!user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
@@ -98,16 +98,7 @@ export async function POST(
         return NextResponse.json({ error: 'Failed to like post' }, { status: 500 })
       }
 
-      // Update post likes count
-      const { error: updateError } = await supabase
-        .from('posts')
-        .update({ likes_count: supabase.sql`likes_count + 1` })
-        .eq('id', postId)
-
-      if (updateError) {
-        console.error('Error updating likes count:', updateError)
-        // Don't fail the request, just log the error
-      }
+      // Likes count is derived from post_likes; no direct counter update needed
 
       console.log('✅ Successfully liked post')
       return NextResponse.json({ success: true, action: 'liked' })
@@ -129,16 +120,7 @@ export async function POST(
         return NextResponse.json({ error: 'Failed to unlike post' }, { status: 500 })
       }
 
-      // Update post likes count
-      const { error: updateError } = await supabase
-        .from('posts')
-        .update({ likes_count: supabase.sql`GREATEST(likes_count - 1, 0)` })
-        .eq('id', postId)
-
-      if (updateError) {
-        console.error('Error updating likes count:', updateError)
-        // Don't fail the request, just log the error
-      }
+      // Likes count is derived from post_likes; no direct counter update needed
 
       console.log('✅ Successfully unliked post')
       return NextResponse.json({ success: true, action: 'unliked' })

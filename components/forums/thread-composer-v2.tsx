@@ -177,7 +177,7 @@ export function ThreadComposerV2({
             <Combobox
               items={forums}
               value={selectedForum}
-              onChange={setSelectedForum}
+              onChange={(value) => setSelectedForum(value || '')}
               placeholder="Select a forum..."
               className="w-full"
             />

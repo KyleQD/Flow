@@ -181,7 +181,7 @@ export class FeedService {
       // Add is_liked flag and other computed fields
       const extendedPosts = posts?.map(post => ({
         ...post,
-        is_liked: user ? post.post_likes.some(like => like.user_id === user.id) : false,
+        is_liked: user ? post.post_likes.some((like: any) => like.user_id === user.id) : false,
         is_following: false, // Will be computed in a separate query if needed
         hashtags_data: [] // Will be populated if needed
       })) || []
@@ -226,7 +226,7 @@ export class FeedService {
 
       const extendedPost = {
         ...post,
-        is_liked: user ? post.post_likes.some(like => like.user_id === user.id) : false
+        is_liked: user ? post.post_likes.some((like: any) => like.user_id === user.id) : false
       }
 
       return { data: extendedPost, error: null }
@@ -341,7 +341,7 @@ export class FeedService {
 
       const extendedComments = comments?.map(comment => ({
         ...comment,
-        is_liked: user ? comment.comment_likes.some(like => like.user_id === user.id) : false,
+        is_liked: user ? comment.comment_likes.some((like: any) => like.user_id === user.id) : false,
         replies_count: 0 // Will be computed if needed
       })) || []
 
@@ -482,7 +482,7 @@ export class FeedService {
 
       const extendedPosts = posts?.map(post => ({
         ...post,
-        is_liked: user ? post.post_likes.some(like => like.user_id === user.id) : false
+        is_liked: user ? post.post_likes.some((like: any) => like.user_id === user.id) : false
       })) || []
 
       return { data: extendedPosts, error: null }

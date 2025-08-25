@@ -2,10 +2,19 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback, useMemo } from "react"
 import type { ProfileData, ProfileContextType } from "@/lib/types"
-import { defaultProfile } from "@/lib/mock-data"
+
+const DEFAULT_PROFILE: ProfileData = {
+  profile: null,
+  artistProfile: null,
+  venueProfile: null,
+  experience: [],
+  certifications: [],
+  gallery: [],
+  skills: [],
+}
 import { v4 as uuidv4 } from "uuid"
 import { useToast } from "@/hooks/use-toast"
-import { useLocalStorage } from "@/hooks/use-local-storage"
+import { useLocalStorage } from "@/hooks/venue/use-local-storage"
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined)
 
@@ -17,9 +26,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   // Initialize profile if not exists
   useEffect(() => {
-    if (profile === null) {
-      setProfile(defaultProfile)
-    }
+    if (profile === null) setProfile(DEFAULT_PROFILE)
     setLoading(false)
   }, [profile, setProfile])
 
@@ -231,6 +238,71 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     [setProfile],
   )
 
+  const updateGalleryItem = useCallback(
+    (id: string, item: Partial<Omit<ProfileData["gallery"][0], "id">>) => {
+      setProfile((prev) => {
+        if (!prev) return null
+        return {
+          ...prev,
+          gallery: prev.gallery.map((galleryItem) => (galleryItem.id === id ? { ...galleryItem, ...item } : galleryItem)),
+        }
+      })
+    },
+    [setProfile],
+  )
+
+  const updateEvent = useCallback(
+    async (id: string, eventData: any): Promise<boolean> => {
+      try {
+        // In a real app, this would call an API to update an event
+        toast({
+          title: "Event updated",
+          description: "Your event has been updated successfully.",
+        })
+        return true
+      } catch (error) {
+        console.error("Error updating event:", error)
+        toast({
+          title: "Error updating event",
+          description: "There was an error updating your event. Please try again.",
+          variant: "destructive",
+        })
+        return false
+      }
+    },
+    [toast],
+  )
+
+  const deleteEvent = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        // In a real app, this would call an API to delete an event
+        toast({
+          title: "Event deleted",
+          description: "Your event has been deleted successfully.",
+        })
+        return true
+      } catch (error) {
+        console.error("Error deleting event:", error)
+        toast({
+          title: "Error deleting event",
+          description: "There was an error deleting your event. Please try again.",
+          variant: "destructive",
+        })
+        return false
+      }
+    },
+    [toast],
+  )
+
+  const getEventById = useCallback(
+    (id: string): any | undefined => {
+      // In a real app, this would fetch the event from an API
+      return undefined
+    },
+    [],
+  )
+
   const toggleConnection = useCallback(() => {
     setIsConnected((prev) => {
       const newStatus = !prev
@@ -262,7 +334,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [setProfile, toast])
 
   const exportProfile = useCallback(() => {
-    if (!profile) return
+    if (!profile) return ""
 
     try {
       const dataStr = JSON.stringify(profile)
@@ -279,6 +351,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         title: "Profile exported",
         description: "Your profile has been exported successfully.",
       })
+      
+      return dataStr
     } catch (error) {
       console.error("Error exporting profile:", error)
       toast({
@@ -286,6 +360,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         description: "There was an error exporting your profile.",
         variant: "destructive",
       })
+      return ""
     }
   }, [profile, toast])
 
@@ -324,6 +399,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     },
     [setProfile, toast],
   )
+
+
 
   const searchSkills = useCallback(
     (query: string): string[] => {
@@ -498,6 +575,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       addSkill,
       removeSkill,
       addGalleryItem,
+      updateGalleryItem,
       removeGalleryItem,
       reorderGallery,
       isConnected,
@@ -510,6 +588,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       createEPK,
       upgradeToPremiumEPK,
       createEvent,
+      updateEvent,
+      deleteEvent,
+      getEventById,
       generateTickets,
       promotePaidContent,
       postJob,
@@ -523,8 +604,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       removeExperience,
       addCertification,
       updateCertification,
+      removeCertification,
+      addSkill,
       removeSkill,
       addGalleryItem,
+      updateGalleryItem,
       removeGalleryItem,
       reorderGallery,
       isConnected,
@@ -537,6 +621,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       createEPK,
       upgradeToPremiumEPK,
       createEvent,
+      updateEvent,
+      deleteEvent,
+      getEventById,
       generateTickets,
       promotePaidContent,
       postJob,

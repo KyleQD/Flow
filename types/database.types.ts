@@ -696,6 +696,7 @@ export type VenueUserRole = {
   expires_at: string | null;
   is_active: boolean;
   notes: string | null;
+  venue_roles?: VenueRole;
 };
 
 export type VenueUserPermissionOverride = {

@@ -85,6 +85,9 @@ interface EnhancedPublicProfileProps {
   onFollow?: (userId: string) => void
   onMessage?: (userId: string) => void
   onShare?: (profile: any) => void
+  portfolio?: any[]
+  experiences?: any[]
+  certifications?: any[]
 }
 
 interface Skill {
@@ -154,7 +157,10 @@ export function EnhancedPublicProfileView({
   isOwnProfile = false, 
   onFollow, 
   onMessage, 
-  onShare 
+  onShare,
+  portfolio: portfolioProp,
+  experiences: experiencesProp,
+  certifications: certificationsProp
 }: EnhancedPublicProfileProps) {
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null)
   const [skills, setSkills] = useState<Skill[]>([])
@@ -183,8 +189,51 @@ export function EnhancedPublicProfileView({
     try {
       setLoading(true)
       
-      // Mock data - replace with real API calls
-      if (profile.account_type === 'artist') {
+      // Prefer server-provided content from API
+      if (portfolioProp || experiencesProp || certificationsProp) {
+        const mappedProjects: Project[] = (portfolioProp as any[] | undefined)?.map((it: any) => {
+          const firstImage = Array.isArray(it.media) ? (it.media.find((m: any) => m?.kind === 'image') || it.media[0]) : undefined
+          const firstLink = Array.isArray(it.links) ? it.links[0]?.url : undefined
+          return {
+            id: it.id,
+            title: it.title,
+            description: it.description || '',
+            image: firstImage?.url || '/placeholder-project.jpg',
+            category: it.type || 'Portfolio',
+            tags: it.tags || [],
+            completion_date: it.updated_at || it.created_at || new Date().toISOString(),
+            url: firstLink
+          }
+        }) || []
+
+        const mappedExp: Experience[] = (experiencesProp as any[] | undefined)?.map((ex: any) => {
+          const start = ex.start_date ? new Date(ex.start_date) : null
+          const end = ex.end_date ? new Date(ex.end_date) : null
+          const duration = start ? `${start.toLocaleDateString()} - ${end ? end.toLocaleDateString() : 'Present'}` : ''
+          return {
+            id: ex.id,
+            title: ex.title,
+            company: ex.organization || '',
+            duration,
+            description: ex.description || '',
+            skills_used: ex.tags || [],
+            featured: false
+          }
+        }) || []
+
+        const mappedCerts: Certification[] = (certificationsProp as any[] | undefined)?.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          organization: c.authority || c.organization || '',
+          date: c.issue_date || c.created_at || new Date().toISOString(),
+          credential_url: c.credential_url,
+          verified: false
+        })) || []
+
+        setProjects(mappedProjects)
+        setExperience(mappedExp)
+        setCertifications(mappedCerts)
+      } else if (profile.account_type === 'artist') {
         const mockTracks: Track[] = [
           {
             id: "1",
@@ -793,15 +842,11 @@ export function EnhancedPublicProfileView({
                   <div className="space-y-4">
                     {skills.slice(0, 8).map((skill) => (
                       <div key={skill.name} className="p-3 bg-white/5 rounded-xl">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between">
                           <span className="text-white font-medium">{skill.name}</span>
-                          <Badge className={cn("text-white text-xs", getSkillColor(skill.level))}>
-                            {skill.level}%
+                          <Badge className="text-white text-xs bg-white/10 border-white/20">
+                            {skill.endorsed_count || 0} endorsements
                           </Badge>
-                        </div>
-                        <Progress value={skill.level} className="h-2 bg-white/20" />
-                        <div className="text-xs text-white/60 mt-1">
-                          {skill.endorsed_count} endorsements
                         </div>
                       </div>
                     ))}

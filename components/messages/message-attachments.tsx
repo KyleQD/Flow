@@ -19,7 +19,7 @@ export default function MessageAttachments({ attachments }: MessageAttachmentsPr
           <AttachmentIcon type={attachment.type} />
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium truncate">{attachment.name}</div>
-            <div className="text-xs opacity-70">{formatFileSize(attachment.size)}</div>
+            <div className="text-xs opacity-70">{formatFileSize(Number(attachment.size))}</div>
           </div>
         </a>
       ))}

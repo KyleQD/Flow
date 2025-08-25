@@ -30,6 +30,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { useFeed } from '@/hooks/use-feed'
+import { useAuth } from '@/hooks/use-auth'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useEffect, useState as useReactState } from 'react'
 
@@ -111,9 +112,9 @@ export function PostCreator({ onPostCreated }: PostCreatorProps) {
         <form onSubmit={handleSubmit}>
           <div className="flex gap-4">
             <Avatar className="flex-shrink-0">
-              <AvatarImage src={user?.user_metadata?.avatar_url} />
+              <AvatarImage src={undefined} />
               <AvatarFallback>
-                {user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U'}
+                {user?.name?.[0] || user?.email?.[0] || 'U'}
               </AvatarFallback>
             </Avatar>
             

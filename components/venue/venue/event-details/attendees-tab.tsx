@@ -1,34 +1,31 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { Event } from "@/types/events"
+import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Download, Mail, UserPlus } from "lucide-react"
+import { CheckCircle2, Clock, User } from "lucide-react"
 
 interface AttendeesTabProps {
-  event: Event
+  event: any
 }
 
-// Mock data for attendees
-const mockAttendees = [
-  { id: 1, name: "Alex Johnson", email: "alex@example.com", ticketType: "VIP", checkIn: true },
-  { id: 2, name: "Sam Wilson", email: "sam@example.com", ticketType: "General", checkIn: true },
-  { id: 3, name: "Jamie Smith", email: "jamie@example.com", ticketType: "General", checkIn: false },
-  { id: 4, name: "Taylor Brown", email: "taylor@example.com", ticketType: "VIP", checkIn: false },
-  { id: 5, name: "Jordan Lee", email: "jordan@example.com", ticketType: "General", checkIn: true },
-]
-
 export default function AttendeesTab({ event }: AttendeesTabProps) {
-  // Calculate attendance metrics
+  // Mock attendees data
+  const mockAttendees = [
+    { id: "1", name: "John Doe", email: "john@example.com", checkIn: true, checkInTime: "18:30" },
+    { id: "2", name: "Jane Smith", email: "jane@example.com", checkIn: true, checkInTime: "19:15" },
+    { id: "3", name: "Bob Johnson", email: "bob@example.com", checkIn: false },
+    { id: "4", name: "Alice Brown", email: "alice@example.com", checkIn: true, checkInTime: "20:00" },
+  ]
+
   const totalAttendees = mockAttendees.length
   const checkedIn = mockAttendees.filter((a) => a.checkIn).length
-  const attendanceRate = event.capacity ? Math.round((totalAttendees / event.capacity) * 100) : 0
+  const attendanceRate = 80 // Mock attendance rate
   const checkInRate = totalAttendees ? Math.round((checkedIn / totalAttendees) * 100) : 0
 
   return (
     <div className="space-y-6">
-      {/* Attendance Overview */}
+      {/* Attendance Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -39,7 +36,7 @@ export default function AttendeesTab({ event }: AttendeesTabProps) {
               <div>
                 <p className="text-2xl font-bold">{totalAttendees}</p>
                 <p className="text-xs text-muted-foreground">
-                  {event.capacity ? `of ${event.capacity} capacity` : "No capacity set"}
+                  of 100 capacity
                 </p>
               </div>
               <div className="w-24">
@@ -70,102 +67,58 @@ export default function AttendeesTab({ event }: AttendeesTabProps) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Ticket Types</CardTitle>
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">VIP</span>
-                <span className="text-sm font-medium">
-                  {mockAttendees.filter((a) => a.ticketType === "VIP").length}
-                </span>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-2xl font-bold">{totalAttendees - checkedIn}</p>
+                <p className="text-xs text-muted-foreground">Not checked in</p>
               </div>
-              <Progress
-                value={(mockAttendees.filter((a) => a.ticketType === "VIP").length / totalAttendees) * 100}
-                className="h-2"
-              />
-
-              <div className="flex justify-between mt-2">
-                <span className="text-sm">General</span>
-                <span className="text-sm font-medium">
-                  {mockAttendees.filter((a) => a.ticketType === "General").length}
-                </span>
-              </div>
-              <Progress
-                value={(mockAttendees.filter((a) => a.ticketType === "General").length / totalAttendees) * 100}
-                className="h-2"
-              />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Attendee Actions */}
-      <div className="flex flex-wrap gap-2">
-        <Button>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add Attendee
-        </Button>
-        <Button variant="outline">
-          <Mail className="h-4 w-4 mr-2" />
-          Email All
-        </Button>
-        <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Export List
-        </Button>
-      </div>
-
-      {/* Attendees Table */}
+      {/* Attendees List */}
       <Card>
         <CardHeader>
-          <CardTitle>Attendees List</CardTitle>
+          <CardTitle className="text-lg">Attendees List</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Ticket Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockAttendees.map((attendee) => (
-                <TableRow key={attendee.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage
-                          src={`/abstract-geometric-shapes.png?key=0gamu&height=32&width=32&query=${attendee.name}`}
-                        />
-                        <AvatarFallback>{attendee.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <span>{attendee.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{attendee.email}</TableCell>
-                  <TableCell>{attendee.ticketType}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        attendee.checkIn ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {attendee.checkIn ? "Checked In" : "Not Checked In"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
-                      {attendee.checkIn ? "Undo Check-in" : "Check In"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="space-y-3">
+            {mockAttendees.map((attendee) => (
+              <div key={attendee.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{attendee.name}</p>
+                    <p className="text-sm text-muted-foreground">{attendee.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {attendee.checkIn ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <Badge variant="outline" className="text-green-600 border-green-600">
+                        Checked In
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">{attendee.checkInTime}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="h-4 w-4 text-yellow-500" />
+                      <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                        Pending
+                      </Badge>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>

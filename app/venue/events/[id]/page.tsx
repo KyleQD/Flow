@@ -2,9 +2,9 @@
 
 import { notFound } from "next/navigation"
 import { useEffect, useState } from "react"
-import EventHeader from "../components/event-details/event-header"
-import EventTabs from "../components/event-details/event-tabs"
-import { useVenueEvents } from "../lib/hooks/use-venue-events"
+import EventHeader from "../../components/event-details/event-header"
+import EventTabs from "../../components/event-details/event-tabs"
+import { useVenueEvents } from "../../lib/hooks/use-venue-events"
 
 interface EventDetailsPageProps {
   params: Promise<{
@@ -25,13 +25,9 @@ export default function EventDetailsPage({ params }: EventDetailsPageProps) {
 
   useEffect(() => {
     if (events && events.length > 0 && eventId) {
-      // Find the event that matches the ID from params
       const event = events.find((e: any) => e.id === eventId)
-      if (event) {
-        setSelectedEvent(event)
-      } else {
-        notFound()
-      }
+      if (event) setSelectedEvent(event)
+      else notFound()
     }
   }, [events, eventId])
 
@@ -47,9 +43,7 @@ export default function EventDetailsPage({ params }: EventDetailsPageProps) {
     )
   }
 
-  if (!selectedEvent) {
-    notFound()
-  }
+  if (!selectedEvent) notFound()
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -58,3 +52,5 @@ export default function EventDetailsPage({ params }: EventDetailsPageProps) {
     </div>
   )
 }
+
+

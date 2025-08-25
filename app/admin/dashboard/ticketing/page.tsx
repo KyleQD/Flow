@@ -181,6 +181,13 @@ export default function TicketingPage() {
     return new Intl.NumberFormat('en-US').format(num)
   }
 
+  function getSaleEventTitle(sale: TicketSale) {
+    const anySale = sale as any
+    if (anySale?.event && typeof anySale.event.title === 'string') return anySale.event.title as string
+    if (typeof anySale?.event_title === 'string') return anySale.event_title as string
+    return 'Unknown Event'
+  }
+
   const handleExportData = async () => {
     try {
       // For now, just show a success message since the API might not be ready
@@ -253,14 +260,14 @@ export default function TicketingPage() {
               title="Total Tickets Sold" 
               value={formatNumber(metrics?.total_tickets_sold || 0)} 
               trend={`${metrics?.weekly_trend || 0}% from last week`} 
-              trendUp={metrics?.weekly_trend > 0} 
+              trendUp={(metrics?.weekly_trend ?? 0) > 0} 
               icon={Ticket} 
             />
             <MetricCard
               title="Revenue Generated"
               value={formatCurrency(metrics?.revenue_generated || 0)}
               trend={`${metrics?.revenue_trend || 0}% from last week`}
-              trendUp={metrics?.revenue_trend > 0}
+              trendUp={(metrics?.revenue_trend ?? 0) > 0}
               icon={DollarSign}
             />
             <MetricCard 
@@ -417,7 +424,7 @@ export default function TicketingPage() {
                                 key={sale.id}
                                 id={sale.order_number}
                                 customer={sale.customer_name}
-                                event={sale.event?.title || 'Unknown Event'}
+                                event={getSaleEventTitle(sale)}
                                 ticketType={sale.ticket_type?.name || 'Unknown Type'}
                                 amount={formatCurrency(sale.total_amount)}
                                 date={new Date(sale.purchase_date).toLocaleDateString()}
@@ -466,7 +473,7 @@ export default function TicketingPage() {
                               key={sale.id}
                               id={sale.order_number}
                               customer={sale.customer_name}
-                              event={sale.event?.title || 'Unknown Event'}
+                              event={getSaleEventTitle(sale)}
                               ticketType={sale.ticket_type?.name || 'Unknown Type'}
                               amount={formatCurrency(sale.total_amount)}
                               date={new Date(sale.purchase_date).toLocaleDateString()}
@@ -514,7 +521,7 @@ export default function TicketingPage() {
                               key={sale.id}
                               id={sale.order_number}
                               customer={sale.customer_name}
-                              event={sale.event?.title || 'Unknown Event'}
+                              event={getSaleEventTitle(sale)}
                               ticketType={sale.ticket_type?.name || 'Unknown Type'}
                               amount={formatCurrency(sale.total_amount)}
                               date={new Date(sale.purchase_date).toLocaleDateString()}

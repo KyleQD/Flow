@@ -23,7 +23,7 @@ import {
   Calendar as CalendarIcon,
   Copy,
   Lightbulb,
-  Template,
+  FileText,
   Settings,
   Target,
   Zap,
@@ -408,7 +408,7 @@ export function CrossPlatformComposer({
               </Button>
               
               <Button variant="outline" onClick={handleCreateTemplate} disabled={isCreatingTemplate}>
-                <Template className="h-4 w-4 mr-2" />
+                <FileText className="h-4 w-4 mr-2" />
                 Save as Template
               </Button>
             </div>

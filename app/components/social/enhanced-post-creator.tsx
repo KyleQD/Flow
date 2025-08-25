@@ -5,10 +5,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useAuth } from "@/context/auth-context"
-import { useSocial } from "@/context/social-context"
+import { useAuth } from "@/contexts/auth-context"
+import { useSocial } from "@/contexts/social-context"
 import { EmojiPicker } from "./emoji-picker"
-import { LoadingSpinner } from "@/components/loading-spinner"
+import { LoadingSpinner } from "../loading-spinner"
 import { Image, Video, Link2, MapPin, Users, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -33,7 +33,8 @@ export function EnhancedPostCreator({
   onPostCreated,
 }: EnhancedPostCreatorProps) {
   const { user } = useAuth()
-  const { createPost } = useSocial()
+  const social = useSocial() as any
+  const createPost = (social && social.createPost) ? social.createPost : (async (..._args: any[]) => undefined)
   const [content, setContent] = React.useState("")
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [attachments, setAttachments] = React.useState<Attachment[]>([])
@@ -124,9 +125,9 @@ export function EnhancedPostCreator({
       <CardContent className="p-4">
         <div className="flex space-x-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user.avatar} alt={user.fullName} />
+            <AvatarImage src={(user as any).avatar || (user as any).user_metadata?.avatar_url} alt={(user as any).fullName || (user as any).user_metadata?.full_name || (user as any).email} />
             <AvatarFallback>
-              {user.fullName
+              {(((user as any).fullName || (user as any).user_metadata?.full_name || (user as any).email || "") as string)
                 .split(" ")
                 .map((n: string) => n[0])
                 .join("")}

@@ -135,7 +135,7 @@ export function TourEventManager({ tourId, events, onEventsUpdate, initialEventI
       event_time: event.event_time || '',
       doors_open: event.doors_open || '',
       duration_minutes: event.duration_minutes || 0,
-      status: event.status,
+      status: event.status as "scheduled",
       capacity: event.capacity,
       ticket_price: event.ticket_price || 0,
       vip_price: event.vip_price || 0,

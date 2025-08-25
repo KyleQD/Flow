@@ -342,7 +342,7 @@ export default function MusicPage() {
 
       // Upload files if files have changed
       if (musicFile) {
-        const uploadResult = await uploadFiles(musicFile, coverFile)
+        const uploadResult = await uploadFiles(musicFile, coverFile || undefined)
         if (uploadResult.fileUrl) {
           fileUrl = uploadResult.fileUrl
         }
@@ -759,8 +759,10 @@ export default function MusicPage() {
         {currentlyPlaying && (
           <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/20 p-4 z-50">
             <MusicPlayer
-              track={filteredTracks.find(t => t.id === currentlyPlaying)!}
-              onClose={() => setCurrentlyPlaying(null)}
+              track={{
+                ...filteredTracks.find(t => t.id === currentlyPlaying)!,
+                artist: profile?.artist_name || 'Artist'
+              }}
             />
           </div>
         )}

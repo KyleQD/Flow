@@ -42,17 +42,17 @@ export function PostItem({
     
     if (post.media && Array.isArray(post.media)) {
       mediaItems = post.media
-    } else if (post.media_urls && Array.isArray(post.media_urls)) {
-      mediaItems = post.media_urls.map((url: string, index: number) => ({
+    } else if ((post as any).media_urls && Array.isArray((post as any).media_urls)) {
+      mediaItems = (post as any).media_urls.map((url: string, index: number) => ({
         id: `${post.id}-media-${index}`,
         type: 'image',
         url: url,
         alt: `Media ${index + 1}`
       }))
-    } else if (post.post_media && Array.isArray(post.post_media)) {
-      mediaItems = post.post_media
-    } else if (post.media_items && Array.isArray(post.media_items)) {
-      mediaItems = post.media_items
+    } else if ((post as any).post_media && Array.isArray((post as any).post_media)) {
+      mediaItems = (post as any).post_media
+    } else if ((post as any).media_items && Array.isArray((post as any).media_items)) {
+      mediaItems = (post as any).media_items
     }
 
     if (!mediaItems || mediaItems.length === 0) return null

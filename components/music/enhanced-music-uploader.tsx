@@ -115,7 +115,7 @@ export function EnhancedMusicUploader({ onUploadComplete, onCancel, isUploading 
       setMusicFile({
         file,
         progress: 0,
-        status: 'ready'
+        status: 'completed'
       })
       // Immediate auto-start upload using current form defaults
       const filenameTitle = file.name.replace(/\.[^.]+$/, '').replace(/[._-]+/g, ' ').trim()

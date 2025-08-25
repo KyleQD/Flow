@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action, ...data } = body
 
-    const supabase = createClient(cookies())
+    const supabase = await createClient()
 
     switch (action) {
       case 'invite_existing_user':
@@ -412,7 +412,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Token is required" }, { status: 400 })
     }
 
-    const supabase = createClient(cookies())
+    const supabase = await createClient()
 
     switch (action) {
       case 'validate_token':

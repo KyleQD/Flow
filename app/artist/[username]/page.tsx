@@ -64,6 +64,9 @@ export default function ArtistPublicProfilePage() {
   const username = params.username as string
   
   const [profile, setProfile] = useState<ArtistProfileData | null>(null)
+  const [portfolio, setPortfolio] = useState<any[]>([])
+  const [experiences, setExperiences] = useState<any[]>([])
+  const [certifications, setCertifications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
@@ -90,8 +93,11 @@ export default function ArtistPublicProfilePage() {
       if (response.ok) {
         const data = await response.json()
         if (data.profile) {
-          console.log('✅ Artist profile loaded successfully:', data.profile.artist_name)
+          console.log('✅ Artist profile loaded successfully:', data.profile.profile_data?.artist_name || data.profile.username)
           setProfile(data.profile)
+          setPortfolio(data.portfolio || [])
+          setExperiences(data.experiences || [])
+          setCertifications(data.certifications || [])
           
           // Check if this is the current user's profile by comparing user IDs
           if (isAuthenticated && user) {
@@ -222,7 +228,7 @@ export default function ArtistPublicProfilePage() {
 
   return (
     <PublicProfileLayout 
-      profileName={profile.profile_data?.artist_name || profile.artist_name}
+      profileName={profile.profile_data?.artist_name || profile.profile_data?.stage_name || profile.username}
       profileType="artist"
     >
       <ComprehensiveArtistProfile
@@ -231,14 +237,21 @@ export default function ArtistPublicProfilePage() {
         onFollow={handleFollow}
         onMessage={handleMessage}
         onShare={handleShare}
+        portfolio={portfolio}
+        experiences={experiences}
+        certifications={certifications}
       />
       
       {showMessageModal && (
         <MessageModal
           isOpen={showMessageModal}
           onClose={() => setShowMessageModal(false)}
-          recipientId={profile.id}
-          recipientName={profile.profile_data?.artist_name || profile.username}
+          recipient={{
+            id: profile.id,
+            username: profile.username,
+            full_name: profile.profile_data?.artist_name || profile.username,
+            avatar_url: profile.avatar_url
+          }}
         />
       )}
     </PublicProfileLayout>

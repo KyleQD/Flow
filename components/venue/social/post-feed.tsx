@@ -4,10 +4,10 @@ import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useSocial } from "@/context/social-context"
-import { useAuth } from "@/context/auth-context"
-import { LoadingSpinner } from "@/components/loading-spinner"
-import { PostItem } from "@/components/social/post-item"
-import { PostCreator } from "@/components/social/post-creator"
+import { useAuth } from "@/contexts/auth-context"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { PostItem } from "./post-item"
+import { PostCreator } from "./post-creator"
 import { RefreshCw } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -18,7 +18,9 @@ interface PostFeedProps {
 }
 
 export function PostFeed({ userId, filter = "all", showPostCreator = true }: PostFeedProps) {
-  const { posts, loadingPosts, users } = useSocial()
+  const { posts } = useSocial()
+  const [loadingPosts, setLoadingPosts] = useState(false)
+  const [users] = useState<any[]>([])
   const { user: currentUser } = useAuth()
   const [filteredPosts, setFilteredPosts] = useState<any[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -68,7 +70,7 @@ export function PostFeed({ userId, filter = "all", showPostCreator = true }: Pos
   if (loadingPosts) {
     return (
       <div className="flex justify-center items-center py-12">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner />
       </div>
     )
   }

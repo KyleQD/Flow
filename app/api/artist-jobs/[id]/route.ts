@@ -4,8 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { CreateJobFormData } from '@/types/artist-jobs'
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  request: Request,
+  { params }: any
 ) {
   try {
     const supabase = await createClient()
@@ -42,8 +42,8 @@ export async function GET(
 }
 
 export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  request: Request,
+  { params }: any
 ) {
   try {
     const supabase = await createClient()
@@ -82,8 +82,8 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  request: Request,
+  { params }: any
 ) {
   try {
     const supabase = await createClient()
