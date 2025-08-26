@@ -1,15 +1,72 @@
-import { checkAuth } from "./auth/server"
+import bcrypt from 'bcryptjs'
+import { prisma } from './prisma'
 
-/**
- * Get authenticated user for API routes using Supabase
- * This function uses the existing checkAuth utility
- */
-export async function getAuthUser() {
-  try {
-    const auth = await checkAuth()
-    return auth?.user || null
-  } catch (error) {
-    console.error('[getAuthUser] Error getting authenticated user:', error)
-    return null
-  }
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 12)
+}
+
+export async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  return bcrypt.compare(password, hashedPassword)
+}
+
+export async function createUser(userData: {
+  email: string
+  password: string
+  name?: string
+  username?: string
+  fullName?: string
+  accountType?: string
+  organization?: string
+  role?: string
+  enableMFA?: boolean
+}) {
+  const hashedPassword = await hashPassword(userData.password)
+
+  const user = await prisma.user.create({
+    data: {
+      email: userData.email,
+      password: hashedPassword,
+      name: userData.name,
+      username: userData.username,
+      fullName: userData.fullName,
+      accountType: userData.accountType || 'general',
+      organization: userData.organization,
+      role: userData.role,
+      enableMFA: userData.enableMFA || false,
+      profile: {
+        create: {}
+      },
+      activeProfile: {
+        create: {
+          activeProfileType: 'general'
+        }
+      }
+    },
+    include: {
+      profile: true,
+      activeProfile: true
+    }
+  })
+
+  return user
+}
+
+export async function getUserByEmail(email: string) {
+  return prisma.user.findUnique({
+    where: { email },
+    include: {
+      profile: true,
+      activeProfile: true
+    }
+  })
+}
+
+export async function getUserById(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+    include: {
+      profile: true,
+      activeProfile: true
+    }
+  })
 } 

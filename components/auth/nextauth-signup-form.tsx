@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,6 @@ import { Progress } from '@/components/ui/progress'
 import { 
   Eye, 
   EyeOff, 
-  Mail, 
   ArrowRight, 
   ArrowLeft,
   CheckCircle, 
@@ -23,24 +22,10 @@ import {
   User, 
   Building, 
   Briefcase, 
-  Users,
-  Crown,
-  Shield,
-  Star,
   Truck,
-  Calendar,
-  DollarSign,
-  MessageSquare,
-  BarChart3,
-  Globe,
   Lock,
-  Smartphone,
   CheckCircle2
 } from 'lucide-react'
-import { AuthService, type SignupData } from '@/lib/services/auth.service'
-import { rbacService } from '@/lib/services/rbac.service'
-import type { SystemRole } from '@/types/rbac'
-import { SYSTEM_ROLES } from '@/types/rbac'
 
 interface SignupFormData {
   email: string
@@ -63,7 +48,7 @@ interface SignupStep {
   description: string
 }
 
-export default function EnhancedSignupForm() {
+export default function NextAuthSignupForm() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
@@ -111,10 +96,6 @@ export default function EnhancedSignupForm() {
     }
   ]
 
-  useEffect(() => {
-    setProgress((currentStep / steps.length) * 100)
-  }, [currentStep, steps.length])
-
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
@@ -155,50 +136,41 @@ export default function EnhancedSignupForm() {
     setSuccess(null)
 
     try {
-      // Prepare signup data
-      const signupData: SignupData = {
-        email: formData.email,
-        password: formData.password,
-        full_name: formData.fullName,
-        username: formData.username,
-        account_type: formData.accountType,
-        organization: formData.organization,
-        role: formData.role,
-        enable_mfa: formData.enableMFA
-      }
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.fullName,
+          username: formData.username,
+          fullName: formData.fullName,
+          accountType: formData.accountType,
+          organization: formData.organization,
+          role: formData.role,
+          enableMFA: formData.enableMFA
+        })
+      })
 
-      // Use the new AuthService
-      const result = await AuthService.signUp(signupData)
+      const data = await response.json()
 
-      if (!result.success) {
-        setError(result.error || 'Failed to create account')
+      if (!response.ok) {
+        setError(data.error || 'Signup failed')
         return
       }
 
-      if (result.needsEmailConfirmation) {
-        setSuccess('Account created successfully! Please check your email to confirm your account.')
-        // Store signup data for onboarding
-        localStorage.setItem('signup_data', JSON.stringify({
-          email: formData.email,
-          account_type: formData.accountType,
-          account_mode: formData.accountMode
-        }))
-        
-        // Redirect to confirmation page
-        setTimeout(() => {
-          router.push('/auth/confirmation')
-        }, 2000)
-      } else {
-        setSuccess('Account created successfully! Redirecting to dashboard...')
-        // User is already signed in, redirect to dashboard
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 2000)
-      }
+      setSuccess('Account created successfully! Please sign in.')
+      
+      // Redirect to signin page
+      setTimeout(() => {
+        router.push('/auth/signin')
+      }, 2000)
 
     } catch (error) {
       console.error('Signup error:', error)
-      setError('An unexpected error occurred. Please try again.')
+      setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -625,7 +597,7 @@ export default function EnhancedSignupForm() {
           <div className="text-center pt-4">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <a href="/login" className="text-primary hover:underline font-medium">
+              <a href="/auth/signin" className="text-primary hover:underline font-medium">
                 Sign in
               </a>
             </p>
@@ -634,4 +606,4 @@ export default function EnhancedSignupForm() {
       </Card>
     </div>
   )
-} 
+}

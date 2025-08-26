@@ -21,6 +21,8 @@ Admin-driven workflow for:
 - Guiding approved applicants through secure onboarding
 - Managing teams with real-time status, zone/shift assignments, messaging, and exports
 
+
+
 ## Core Features
 
 ### 1. Job Postings

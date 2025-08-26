@@ -37,10 +37,7 @@ import {
   Smartphone,
   CheckCircle2
 } from 'lucide-react'
-import { AuthService, type SignupData } from '@/lib/services/auth.service'
-import { rbacService } from '@/lib/services/rbac.service'
-import type { SystemRole } from '@/types/rbac'
-import { SYSTEM_ROLES } from '@/types/rbac'
+import { supabase } from '@/lib/supabase/client'
 
 interface SignupFormData {
   email: string
@@ -63,7 +60,7 @@ interface SignupStep {
   description: string
 }
 
-export default function EnhancedSignupForm() {
+export default function WorkingSignupForm() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
@@ -155,27 +152,78 @@ export default function EnhancedSignupForm() {
     setSuccess(null)
 
     try {
-      // Prepare signup data
-      const signupData: SignupData = {
+      // Step 1: Create user account (without trigger)
+      console.log('Creating user account...')
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        full_name: formData.fullName,
-        username: formData.username,
-        account_type: formData.accountType,
-        organization: formData.organization,
-        role: formData.role,
-        enable_mfa: formData.enableMFA
-      }
+        options: {
+          data: {
+            full_name: formData.fullName,
+            username: formData.username,
+            account_type: formData.accountType,
+            organization: formData.organization,
+            role: formData.role,
+            enable_mfa: formData.enableMFA
+          }
+        }
+      })
 
-      // Use the new AuthService
-      const result = await AuthService.signUp(signupData)
-
-      if (!result.success) {
-        setError(result.error || 'Failed to create account')
+      if (error) {
+        console.error('User creation failed:', error)
+        setError(error.message || 'Failed to create account')
         return
       }
 
-      if (result.needsEmailConfirmation) {
+      if (!data.user) {
+        setError('Failed to create user account')
+        return
+      }
+
+      console.log('User account created successfully:', data.user.id)
+
+      // Step 2: Create profile manually
+      console.log('Creating profile manually...')
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: data.user.id,
+          name: formData.fullName,
+          username: formData.username,
+          full_name: formData.fullName,
+          email: formData.email,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+
+      if (profileError) {
+        console.error('Profile creation failed:', profileError)
+        // Don't fail the signup, just log the error
+        // The user account was created successfully
+      } else {
+        console.log('Profile created successfully')
+      }
+
+      // Step 3: Create active profile entry
+      console.log('Creating active profile entry...')
+      const { error: activeProfileError } = await supabase
+        .from('user_active_profiles')
+        .insert([{
+          user_id: data.user.id,
+          active_profile_type: 'general',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+
+      if (activeProfileError) {
+        console.error('Active profile creation failed:', activeProfileError)
+        // Don't fail the signup, just log the error
+      } else {
+        console.log('Active profile created successfully')
+      }
+
+      // Step 4: Handle success
+      if (data.needsEmailConfirmation) {
         setSuccess('Account created successfully! Please check your email to confirm your account.')
         // Store signup data for onboarding
         localStorage.setItem('signup_data', JSON.stringify({
@@ -634,4 +682,4 @@ export default function EnhancedSignupForm() {
       </Card>
     </div>
   )
-} 
+}
