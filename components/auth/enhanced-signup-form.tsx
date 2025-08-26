@@ -37,10 +37,7 @@ import {
   Smartphone,
   CheckCircle2
 } from 'lucide-react'
-import { AuthService, type SignupData } from '@/lib/services/auth.service'
-import { rbacService } from '@/lib/services/rbac.service'
-import type { SystemRole } from '@/types/rbac'
-import { SYSTEM_ROLES } from '@/types/rbac'
+import { AuthService } from '@/lib/services/auth.service'
 
 interface SignupFormData {
   email: string
@@ -156,7 +153,7 @@ export default function EnhancedSignupForm() {
 
     try {
       // Prepare signup data
-      const signupData: SignupData = {
+      const signupData = {
         email: formData.email,
         password: formData.password,
         full_name: formData.fullName,

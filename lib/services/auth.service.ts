@@ -6,7 +6,7 @@ export interface SignupData {
   password: string
   full_name?: string
   username?: string
-  account_type?: 'general' | 'artist' | 'venue' | 'industry'
+  account_type?: string
   organization?: string
   role?: string
   enable_mfa?: boolean
@@ -16,8 +16,8 @@ export interface SignupResult {
   success: boolean
   user?: any
   session?: any
-  error?: string
   needsEmailConfirmation?: boolean
+  error?: string
 }
 
 export interface SigninData {
@@ -65,13 +65,23 @@ export class AuthService {
       if (data.enable_mfa !== undefined) metadata.enable_mfa = data.enable_mfa
       metadata.onboarding_completed = false
 
+      // Determine the correct redirect URL based on environment
+      const isProduction = process.env.NODE_ENV === 'production' || 
+                          window.location.hostname === 'demo.tourify.live'
+      
+      const redirectUrl = isProduction 
+        ? 'https://demo.tourify.live/auth/callback'
+        : `${window.location.origin}/auth/callback`
+
+      console.log('[AuthService] Using redirect URL:', redirectUrl)
+
       // Attempt signup
       const { data: signupData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: metadata,
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: redirectUrl
         }
       })
 
@@ -162,7 +172,7 @@ export class AuthService {
         if (error.message.includes('Invalid login credentials')) {
           return {
             success: false,
-            error: 'Invalid email or password. Please check your credentials and try again.'
+            error: 'Invalid email or password. Please try again.'
           }
         }
         
@@ -179,10 +189,10 @@ export class AuthService {
         }
       }
 
-      if (!signinData.user || !signinData.session) {
+      if (!signinData.user) {
         return {
           success: false,
-          error: 'Failed to create session'
+          error: 'Failed to sign in'
         }
       }
 
@@ -204,7 +214,7 @@ export class AuthService {
   }
 
   /**
-   * Sign out user
+   * User signout
    */
   static async signOut(): Promise<{ success: boolean; error?: string }> {
     try {
@@ -216,7 +226,7 @@ export class AuthService {
         console.error('[AuthService] Signout error:', error)
         return {
           success: false,
-          error: error.message
+          error: error.message || 'Failed to sign out'
         }
       }
 
@@ -227,7 +237,7 @@ export class AuthService {
       console.error('[AuthService] Unexpected error during signout:', error)
       return {
         success: false,
-        error: 'An unexpected error occurred during signout.'
+        error: 'An unexpected error occurred during sign out'
       }
     }
   }
@@ -246,8 +256,16 @@ export class AuthService {
         }
       }
 
+      // Determine the correct redirect URL based on environment
+      const isProduction = process.env.NODE_ENV === 'production' || 
+                          window.location.hostname === 'demo.tourify.live'
+      
+      const redirectUrl = isProduction 
+        ? 'https://demo.tourify.live/auth/reset-password'
+        : `${window.location.origin}/auth/reset-password`
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`
+        redirectTo: redirectUrl
       })
 
       if (error) {
@@ -271,6 +289,41 @@ export class AuthService {
   }
 
   /**
+   * Update user profile
+   */
+  static async updateProfile(updates: {
+    full_name?: string
+    username?: string
+    avatar_url?: string
+  }): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('[AuthService] Starting profile update')
+      
+      const { error } = await supabase.auth.updateUser({
+        data: updates
+      })
+
+      if (error) {
+        console.error('[AuthService] Profile update error:', error)
+        return {
+          success: false,
+          error: error.message || 'Failed to update profile'
+        }
+      }
+
+      console.log('[AuthService] Profile updated successfully')
+      return { success: true }
+
+    } catch (error) {
+      console.error('[AuthService] Unexpected error during profile update:', error)
+      return {
+        success: false,
+        error: 'An unexpected error occurred. Please try again.'
+      }
+    }
+  }
+
+  /**
    * Get current user
    */
   static async getCurrentUser() {
@@ -278,13 +331,13 @@ export class AuthService {
       const { data: { user }, error } = await supabase.auth.getUser()
       
       if (error) {
-        console.error('[AuthService] Get user error:', error)
+        console.error('[AuthService] Get current user error:', error)
         return null
       }
 
       return user
     } catch (error) {
-      console.error('[AuthService] Unexpected error getting user:', error)
+      console.error('[AuthService] Unexpected error getting current user:', error)
       return null
     }
   }
@@ -297,40 +350,14 @@ export class AuthService {
       const { data: { session }, error } = await supabase.auth.getSession()
       
       if (error) {
-        console.error('[AuthService] Get session error:', error)
+        console.error('[AuthService] Get current session error:', error)
         return null
       }
 
       return session
     } catch (error) {
-      console.error('[AuthService] Unexpected error getting session:', error)
+      console.error('[AuthService] Unexpected error getting current session:', error)
       return null
-    }
-  }
-
-  /**
-   * Update user profile
-   */
-  static async updateProfile(userId: string, updates: Partial<Database['public']['Tables']['profiles']['Row']>) {
-    try {
-      console.log('[AuthService] Updating profile for user:', userId)
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', userId)
-      
-      if (error) {
-        console.error('[AuthService] Update profile error:', error)
-        throw error
-      }
-
-      console.log('[AuthService] Profile updated successfully')
-      return { success: true }
-
-    } catch (error) {
-      console.error('[AuthService] Unexpected error updating profile:', error)
-      throw error
     }
   }
 
