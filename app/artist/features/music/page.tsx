@@ -240,13 +240,13 @@ export default function MusicPage() {
       
       const { error: musicUploadError } = await supabase.storage
         .from('artist-music')
-        .upload(`music/${musicFileName}`, fileToUpload)
+        .upload(musicFileName, fileToUpload)
 
       if (musicUploadError) throw musicUploadError
 
       const { data: { publicUrl: musicUrl } } = supabase.storage
         .from('artist-music')
-        .getPublicUrl(`music/${musicFileName}`)
+        .getPublicUrl(musicFileName)
 
       setUploadProgress(60)
 
@@ -258,13 +258,13 @@ export default function MusicPage() {
         
         const { error: coverUploadError } = await supabase.storage
           .from('artist-photos')
-          .upload(`covers/${coverFileName}`, coverToUpload)
+          .upload(coverFileName, coverToUpload)
 
         if (coverUploadError) throw coverUploadError
 
         const { data: { publicUrl } } = supabase.storage
           .from('artist-photos')
-          .getPublicUrl(`covers/${coverFileName}`)
+          .getPublicUrl(coverFileName)
 
         coverUrl = publicUrl
       }
