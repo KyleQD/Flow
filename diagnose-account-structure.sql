@@ -55,7 +55,6 @@ SELECT
     artist_name,
     bio,
     genres,
-    verified,
     created_at
 FROM artist_profiles 
 WHERE user_id = auth.uid();
