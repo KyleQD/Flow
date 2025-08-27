@@ -1,15 +1,16 @@
 "use client"
 
-import { useState, useRef, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { useState, useEffect, useRef } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useAuth } from '@/contexts/auth-context'
+import { toast } from 'sonner'
 import { 
   Play, 
   Pause, 
+  SkipBack, 
+  SkipForward, 
   Volume2, 
-  VolumeX, 
+  VolumeX,
   Heart,
   MessageCircle,
   Share2,
@@ -17,496 +18,568 @@ import {
   Clock,
   Users
 } from 'lucide-react'
-import Image from 'next/image'
-import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { Slider } from '@/components/ui/slider'
+import { Badge } from '@/components/ui/badge'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MessageModal } from '@/components/messaging/message-modal'
+import { MusicComment } from './music-comment'
+
+interface MusicTrack {
+  id: string
+  title: string
+  description?: string
+  type: 'single' | 'album' | 'ep' | 'mixtape'
+  genre?: string
+  release_date?: string
+  duration?: number
+  file_url: string
+  cover_art_url?: string
+  lyrics?: string
+  spotify_url?: string
+  apple_music_url?: string
+  soundcloud_url?: string
+  youtube_url?: string
+  tags: string[]
+  is_featured: boolean
+  is_public: boolean
+  stats: {
+    plays: number
+    likes: number
+    comments: number
+    shares: number
+  }
+  created_at: string
+  updated_at: string
+}
 
 interface MusicPlayerProps {
-  track: {
-    id: string
-    title: string
-    artist: string
-    genre?: string
-    duration?: number
-    file_url: string
-    cover_art_url?: string
-    description?: string
-    play_count?: number
-    likes_count?: number
-    comments_count?: number
-    shares_count?: number
-    tags?: string[]
-    is_liked?: boolean
-  }
+  track: MusicTrack
+  onPlay?: () => void
+  onPause?: () => void
+  onEnded?: () => void
+  showControls?: boolean
   showStats?: boolean
-  showActions?: boolean
-  compact?: boolean
-  onLike?: (musicId: string, liked: boolean) => void
-  onComment?: (musicId: string) => void
-  onShare?: (musicId: string) => void
+  showSocial?: boolean
   className?: string
 }
 
-export function MusicPlayer({
-  track,
+export function MusicPlayer({ 
+  track, 
+  onPlay, 
+  onPause, 
+  onEnded, 
+  showControls = true,
   showStats = true,
-  showActions = true,
-  compact = false,
-  onLike,
-  onComment,
-  onShare,
-  className = ''
+  showSocial = true,
+  className = ""
 }: MusicPlayerProps) {
+  const { user } = useAuth()
+  const supabase = createClientComponentClient()
+  
+  const audioRef = useRef<HTMLAudioElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolume] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
-  const [isLiked, setIsLiked] = useState(track.is_liked || false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [sharePayload, setSharePayload] = useState<any>(null)
-  const [isMessageOpen, setIsMessageOpen] = useState(false)
+  const [isLiked, setIsLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(track.stats?.likes || 0)
+  const [commentCount, setCommentCount] = useState(track.stats?.comments || 0)
+  const [shareCount, setShareCount] = useState(track.stats?.shares || 0)
+  const [playCount, setPlayCount] = useState(track.stats?.plays || 0)
   
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const progressRef = useRef<HTMLDivElement>(null)
+  // Social features state
+  const [showComments, setShowComments] = useState(false)
+  const [showShareDialog, setShowShareDialog] = useState(false)
+  const [commentText, setCommentText] = useState('')
+  const [shareMessage, setShareMessage] = useState('')
+  const [shareType, setShareType] = useState<'profile' | 'message' | 'post'>('profile')
 
   useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    const updateTime = () => setCurrentTime(audio.currentTime)
-    const updateDuration = () => setDuration(audio.duration)
-    const handleEnded = () => setIsPlaying(false)
-    const handleLoadStart = () => setIsLoading(true)
-    const handleCanPlay = () => setIsLoading(false)
-
-    audio.addEventListener('timeupdate', updateTime)
-    audio.addEventListener('loadedmetadata', updateDuration)
-    audio.addEventListener('ended', handleEnded)
-    audio.addEventListener('loadstart', handleLoadStart)
-    audio.addEventListener('canplay', handleCanPlay)
-
-    return () => {
-      audio.removeEventListener('timeupdate', updateTime)
-      audio.removeEventListener('loadedmetadata', updateDuration)
-      audio.removeEventListener('ended', handleEnded)
-      audio.removeEventListener('loadstart', handleLoadStart)
-      audio.removeEventListener('canplay', handleCanPlay)
+    if (user) {
+      checkIfLiked()
     }
-  }, [])
+  }, [user, track.id])
 
-  const togglePlay = async () => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    if (isPlaying) {
-      audio.pause()
-      setIsPlaying(false)
-    } else {
-      try {
-        await audio.play()
-        setIsPlaying(true)
-        
-        // Record play
-        await fetch('/api/music/play', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ musicId: track.id })
-        })
-      } catch (error) {
-        console.error('Error playing audio:', error)
-        toast.error('Failed to play audio')
-      }
+  const checkIfLiked = async () => {
+    if (!user) return
+    
+    try {
+      const { data } = await supabase
+        .from('music_likes')
+        .select('id')
+        .eq('music_id', track.id)
+        .eq('user_id', user.id)
+        .single()
+      
+      setIsLiked(!!data)
+    } catch (error) {
+      // User hasn't liked this track
+      setIsLiked(false)
     }
   }
 
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const audio = audioRef.current
-    const progress = progressRef.current
-    if (!audio || !progress) return
+  const handlePlay = () => {
+    if (audioRef.current) {
+      audioRef.current.play()
+      setIsPlaying(true)
+      onPlay?.()
+      recordPlay()
+    }
+  }
 
-    const rect = progress.getBoundingClientRect()
-    const clickX = e.clientX - rect.left
-    const progressWidth = rect.width
-    const clickPercent = clickX / progressWidth
-    const newTime = clickPercent * audio.duration
+  const handlePause = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      setIsPlaying(false)
+      onPause?.()
+    }
+  }
 
-    audio.currentTime = newTime
-    setCurrentTime(newTime)
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime)
+    }
+  }
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration)
+    }
+  }
+
+  const handleEnded = () => {
+    setIsPlaying(false)
+    setCurrentTime(0)
+    onEnded?.()
+  }
+
+  const handleSeek = (value: number[]) => {
+    const newTime = value[0]
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime
+      setCurrentTime(newTime)
+    }
+  }
+
+  const handleVolumeChange = (value: number[]) => {
+    const newVolume = value[0]
+    setVolume(newVolume)
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume
+    }
   }
 
   const toggleMute = () => {
-    const audio = audioRef.current
-    if (!audio) return
-
-    if (isMuted) {
-      audio.volume = volume
-      setIsMuted(false)
-    } else {
-      audio.volume = 0
-      setIsMuted(true)
+    if (audioRef.current) {
+      if (isMuted) {
+        audioRef.current.volume = volume
+        setIsMuted(false)
+      } else {
+        audioRef.current.volume = 0
+        setIsMuted(true)
+      }
     }
   }
 
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const audio = audioRef.current
-    if (!audio) return
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60)
+    const seconds = Math.floor(time % 60)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
 
-    const newVolume = parseFloat(e.target.value)
-    setVolume(newVolume)
-    audio.volume = newVolume
-    setIsMuted(newVolume === 0)
+  const recordPlay = async () => {
+    if (!user) return
+    
+    try {
+      await supabase
+        .from('music_plays')
+        .insert({
+          music_id: track.id,
+          user_id: user.id,
+          play_source: 'player'
+        })
+      
+      setPlayCount(prev => prev + 1)
+    } catch (error) {
+      console.error('Error recording play:', error)
+    }
   }
 
   const handleLike = async () => {
-    try {
-      const response = await fetch('/api/music/like', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ musicId: track.id })
-      })
+    if (!user) {
+      toast.error('Please log in to like tracks')
+      return
+    }
 
-      if (response.ok) {
-        const { liked } = await response.json()
-        setIsLiked(liked)
-        onLike?.(track.id, liked)
-        toast.success(liked ? 'Added to likes' : 'Removed from likes')
+    try {
+      if (isLiked) {
+        // Unlike
+        await supabase
+          .from('music_likes')
+          .delete()
+          .eq('music_id', track.id)
+          .eq('user_id', user.id)
+        
+        setIsLiked(false)
+        setLikeCount(prev => prev - 1)
+        toast.success('Removed from likes')
+      } else {
+        // Like
+        await supabase
+          .from('music_likes')
+          .insert({
+            music_id: track.id,
+            user_id: user.id
+          })
+        
+        setIsLiked(true)
+        setLikeCount(prev => prev + 1)
+        toast.success('Added to likes')
       }
     } catch (error) {
-      console.error('Error liking music:', error)
-      toast.error('Failed to like music')
+      console.error('Error toggling like:', error)
+      toast.error('Failed to update like')
+    }
+  }
+
+  const handleComment = async () => {
+    if (!user) {
+      toast.error('Please log in to comment')
+      return
+    }
+
+    if (!commentText.trim()) {
+      toast.error('Please enter a comment')
+      return
+    }
+
+    try {
+      await supabase
+        .from('music_comments')
+        .insert({
+          music_id: track.id,
+          user_id: user.id,
+          content: commentText.trim()
+        })
+      
+      setCommentText('')
+      setCommentCount(prev => prev + 1)
+      toast.success('Comment added')
+    } catch (error) {
+      console.error('Error adding comment:', error)
+      toast.error('Failed to add comment')
     }
   }
 
   const handleShare = async () => {
+    if (!user) {
+      toast.error('Please log in to share')
+      return
+    }
+
     try {
-      const res = await fetch('/api/music/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ musicId: track.id })
-      })
-      if (res.ok) {
-        const { payload } = await res.json()
-        setSharePayload(payload)
-        onShare?.(track.id)
-        toast.success('Share link copied')
-        // Copy a lightweight JSON payload for embedding or link sharing
-        await navigator.clipboard.writeText(JSON.stringify(payload))
+      // Record the share
+      await supabase
+        .from('music_shares')
+        .insert({
+          music_id: track.id,
+          user_id: user.id,
+          share_type: shareType,
+          share_data: {
+            message: shareMessage,
+            platform: 'tourify'
+          }
+        })
+
+      // Create post if sharing as post
+      if (shareType === 'post') {
+        await supabase
+          .from('posts')
+          .insert({
+            user_id: user.id,
+            content: shareMessage || `Check out this track: ${track.title}`,
+            post_type: 'music',
+            music_id: track.id
+          })
       }
-    } catch (e) {
-      toast.error('Failed to prepare share')
+
+      setShareCount(prev => prev + 1)
+      setShowShareDialog(false)
+      setShareMessage('')
+      toast.success('Track shared successfully!')
+    } catch (error) {
+      console.error('Error sharing track:', error)
+      toast.error('Failed to share track')
     }
   }
 
-  const openMessageWithShare = async () => {
-    if (!sharePayload) await handleShare()
-    setIsMessageOpen(true)
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0
-
-  if (compact) {
-    return (
-      <Card className={`bg-slate-900/50 border-slate-700/50 ${className}`}>
-        <CardContent className="p-3">
-          <div className="flex items-center gap-3">
-            {/* Cover Art */}
-            <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
-              {track.cover_art_url ? (
-                <Image
-                  src={track.cover_art_url}
-                  alt={track.title}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center">
-                  <div className="text-gray-500 text-xs">🎵</div>
-                </div>
-              )}
-            </div>
-
-            {/* Track Info */}
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-white truncate">
-                {track.title}
-              </h4>
-              <p className="text-xs text-gray-400 truncate">
-                {track.artist}
-              </p>
-            </div>
-
-            {/* Play Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={togglePlay}
-              disabled={isLoading}
-              className="text-gray-400 hover:text-white"
-            >
-              {isLoading ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
-              ) : isPlaying ? (
-                <Pause className="h-4 w-4" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-
-          {/* Progress Bar */}
-          <div 
-            ref={progressRef}
-            className="mt-2 relative h-1 bg-slate-700 rounded-full cursor-pointer"
-            onClick={handleProgressClick}
-          >
-            <div 
-              className="absolute top-0 left-0 h-full bg-purple-500 rounded-full transition-all duration-100"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-
-          {/* Time Display */}
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
-        </CardContent>
-
-        <audio ref={audioRef} src={track.file_url} preload="metadata" />
-      </Card>
-    )
+  const shareToExternal = (platform: string) => {
+    const url = `${window.location.origin}/music/${track.id}`
+    const text = `Check out "${track.title}" on Tourify!`
+    
+    let shareUrl = ''
+    switch (platform) {
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
+        break
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
+        break
+      case 'linkedin':
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+        break
+      default:
+        return
+    }
+    
+    window.open(shareUrl, '_blank')
   }
 
   return (
-    <Card className={`bg-slate-900/50 border-slate-700/50 ${className}`}>
-      <CardContent className="p-4">
-        <div className="flex items-start gap-4">
-          {/* Cover Art */}
-          <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-slate-800 flex-shrink-0">
-            {track.cover_art_url ? (
-              <Image
-                src={track.cover_art_url}
-                alt={track.title}
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center">
-                <div className="text-gray-500 text-lg">🎵</div>
-              </div>
-            )}
+    <div className={`bg-slate-900 rounded-lg p-4 ${className}`}>
+      {/* Audio element */}
+      <audio
+        ref={audioRef}
+        src={track.file_url}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        preload="metadata"
+      />
+
+      {/* Track info */}
+      <div className="flex items-center space-x-4 mb-4">
+        {track.cover_art_url && (
+          <img 
+            src={track.cover_art_url} 
+            alt={track.title}
+            className="w-16 h-16 rounded-lg object-cover"
+          />
+        )}
+        <div className="flex-1">
+          <h3 className="font-semibold text-white">{track.title}</h3>
+          <p className="text-slate-400 text-sm">{track.genre}</p>
+          {showStats && (
+            <div className="flex items-center space-x-4 mt-2">
+              <Badge variant="secondary" className="text-xs">
+                <Users className="w-3 h-3 mr-1" />
+                {playCount} plays
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                <Heart className="w-3 h-3 mr-1" />
+                {likeCount} likes
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                <MessageCircle className="w-3 h-3 mr-1" />
+                {commentCount} comments
+              </Badge>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mb-4">
+        <Progress 
+          value={(currentTime / duration) * 100} 
+          className="mb-2"
+        />
+        <div className="flex justify-between text-xs text-slate-400">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      </div>
+
+      {/* Controls */}
+      {showControls && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handlePlay}
+              disabled={isPlaying}
+            >
+              <Play className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handlePause}
+              disabled={!isPlaying}
+            >
+              <Pause className="w-4 h-4" />
+            </Button>
           </div>
 
-          {/* Track Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-white truncate">
-                  {track.title}
-                </h3>
-                <p className="text-gray-400 text-sm">
-                  {track.artist} {track.genre && `• ${track.genre}`}
-                </p>
-                {track.description && (
-                  <p className="text-gray-500 text-sm mt-1 line-clamp-2">
-                    {track.description}
-                  </p>
-                )}
-                
-                {/* Tags */}
-                {track.tags && track.tags.length > 0 && (
-                  <div className="flex gap-1 mt-2">
-                    {track.tags.slice(0, 3).map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant="outline"
-                        className="text-xs border-purple-500/30 text-purple-300"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                {/* Stats */}
-                {showStats && (
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                    {track.play_count !== undefined && (
-                      <span className="flex items-center gap-1">
-                        <Play className="h-3 w-3" />
-                        {track.play_count.toLocaleString()}
-                      </span>
-                    )}
-                    {track.likes_count !== undefined && (
-                      <span className="flex items-center gap-1">
-                        <Heart className="h-3 w-3" />
-                        {track.likes_count.toLocaleString()}
-                      </span>
-                    )}
-                    {track.comments_count !== undefined && (
-                      <span className="flex items-center gap-1">
-                        <MessageCircle className="h-3 w-3" />
-                        {track.comments_count.toLocaleString()}
-                      </span>
-                    )}
-                    {track.shares_count !== undefined && (
-                      <span className="flex items-center gap-1">
-                        <Share2 className="h-3 w-3" />
-                        {track.shares_count.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Actions */}
-              {showActions && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLike}
-                    className={`text-gray-400 hover:text-red-500 ${isLiked ? 'text-red-500' : ''}`}
-                  >
-                    <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onComment?.(track.id)}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleShare}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
-                      <DropdownMenuItem className="text-gray-300 hover:text-white">
-                        <Clock className="h-4 w-4 mr-2" />
-                        Add to Queue
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-gray-300 hover:text-white">
-                        <Users className="h-4 w-4 mr-2" />
-                        View Artist
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-slate-700" />
-                      <DropdownMenuItem onClick={openMessageWithShare} className="text-gray-300 hover:text-white">
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Share via Message
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-slate-700" />
-                      <DropdownMenuItem className="text-gray-300 hover:text-white">
-                        Report
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )}
-            </div>
-
-            {/* Player Controls */}
-            <div className="mt-4 space-y-3">
-              {/* Progress Bar */}
-              <div 
-                ref={progressRef}
-                className="relative h-2 bg-slate-700 rounded-full cursor-pointer"
-                onClick={handleProgressClick}
-              >
-                <div 
-                  className="absolute top-0 left-0 h-full bg-purple-500 rounded-full transition-all duration-100"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-
-              {/* Controls */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={togglePlay}
-                    disabled={isLoading}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    {isLoading ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
-                    ) : isPlaying ? (
-                      <Pause className="h-4 w-4" />
-                    ) : (
-                      <Play className="h-4 w-4" />
-                    )}
-                  </Button>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={toggleMute}
-                      className="text-gray-400 hover:text-white"
-                    >
-                      {isMuted ? (
-                        <VolumeX className="h-4 w-4" />
-                      ) : (
-                        <Volume2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={isMuted ? 0 : volume}
-                      onChange={handleVolumeChange}
-                      className="w-16 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                <div className="text-xs text-gray-500">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleMute}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </Button>
+            <Slider
+              value={[isMuted ? 0 : volume]}
+              onValueChange={handleVolumeChange}
+              max={1}
+              step={0.1}
+              className="w-20"
+            />
           </div>
         </div>
-      </CardContent>
+      )}
 
-      <audio ref={audioRef} src={track.file_url} preload="metadata" />
-      <MessageModal
-        isOpen={isMessageOpen}
-        onClose={() => setIsMessageOpen(false)}
-        recipient={{ id: '', username: 'someone' }}
-        prefill={{ text: `Check out this track: ${track.title}`, attachment: sharePayload }}
-      />
-    </Card>
+      {/* Social features */}
+      {showSocial && (
+        <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLike}
+              className={isLiked ? 'text-red-500' : ''}
+            >
+              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+              <span className="ml-1 text-xs">{likeCount}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowComments(true)}
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span className="ml-1 text-xs">{commentCount}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowShareDialog(true)}
+            >
+              <Share2 className="w-4 h-4" />
+              <span className="ml-1 text-xs">{shareCount}</span>
+            </Button>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => shareToExternal('twitter')}>
+                Share on Twitter
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => shareToExternal('facebook')}>
+                Share on Facebook
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => shareToExternal('linkedin')}>
+                Share on LinkedIn
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
+      {/* Comments Dialog */}
+      <Dialog open={showComments} onOpenChange={setShowComments}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Comments on "{track.title}"</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="comment">Add a comment</Label>
+              <Textarea
+                id="comment"
+                placeholder="Share your thoughts..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+              />
+              <Button onClick={handleComment} disabled={!commentText.trim()}>
+                Post Comment
+              </Button>
+            </div>
+            <MusicComment musicId={track.id} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share "{track.title}"</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Share type</Label>
+              <div className="flex space-x-2">
+                <Button
+                  variant={shareType === 'profile' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShareType('profile')}
+                >
+                  Profile
+                </Button>
+                <Button
+                  variant={shareType === 'post' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShareType('post')}
+                >
+                  Post
+                </Button>
+                <Button
+                  variant={shareType === 'message' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShareType('message')}
+                >
+                  Message
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="share-message">Message (optional)</Label>
+              <Textarea
+                id="share-message"
+                placeholder="Add a message..."
+                value={shareMessage}
+                onChange={(e) => setShareMessage(e.target.value)}
+              />
+            </div>
+
+            <div className="flex space-x-2">
+              <Button onClick={handleShare} className="flex-1">
+                Share
+              </Button>
+              <Button variant="outline" onClick={() => setShowShareDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 } 
