@@ -13,13 +13,25 @@ BEGIN
     END IF;
 END $$;
 
--- Drop existing policies to recreate them properly
-DROP POLICY IF EXISTS "Artists can upload their own music" ON artist_music;
-DROP POLICY IF EXISTS "Anyone can view public music" ON artist_music;
-DROP POLICY IF EXISTS "Artists can manage their own music" ON artist_music;
-DROP POLICY IF EXISTS "Users can upload their own music" ON artist_music;
-DROP POLICY IF EXISTS "Users can view public music" ON artist_music;
-DROP POLICY IF EXISTS "Users can manage their own music" ON artist_music;
+-- Drop ALL existing policies to recreate them properly
+DO $$
+BEGIN
+    -- Drop all existing policies for artist_music table
+    DROP POLICY IF EXISTS "Artists can upload their own music" ON artist_music;
+    DROP POLICY IF EXISTS "Anyone can view public music" ON artist_music;
+    DROP POLICY IF EXISTS "Artists can view their own music" ON artist_music;
+    DROP POLICY IF EXISTS "Artists can update their own music" ON artist_music;
+    DROP POLICY IF EXISTS "Artists can delete their own music" ON artist_music;
+    DROP POLICY IF EXISTS "Users can upload their own music" ON artist_music;
+    DROP POLICY IF EXISTS "Users can view public music" ON artist_music;
+    DROP POLICY IF EXISTS "Users can manage their own music" ON artist_music;
+    DROP POLICY IF EXISTS "Enable read access for all users" ON artist_music;
+    DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON artist_music;
+    DROP POLICY IF EXISTS "Enable update for users based on user_id" ON artist_music;
+    DROP POLICY IF EXISTS "Enable delete for users based on user_id" ON artist_music;
+    
+    RAISE NOTICE 'All existing policies dropped';
+END $$;
 
 -- Create comprehensive RLS policies for artist_music table
 -- Allow users to insert their own music (artist_profile_id can be null)
@@ -57,6 +69,10 @@ BEGIN
         -- Drop existing policies
         DROP POLICY IF EXISTS "Users can view public artist profiles" ON artist_profiles;
         DROP POLICY IF EXISTS "Users can manage their own artist profile" ON artist_profiles;
+        DROP POLICY IF EXISTS "Enable read access for all users" ON artist_profiles;
+        DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON artist_profiles;
+        DROP POLICY IF EXISTS "Enable update for users based on user_id" ON artist_profiles;
+        DROP POLICY IF EXISTS "Enable delete for users based on user_id" ON artist_profiles;
         
         -- Create policies
         CREATE POLICY "Users can view public artist profiles" ON artist_profiles
