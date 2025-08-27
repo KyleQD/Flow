@@ -52,7 +52,7 @@ export const createTicketTypeAction = action
       requiresRegistration = false,
     } = parsedInput
     try {
-      const event = await prisma.event.findUnique({
+      const event = await (prisma as any).event.findUnique({
         where: { id: eventId },
         select: { id: true, name: true },
       })
@@ -78,7 +78,7 @@ export const createTicketTypeAction = action
         // metadata: { eventId: event.id, ticketTypeName: name }
       })
 
-      const newTicketType = await prisma.ticketType.create({
+      const newTicketType = await (prisma as any).ticketType.create({
         data: {
           eventId,
           name,

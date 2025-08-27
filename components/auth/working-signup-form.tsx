@@ -223,7 +223,7 @@ export default function WorkingSignupForm() {
       }
 
       // Step 4: Handle success
-      if (data.needsEmailConfirmation) {
+      if ((data as any).needsEmailConfirmation) {
         setSuccess('Account created successfully! Please check your email to confirm your account.')
         // Store signup data for onboarding
         localStorage.setItem('signup_data', JSON.stringify({

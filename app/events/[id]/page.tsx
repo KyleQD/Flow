@@ -216,7 +216,9 @@ export default function EventPage() {
     try {
       setIsLoading(true)
       
-      // Load event page data
+
+      
+      // Fallback to old API
       const pageResponse = await fetch(`/api/events/${eventId}/page`, {
         credentials: 'include'
       })
@@ -1237,8 +1239,6 @@ export default function EventPage() {
           </motion.div>
         </div>
       </div>
-
-
     </div>
   )
 } 

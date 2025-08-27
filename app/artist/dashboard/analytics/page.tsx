@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion"
 import { EventsProvider } from "@/context/venue/events-context"
-import { EnhancedDiscoverEvents } from "@/components/events/enhanced-discover-events"
+import { EventAnalyticsDashboard } from "@/components/events/event-analytics-dashboard"
 
-export default function EventsPage() {
+export default function ArtistAnalyticsPage() {
   return (
     <EventsProvider>
       <div className="min-h-screen bg-gradient-to-br from-black via-slate-950 to-black text-white relative overflow-hidden">
@@ -42,7 +42,7 @@ export default function EventsPage() {
 
         <div className="relative z-10">
           <div className="max-w-7xl mx-auto px-6 py-8">
-            <EnhancedDiscoverEvents />
+            <EventAnalyticsDashboard />
           </div>
         </div>
       </div>
