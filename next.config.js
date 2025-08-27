@@ -31,6 +31,18 @@ const nextConfig = {
   compress: true,
   // Bundle optimization
   webpack: (config, { dev, isServer }) => {
+    // WASM support
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+    }
+
+    // WASM file handling
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'webassembly/async',
+    })
+
     // Optimize bundle splitting
     if (!dev && !isServer) {
       config.optimization.splitChunks = {

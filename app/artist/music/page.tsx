@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MusicPlayer } from "@/components/music/music-player"
+import { tafConverter } from '@/lib/utils/taf-converter'
 
 interface MusicTrack {
   id: string
@@ -279,6 +280,22 @@ export default function MusicPage() {
           return
         }
 
+        // Convert to TAF format with error correction
+        toast.info('Converting to TAF format with error correction...')
+        const tafResult = await tafConverter.convertToTaf(uploadResult.fileUrl, user.id, {
+          dataShards: 4,
+          parityShards: 2,
+          compressionLevel: 3,
+          quality: 0.8
+        })
+
+        if (!tafResult.success) {
+          toast.error(`TAF conversion failed: ${tafResult.error}`)
+          // Continue with original file if TAF conversion fails
+        } else {
+          toast.success(`TAF conversion successful! Compression ratio: ${tafResult.metadata?.compressionRatio.toFixed(2)}x`)
+        }
+
         const finalTrackData = {
           user_id: user.id,
           artist_profile_id: profile?.id,
@@ -288,7 +305,7 @@ export default function MusicPage() {
           genre: trackData.genre,
           release_date: trackData.release_date || new Date().toISOString().split('T')[0],
           duration: await getAudioDuration(trackData.musicFile),
-          file_url: uploadResult.fileUrl,
+          file_url: tafResult.success ? tafResult.tafUrl! : uploadResult.fileUrl,
           cover_art_url: uploadResult.coverUrl,
           lyrics: trackData.lyrics,
           spotify_url: trackData.spotify_url,
@@ -346,7 +363,22 @@ export default function MusicPage() {
       if (musicFile) {
         const uploadResult = await uploadFiles(musicFile, coverFile || undefined)
         if (uploadResult.fileUrl) {
-          fileUrl = uploadResult.fileUrl
+          // Convert to TAF format with error correction
+          toast.info('Converting to TAF format with error correction...')
+          const tafResult = await tafConverter.convertToTaf(uploadResult.fileUrl, user.id, {
+            dataShards: 4,
+            parityShards: 2,
+            compressionLevel: 3,
+            quality: 0.8
+          })
+
+          if (tafResult.success) {
+            fileUrl = tafResult.tafUrl!
+            toast.success(`TAF conversion successful! Compression ratio: ${tafResult.metadata?.compressionRatio.toFixed(2)}x`)
+          } else {
+            fileUrl = uploadResult.fileUrl
+            toast.error(`TAF conversion failed: ${tafResult.error}`)
+          }
         }
         if (uploadResult.coverUrl) {
           coverUrl = uploadResult.coverUrl
