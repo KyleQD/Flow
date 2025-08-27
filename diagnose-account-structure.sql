@@ -32,17 +32,20 @@ SELECT
 FROM auth.users 
 WHERE id = auth.uid();
 
--- 3. Check if user has a profile in profiles table
-SELECT 'User profile:' as info;
-SELECT 
-    id,
-    user_id,
-    full_name,
-    username,
-    avatar_url,
-    created_at
-FROM profiles 
-WHERE user_id = auth.uid();
+-- 3. Check if user has a profile in profiles table (if it exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'profiles' AND table_schema = 'public') THEN
+        RAISE NOTICE 'Profiles table exists - checking user profile...';
+        
+        -- This will only run if the table exists
+        PERFORM 1 FROM profiles WHERE id = auth.uid();
+        
+        RAISE NOTICE 'Profile check completed';
+    ELSE
+        RAISE NOTICE '⚠️ Profiles table does not exist - this is normal';
+    END IF;
+END $$;
 
 -- 4. Check artist profiles for this user
 SELECT 'Artist profiles for this user:' as info;
@@ -73,12 +76,10 @@ SELECT 'User-Artist Profile Relationship:' as info;
 SELECT 
     u.id as user_id,
     u.email as user_email,
-    p.full_name as profile_name,
     ap.id as artist_profile_id,
     ap.artist_name,
     ap.user_id as artist_user_id
 FROM auth.users u
-LEFT JOIN profiles p ON u.id = p.user_id
 LEFT JOIN artist_profiles ap ON u.id = ap.user_id
 WHERE u.id = auth.uid();
 
@@ -159,7 +160,20 @@ BEGIN
     END;
 END $$;
 
--- 10. Final analysis
+-- 10. Check if there are any account management tables
+SELECT 'Account management tables:' as info;
+SELECT 
+    table_name,
+    CASE WHEN table_name IN ('user_accounts', 'account_sessions', 'account_permissions') 
+         THEN '✅ Account management table' 
+         ELSE '⚠️ Other table' 
+    END as table_type
+FROM information_schema.tables 
+WHERE table_schema = 'public' 
+AND table_name IN ('user_accounts', 'account_sessions', 'account_permissions', 'profiles')
+ORDER BY table_name;
+
+-- 11. Final analysis
 DO $$
 BEGIN
     RAISE NOTICE '=== ACCOUNT STRUCTURE ANALYSIS ===';
