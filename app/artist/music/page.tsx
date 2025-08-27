@@ -297,8 +297,8 @@ export default function MusicPage() {
           youtube_url: trackData.youtube_url,
           tags: trackData.tags,
           is_featured: trackData.is_featured,
-          is_public: trackData.is_public,
-          updated_at: new Date().toISOString()
+          is_public: trackData.is_public
+          // Removed updated_at - let database handle it with default now()
         }
 
         // Create new track
@@ -371,8 +371,8 @@ export default function MusicPage() {
         youtube_url: formData.youtube_url,
         tags: formData.tags,
         is_featured: formData.is_featured,
-        is_public: formData.is_public,
-        updated_at: new Date().toISOString()
+        is_public: formData.is_public
+        // Removed updated_at - let database handle it with default now()
       }
 
       // Update existing track
