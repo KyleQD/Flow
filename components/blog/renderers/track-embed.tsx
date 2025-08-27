@@ -34,15 +34,25 @@ export function TrackEmbed({ id }: Props) {
 
   return (
     <MusicPlayer
-      compact
       track={{
         id: payload.id,
         title: payload.title,
-        artist: '',
         file_url: payload.preview,
         cover_art_url: payload.cover,
-      } as any}
-      showActions={false}
+        type: 'single',
+        tags: [],
+        is_featured: false,
+        is_public: true,
+        stats: {
+          plays: 0,
+          likes: 0,
+          comments: 0,
+          shares: 0
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }}
+      showSocial={false}
     />
   )
 }
