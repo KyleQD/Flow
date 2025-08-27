@@ -448,10 +448,28 @@ export function PublicMusicDisplay({ artistId, isOwnProfile = false, className =
                   {currentPlaying === track.id && (
                     <div className="mt-4 pt-4 border-t border-slate-700/50">
                       <MusicPlayer
-                        track={track}
+                        track={{
+                          id: track.id,
+                          title: track.title,
+                          description: track.description,
+                          type: track.type,
+                          genre: track.genre,
+                          file_url: track.file_url,
+                          cover_art_url: track.cover_art_url,
+                          tags: track.tags || [],
+                          is_featured: track.is_featured || false,
+                          is_public: true,
+                          stats: {
+                            plays: track.play_count || 0,
+                            likes: track.likes_count || 0,
+                            comments: track.comments_count || 0,
+                            shares: track.shares_count || 0
+                          },
+                          created_at: track.created_at,
+                          updated_at: track.created_at
+                        }}
                         showStats={false}
-                        showActions={false}
-                        compact={true}
+                        showSocial={false}
                         className="bg-slate-800/50 rounded-lg p-3"
                       />
                     </div>
