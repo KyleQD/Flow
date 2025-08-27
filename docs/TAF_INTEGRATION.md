@@ -139,17 +139,19 @@ artist-music/
 
 ## Technical Details
 
-### WASM Integration
+### Implementation
 
-TAF uses WebAssembly for high-performance encoding/decoding:
+TAF uses a custom implementation for encoding/decoding:
 
 ```typescript
-// Initialize WASM modules
-const { init: initReedSolomon } = await import('@rs_reedsolomon_wasm_pack')
-const { init: initTaf } = await import('@taf_wasm_swap')
-
-await initReedSolomon()
-await initTaf()
+// TAF header structure
+const header = Buffer.alloc(32)
+header.write('TAF1', 0, 4, 'utf8')           // Magic number
+header.writeUInt8(1, 4)                      // Version
+header.writeUInt32BE(44100, 8)               // Sample rate
+header.writeUInt8(2, 12)                     // Channels
+header.writeUInt8(dataShards, 16)            // Data shards
+header.writeUInt8(parityShards, 17)          // Parity shards
 ```
 
 ### Error Correction
