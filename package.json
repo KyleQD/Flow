@@ -29,7 +29,7 @@
     "deploy:status:demo": "./scripts/deploy.sh status demo",
     "deploy:logs:production": "./scripts/deploy.sh logs production",
     "deploy:logs:demo": "./scripts/deploy.sh logs demo",
-    "postinstall": "prisma generate"
+    "postinstall": "npx prisma generate"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.9.0",
