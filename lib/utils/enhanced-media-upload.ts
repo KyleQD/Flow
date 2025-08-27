@@ -62,7 +62,7 @@ const SIZE_LIMITS: Record<MediaType, number> = {
 const BUCKET_MAPPING: Record<MediaType, string> = {
   image: 'post-media',
   video: 'post-media',
-  audio: 'post-media',
+  audio: 'artist-music',
   document: 'post-media',
   embedded: 'post-media'
 }
@@ -117,6 +117,11 @@ export function generateFileName(userId: string, file: File, type: MediaType): s
   const timestamp = Date.now()
   const randomId = Math.random().toString(36).substring(2, 8)
   const extension = file.name.split('.').pop()?.toLowerCase() || 'bin'
+  
+  // For music files, use the artist-music bucket structure
+  if (type === 'audio') {
+    return `${userId}/${timestamp}-${randomId}.${extension}`
+  }
   
   return `${userId}/${type}/${timestamp}-${randomId}.${extension}`
 }
