@@ -761,10 +761,7 @@ export default function MusicPage() {
         {currentlyPlaying && (
           <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/20 p-4 z-50">
             <MusicPlayer
-              track={{
-                ...filteredTracks.find(t => t.id === currentlyPlaying)!,
-                artist: profile?.artist_name || 'Artist'
-              }}
+              track={filteredTracks.find(t => t.id === currentlyPlaying)!}
             />
           </div>
         )}
