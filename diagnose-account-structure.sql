@@ -54,7 +54,7 @@ SELECT
     user_id,
     artist_name,
     bio,
-    genre,
+    genres,
     verified,
     created_at
 FROM artist_profiles 
