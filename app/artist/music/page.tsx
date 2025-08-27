@@ -206,17 +206,18 @@ export default function MusicPage() {
       
       // Upload music file
       const musicFileExt = fileToUpload.name.split('.').pop()
-      const musicFileName = `${user.id}/${Date.now()}-${fileToUpload.name}`
+      const safeFileName = fileToUpload.name.replace(/[^A-Za-z0-9._-]/g, '_')
+      const musicFileName = `${user.id}/${Date.now()}-${safeFileName}`
       
       const { error: musicUploadError } = await supabase.storage
         .from('artist-music')
-        .upload(`music/${musicFileName}`, fileToUpload)
+        .upload(musicFileName, fileToUpload)
 
       if (musicUploadError) throw musicUploadError
 
       const { data: { publicUrl: musicUrl } } = supabase.storage
         .from('artist-music')
-        .getPublicUrl(`music/${musicFileName}`)
+        .getPublicUrl(musicFileName)
 
       setUploadProgress(60)
 
@@ -224,17 +225,18 @@ export default function MusicPage() {
       let coverUrl = ''
       if (coverToUpload) {
         const coverFileExt = coverToUpload.name.split('.').pop()
-        const coverFileName = `${user.id}/${Date.now()}-cover.${coverFileExt}`
+        const safeCoverFileName = coverToUpload.name.replace(/[^A-Za-z0-9._-]/g, '_')
+        const coverFileName = `${user.id}/${Date.now()}-cover-${safeCoverFileName}`
         
         const { error: coverUploadError } = await supabase.storage
           .from('artist-photos')
-          .upload(`covers/${coverFileName}`, coverToUpload)
+          .upload(coverFileName, coverToUpload)
 
         if (coverUploadError) throw coverUploadError
 
         const { data: { publicUrl } } = supabase.storage
           .from('artist-photos')
-          .getPublicUrl(`covers/${coverFileName}`)
+          .getPublicUrl(coverFileName)
 
         coverUrl = publicUrl
       }
