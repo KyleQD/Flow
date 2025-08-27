@@ -126,12 +126,7 @@ export function MusicPost({
     }
   }
 
-  const handleMusicLike = async (musicId: string, liked: boolean) => {
-    // Update the track's like count in the UI
-    if (track.likes_count !== undefined) {
-      // This will be handled by the MusicPlayer component
-    }
-  }
+
 
   return (
     <Card className={`bg-slate-900/50 border-slate-700/50 hover:border-purple-500/50 transition-all duration-200 ${className}`}>
@@ -193,10 +188,28 @@ export function MusicPost({
         {/* Music Player */}
         <div className="border border-slate-700/50 rounded-lg overflow-hidden">
           <MusicPlayer
-            track={track}
+            track={{
+              id: track.id,
+              title: track.title,
+              description: track.description,
+              type: post.metadata.type as 'single' | 'album' | 'ep' | 'mixtape',
+              genre: track.genre,
+              file_url: track.file_url,
+              cover_art_url: track.cover_art_url,
+              tags: track.tags || [],
+              is_featured: false,
+              is_public: true,
+              stats: {
+                plays: track.play_count || 0,
+                likes: track.likes_count || 0,
+                comments: track.comments_count || 0,
+                shares: track.shares_count || 0
+              },
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }}
             showStats={true}
-            showActions={false}
-            onLike={handleMusicLike}
+            showSocial={false}
             className="border-0 bg-transparent"
           />
         </div>
