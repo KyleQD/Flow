@@ -722,23 +722,27 @@ export function ForYouPage() {
   const getRelevanceBadge = (score?: number) => {
     if (!score) return null
     
-    let color = 'bg-gray-500/20 text-gray-400'
+    let color = 'bg-gradient-to-r from-gray-500/20 to-slate-500/20 text-gray-300 border-gray-500/30'
     let text = 'Relevant'
+    let iconColor = 'text-gray-300'
     
     if (score >= 0.9) {
-      color = 'bg-green-500/20 text-green-400'
+      color = 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/30'
       text = 'Highly Relevant'
+      iconColor = 'text-green-300'
     } else if (score >= 0.7) {
-      color = 'bg-blue-500/20 text-blue-400'
+      color = 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-300 border-blue-500/30'
       text = 'Very Relevant'
+      iconColor = 'text-blue-300'
     } else if (score >= 0.5) {
-      color = 'bg-yellow-500/20 text-yellow-400'
+      color = 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-300 border-yellow-500/30'
       text = 'Relevant'
+      iconColor = 'text-yellow-300'
     }
     
     return (
-      <Badge className={`${color} border-0`}>
-        <Star className="h-3 w-3 mr-1" />
+      <Badge className={`${color} border px-4 py-2 rounded-2xl font-semibold shadow-lg`}>
+        <Star className={`h-4 w-4 mr-2 ${iconColor}`} />
         {text}
       </Badge>
     )
@@ -1010,8 +1014,12 @@ export function ForYouPage() {
                         </div>
                       ) : (
                         <div className={`relative bg-white/5 backdrop-blur-xl border border-white/10 transition-all duration-500 group hover:shadow-2xl hover:shadow-purple-500/10 rounded-3xl overflow-hidden ${getContentCardBorder(item.type)} ${item.type === 'blog' && item.metadata?.url ? 'hover:border-purple-400/50 hover:bg-white/10' : ''}`}>
-                          {/* Gradient overlay on hover */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-pink-500/0 to-cyan-500/0 group-hover:from-purple-500/5 group-hover:via-pink-500/5 group-hover:to-cyan-500/5 transition-all duration-500"></div>
+                          {/* Enhanced gradient overlay on hover */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-pink-500/0 to-cyan-500/0 group-hover:from-purple-500/10 group-hover:via-pink-500/10 group-hover:to-cyan-500/10 transition-all duration-500"></div>
+                          
+                          {/* Top accent bar */}
+                          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${getContentColor(item.type)} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                          
                           <div className="relative p-6 md:p-8">
                             {/* Clickable overlay for blog posts */}
                             {item.type === 'blog' && item.metadata?.url && (
@@ -1028,43 +1036,49 @@ export function ForYouPage() {
                                 title="Read full blog post"
                               />
                             )}
-                            {/* Content Header */}
-                            <div className="flex items-start gap-4 md:gap-6 mb-6">
+                            {/* Enhanced Content Header */}
+                            <div className="flex items-start gap-6 md:gap-8 mb-6">
                               {item.cover_image && (
-                                <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden flex-shrink-0 ring-2 ring-purple-500/20 group-hover:ring-purple-500/50 transition-all duration-300 shadow-lg">
+                                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-3xl overflow-hidden flex-shrink-0 ring-2 ring-purple-500/20 group-hover:ring-purple-500/50 transition-all duration-300 shadow-2xl group-hover:shadow-purple-500/25">
                                   <Image
                                     src={item.cover_image}
                                     alt={item.title}
                                     fill
-                                    className="object-cover"
-                                    sizes="(max-width: 768px) 80px, 96px"
+                                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                    sizes="(max-width: 768px) 96px, 128px"
                                   />
                                   {item.type === 'video' && (
-                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
-                                      <Play className="h-6 w-6 md:h-8 md:w-8 text-white" />
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                                      <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                                        <Play className="h-6 w-6 md:h-8 md:w-8 text-white fill-white" />
+                                      </div>
                                     </div>
                                   )}
+                                  {/* Image overlay gradient */}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                 </div>
                               )}
 
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-3 flex-wrap">
-                                  <Badge className={`${getContentColor(item.type)} text-sm md:text-base font-medium px-3 py-1 rounded-xl`}>
+                                {/* Enhanced badges with better spacing */}
+                                <div className="flex items-center gap-3 mb-4 flex-wrap">
+                                  <Badge className={`${getContentColor(item.type)} text-sm md:text-base font-semibold px-4 py-2 rounded-2xl shadow-lg`}>
                                     {getContentIcon(item.type)}
                                     <span className="ml-2 capitalize">{item.type}</span>
                                   </Badge>
                                   {item.metadata?.genre && (
-                                    <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-sm px-3 py-1 rounded-xl`}>
+                                    <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-sm px-4 py-2 rounded-2xl font-medium`}>
                                       {item.metadata.genre}
                                     </Badge>
                                   )}
                                   {getRelevanceBadge(item.relevance_score)}
                                 </div>
 
-                                <h3 className="text-xl md:text-2xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors line-clamp-2 leading-tight">
+                                {/* Enhanced title with better typography */}
+                                <h3 className="text-2xl md:text-3xl font-black text-white mb-4 group-hover:text-purple-300 transition-colors line-clamp-2 leading-tight tracking-tight">
                                   {item.title}
                                   {item.type === 'blog' && item.metadata?.url && (
-                                    <span className="ml-3 text-purple-400 text-lg font-normal">→ Read more</span>
+                                    <span className="ml-3 text-purple-400 text-xl font-normal opacity-0 group-hover:opacity-100 transition-opacity duration-300">→ Read more</span>
                                   )}
                                 </h3>
 
@@ -1075,40 +1089,91 @@ export function ForYouPage() {
                                 )}
 
                                 {item.description && (
-                                  <p className="text-gray-300 text-base md:text-lg mb-4 line-clamp-3 leading-relaxed font-light">
-                                    {item.description}
-                                  </p>
+                                  <div className="mb-6">
+                                    <p className="text-gray-300 text-lg md:text-xl line-clamp-3 leading-relaxed font-light">
+                                      {item.description}
+                                    </p>
+                                    {/* Reading time indicator for blog posts */}
+                                    {item.type === 'blog' && (
+                                      <div className="mt-3 flex items-center gap-2 text-gray-400 text-sm">
+                                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                                        <span>5 min read</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 )}
 
-                                {/* Metadata */}
+                                {/* Enhanced Metadata with better visual design */}
                                 <div className="flex items-center gap-4 md:gap-6 text-gray-400 text-sm md:text-base flex-wrap">
                                   {item.metadata?.duration && (
-                                    <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-xl px-3 py-2">
-                                      <Clock className="h-4 w-4" />
-                                      <span className="font-medium">{Math.floor(item.metadata.duration / 60)}:{String(item.metadata.duration % 60).padStart(2, '0')}</span>
+                                    <div className="flex items-center gap-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 group">
+                                      <div className="p-2 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors">
+                                        <Clock className="h-4 w-4 text-purple-300" />
+                                      </div>
+                                      <span className="font-semibold text-white">{Math.floor(item.metadata.duration / 60)}:{String(item.metadata.duration % 60).padStart(2, '0')}</span>
                                     </div>
                                   )}
                                   {item.metadata?.forum && (
-                                    <a className="flex items-center gap-2 text-purple-300 hover:text-purple-200 bg-white/5 backdrop-blur-sm rounded-xl px-3 py-2 transition-colors" href={`/forums/${item.metadata?.forum?.slug}/thread/${item.id.replace('thread_','')}`}>
-                                      <MessageCircle className="h-4 w-4" />
-                                      <span className="font-medium">Open thread</span>
+                                    <a className="flex items-center gap-3 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 group" href={`/forums/${item.metadata?.forum?.slug}/thread/${item.id.replace('thread_','')}`}>
+                                      <div className="p-2 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors">
+                                        <MessageCircle className="h-4 w-4 text-blue-300" />
+                                      </div>
+                                      <span className="font-semibold text-white">Open thread</span>
                                     </a>
                                   )}
                                   {item.metadata?.location && (
-                                    <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-xl px-3 py-2">
-                                      <MapPin className="h-4 w-4" />
-                                      <span className="truncate max-w-32 font-medium">{item.metadata.location}</span>
+                                    <div className="flex items-center gap-3 bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-green-500/20">
+                                      <div className="p-2 bg-green-500/20 rounded-xl">
+                                        <MapPin className="h-4 w-4 text-green-300" />
+                                      </div>
+                                      <span className="truncate max-w-32 font-semibold text-white">{item.metadata.location}</span>
                                     </div>
                                   )}
                                   {item.metadata?.date && (
-                                    <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-xl px-3 py-2">
-                                      <Calendar className="h-4 w-4" />
-                                      <span className="font-medium">{new Date(item.metadata.date).toLocaleDateString()}</span>
+                                    <div className="flex items-center gap-3 bg-gradient-to-r from-orange-500/10 to-yellow-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-orange-500/20">
+                                      <div className="p-2 bg-orange-500/20 rounded-xl">
+                                        <Calendar className="h-4 w-4 text-orange-300" />
+                                      </div>
+                                      <span className="font-semibold text-white">{new Date(item.metadata.date).toLocaleDateString()}</span>
                                     </div>
                                   )}
-                                  <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-xl px-3 py-2">
-                                    <Clock className="h-4 w-4" />
-                                    <span className="font-medium">{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
+                                  <div className="flex items-center gap-3 bg-gradient-to-r from-gray-500/10 to-slate-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-500/20">
+                                    <div className="p-2 bg-gray-500/20 rounded-xl">
+                                      <Clock className="h-4 w-4 text-gray-300" />
+                                    </div>
+                                    <span className="font-semibold text-white">{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
+                                  </div>
+                                </div>
+                                
+                                {/* Action buttons */}
+                                <div className="mt-6 pt-6 border-t border-white/10">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                      <button className="flex items-center gap-2 text-gray-400 hover:text-purple-400 transition-colors duration-300 group">
+                                        <div className="p-2 bg-white/5 rounded-xl group-hover:bg-purple-500/20 transition-colors">
+                                          <Heart className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                                        </div>
+                                        <span className="text-sm font-medium">Like</span>
+                                      </button>
+                                      <button className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors duration-300 group">
+                                        <div className="p-2 bg-white/5 rounded-xl group-hover:bg-blue-500/20 transition-colors">
+                                          <MessageCircle className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                                        </div>
+                                        <span className="text-sm font-medium">Comment</span>
+                                      </button>
+                                      <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors duration-300 group">
+                                        <div className="p-2 bg-white/5 rounded-xl group-hover:bg-green-500/20 transition-colors">
+                                          <Share2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                                        </div>
+                                        <span className="text-sm font-medium">Share</span>
+                                      </button>
+                                    </div>
+                                    <button className="flex items-center gap-2 text-gray-400 hover:text-yellow-400 transition-colors duration-300 group">
+                                      <div className="p-2 bg-white/5 rounded-xl group-hover:bg-yellow-500/20 transition-colors">
+                                        <Bookmark className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                                      </div>
+                                      <span className="text-sm font-medium">Save</span>
+                                    </button>
                                   </div>
                                 </div>
                               </div>
