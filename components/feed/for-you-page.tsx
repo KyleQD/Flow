@@ -113,7 +113,7 @@ export function ForYouPage() {
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [sortBy, setSortBy] = useState<'relevant' | 'recent' | 'popular' | 'positive'>('relevant')
+  const [sortBy, setSortBy] = useState<'relevant' | 'recent' | 'popular' | 'positive'>('recent')
   const [bookmarkedContent, setBookmarkedContent] = useState<Set<string>>(new Set())
   const { user } = useAuth()
 
@@ -938,137 +938,133 @@ export function ForYouPage() {
         <div className="max-w-5xl mx-auto">
           {/* Main Content Area */}
           <div className="space-y-6">
-            {/* Search and Filter Bar */}
+                        {/* Unified Search, Sort, and Content Tabs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  {/* Search */}
-                  <div className="flex-1 relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-                    <div className="relative">
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
-                      <Input
-                        placeholder="Search content, artists, genres..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-12 pr-12 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-14 rounded-2xl focus:border-purple-400/50 focus:ring-purple-400/20 backdrop-blur-sm text-lg"
-                      />
-                      {searchQuery && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 text-gray-400 hover:text-white rounded-xl"
-                        >
-                          <X className="h-5 w-5" />
-                        </Button>
-                      )}
+                <div className="space-y-4">
+                  {/* Search and Sort Row */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Search */}
+                    <div className="flex-1 relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                      <div className="relative">
+                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
+                        <Input
+                          placeholder="Search content, artists, genres..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-12 pr-12 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-14 rounded-2xl focus:border-purple-400/50 focus:ring-purple-400/20 backdrop-blur-sm text-lg"
+                        />
+                        {searchQuery && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 text-gray-400 hover:text-white rounded-xl"
+                          >
+                            <X className="h-5 w-5" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Sort Button */}
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="h-14 border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 transition-all whitespace-nowrap rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 sm:w-auto w-full"
+                    >
+                      <SlidersHorizontal className="h-5 w-5 mr-3" />
+                      <span className="text-lg font-medium">
+                        {sortBy === 'positive' ? 'Most Positive' : sortBy === 'relevant' ? 'Most Relevant' : sortBy === 'recent' ? 'Most Recent' : sortBy === 'popular' ? 'Most Popular' : 'Sort'}
+                      </span>
+                    </Button>
                   </div>
 
-                  {/* Sort Button */}
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="h-14 border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 transition-all whitespace-nowrap rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 sm:w-auto w-full"
-                  >
-                    <SlidersHorizontal className="h-5 w-5 mr-3" />
-                    <span className="text-lg font-medium">
-                      {sortBy === 'positive' ? 'Most Positive' : sortBy === 'relevant' ? 'Most Relevant' : sortBy === 'recent' ? 'Most Recent' : sortBy === 'popular' ? 'Most Popular' : 'Sort'}
-                    </span>
-                  </Button>
-                </div>
+                  {/* Sort Options */}
+                  <AnimatePresence>
+                    {showFilters && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="pt-4 border-t border-white/10"
+                      >
+                        <div className="flex gap-3 flex-wrap">
+                          {[
+                            { value: 'relevant', label: 'Most Relevant', icon: Star },
+                            { value: 'recent', label: 'Most Recent', icon: Clock },
+                            { value: 'popular', label: 'Most Popular', icon: TrendingUp },
+                            { value: 'positive', label: 'Most Positive', icon: Sparkles }
+                          ].map((option) => {
+                            const Icon = option.icon
+                            return (
+                              <Button
+                                key={option.value}
+                                variant={sortBy === option.value ? "default" : "outline"}
+                                onClick={() => setSortBy(option.value as any)}
+                                className={`h-10 whitespace-nowrap rounded-2xl text-base font-medium ${
+                                  sortBy === option.value 
+                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25' 
+                                    : 'border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 bg-white/5 backdrop-blur-sm hover:bg-white/10'
+                                } transition-all duration-300`}
+                              >
+                                <Icon className="h-4 w-4 mr-2" />
+                                {option.label}
+                              </Button>
+                            )
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                {/* Sort Options */}
-                <AnimatePresence>
-                  {showFilters && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-4 pt-4 border-t border-white/10"
-                    >
-                      <div className="flex gap-3 flex-wrap">
-                        {[
-                          { value: 'relevant', label: 'Most Relevant', icon: Star },
-                          { value: 'recent', label: 'Most Recent', icon: Clock },
-                          { value: 'popular', label: 'Most Popular', icon: TrendingUp },
-                          { value: 'positive', label: 'Most Positive', icon: Sparkles }
-                        ].map((option) => {
-                          const Icon = option.icon
+                  {/* Content Tabs */}
+                  <div className="pt-4 border-t border-white/10">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                      {/* Main content types - Responsive grid */}
+                      <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2 mb-3">
+                        {contentTypes.slice(0, 6).map((type) => {
+                          const Icon = type.icon
                           return (
-                            <Button
-                              key={option.value}
-                              variant={sortBy === option.value ? "default" : "outline"}
-                              onClick={() => setSortBy(option.value as any)}
-                              className={`h-10 whitespace-nowrap rounded-2xl text-base font-medium ${
-                                sortBy === option.value 
-                                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25' 
-                                  : 'border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 bg-white/5 backdrop-blur-sm hover:bg-white/10'
-                              } transition-all duration-300`}
+                            <TabsTrigger
+                              key={type.value}
+                              value={type.value}
+                              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-4 touch-manipulation"
                             >
-                              <Icon className="h-4 w-4 mr-2" />
-                              {option.label}
-                            </Button>
+                              <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
+                              <span className="hidden sm:inline">{type.label}</span>
+                            </TabsTrigger>
                           )
                         })}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-
-            {/* Content Tabs */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="space-y-3"
-            >
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                {/* Main content types - Responsive grid */}
-                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2">
-                {contentTypes.slice(0, 6).map((type) => {
-                  const Icon = type.icon
-                  return (
-                    <TabsTrigger
-                      key={type.value}
-                      value={type.value}
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-4 touch-manipulation"
-                    >
-                      <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">{type.label}</span>
-                    </TabsTrigger>
-                  )
-                })}
-              </TabsList>
-              
-              {/* Music genre tabs - Clean layout without label */}
-              <div className="mt-4">
-                <TabsList className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2">
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
-                    {contentTypes.slice(6).map((type) => {
-                      const Icon = type.icon
-                      return (
-                        <TabsTrigger
-                          key={type.value}
-                          value={type.value}
-                          className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
-                        >
-                          <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
-                          <span className="hidden sm:inline">{type.label}</span>
-                        </TabsTrigger>
-                      )
-                    })}
+                      </TabsList>
+                      
+                      {/* Music genre tabs - Clean layout without label */}
+                      <TabsList className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
+                          {contentTypes.slice(6).map((type) => {
+                            const Icon = type.icon
+                            return (
+                              <TabsTrigger
+                                key={type.value}
+                                value={type.value}
+                                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
+                              >
+                                <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">{type.label}</span>
+                              </TabsTrigger>
+                            )
+                          })}
+                        </div>
+                      </TabsList>
+                    </Tabs>
                   </div>
-                </TabsList>
+                </div>
               </div>
-            </Tabs>
             </motion.div>
 
             {/* Content Grid */}
@@ -1229,18 +1225,42 @@ export function ForYouPage() {
                                   </div>
                                 )}
 
+                                {/* Enhanced description with source information */}
                                 {item.description && (
                                   <div className="mb-6">
                                     <p className="text-gray-300 text-lg md:text-xl line-clamp-3 leading-relaxed font-light">
                                       {item.description}
                                     </p>
-                                    {/* Reading time indicator for blog posts */}
-                                    {item.type === 'blog' && (
-                                      <div className="mt-3 flex items-center gap-2 text-gray-400 text-sm">
+                                    
+                                    {/* Source and metadata information */}
+                                    <div className="mt-4 flex items-center gap-4 text-gray-400 text-sm flex-wrap">
+                                      {/* Source information */}
+                                      {item.author?.name && (
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-purple-300 font-medium">Source:</span>
+                                          <span className="text-white">{item.author.name}</span>
+                                          {item.author.is_verified && (
+                                            <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 px-2 py-1 text-xs">
+                                              Verified
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Reading time indicator for blog posts */}
+                                      {item.type === 'blog' && (
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                                          <span>5 min read</span>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Content type indicator */}
+                                      <div className="flex items-center gap-2">
                                         <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                                        <span>5 min read</span>
+                                        <span className="capitalize">{item.type}</span>
                                       </div>
-                                    )}
+                                    </div>
                                   </div>
                                 )}
 
