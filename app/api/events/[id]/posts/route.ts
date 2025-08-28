@@ -1,76 +1,155 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
-async function resolveEventId(param: string, supabase: any) {
-  if (/^[0-9a-fA-F-]{36}$/.test(param)) return param
-  const { data } = await supabase.from('events').select('id').eq('slug', param).single()
-  return data?.id || null
-}
-
-export async function GET(_req: NextRequest, { params }: any) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { createClient } = await import('@/lib/supabase/server')
+    const { id: eventId } = await params
     const supabase = await createClient()
 
-    const eventId = await resolveEventId(params.id, supabase)
-    if (!eventId) return NextResponse.json({ posts: [] })
-
-    // Reuse main posts table with route_context to scope to event
-    const { data, error } = await supabase
-      .from('posts')
-      .select('id, user_id, content, type, visibility, media_urls, created_at, profiles:user_id(id, username, full_name, avatar_url, is_verified)')
-      .eq('route_context', `event:${eventId}`)
+    const { data: posts, error } = await supabase
+      .from('event_posts')
+      .select(`
+        *,
+        profiles:user_id (
+          id,
+          username,
+          full_name,
+          avatar_url,
+          is_verified
+        )
+      `)
+      .eq('event_id', eventId)
+      .eq('event_table', 'artist_events')
+      .order('is_pinned', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(50)
 
-    if (error) return NextResponse.json({ posts: [] })
+    if (error) {
+      console.error('Error fetching event posts:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch posts' },
+        { status: 500 }
+      )
+    }
 
-    const posts = (data || []).map((p: any) => ({
-      id: p.id,
-      user_id: p.user_id,
-      content: p.content,
-      type: p.type,
-      visibility: p.visibility,
-      media_urls: p.media_urls || [],
-      created_at: p.created_at,
-      profiles: p.profiles
-    }))
-
-    return NextResponse.json({ posts })
+    return NextResponse.json({ posts: posts || [] })
   } catch (error) {
-    console.error('[Event Posts API] Error:', error)
-    return NextResponse.json({ posts: [] })
+    console.error('Error in event posts API:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
 
-export async function POST(request: NextRequest, { params }: any) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { authenticateApiRequest } = await import('@/lib/auth/api-auth')
-    const auth = await authenticateApiRequest(request)
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { id: eventId } = await params
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    const { supabase, user } = auth
-    const body = await request.json()
-    if (!body?.content?.trim()) return NextResponse.json({ error: 'Content is required' }, { status: 400 })
-
-    const eventId = await resolveEventId(params.id, supabase)
-    if (!eventId) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
-
-    const insert = {
-      user_id: user.id,
-      content: body.content.trim(),
-      type: body.type || 'text',
-      visibility: body.visibility || 'attendees',
-      media_urls: body.media_urls || [],
-      route_context: `event:${eventId}`
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
     }
 
-    const { data, error } = await supabase.from('posts').insert([insert]).select().single()
-    if (error) return NextResponse.json({ error: 'Failed to create post' }, { status: 500 })
+    const body = await request.json()
+    const { content, type = 'text', media_urls = [], visibility = 'public' } = body
 
-    return NextResponse.json(data)
+    if (!content?.trim()) {
+      return NextResponse.json(
+        { error: 'Content is required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if user can post (is creator or attending)
+    const { data: event } = await supabase
+      .from('artist_events')
+      .select('user_id')
+      .eq('id', eventId)
+      .single()
+
+    if (!event) {
+      return NextResponse.json(
+        { error: 'Event not found' },
+        { status: 404 }
+      )
+    }
+
+    const isCreator = event.user_id === user.id
+    
+    // Check if user is attending (for non-creators)
+    let isAttending = false
+    if (!isCreator) {
+      const { data: attendance } = await supabase
+        .from('event_attendance')
+        .select('status')
+        .eq('event_id', eventId)
+        .eq('user_id', user.id)
+        .eq('event_table', 'artist_events')
+        .single()
+      
+      isAttending = attendance?.status === 'attending'
+    }
+
+    if (!isCreator && !isAttending && visibility !== 'public') {
+      return NextResponse.json(
+        { error: 'You can only post publicly unless you are attending this event' },
+        { status: 403 }
+      )
+    }
+
+    // Create the post
+    const { data: newPost, error } = await supabase
+      .from('event_posts')
+      .insert({
+        event_id: eventId,
+        event_table: 'artist_events',
+        user_id: user.id,
+        content: content.trim(),
+        type,
+        media_urls: media_urls.length > 0 ? media_urls : null,
+        visibility,
+        is_announcement: isCreator,
+        is_pinned: false,
+        likes_count: 0,
+        comments_count: 0
+      })
+      .select(`
+        *,
+        profiles:user_id (
+          id,
+          username,
+          full_name,
+          avatar_url,
+          is_verified
+        )
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error creating event post:', error)
+      return NextResponse.json(
+        { error: 'Failed to create post' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ post: newPost })
   } catch (error) {
-    console.error('[Event Posts API] Error:', error)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    console.error('Error in event posts API:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
 

@@ -50,6 +50,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import EventAnalytics from "./components/event-analytics"
 import Link from "next/link"
 import { GuestlistManager } from "./components/guestlist-manager"
+import { EnhancedEventCreator } from "@/components/events/enhanced-event-creator"
 
 import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help"
 import { usePerformanceTracking } from "@/lib/performance-monitor"
@@ -78,6 +79,7 @@ interface Event {
   poster_url?: string
   setlist?: string[]
   notes?: string
+  slug?: string
   created_at?: string
   updated_at?: string
 }
@@ -570,7 +572,7 @@ export default function EventsPage() {
 
   // Main component return
   return (
-    <React.Fragment>
+    <>
       <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -833,13 +835,13 @@ export default function EventsPage() {
                         </Button>
                         
                         <Button
-                          onClick={() => router.push(`/events/${event.id}`)}
+                          onClick={() => router.push(`/events/${event.slug || event.id}`)}
                           variant="outline"
                           className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
                           size="sm"
                         >
                           <Eye className="h-4 w-4 mr-2" />
-                          View
+                          View Public Page
                         </Button>
                       
                       <DropdownMenu>
@@ -872,15 +874,15 @@ export default function EventsPage() {
                             Manage Event
                           </DropdownMenuItem>
                           <DropdownMenuItem 
-                            onClick={() => window.open(`/events/${event.id}`, '_blank')}
+                            onClick={() => window.open(`/events/${event.slug || event.id}`, '_blank')}
                             className="text-gray-300 hover:text-white"
                           >
                             <ExternalLink className="h-4 w-4 mr-2" />
-                            Event Page
+                            Public Event Page
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => {
-                              const eventUrl = `${window.location.origin}/events/${event.id}`
+                              const eventUrl = `${window.location.origin}/events/${event.slug || event.id}`
                               navigator.clipboard.writeText(eventUrl)
                               toast.success('Event page link copied to clipboard')
                             }}
@@ -1047,11 +1049,16 @@ export default function EventsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Create/Edit Event Modal */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-            <DialogContent className="bg-gradient-to-br from-black/95 via-slate-950/95 to-black/95 backdrop-blur-xl border border-white/20 max-w-5xl max-h-[95vh] overflow-hidden shadow-2xl shadow-purple-500/10">
+      {/* Enhanced Event Creator Modal */}
+      <EnhancedEventCreator
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onEventCreated={(newEvent) => {
+          setEvents(prev => [newEvent, ...prev])
+          setShowCreateModal(false)
+        }}
+        editingEvent={editingEvent}
+      />
               {/* Animated Background Elements */}
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <motion.div
@@ -1586,28 +1593,6 @@ export default function EventsPage() {
                   </motion.div>
                 </motion.div>
               </motion.div>
-            </DialogContent>
-          </Dialog>
-        )}
-      </AnimatePresence>
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: linear-gradient(135deg, rgba(168, 85, 247, 0.5), rgba(236, 72, 153, 0.5));
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(135deg, rgba(168, 85, 247, 0.8), rgba(236, 72, 153, 0.8));
-        }
-      `}</style>
-
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteEventId} onOpenChange={() => setDeleteEventId(null)}>
         <AlertDialogContent className="bg-gradient-to-br from-black/95 via-slate-950/95 to-black/95 backdrop-blur-xl border border-red-500/30 shadow-2xl shadow-red-500/20">
@@ -1654,6 +1639,6 @@ export default function EventsPage() {
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp />
       </div>
-    </React.Fragment>
+    </>
   )
 } 

@@ -1,83 +1,186 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
-async function resolveEventId(param: string, supabase: any) {
-  if (/^[0-9a-fA-F-]{36}$/.test(param)) return param
-  const { data } = await supabase.from('events').select('id').eq('slug', param).single()
-  return data?.id || null
-}
-
-export async function POST(request: NextRequest, { params }: any) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { authenticateApiRequest } = await import('@/lib/auth/api-auth')
-    const auth = await authenticateApiRequest(request)
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const { supabase, user } = auth
+    const { id: eventId } = await params
+    const supabase = await createClient()
 
-    const { status } = await request.json()
-    if (!['attending', 'interested', 'not_going'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
-    }
-
-    const eventId = await resolveEventId(params.id, supabase)
-    if (!eventId) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
-
-    // Upsert attendance row in a generic event_attendance table (create if missing in future migration)
-    const { data: _attendance, error: upsertError } = await supabase
+    const { data: attendance, error } = await supabase
       .from('event_attendance')
-      .upsert({ event_id: eventId, user_id: user.id, status }, { onConflict: 'event_id,user_id' })
-
-    if (upsertError) {
-      // Fallback to no-op if table doesn't exist yet; still return mocked counts
-      console.warn('[Event Attendance API] attendance table missing or error, returning mock counts')
-    }
-
-    // Return counts (mock or real)
-    let counts = { attending: 0, interested: 0, not_going: 0 }
-    const { data: rows } = await supabase
-      .from('event_attendance')
-      .select('status')
+      .select(`
+        *,
+        profiles:user_id (
+          id,
+          username,
+          full_name,
+          avatar_url,
+          is_verified
+        )
+      `)
       .eq('event_id', eventId)
+      .eq('event_table', 'artist_events')
 
-    if (rows?.length) {
-      for (const row of rows as Array<{ status: string }>) {
-        if (row.status === 'attending') counts.attending++
-        else if (row.status === 'interested') counts.interested++
-        else if (row.status === 'not_going') counts.not_going++
-      }
+    if (error) {
+      console.error('Error fetching attendance:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch attendance' },
+        { status: 500 }
+      )
     }
 
-    return NextResponse.json({ counts })
+    const attending = attendance?.filter(a => a.status === 'attending') || []
+    const interested = attendance?.filter(a => a.status === 'interested') || []
+    const notGoing = attendance?.filter(a => a.status === 'not_going') || []
+
+    return NextResponse.json({
+      attending,
+      interested,
+      not_going: notGoing,
+      counts: {
+        attending: attending.length,
+        interested: interested.length,
+        not_going: notGoing.length
+      }
+    })
   } catch (error) {
-    console.error('[Event Attendance API] Error:', error)
-    return NextResponse.json({ error: 'Failed to update attendance' }, { status: 500 })
+    console.error('Error in attendance API:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
 
-export async function GET(_request: NextRequest, { params }: any) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { createClient } = await import('@/lib/supabase/server')
+    const { id: eventId } = await params
     const supabase = await createClient()
-    const eventId = await resolveEventId(params.id, supabase)
-    if (!eventId) return NextResponse.json({ counts: { attending: 0, interested: 0, not_going: 0 } })
+    const { data: { user } } = await supabase.auth.getUser()
 
-    let counts = { attending: 0, interested: 0, not_going: 0 }
-    const { data: rows } = await supabase
-      .from('event_attendance')
-      .select('status')
-      .eq('event_id', eventId)
-
-    if (rows?.length) {
-      for (const row of rows as Array<{ status: string }>) {
-        if (row.status === 'attending') counts.attending++
-        else if (row.status === 'interested') counts.interested++
-        else if (row.status === 'not_going') counts.not_going++
-      }
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
     }
 
-    return NextResponse.json({ counts })
+    const body = await request.json()
+    const { status } = body
+
+    if (!status || !['attending', 'interested', 'not_going'].includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status. Must be attending, interested, or not_going' },
+        { status: 400 }
+      )
+    }
+
+    // Verify event exists and is public
+    const { data: event, error: eventError } = await supabase
+      .from('artist_events')
+      .select('id, is_public')
+      .eq('id', eventId)
+      .single()
+
+    if (eventError || !event) {
+      return NextResponse.json(
+        { error: 'Event not found' },
+        { status: 404 }
+      )
+    }
+
+    if (!event.is_public) {
+      return NextResponse.json(
+        { error: 'Cannot RSVP to private events' },
+        { status: 403 }
+      )
+    }
+
+    // Update or create attendance record
+    const { data: attendance, error } = await supabase
+      .from('event_attendance')
+      .upsert({
+        event_id: eventId,
+        user_id: user.id,
+        event_table: 'artist_events',
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .select(`
+        *,
+        profiles:user_id (
+          id,
+          username,
+          full_name,
+          avatar_url,
+          is_verified
+        )
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error updating attendance:', error)
+      return NextResponse.json(
+        { error: 'Failed to update attendance' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ attendance })
   } catch (error) {
-    console.error('[Event Attendance API] GET Error:', error)
-    return NextResponse.json({ counts: { attending: 0, interested: 0, not_going: 0 } })
+    console.error('Error in attendance API:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: eventId } = await params
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Remove attendance record
+    const { error } = await supabase
+      .from('event_attendance')
+      .delete()
+      .eq('event_id', eventId)
+      .eq('user_id', user.id)
+      .eq('event_table', 'artist_events')
+
+    if (error) {
+      console.error('Error removing attendance:', error)
+      return NextResponse.json(
+        { error: 'Failed to remove attendance' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error in attendance API:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
 

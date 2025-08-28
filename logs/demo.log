@@ -410,3 +410,77 @@ Error: `cookies` was called outside a request scope. Read more: https://nextjs.o
 [Main Middleware] Route type - Public: false, Auth: false, Protected: true, Root: false
 [Main Middleware] Server-side auth detection failed, but allowing access (temporary workaround)
 [Main Middleware] Client-side auth should handle the actual protection
+[Middleware] Checking auth for path: /login
+[Middleware] Found 0 auth-related cookies: []
+[Middleware] Supabase auth error: Auth session missing!
+[Middleware] Supabase method - User exists: false
+[Middleware] Supabase method failed, trying manual cookie parsing...
+[Middleware] All cookies: [ '__next_hmr_refresh_hash__: 48 chars' ]
+[Middleware] No sb-tourify-auth-token cookie found
+[Middleware] Final result - User exists: false
+[Middleware] User ID: none
+[Main Middleware] Processing: /login
+[Main Middleware] User authenticated: false
+[Main Middleware] User ID: none
+[Main Middleware] Route type - Public: true, Auth: true, Protected: false, Root: false
+[Main Middleware] Allowing access to: /login
+[Middleware] Checking auth for path: /dashboard
+[Middleware] Found 0 auth-related cookies: []
+[Middleware] Supabase auth error: Auth session missing!
+[Middleware] Supabase method - User exists: false
+[Middleware] Supabase method failed, trying manual cookie parsing...
+[Middleware] All cookies: [ '__next_hmr_refresh_hash__: 48 chars' ]
+[Middleware] No sb-tourify-auth-token cookie found
+[Middleware] Final result - User exists: false
+[Middleware] User ID: none
+[Main Middleware] Processing: /dashboard
+[Main Middleware] User authenticated: false
+[Main Middleware] User ID: none
+[Main Middleware] Route type - Public: false, Auth: false, Protected: true, Root: false
+[Main Middleware] Server-side auth detection failed, but allowing access (temporary workaround)
+[Main Middleware] Client-side auth should handle the actual protection
+[Middleware] Checking auth for path: /dashboard
+[Middleware] Found 0 auth-related cookies: []
+[Middleware] Supabase auth error: Auth session missing!
+[Middleware] Supabase method - User exists: false
+[Middleware] Supabase method failed, trying manual cookie parsing...
+[Middleware] All cookies: [ '__next_hmr_refresh_hash__: 48 chars' ]
+[Middleware] No sb-tourify-auth-token cookie found
+[Middleware] Final result - User exists: false
+[Middleware] User ID: none
+[Main Middleware] Processing: /dashboard
+[Main Middleware] User authenticated: false
+[Main Middleware] User ID: none
+[Main Middleware] Route type - Public: false, Auth: false, Protected: true, Root: false
+[Main Middleware] Server-side auth detection failed, but allowing access (temporary workaround)
+[Main Middleware] Client-side auth should handle the actual protection
+[Middleware] Checking auth for path: /dashboard
+[Middleware] Found 0 auth-related cookies: []
+[Middleware] Supabase auth error: Auth session missing!
+[Middleware] Supabase method - User exists: false
+[Middleware] Supabase method failed, trying manual cookie parsing...
+[Middleware] All cookies: [ '__next_hmr_refresh_hash__: 48 chars' ]
+[Middleware] No sb-tourify-auth-token cookie found
+[Middleware] Final result - User exists: false
+[Middleware] User ID: none
+[Main Middleware] Processing: /dashboard
+[Main Middleware] User authenticated: false
+[Main Middleware] User ID: none
+[Main Middleware] Route type - Public: false, Auth: false, Protected: true, Root: false
+[Main Middleware] Server-side auth detection failed, but allowing access (temporary workaround)
+[Main Middleware] Client-side auth should handle the actual protection
+[Middleware] Checking auth for path: /onboarding
+[Middleware] Found 0 auth-related cookies: []
+[Middleware] Supabase auth error: Auth session missing!
+[Middleware] Supabase method - User exists: false
+[Middleware] Supabase method failed, trying manual cookie parsing...
+[Middleware] All cookies: [ '__next_hmr_refresh_hash__: 48 chars' ]
+[Middleware] No sb-tourify-auth-token cookie found
+[Middleware] Final result - User exists: false
+[Middleware] User ID: none
+[Main Middleware] Processing: /onboarding
+[Main Middleware] User authenticated: false
+[Main Middleware] User ID: none
+[Main Middleware] Route type - Public: false, Auth: false, Protected: true, Root: false
+[Main Middleware] Server-side auth detection failed, but allowing access (temporary workaround)
+[Main Middleware] Client-side auth should handle the actual protection
