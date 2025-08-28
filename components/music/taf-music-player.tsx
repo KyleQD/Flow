@@ -44,6 +44,7 @@ export function TafMusicPlayer({
   const audioRef = useRef<HTMLAudioElement>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null)
+  const gainNodeRef = useRef<GainNode | null>(null)
 
   useEffect(() => {
     checkTafFormat()
@@ -99,8 +100,14 @@ export function TafMusicPlayer({
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
       }
 
+      // Create gain node for volume control
+      if (!gainNodeRef.current) {
+        gainNodeRef.current = audioContextRef.current.createGain()
+        gainNodeRef.current.connect(audioContextRef.current.destination)
+      }
+
       // Decode audio buffer
-      const decodedBuffer = await audioContextRef.current.decodeAudioData(audioBuffer.buffer)
+      const decodedBuffer = await audioContextRef.current.decodeAudioData(audioBuffer.buffer as ArrayBuffer)
       
       // Create source node
       if (sourceNodeRef.current) {
@@ -110,8 +117,8 @@ export function TafMusicPlayer({
       sourceNodeRef.current = audioContextRef.current.createBufferSource()
       sourceNodeRef.current.buffer = decodedBuffer
       
-      // Connect to destination
-      sourceNodeRef.current.connect(audioContextRef.current.destination)
+      // Connect to gain node
+      sourceNodeRef.current.connect(gainNodeRef.current)
       
       // Set up event handlers
       sourceNodeRef.current.onended = () => {
@@ -179,8 +186,8 @@ export function TafMusicPlayer({
     const newVolume = value[0]
     setVolume(newVolume)
     
-    if (audioContextRef.current) {
-      audioContextRef.current.destination.gain.value = newVolume
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = newVolume
     }
     
     if (audioRef.current) {
@@ -191,8 +198,8 @@ export function TafMusicPlayer({
   const handleMute = () => {
     setIsMuted(!isMuted)
     
-    if (audioContextRef.current) {
-      audioContextRef.current.destination.gain.value = isMuted ? volume : 0
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = isMuted ? volume : 0
     }
     
     if (audioRef.current) {

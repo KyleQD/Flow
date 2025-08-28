@@ -53,7 +53,8 @@ import {
   DollarSign,
   User,
   MoreHorizontal,
-  Trash2
+  Trash2,
+  BarChart
 } from "lucide-react"
 import { format } from "date-fns"
 import { useAuth } from "@/contexts/auth-context"
@@ -68,8 +69,10 @@ interface EventData {
   description?: string
   type: string
   venue_name?: string
+  venue_address?: string
   venue_city?: string
   venue_state?: string
+  venue_country?: string
   event_date: string
   start_time?: string
   end_time?: string
@@ -93,6 +96,13 @@ interface EventData {
   slug: string
   created_at: string
   updated_at: string
+  creator?: {
+    id: string
+    username: string
+    full_name: string
+    avatar_url?: string
+    is_verified: boolean
+  }
 }
 
 interface EventPost {

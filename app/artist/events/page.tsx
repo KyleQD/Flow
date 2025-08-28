@@ -1,59 +1,58 @@
-"use client"
+'use client'
 
-import React, { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
-import { useArtist } from "@/contexts/artist-context"
-import { supabase } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { toast } from "sonner"
-import { format } from "date-fns"
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toast } from 'sonner'
 import { 
   Calendar, 
-  Plus, 
-  Edit, 
-  Trash2, 
+  Clock, 
   MapPin, 
-  Clock,
-  Users,
-  DollarSign,
-  TrendingUp,
-  MoreHorizontal,
-  Eye,
+  Users, 
+  Heart, 
+  MessageCircle, 
   Share2,
-  Copy,
-  BarChart,
-  Megaphone,
-  Wallet,
   Settings,
-  Bell,
+  Edit,
+  Pin,
+  Send,
+  Loader2,
+  ExternalLink,
+  UserPlus,
+  Star,
+  ChevronDown,
+  ChevronUp,
+  Ticket,
+  Music,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  Sparkles,
+  Activity,
+  Zap,
+  Radio,
+  Headphones,
+  Plus,
   Download,
-  ExternalLink
-} from "lucide-react"
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import EventAnalytics from "./components/event-analytics"
-import Link from "next/link"
-import { GuestlistManager } from "./components/guestlist-manager"
-import { EnhancedEventCreator } from "@/components/events/enhanced-event-creator"
-
-import { KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts-help"
-import { usePerformanceTracking } from "@/lib/performance-monitor"
+  Bell,
+  Trash2,
+  MoreHorizontal,
+  CheckCircle,
+  XCircle
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { useAuth } from '@/contexts/auth-context'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { EnhancedEventCreator } from '@/components/events/enhanced-event-creator'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 interface Event {
   id?: string
@@ -86,7 +85,7 @@ interface Event {
 
 export default function EventsPage() {
   const router = useRouter()
-  const { user, profile, isLoading: isUserLoading } = useArtist()
+  const { user, loading: isUserLoading } = useAuth()
   
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -95,394 +94,82 @@ export default function EventsPage() {
   const [deleteEventId, setDeleteEventId] = useState<string | null>(null)
   const [selectedTab, setSelectedTab] = useState("overview")
   
-  // Form state
-  const [formData, setFormData] = useState<Event>({
-    title: '',
-    description: '',
-    type: 'concert',
-    venue_name: '',
-    venue_address: '',
-    venue_city: '',
-    venue_state: '',
-    venue_country: 'USA',
-    event_date: new Date().toISOString().split('T')[0],
-    start_time: '19:00',
-    end_time: '22:00',
-    doors_open: '18:30',
-    ticket_price_min: 0,
-    ticket_price_max: 0,
-    capacity: 0,
-    expected_attendance: 0,
-    status: 'upcoming',
-    is_public: true,
-    setlist: [],
-    notes: ''
-  })
-  
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const supabase = createClientComponentClient()
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + N to create new event
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n' && !showCreateModal) {
-        e.preventDefault()
-        setEditingEvent(null)
-        setShowCreateModal(true)
-      }
-      
-      // Escape to close modal
-      if (e.key === 'Escape' && showCreateModal) {
-        e.preventDefault()
-        setShowCreateModal(false)
-      }
-      
-      // Ctrl/Cmd + S to save form (when modal is open)
-      if ((e.ctrlKey || e.metaKey) && e.key === 's' && showCreateModal) {
-        e.preventDefault()
-        handleSaveEvent()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [showCreateModal])
-
-  // Form validation
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {}
-    
-    if (!formData.title.trim()) {
-      errors.title = 'Event title is required'
-    } else if (formData.title.length < 3) {
-      errors.title = 'Title must be at least 3 characters long'
-    } else if (formData.title.length > 100) {
-      errors.title = 'Title must be less than 100 characters'
-    }
-    
-    if (!formData.event_date) {
-      errors.event_date = 'Event date is required'
-    } else {
-      const eventDate = new Date(formData.event_date)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      
-      if (eventDate < today && formData.status === 'upcoming') {
-        errors.event_date = 'Upcoming events cannot be scheduled in the past'
-      }
-    }
-    
-    if (formData.capacity && formData.capacity < 0) {
-      errors.capacity = 'Capacity cannot be negative'
-    }
-    
-    if (formData.expected_attendance && formData.capacity && 
-        formData.expected_attendance > formData.capacity) {
-      errors.expected_attendance = 'Expected attendance cannot exceed venue capacity'
-    }
-    
-    if (formData.ticket_price_min && formData.ticket_price_min < 0) {
-      errors.ticket_price_min = 'Price cannot be negative'
-    }
-    
-    if (formData.ticket_price_max && formData.ticket_price_min && 
-        formData.ticket_price_max < formData.ticket_price_min) {
-      errors.ticket_price_max = 'Max price cannot be less than min price'
-    }
-    
-    setFormErrors(errors)
-    return Object.keys(errors).length === 0
+  // Stats calculation
+  const stats = {
+    totalEvents: events.length,
+    upcomingEvents: events.filter(e => e.status === 'upcoming').length,
+    completedEvents: events.filter(e => e.status === 'completed').length,
+    cancelledEvents: events.filter(e => e.status === 'cancelled').length,
+    totalCapacity: events.reduce((sum, e) => sum + (e.capacity || 0), 0)
   }
 
+  // Load events
   useEffect(() => {
-    if (user) {
-      loadEvents()
-    }
-  }, [user])
-
-  useEffect(() => {
-    if (editingEvent) {
-      setFormData(editingEvent)
-    } else {
-      setFormData({
-        title: '',
-        description: '',
-        type: 'concert',
-        venue_name: '',
-        venue_address: '',
-        venue_city: '',
-        venue_state: '',
-        venue_country: 'USA',
-        event_date: new Date().toISOString().split('T')[0],
-        start_time: '19:00',
-        end_time: '22:00',
-        doors_open: '18:30',
-        ticket_price_min: 0,
-        ticket_price_max: 0,
-        capacity: 0,
-        expected_attendance: 0,
-        status: 'upcoming',
-        is_public: true,
-        setlist: [],
-        notes: ''
-      })
-    }
-  }, [editingEvent])
+    loadEvents()
+  }, [])
 
   const loadEvents = async () => {
     if (!user) return
 
     try {
       setIsLoading(true)
-      
-      // Check if we have a valid session before making the request
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError) {
-        console.error('Session error:', sessionError)
-        throw new Error('Authentication session expired. Please refresh the page.')
-      }
-      
-      if (!session) {
-        console.error('No active session found')
-        throw new Error('No active session. Please log in again.')
-      }
-
       const { data, error } = await supabase
         .from('artist_events')
         .select('*')
         .eq('user_id', user.id)
-        .order('event_date', { ascending: false })
+        .order('event_date', { ascending: true })
 
       if (error) throw error
       setEvents(data || [])
     } catch (error) {
       console.error('Error loading events:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load events'
-      toast.error(errorMessage)
+      toast.error('Failed to load events')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleSaveEvent = async () => {
-    // Debug logging
-    console.log('Form data before validation:', formData)
-    console.log('User:', user ? 'Present' : 'Missing')
-    console.log('Profile:', profile ? 'Present' : 'Missing')
-    console.log('Loading state:', isUserLoading)
-    
-    // Check authentication first
-    if (!user) {
-      toast.error('User not authenticated')
-      return
-    }
-    
-    if (!profile) {
-      toast.error('Artist profile not loaded. Please wait a moment and try again.')
-      return
-    }
-    
-    if (isUserLoading) {
-      toast.error('Please wait while your profile loads...')
-      return
-    }
-
-    // Validate form data
-    if (!validateForm()) {
-      const firstError = Object.values(formErrors)[0]
-      if (firstError) {
-        toast.error(firstError)
-      }
-      return
-    }
-
-    try {
-      setIsSubmitting(true)
-      
-      // Check session before making authenticated requests
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError || !session) {
-        throw new Error('Authentication session expired. Please refresh the page.')
-      }
-      
-      const eventData = {
-        ...formData,
-        user_id: user.id,
-        updated_at: new Date().toISOString()
-      }
-
-      if (editingEvent?.id) {
-        // Update existing event
-        const { error } = await supabase
-          .from('artist_events')
-          .update(eventData)
-          .eq('id', editingEvent.id)
-          .eq('user_id', user.id)
-
-        if (error) throw error
-        
-        setEvents(prev => prev.map(event => 
-          event.id === editingEvent.id ? { ...event, ...eventData } : event
-        ))
-        toast.success('Event updated successfully!')
-      } else {
-        // Create new event
-        const { data, error } = await supabase
-          .from('artist_events')
-          .insert(eventData)
-          .select()
-          .single()
-
-        if (error) throw error
-        
-        if (data) {
-          setEvents(prev => [data, ...prev])
-        }
-        toast.success('Event created successfully!')
-      }
-      
-      setShowCreateModal(false)
-      setEditingEvent(null)
-    } catch (error) {
-      console.error('Error saving event:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save event'
-      toast.error(errorMessage)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // Keyboard shortcuts for better usability
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + N to create new event
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n' && !showCreateModal) {
-        e.preventDefault()
-        setEditingEvent(null)
-        setShowCreateModal(true)
-      }
-      
-      // Escape to close modal
-      if (e.key === 'Escape' && showCreateModal) {
-        e.preventDefault()
-        setShowCreateModal(false)
-      }
-      
-      // Ctrl/Cmd + S to save form (when modal is open)
-      if ((e.ctrlKey || e.metaKey) && e.key === 's' && showCreateModal) {
-        e.preventDefault()
-        handleSaveEvent()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [showCreateModal, handleSaveEvent])
-
   const handleDeleteEvent = async (eventId: string) => {
-    if (!user) return
-
     try {
-      // Check session before making authenticated requests
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError || !session) {
-        throw new Error('Authentication session expired. Please refresh the page.')
-      }
-
       const { error } = await supabase
         .from('artist_events')
         .delete()
         .eq('id', eventId)
-        .eq('user_id', user.id)
 
       if (error) throw error
-      
-      setEvents(prev => prev.filter(event => event.id !== eventId))
+
+      setEvents(prev => prev.filter(e => e.id !== eventId))
+      setDeleteEventId(null)
       toast.success('Event deleted successfully')
     } catch (error) {
       console.error('Error deleting event:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete event'
-      toast.error(errorMessage)
-    } finally {
-      setDeleteEventId(null)
+      toast.error('Failed to delete event')
     }
   }
 
-  const handleStatusChange = async (eventId: string, newStatus: Event['status']) => {
-    if (!user) return
-
-    try {
-      // Check session before making authenticated requests
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError || !session) {
-        throw new Error('Authentication session expired. Please refresh the page.')
-      }
-
-      const { error } = await supabase
-        .from('artist_events')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', eventId)
-        .eq('user_id', user.id)
-
-      if (error) throw error
-      
-      setEvents(prev => prev.map(event => 
-        event.id === eventId ? { ...event, status: newStatus } : event
-      ))
-      
-      toast.success(`Event marked as ${newStatus}`)
-    } catch (error) {
-      console.error('Error updating event status:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update event status'
-      toast.error(errorMessage)
-    }
+  const handleEventCreated = (newEvent: Event) => {
+    setEvents(prev => [newEvent, ...prev])
+    setShowCreateModal(false)
+    toast.success('Event created successfully!')
   }
 
-  const getStatusColor = (status: Event['status']) => {
-    switch (status) {
-      case 'upcoming': return 'bg-blue-600/20 text-blue-300'
-      case 'in_progress': return 'bg-green-600/20 text-green-300'
-      case 'completed': return 'bg-gray-600/20 text-gray-300'
-      case 'cancelled': return 'bg-red-600/20 text-red-300'
-      case 'postponed': return 'bg-yellow-600/20 text-yellow-300'
-      default: return 'bg-gray-600/20 text-gray-300'
-    }
-  }
 
-  const getTypeColor = (type: Event['type']) => {
-    switch (type) {
-      case 'concert': return 'bg-purple-600/20 text-purple-300'
-      case 'festival': return 'bg-green-600/20 text-green-300'
-      case 'tour': return 'bg-blue-600/20 text-blue-300'
-      case 'recording': return 'bg-red-600/20 text-red-300'
-      case 'interview': return 'bg-yellow-600/20 text-yellow-300'
-      default: return 'bg-gray-600/20 text-gray-300'
-    }
-  }
 
-  const getTotalStats = () => {
-    const now = new Date()
-    return events.reduce((acc, event) => {
-      const eventDate = new Date(event.event_date)
-      const isUpcoming = eventDate > now
-      const revenue = (event.ticket_price_min || 0) * (event.expected_attendance || 0)
-      
-      return {
-        totalEvents: acc.totalEvents + 1,
-        upcomingEvents: acc.upcomingEvents + (isUpcoming ? 1 : 0),
-        totalCapacity: acc.totalCapacity + (event.capacity || 0),
-        projectedRevenue: acc.projectedRevenue + revenue,
-        completedEvents: acc.completedEvents + (event.status === 'completed' ? 1 : 0)
-      }
-    }, { totalEvents: 0, upcomingEvents: 0, totalCapacity: 0, projectedRevenue: 0, completedEvents: 0 })
-  }
-
-  const stats = getTotalStats()
-
-  // Show loading state if user/profile aren't ready
-  if (isUserLoading || !user || !profile) {
+  if (isLoading) {
     return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center gap-3">
+          <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-white">Loading events...</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -492,1153 +179,293 @@ export default function EventsPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Events</h1>
-              <p className="text-gray-400">
-                {isUserLoading ? 'Loading your profile...' : 'Manage your shows, tours, and appearances'}
-              </p>
+              <p className="text-gray-400">Manage your shows, tours, and appearances</p>
             </div>
           </div>
-          <Button 
-            disabled
-            className="bg-purple-600 hover:bg-purple-700 text-white opacity-50"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Event
-          </Button>
-        </div>
-
-        {/* Loading state */}
-        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-          <CardContent className="p-12 text-center">
-            <div className="animate-spin h-8 w-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <h3 className="text-xl font-semibold text-white mb-2">
-              {isUserLoading ? 'Loading your artist profile...' : 'Setting up your account...'}
-            </h3>
-            <p className="text-gray-400">
-              {isUserLoading ? 'Please wait while we fetch your data.' : 'Please wait while we set up your artist account.'}
-            </p>
-            
-            {/* Helpful tips while loading */}
-            <div className="mt-8 p-4 bg-blue-950/30 border border-blue-700/30 rounded-lg">
-              <h4 className="text-blue-300 font-medium mb-2">💡 What you can do with Events:</h4>
-              <ul className="text-sm text-blue-200 space-y-1 text-left max-w-md mx-auto">
-                <li>• Schedule concerts, festivals, and performances</li>
-                <li>• Track ticket sales and venue capacity</li>
-                <li>• Manage event logistics and setlists</li>
-                <li>• Export event data for reporting</li>
-                <li>• Share events with your fans</li>
-              </ul>
-            </div>
-                </CardContent>
-              </Card>
-      </div>
-    )
-  }
-
-  // Show error state if authentication failed
-  if (!user && !isUserLoading) {
-    return (
-      <div className="space-y-6">
-        <Card className="bg-red-950/20 border-red-700/50 rounded-2xl">
-          <CardContent className="p-8 text-center">
-            <div className="text-red-400 mb-4">
-              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Authentication Required</h3>
-            <p className="text-gray-400 mb-6">
-              You need to be logged in to access your events. Please sign in to continue.
-            </p>
-            <div className="flex gap-4 justify-center">
+          <div className="flex items-center gap-2">
+            {events.length > 0 && (
               <Button 
-                onClick={() => window.location.href = '/login'}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                Sign In
-              </Button>
-              <Button 
-                onClick={() => window.location.href = '/signup'}
-                variant="outline"
+                variant="outline" 
+                onClick={() => {
+                  // Simple CSV export functionality
+                  const csvData = events.map(event => ({
+                    title: event.title,
+                    date: event.event_date,
+                    venue: event.venue_name || '',
+                    city: event.venue_city || '',
+                    status: event.status,
+                    type: event.type
+                  }))
+                  
+                  const headers = Object.keys(csvData[0])
+                  const csvContent = [
+                    headers.join(','),
+                    ...csvData.map(row => 
+                      headers.map(header => row[header as keyof typeof row]).join(',')
+                    )
+                  ].join('\n')
+                  
+                  const blob = new Blob([csvContent], { type: 'text/csv' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = 'events.csv'
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  URL.revokeObjectURL(url)
+                  
+                  toast.success('Events exported to CSV')
+                }}
                 className="border-slate-700 text-gray-300 hover:text-white"
               >
-                Create Account
+                <Download className="h-4 w-4 mr-2" />
+                Export
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  // Main component return
-  return (
-    <>
-      <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500">
-            <Calendar className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Events</h1>
-            <p className="text-gray-400">Manage your shows, tours, and appearances</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {events.length > 0 && (
+            )}
             <Button 
-              variant="outline" 
               onClick={() => {
-                // Simple CSV export functionality
-                const csvData = events.map(event => ({
-                  title: event.title,
-                  date: event.event_date,
-                  venue: event.venue_name || '',
-                  city: event.venue_city || '',
-                  status: event.status,
-                  type: event.type
-                }))
-                
-                const headers = Object.keys(csvData[0])
-                const csvContent = [
-                  headers.join(','),
-                  ...csvData.map(row => 
-                    headers.map(header => row[header as keyof typeof row]).join(',')
-                  )
-                ].join('\n')
-                
-                const blob = new Blob([csvContent], { type: 'text/csv' })
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url
-                a.download = 'events.csv'
-                document.body.appendChild(a)
-                a.click()
-                document.body.removeChild(a)
-                URL.revokeObjectURL(url)
-                
-                toast.success('Events exported to CSV')
+                setEditingEvent(null)
+                setShowCreateModal(true)
               }}
-              className="border-slate-700 text-gray-300 hover:text-white"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
-              <Download className="h-4 w-4 mr-2" />
-              Export
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
             </Button>
-          )}
-          <Button 
-            onClick={() => {
-              setEditingEvent(null)
-              setShowCreateModal(true)
-            }}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Event
-          </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Total Events</p>
-                <p className="text-2xl font-bold text-white">{stats.totalEvents}</p>
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Total Events</p>
+                  <p className="text-2xl font-bold text-white">{stats.totalEvents}</p>
+                </div>
+                <Calendar className="h-8 w-8 text-blue-500" />
               </div>
-              <Calendar className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Upcoming</p>
-                <p className="text-2xl font-bold text-white">{stats.upcomingEvents}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Upcoming</p>
+                  <p className="text-2xl font-bold text-white">{stats.upcomingEvents}</p>
+                </div>
+                <Bell className="h-8 w-8 text-green-500" />
               </div>
-              <Bell className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Total Capacity</p>
-                <p className="text-2xl font-bold text-white">{stats.totalCapacity.toLocaleString()}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Completed</p>
+                  <p className="text-2xl font-bold text-white">{stats.completedEvents}</p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-green-500" />
               </div>
-              <Users className="h-8 w-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Projected Revenue</p>
-                <p className="text-2xl font-bold text-white">${stats.projectedRevenue.toLocaleString()}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Cancelled</p>
+                  <p className="text-2xl font-bold text-white">{stats.cancelledEvents}</p>
+                </div>
+                <XCircle className="h-8 w-8 text-red-500" />
               </div>
-              <DollarSign className="h-8 w-8 text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-400">Completed</p>
-                <p className="text-2xl font-bold text-white">{stats.completedEvents}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Total Capacity</p>
+                  <p className="text-2xl font-bold text-white">{stats.totalCapacity.toLocaleString()}</p>
+                </div>
+                <Users className="h-8 w-8 text-purple-500" />
               </div>
-              <TrendingUp className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Main Content */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid grid-cols-7 gap-4 bg-slate-800/50 w-full rounded-2xl">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">
-            <BarChart className="h-4 w-4 mr-1" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="marketing">
-            <Megaphone className="h-4 w-4 mr-1" />
-            Marketing
-          </TabsTrigger>
-          <TabsTrigger value="financial">
-            <Wallet className="h-4 w-4 mr-1" />
-            Financial
-          </TabsTrigger>
-          <TabsTrigger value="team">
-            <Users className="h-4 w-4 mr-1" />
-            Team
-          </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="h-4 w-4 mr-1" />
-            Settings
-          </TabsTrigger>
-          <TabsTrigger value="guestlist">Guestlist</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          {/* Events List */}
-          {isLoading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <Card key={i} className="bg-slate-900/50 border-slate-700/50 animate-pulse rounded-2xl">
-                  <CardContent className="p-6">
-                    <div className="h-4 bg-slate-700 rounded w-1/3 mb-2"></div>
-                    <div className="h-3 bg-slate-700 rounded w-2/3 mb-4"></div>
-                    <div className="h-3 bg-slate-700 rounded w-1/2"></div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : events.length === 0 ? (
-            <Card className="bg-slate-900/50 border-slate-700/50">
-              <CardContent className="p-12 text-center">
-                <Calendar className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">No events yet</h3>
-                <p className="text-gray-400 mb-6">
-                  Start planning your performances by creating your first event.
-                </p>
+        {/* Events List */}
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-white">Your Events</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {events.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="h-16 w-16 text-gray-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-white mb-2">No events yet</h3>
+                <p className="text-gray-400 mb-6">Create your first event to get started</p>
                 <Button 
-                  onClick={() => {
-                    setEditingEvent(null)
-                    setShowCreateModal(true)
-                  }}
+                  onClick={() => setShowCreateModal(true)}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Event
+                  Create Event
                 </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {events.map((event) => (
-                <Card key={event.id} className="bg-slate-900/50 border-slate-700/50 group hover:border-purple-500/50 transition-all duration-200 rounded-2xl">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-xl font-semibold text-white group-hover:text-purple-300 transition-colors">
-                            {event.title}
-                          </h3>
-                          <Badge variant="secondary" className={getStatusColor(event.status)}>
-                            {event.status.replace('_', ' ')}
-                          </Badge>
-                          <Badge variant="outline" className={getTypeColor(event.type)}>
-                            {event.type}
-                          </Badge>
-                          {!event.is_public && (
-                            <Badge variant="outline" className="border-gray-500/30 text-gray-400">
-                              Private
-                            </Badge>
-                          )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {events.map((event) => (
+                  <div key={event.id} className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                    <div className="flex-shrink-0">
+                      {event.poster_url ? (
+                        <Image
+                          src={event.poster_url}
+                          alt={event.title}
+                          width={80}
+                          height={80}
+                          className="rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                          <Calendar className="h-8 w-8 text-white" />
                         </div>
-                        
-                        {event.description && (
-                          <p className="text-gray-400 mb-3">{event.description}</p>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-white truncate">{event.title}</h3>
+                        <Badge 
+                          variant={
+                            event.status === 'upcoming' ? 'default' :
+                            event.status === 'completed' ? 'secondary' :
+                            event.status === 'cancelled' ? 'destructive' :
+                            'outline'
+                          }
+                          className="text-xs"
+                        >
+                          {event.status.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      <p className="text-gray-400 text-sm mb-2">{event.description}</p>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {format(new Date(event.event_date), 'MMM d, yyyy')}
+                        </span>
+                        {event.venue_name && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {event.venue_name}
+                          </span>
                         )}
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-gray-300">
-                            <Calendar className="h-4 w-4 text-blue-400" />
-                            <span>{format(new Date(event.event_date), 'PPP')}</span>
-                          </div>
-                          {event.start_time && (
-                            <div className="flex items-center gap-2 text-gray-300">
-                              <Clock className="h-4 w-4 text-green-400" />
-                              <span>{event.start_time}</span>
-                            </div>
-                          )}
-                          {event.venue_name && (
-                            <div className="flex items-center gap-2 text-gray-300">
-                              <MapPin className="h-4 w-4 text-red-400" />
-                              <span>{event.venue_name}</span>
-                              {event.venue_city && <span>, {event.venue_city}</span>}
-                            </div>
-                          )}
-                        </div>
-
-                        {(event.capacity || event.ticket_price_min) && (
-                          <div className="flex items-center gap-6 mt-3 text-sm text-gray-400">
-                            {event.capacity && (
-                              <span>Capacity: {event.capacity.toLocaleString()}</span>
-                            )}
-                            {event.ticket_price_min && (
-                              <span>
-                                Tickets: ${event.ticket_price_min}
-                                {event.ticket_price_max && event.ticket_price_max !== event.ticket_price_min && 
-                                  ` - $${event.ticket_price_max}`
-                                }
-                              </span>
-                            )}
-                          </div>
+                        {event.capacity && (
+                          <span className="flex items-center gap-1">
+                            <Users className="h-4 w-4" />
+                            {event.capacity}
+                          </span>
                         )}
                       </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Button
-                          onClick={() => router.push(`/artist/events/${event.id}`)}
-                          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
-                          size="sm"
-                        >
-                          <Settings className="h-4 w-4 mr-2" />
-                          Manage
-                        </Button>
-                        
-                        <Button
-                          onClick={() => router.push(`/events/${event.slug || event.id}`)}
-                          variant="outline"
-                          className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
-                          size="sm"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Public Page
-                        </Button>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => router.push(`/events/${event.slug || event.id}`)}
+                        variant="outline"
+                        className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+                        size="sm"
+                      >
+                        View Public Page
+                      </Button>
                       
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-gray-400 hover:text-white"
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                          <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                        <DropdownMenuContent className="bg-slate-800 border-slate-700">
                           <DropdownMenuItem 
                             onClick={() => {
                               setEditingEvent(event)
                               setShowCreateModal(true)
                             }}
-                            className="text-gray-300 hover:text-white"
+                            className="text-white hover:bg-slate-700"
                           >
                             <Edit className="h-4 w-4 mr-2" />
-                            Edit
+                            Edit Event
                           </DropdownMenuItem>
                           <DropdownMenuItem 
-                            onClick={() => router.push(`/artist/events/${event.id}`)}
-                            className="text-gray-300 hover:text-white"
-                          >
-                            <Settings className="h-4 w-4 mr-2" />
-                            Manage Event
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => window.open(`/events/${event.slug || event.id}`, '_blank')}
-                            className="text-gray-300 hover:text-white"
+                            onClick={() => router.push(`/events/${event.slug || event.id}`)}
+                            className="text-white hover:bg-slate-700"
                           >
                             <ExternalLink className="h-4 w-4 mr-2" />
                             Public Event Page
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => {
-                              const eventUrl = `${window.location.origin}/events/${event.slug || event.id}`
-                              navigator.clipboard.writeText(eventUrl)
-                              toast.success('Event page link copied to clipboard')
+                              const url = `${window.location.origin}/events/${event.slug || event.id}`
+                              navigator.clipboard.writeText(url)
+                              toast.success('Event link copied to clipboard')
                             }}
-                            className="text-gray-300 hover:text-white"
+                            className="text-white hover:bg-slate-700"
                           >
                             <Share2 className="h-4 w-4 mr-2" />
                             Copy Event Link
                           </DropdownMenuItem>
-                          
-                          {event.status === 'upcoming' && (
-                            <>
-                              <DropdownMenuSeparator className="bg-slate-700" />
-                              <DropdownMenuItem 
-                                onClick={() => handleStatusChange(event.id!, 'in_progress')}
-                                className="text-gray-300 hover:text-white"
-                              >
-                                Mark as In Progress
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleStatusChange(event.id!, 'completed')}
-                                className="text-gray-300 hover:text-white"
-                              >
-                                Mark as Completed
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleStatusChange(event.id!, 'cancelled')}
-                                className="text-gray-300 hover:text-white"
-                              >
-                                Cancel Event
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          
-                          <DropdownMenuSeparator className="bg-slate-700" />
                           <DropdownMenuItem 
-                            onClick={() => setDeleteEventId(event.id!)}
-                            className="text-red-400 hover:text-red-300"
+                            onClick={() => setDeleteEventId(event.id || '')}
+                            className="text-red-400 hover:bg-red-500/10"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            Delete Event
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <EventAnalytics />
-        </TabsContent>
-
-        <TabsContent value="marketing">
-          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-white">Marketing Tools</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center py-12">
-              <Megaphone className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-white mb-2">Marketing Features Coming Soon</h3>
-              <p className="text-gray-400">
-                Create promotional campaigns, social media posts, and event announcements.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="financial">
-          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-white">Financial Tracking</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center py-12">
-              <Wallet className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-white mb-2">Financial Tools Coming Soon</h3>
-              <p className="text-gray-400">
-                Track expenses, revenue, and profit margins for each event.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="team">
-          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-white">Team Management</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center py-12">
-              <Users className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-white mb-2">Team Features Coming Soon</h3>
-              <p className="text-gray-400">
-                Collaborate with your team on event planning and management.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="settings">
-          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-white">Event Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-gray-300">Default Event Settings</Label>
-                <p className="text-sm text-gray-400 mb-4">Configure default values for new events</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="default_country" className="text-gray-300">Default Country</Label>
-                    <Select defaultValue="USA">
-                      <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USA">United States</SelectItem>
-                        <SelectItem value="CAN">Canada</SelectItem>
-                        <SelectItem value="GBR">United Kingdom</SelectItem>
-                        <SelectItem value="AUS">Australia</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="default_currency" className="text-gray-300">Default Currency</Label>
-                    <Select defaultValue="USD">
-                      <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="GBP">GBP (£)</SelectItem>
-                        <SelectItem value="CAD">CAD ($)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                ))}
               </div>
-              
-              <Button className="w-full bg-purple-600 hover:bg-purple-700">
-                Save Settings
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="guestlist">
-          {editingEvent ? (
-            <div className="space-y-6">
-              <GuestlistManager eventIdOrSlug={editingEvent.id!} />
-            </div>
-          ) : (
-            <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-              <CardContent className="py-12 text-center text-gray-400">
-                Select an event to manage its guestlist.
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Enhanced Event Creator Modal */}
       <EnhancedEventCreator
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onEventCreated={(newEvent) => {
-          setEvents(prev => [newEvent, ...prev])
+        onClose={() => {
           setShowCreateModal(false)
+          setEditingEvent(null)
         }}
+        onEventCreated={handleEventCreated}
         editingEvent={editingEvent}
       />
-              {/* Animated Background Elements */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <motion.div
-                  className="absolute -top-10 -left-10 w-32 h-32 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-2xl"
-                  animate={{ 
-                    scale: [1, 1.2, 1],
-                    opacity: [0.3, 0.6, 0.3]
-                  }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.div
-                  className="absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-full blur-2xl"
-                  animate={{ 
-                    scale: [1.2, 1, 1.2],
-                    opacity: [0.6, 0.3, 0.6]
-                  }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                />
-              </div>
 
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.3 }}
-                className="relative z-10"
-              >
-                <DialogHeader className="pb-6 border-b border-white/10">
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.5 }}
-                  >
-                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent flex items-center gap-3">
-                      <motion.div
-                        animate={{ rotate: [0, 360] }}
-                        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                        className="p-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20"
-                      >
-                        <Calendar className="h-6 w-6 text-purple-400" />
-                      </motion.div>
-                      {editingEvent ? 'Edit Event' : 'Create New Event'}
-                    </DialogTitle>
-                    <p className="text-white/60 mt-2">
-                      {editingEvent ? 'Update your event details' : 'Bring your vision to life and connect with your audience'}
-                    </p>
-                  </motion.div>
-                </DialogHeader>
-
-                <div className="max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-                  <div className="py-6">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Basic Information */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-            >
-              <Card className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-purple-500/20 shadow-xl shadow-purple-500/10 hover:shadow-purple-500/20 transition-all duration-500">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <motion.div
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="p-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
-                    >
-                      <Edit className="h-4 w-4 text-white" />
-                    </motion.div>
-                    Event Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="title" className="text-white/80 font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></span>
-                    Title *
-                  </Label>
-                  <motion.div whileHover={{ scale: 1.01 }} whileFocus={{ scale: 1.01 }}>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Event title..."
-                      className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-white/40 focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 h-12"
-                    />
-                  </motion.div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="description" className="text-white/80 font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></span>
-                    Description
-                  </Label>
-                  <motion.div whileHover={{ scale: 1.01 }} whileFocus={{ scale: 1.01 }}>
-                    <Textarea
-                      id="description"
-                      value={formData.description || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Event description..."
-                      className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-white/40 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 min-h-[100px] resize-none"
-                    />
-                  </motion.div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <Label htmlFor="type" className="text-white/80 font-medium flex items-center gap-2">
-                      <span className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></span>
-                      Type
-                    </Label>
-                    <motion.div whileHover={{ scale: 1.01 }}>
-                      <Select
-                        value={formData.type}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as Event['type'] }))}
-                      >
-                        <SelectTrigger className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-green-500/50 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 h-12">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gradient-to-br from-slate-900/95 to-black/95 backdrop-blur-xl border border-white/20">
-                          <SelectItem value="concert" className="text-white hover:bg-white/10">Concert</SelectItem>
-                          <SelectItem value="festival" className="text-white hover:bg-white/10">Festival</SelectItem>
-                          <SelectItem value="tour" className="text-white hover:bg-white/10">Tour</SelectItem>
-                          <SelectItem value="recording" className="text-white hover:bg-white/10">Recording</SelectItem>
-                          <SelectItem value="interview" className="text-white hover:bg-white/10">Interview</SelectItem>
-                          <SelectItem value="other" className="text-white hover:bg-white/10">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </motion.div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="status" className="text-white/80 font-medium flex items-center gap-2">
-                      <span className="w-2 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></span>
-                      Status
-                    </Label>
-                    <motion.div whileHover={{ scale: 1.01 }}>
-                      <Select
-                        value={formData.status}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as Event['status'] }))}
-                      >
-                        <SelectTrigger className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 h-12">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gradient-to-br from-slate-900/95 to-black/95 backdrop-blur-xl border border-white/20">
-                          <SelectItem value="upcoming" className="text-white hover:bg-white/10">Upcoming</SelectItem>
-                          <SelectItem value="in_progress" className="text-white hover:bg-white/10">In Progress</SelectItem>
-                          <SelectItem value="completed" className="text-white hover:bg-white/10">Completed</SelectItem>
-                          <SelectItem value="cancelled" className="text-white hover:bg-white/10">Cancelled</SelectItem>
-                          <SelectItem value="postponed" className="text-white hover:bg-white/10">Postponed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </motion.div>
-                  </div>
-                </div>
-
-                <motion.div 
-                  className="flex items-center space-x-3 p-4 rounded-xl bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/10"
-                  whileHover={{ scale: 1.02, borderColor: "rgba(168, 85, 247, 0.3)" }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Switch
-                    id="is_public"
-                    checked={formData.is_public}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_public: checked }))}
-                    className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-purple-500 data-[state=checked]:to-pink-500"
-                  />
-                  <Label htmlFor="is_public" className="text-white/80 font-medium cursor-pointer">
-                    Public Event
-                  </Label>
-                  <div className="ml-auto">
-                    {formData.is_public ? (
-                      <Badge className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/30">
-                        Public
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-gradient-to-r from-gray-500/20 to-slate-500/20 text-gray-300 border-gray-500/30">
-                        Private
-                      </Badge>
-                    )}
-                  </div>
-                </motion.div>
-              </CardContent>
-            </Card>
-            </motion.div>
-
-            {/* Date & Time */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-            >
-              <Card className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-blue-500/20 shadow-xl shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-500">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <motion.div
-                      animate={{ rotate: [0, 360] }}
-                      transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                      className="p-1 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
-                    >
-                      <Clock className="h-4 w-4 text-white" />
-                    </motion.div>
-                    Date & Time
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="event_date" className="text-white/80 font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></span>
-                    Event Date *
-                  </Label>
-                  <motion.div whileHover={{ scale: 1.01 }} whileFocus={{ scale: 1.01 }}>
-                    <div className="relative">
-                      <Input
-                        id="event_date"
-                        type="date"
-                        value={formData.event_date}
-                        onChange={(e) => setFormData(prev => ({ ...prev, event_date: e.target.value }))}
-                        className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 h-12 pl-12"
-                      />
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-400" />
-                    </div>
-                  </motion.div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-3">
-                    <Label htmlFor="doors_open" className="text-white/80 font-medium flex items-center gap-2">
-                      <span className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></span>
-                      Doors Open
-                    </Label>
-                    <motion.div whileHover={{ scale: 1.01 }}>
-                      <div className="relative">
-                        <Input
-                          id="doors_open"
-                          type="time"
-                          value={formData.doors_open || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, doors_open: e.target.value }))}
-                          className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-green-500/50 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 h-12 pl-10"
-                        />
-                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-green-400" />
-                      </div>
-                    </motion.div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="start_time" className="text-white/80 font-medium flex items-center gap-2">
-                      <span className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></span>
-                      Start Time
-                    </Label>
-                    <motion.div whileHover={{ scale: 1.01 }}>
-                      <div className="relative">
-                        <Input
-                          id="start_time"
-                          type="time"
-                          value={formData.start_time || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
-                          className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 h-12 pl-10"
-                        />
-                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-400" />
-                      </div>
-                    </motion.div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="end_time" className="text-white/80 font-medium flex items-center gap-2">
-                      <span className="w-2 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></span>
-                      End Time
-                    </Label>
-                    <motion.div whileHover={{ scale: 1.01 }}>
-                      <div className="relative">
-                        <Input
-                          id="end_time"
-                          type="time"
-                          value={formData.end_time || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
-                          className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 h-12 pl-10"
-                        />
-                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400" />
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            </motion.div>
-
-            {/* Venue Information */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-            >
-              <Card className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-green-500/20 shadow-xl shadow-green-500/10 hover:shadow-green-500/20 transition-all duration-500">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <motion.div
-                      animate={{ y: [0, -2, 0] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="p-1 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"
-                    >
-                      <MapPin className="h-4 w-4 text-white" />
-                    </motion.div>
-                    Venue Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="venue_name" className="text-white/80 font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></span>
-                    Venue Name
-                  </Label>
-                  <motion.div whileHover={{ scale: 1.01 }}>
-                    <div className="relative">
-                      <Input
-                        id="venue_name"
-                        value={formData.venue_name || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, venue_name: e.target.value }))}
-                        placeholder="Venue name..."
-                        className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-white/40 focus:border-green-500/50 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 h-12 pl-12"
-                      />
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-green-400" />
-                    </div>
-                  </motion.div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="venue_address" className="text-gray-300">Address</Label>
-                  <Input
-                    id="venue_address"
-                    value={formData.venue_address || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, venue_address: e.target.value }))}
-                    placeholder="Street address..."
-                    className="bg-slate-800 border-slate-700 text-white"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="venue_city" className="text-gray-300">City</Label>
-                    <Input
-                      id="venue_city"
-                      value={formData.venue_city || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, venue_city: e.target.value }))}
-                      placeholder="City..."
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="venue_state" className="text-gray-300">State/Province</Label>
-                    <Input
-                      id="venue_state"
-                      value={formData.venue_state || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, venue_state: e.target.value }))}
-                      placeholder="State/Province..."
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="venue_country" className="text-gray-300">Country</Label>
-                  <Input
-                    id="venue_country"
-                    value={formData.venue_country || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, venue_country: e.target.value }))}
-                    placeholder="Country..."
-                    className="bg-slate-800 border-slate-700 text-white"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            </motion.div>
-
-            {/* Tickets & Capacity */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-            >
-              <Card className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl border border-orange-500/20 shadow-xl shadow-orange-500/10 hover:shadow-orange-500/20 transition-all duration-500">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <motion.div
-                      animate={{ rotateY: [0, 180, 360] }}
-                      transition={{ duration: 3, repeat: Infinity }}
-                      className="p-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500"
-                    >
-                      <DollarSign className="h-4 w-4 text-white" />
-                    </motion.div>
-                    Tickets & Capacity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <Label htmlFor="capacity" className="text-white/80 font-medium flex items-center gap-2">
-                      <span className="w-2 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></span>
-                      Venue Capacity
-                    </Label>
-                    <motion.div whileHover={{ scale: 1.01 }}>
-                      <div className="relative">
-                        <Input
-                          id="capacity"
-                          type="number"
-                          value={formData.capacity || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, capacity: parseInt(e.target.value) || 0 }))}
-                          placeholder="0"
-                          className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-white/40 focus:border-orange-500/50 focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 h-12 pl-12"
-                        />
-                        <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-orange-400" />
-                      </div>
-                    </motion.div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="expected_attendance" className="text-white/80 font-medium flex items-center gap-2">
-                      <span className="w-2 h-2 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full"></span>
-                      Expected Attendance
-                    </Label>
-                    <motion.div whileHover={{ scale: 1.01 }}>
-                      <div className="relative">
-                        <Input
-                          id="expected_attendance"
-                          type="number"
-                          value={formData.expected_attendance || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, expected_attendance: parseInt(e.target.value) || 0 }))}
-                          placeholder="0"
-                          className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white placeholder:text-white/40 focus:border-pink-500/50 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300 h-12 pl-12"
-                        />
-                        <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-pink-400" />
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="ticket_price_min" className="text-gray-300">Min Ticket Price</Label>
-                    <Input
-                      id="ticket_price_min"
-                      type="number"
-                      step="0.01"
-                      value={formData.ticket_price_min || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, ticket_price_min: parseFloat(e.target.value) || 0 }))}
-                      placeholder="0.00"
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="ticket_price_max" className="text-gray-300">Max Ticket Price</Label>
-                    <Input
-                      id="ticket_price_max"
-                      type="number"
-                      step="0.01"
-                      value={formData.ticket_price_max || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, ticket_price_max: parseFloat(e.target.value) || 0 }))}
-                      placeholder="0.00"
-                      className="bg-slate-800 border-slate-700 text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="ticket_url" className="text-gray-300">Ticket URL</Label>
-                  <Input
-                    id="ticket_url"
-                    type="url"
-                    value={formData.ticket_url || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, ticket_url: e.target.value }))}
-                    placeholder="https://..."
-                    className="bg-slate-800 border-slate-700 text-white"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            </motion.div>
-          </div>
-                  </div>
-                </div>
-
-                {/* Modal Footer */}
-                <motion.div 
-                  className="flex justify-end gap-4 pt-6 border-t border-white/10"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6, duration: 0.5 }}
-                >
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowCreateModal(false)} 
-                      disabled={isSubmitting || isUserLoading}
-                      className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300 px-6 h-12"
-                    >
-                      Cancel
-                    </Button>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button 
-                      onClick={handleSaveEvent} 
-                      disabled={isSubmitting || isUserLoading || !user || !profile} 
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25 transition-all duration-300 px-8 h-12 font-medium"
-                    >
-                      {isUserLoading ? (
-                        <motion.div 
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="flex items-center gap-2"
-                        >
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Loading Profile...
-                        </motion.div>
-                      ) : isSubmitting ? (
-                        <motion.div 
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="flex items-center gap-2"
-                        >
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Saving...
-                        </motion.div>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          {editingEvent ? 'Update Event' : 'Create Event'}
-                        </span>
-                      )}
-                    </Button>
-                  </motion.div>
-                </motion.div>
-              </motion.div>
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteEventId} onOpenChange={() => setDeleteEventId(null)}>
-        <AlertDialogContent className="bg-gradient-to-br from-black/95 via-slate-950/95 to-black/95 backdrop-blur-xl border border-red-500/30 shadow-2xl shadow-red-500/20">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-white flex items-center gap-3">
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                  className="p-2 rounded-full bg-gradient-to-r from-red-500/20 to-orange-500/20"
-                >
-                  <Trash2 className="h-5 w-5 text-red-400" />
-                </motion.div>
-                Delete Event
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-white/60 mt-2">
-                Are you sure you want to delete this event? This action cannot be undone and all associated data will be permanently removed.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="gap-3 pt-6">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <AlertDialogCancel className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300 h-11 px-6">
-                  Cancel
-                </AlertDialogCancel>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <AlertDialogAction
-                  onClick={() => deleteEventId && handleDeleteEvent(deleteEventId)}
-                  className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white shadow-lg shadow-red-500/25 transition-all duration-300 h-11 px-6 font-medium"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Event
-                </AlertDialogAction>
-              </motion.div>
-            </AlertDialogFooter>
-          </motion.div>
+        <AlertDialogContent className="bg-slate-900 border-slate-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete Event</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Are you sure you want to delete this event? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-slate-800 border-slate-600 text-white hover:bg-slate-700">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteEventId && handleDeleteEvent(deleteEventId)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Keyboard Shortcuts Help */}
-      <KeyboardShortcutsHelp />
-      </div>
     </>
   )
 } 
