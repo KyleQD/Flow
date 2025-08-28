@@ -135,7 +135,9 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
         success: data.success,
         totalItems: data.news?.length || 0,
         sources: data.sources,
-        categories: data.categories
+        categories: data.categories,
+        successfulSources: data.successfulSources?.length || 0,
+        failedSources: data.failedSources?.length || 0
       })
       
       if (data.success && data.news && data.news.length > 0) {
@@ -159,6 +161,14 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
         console.log('[Jukebox] Processed RSS items:', processedItems.length)
         setRssItems(processedItems)
         setIsUsingRealRSS(true)
+        
+        // Log RSS status for debugging
+        if (data.successfulSources && data.successfulSources.length > 0) {
+          console.log('[Jukebox] RSS Sources working:', data.successfulSources.length)
+        }
+        if (data.failedSources && data.failedSources.length > 0) {
+          console.log('[Jukebox] RSS Sources failed:', data.failedSources.length)
+        }
       } else {
         console.warn('[Jukebox] RSS API returned no data, using fallback')
         setRssItems(generateMockRSSItems())
@@ -507,13 +517,23 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
               <div className="flex items-center space-x-3">
                 <div className="text-lg font-mono text-blue-400">MUSIC DISCOVERY</div>
                 {isUsingRealRSS ? (
-                  <Badge className="bg-green-600 text-white text-xs font-mono">
-                    LIVE RSS
-                  </Badge>
+                  <div className="flex items-center space-x-2">
+                    <Badge className="bg-green-600 text-white text-xs font-mono">
+                      LIVE RSS
+                    </Badge>
+                    <span className="text-xs font-mono text-green-400">
+                      {rssItems.length} articles
+                    </span>
+                  </div>
                 ) : (
-                  <Badge className="bg-yellow-600 text-white text-xs font-mono">
-                    DEMO DATA
-                  </Badge>
+                  <div className="flex items-center space-x-2">
+                    <Badge className="bg-yellow-600 text-white text-xs font-mono">
+                      DEMO DATA
+                    </Badge>
+                    <span className="text-xs font-mono text-yellow-400">
+                      {rssItems.length} articles
+                    </span>
+                  </div>
                 )}
               </div>
               <Button

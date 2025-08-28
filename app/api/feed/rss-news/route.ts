@@ -425,7 +425,72 @@ interface RSSItem {
 
 // Cache for RSS feeds to avoid hitting rate limits
 const RSS_CACHE = new Map<string, { data: RSSItem[], timestamp: number }>()
-const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes (reduced for fresher content)
+
+// Content quality filters
+const NEWSWORTHY_KEYWORDS = [
+  'album', 'release', 'announce', 'tour', 'concert', 'festival', 'single', 'ep', 'mixtape',
+  'collaboration', 'feature', 'remix', 'cover', 'interview', 'review', 'award', 'chart',
+  'streaming', 'platform', 'label', 'sign', 'contract', 'breakup', 'reunion', 'debut',
+  'comeback', 'retirement', 'death', 'birthday', 'anniversary', 'milestone', 'record',
+  'break', 'hit', 'viral', 'trending', 'controversy', 'scandal', 'lawsuit', 'settlement'
+]
+
+const LOW_QUALITY_KEYWORDS = [
+  'clickbait', 'gossip', 'rumor', 'unconfirmed', 'allegedly', 'supposedly', 'maybe',
+  'could', 'might', 'possibly', 'reportedly', 'sources say', 'insider', 'exclusive'
+]
+
+function isNewsworthy(title: string, description: string): boolean {
+  const text = `${title} ${description}`.toLowerCase()
+  
+  // Check for newsworthy keywords
+  const hasNewsworthyKeywords = NEWSWORTHY_KEYWORDS.some(keyword => 
+    text.includes(keyword.toLowerCase())
+  )
+  
+  // Check for low-quality indicators
+  const hasLowQualityKeywords = LOW_QUALITY_KEYWORDS.some(keyword => 
+    text.includes(keyword.toLowerCase())
+  )
+  
+  // Must have newsworthy keywords and not have low-quality indicators
+  return hasNewsworthyKeywords && !hasLowQualityKeywords
+}
+
+function extractImageFromContent(itemXml: string, sourceName: string): string {
+  // Try multiple image extraction methods
+  const imgPatterns = [
+    /<img[^>]+src="([^"]+)"/i,
+    /<image[^>]*>.*?<url[^>]*>([^<]+)<\/url>/i,
+    /<media:content[^>]+url="([^"]+)"/i,
+    /<enclosure[^>]+url="([^"]+)"/i
+  ]
+  
+  for (const pattern of imgPatterns) {
+    const match = itemXml.match(pattern)
+    if (match && match[1]) {
+      return match[1]
+    }
+  }
+  
+  // Generate a themed placeholder based on source
+  const colors = {
+    'Pitchfork': 'ef4444',
+    'Billboard': '3b82f6', 
+    'Rolling Stone': 'dc2626',
+    'NME': 'f59e0b',
+    'Stereogum': '8b5cf6',
+    'BrooklynVegan': '10b981',
+    'Complex': 'f97316',
+    'XXL': '000000',
+    'Resident Advisor': '06b6d4',
+    'Mixmag': 'ec4899'
+  }
+  
+  const color = colors[sourceName as keyof typeof colors] || '6b7280'
+  return `https://dummyimage.com/400x250/${color}/ffffff?text=${sourceName.charAt(0)}`
+}
 
 async function fetchRSSFeed(source: typeof RSS_SOURCES[0]): Promise<RSSItem[]> {
   const cacheKey = source.name
@@ -436,28 +501,52 @@ async function fetchRSSFeed(source: typeof RSS_SOURCES[0]): Promise<RSSItem[]> {
   }
 
   try {
-    // Use a CORS proxy to fetch RSS feeds
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(source.url)}`
-    const response = await fetch(proxyUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; TourifyBot/1.0)'
-      }
-    })
+    console.log(`[RSS] Fetching from ${source.name}: ${source.url}`)
+    
+    // Try multiple CORS proxies for better reliability
+    const proxies = [
+      `https://api.allorigins.win/get?url=${encodeURIComponent(source.url)}`,
+      `https://cors-anywhere.herokuapp.com/${source.url}`,
+      `https://thingproxy.freeboard.io/fetch/${source.url}`
+    ]
+    
+    let xmlText = ''
+    let proxyUsed = ''
+    
+    for (const proxyUrl of proxies) {
+      try {
+        const response = await fetch(proxyUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; TourifyBot/1.0)',
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+          }
+        })
 
-    if (!response.ok) {
-      console.warn(`Failed to fetch RSS from ${source.name}: ${response.status}`)
+        if (response.ok) {
+          const data = await response.json()
+          xmlText = data.contents || data
+          proxyUsed = proxyUrl
+          break
+        }
+      } catch (proxyError) {
+        console.warn(`[RSS] Proxy failed for ${source.name}: ${proxyUrl}`)
+        continue
+      }
+    }
+    
+    if (!xmlText) {
+      console.warn(`[RSS] All proxies failed for ${source.name}`)
       return []
     }
 
-    const data = await response.json()
-    const xmlText = data.contents
+    console.log(`[RSS] Successfully fetched from ${source.name} via ${proxyUsed}`)
 
-    // Parse XML (simplified parsing)
+    // Parse XML with improved regex patterns
     const items: RSSItem[] = []
     const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/g
     let match
 
-    while ((match = itemRegex.exec(xmlText)) && items.length < 10) {
+    while ((match = itemRegex.exec(xmlText)) && items.length < 15) {
       const itemXml = match[1]
       
       const titleMatch = itemXml.match(/<title[^>]*>([^<]+)<\/title>/)
@@ -468,41 +557,58 @@ async function fetchRSSFeed(source: typeof RSS_SOURCES[0]): Promise<RSSItem[]> {
       const categoryMatch = itemXml.match(/<category[^>]*>([^<]+)<\/category>/)
       
       if (titleMatch && linkMatch) {
-        const title = titleMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-        const description = descriptionMatch ? descriptionMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>') : ''
-        const link = linkMatch[1]
+        const title = titleMatch[1]
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .trim()
+        
+        const description = descriptionMatch 
+          ? descriptionMatch[1]
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'")
+              .replace(/<[^>]*>/g, '') // Remove HTML tags
+              .trim()
+          : ''
+        
+        const link = linkMatch[1].trim()
         const pubDate = pubDateMatch ? pubDateMatch[1] : new Date().toISOString()
-        const author = authorMatch ? authorMatch[1] : source.name
-        const category = categoryMatch ? categoryMatch[1] : source.category
+        const author = authorMatch ? authorMatch[1].trim() : source.name
+        const category = categoryMatch ? categoryMatch[1].trim() : source.category
 
-        // Extract image from description or use placeholder
-        let image = `https://dummyimage.com/400x250/ef4444/ffffff?text=${source.name.charAt(0)}`
-        const imgMatch = itemXml.match(/<img[^>]+src="([^"]+)"/)
-        if (imgMatch) {
-          image = imgMatch[1]
+        // Only include newsworthy content
+        if (isNewsworthy(title, description)) {
+          const image = extractImageFromContent(itemXml, source.name)
+          
+          items.push({
+            id: `${source.name.toLowerCase().replace(/\s+/g, '-')}-${items.length}`,
+            title,
+            description,
+            link,
+            pubDate,
+            author,
+            category,
+            image,
+            source: source.name,
+            priority: source.priority
+          })
         }
-
-        items.push({
-          id: `${source.name.toLowerCase().replace(/\s+/g, '-')}-${items.length}`,
-          title,
-          description,
-          link,
-          pubDate,
-          author,
-          category,
-          image,
-          source: source.name,
-          priority: source.priority
-        })
       }
     }
 
+    console.log(`[RSS] ${source.name}: Found ${items.length} newsworthy items`)
+    
     // Cache the results
     RSS_CACHE.set(cacheKey, { data: items, timestamp: Date.now() })
     
     return items
   } catch (error) {
-    console.error(`Error fetching RSS from ${source.name}:`, error)
+    console.error(`[RSS] Error fetching from ${source.name}:`, error)
     return []
   }
 }
@@ -513,6 +619,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const category = searchParams.get('category')
     const source = searchParams.get('source')
+
+    console.log(`[RSS API] Request: limit=${limit}, category=${category}, source=${source}`)
 
     // Filter sources based on parameters
     let sourcesToFetch = RSS_SOURCES
@@ -527,17 +635,45 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch RSS feeds in parallel
-    const fetchPromises = sourcesToFetch.map(fetchRSSFeed)
+    console.log(`[RSS API] Fetching from ${sourcesToFetch.length} sources`)
+
+    // Fetch RSS feeds in parallel with timeout
+    const fetchPromises = sourcesToFetch.map(async (source) => {
+      try {
+        const items = await Promise.race([
+          fetchRSSFeed(source),
+          new Promise<RSSItem[]>((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout')), 15000)
+          )
+        ])
+        return { source: source.name, items, success: true }
+      } catch (error) {
+        console.warn(`[RSS API] Failed to fetch from ${source.name}:`, error)
+        return { source: source.name, items: [], success: false }
+      }
+    })
+
     const results = await Promise.allSettled(fetchPromises)
 
     // Combine all successful results
     let allItems: RSSItem[] = []
-    results.forEach((result, index) => {
-      if (result.status === 'fulfilled') {
-        allItems.push(...result.value)
+    const successfulSources: string[] = []
+    const failedSources: string[] = []
+
+    results.forEach((result) => {
+      if (result.status === 'fulfilled' && result.value.success) {
+        allItems.push(...result.value.items)
+        successfulSources.push(result.value.source)
+      } else if (result.status === 'fulfilled' && !result.value.success) {
+        failedSources.push(result.value.source)
+      } else {
+        console.warn(`[RSS API] Promise rejected:`, result)
       }
     })
+
+    console.log(`[RSS API] Results: ${successfulSources.length} successful, ${failedSources.length} failed`)
+    console.log(`[RSS API] Successful sources:`, successfulSources)
+    console.log(`[RSS API] Failed sources:`, failedSources)
 
     // Sort by priority and date
     allItems.sort((a, b) => {
@@ -552,27 +688,38 @@ export async function GET(request: NextRequest) {
     // Apply limit
     allItems = allItems.slice(0, limit)
 
-    // Get unique sources
+    // Get unique sources and categories
     const sources = [...new Set(allItems.map(item => item.source))]
+    const categories = [...new Set(allItems.map(item => item.category))]
+
+    console.log(`[RSS API] Final results: ${allItems.length} items from ${sources.length} sources`)
 
     return NextResponse.json({
       success: true,
       news: allItems,
       total: allItems.length,
       sources,
-      categories: [...new Set(RSS_SOURCES.map(s => s.category))],
-      lastUpdated: new Date().toISOString()
+      categories,
+      successfulSources,
+      failedSources,
+      lastUpdated: new Date().toISOString(),
+      cacheInfo: {
+        cacheDuration: CACHE_DURATION / 1000, // seconds
+        cachedSources: Array.from(RSS_CACHE.keys())
+      }
     })
 
   } catch (error) {
-    console.error('Error in RSS news API:', error)
+    console.error('[RSS API] Error in RSS news API:', error)
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch RSS news',
       news: [],
       total: 0,
       sources: [],
-      categories: []
+      categories: [],
+      successfulSources: [],
+      failedSources: []
     }, { status: 500 })
   }
 }
