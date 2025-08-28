@@ -197,195 +197,211 @@ export function ForYouPage() {
   const loadPersonalizedContent = async () => {
     try {
       setLoading(true)
-      const params = new URLSearchParams({
-        limit: '50',
-        sort: sortBy
-      })
+      console.log('[FYP] Loading content for activeTab:', activeTab)
       
-      // Add type parameter if a specific tab is selected
-      if (activeTab !== 'all') {
-        const typeMapping: { [key: string]: string } = {
-          'videos': 'video',
-          'blogs': 'blog',
-          'forums': 'forum',
-          'news': 'news' // Fix: explicitly map 'news' to 'news'
+      // Enhanced content loading with better type handling
+      let allContent: ContentItem[] = []
+      
+      // 1. Try to fetch from main API first
+      try {
+        const params = new URLSearchParams({
+          limit: '30',
+          sort: sortBy
+        })
+        
+        // Add type parameter if a specific tab is selected
+        if (activeTab !== 'all') {
+          const typeMapping: { [key: string]: string } = {
+            'videos': 'video',
+            'blogs': 'blog',
+            'forums': 'forum',
+            'news': 'news',
+            'music': 'music'
+          }
+          const targetType = typeMapping[activeTab] || activeTab
+          params.append('type', targetType)
         }
-        const targetType = typeMapping[activeTab] || activeTab.slice(0, -1)
-        params.append('type', targetType)
+        
+        console.log('[FYP] Fetching from main API with params:', params.toString())
+        const response = await fetch(`/api/feed/for-you?${params}`)
+        const data = await response.json()
+        
+        if (data.success && data.content && data.content.length > 0) {
+          console.log('[FYP] Main API returned:', data.content.length, 'items')
+          
+          // Process main API content with positive sentiment scoring
+          const processedContent = data.content.map((item: any) => {
+            const title = item.title || item.metadata?.title || 'Untitled'
+            const description = item.description || ''
+            
+            // Calculate positive sentiment score
+            const titleScore = calculatePositiveScore(title)
+            const descriptionScore = calculatePositiveScore(description)
+            const positiveScore = titleScore + descriptionScore
+            
+            return {
+              ...item,
+              type: item.type,
+              title,
+              description,
+              author: item.author,
+              engagement: {
+                likes: item.engagement?.likes || 0,
+                views: item.engagement?.views || 0,
+                shares: item.engagement?.shares || 0,
+                comments: item.engagement?.comments || 0
+              },
+              relevance_score: (item.relevance_score || 0.8) + (positiveScore * 0.1),
+              positive_score: positiveScore
+            }
+          })
+          
+          allContent = [...allContent, ...processedContent]
+        }
+      } catch (apiError) {
+        console.error('[FYP] Main API failed:', apiError)
       }
       
-      console.log('[FYP] Loading content with params:', params.toString())
-      const response = await fetch(`/api/feed/for-you?${params}`)
-      const data = await response.json()
-      
-      if (data.success && data.content) {
-        console.log('[FYP] Received content from API:', {
-          totalItems: data.content.length,
-          contentTypes: data.content.map((item: any) => item.type),
-          newsItems: data.content.filter((item: any) => item.type === 'news').length
-        })
-        
-        // Initialize engagement data to zero for all content and apply positive sentiment scoring
-        const contentWithZeroEngagement = data.content.map((item: any) => {
-          const title = item.title || item.metadata?.title || 'Untitled'
-          const description = item.description || ''
+      // 2. Fetch RSS news for music genres and news
+      const shouldFetchRSS = ['news', 'all', 'indie', 'hiphop', 'electronic', 'metal', 'jazz', 'underground', 'local'].includes(activeTab)
+      if (shouldFetchRSS) {
+        try {
+          console.log('[FYP] Fetching RSS news for tab:', activeTab)
           
-          // Calculate positive sentiment score
-          const titleScore = calculatePositiveScore(title)
-          const descriptionScore = calculatePositiveScore(description)
-          const positiveScore = titleScore + descriptionScore
-          
-          return {
-            ...item,
-            // Harmonize forum payload keys into ContentItem shape
-            type: item.type,
-            title,
-            description,
-            author: item.author,
-            engagement: {
-              likes: item.engagement?.likes || 0,
-              views: item.engagement?.views || 0,
-              shares: item.engagement?.shares || 0,
-              comments: item.engagement?.comments || 0
-            },
-            // Add positive sentiment score to relevance
-            relevance_score: (item.relevance_score || 0.8) + (positiveScore * 0.1),
-            positive_score: positiveScore
+          // Build RSS query parameters based on active tab
+          let rssParams = 'limit=20'
+          if (activeTab === 'indie') {
+            rssParams += '&category=Indie Music'
+          } else if (activeTab === 'hiphop') {
+            rssParams += '&category=Hip-Hop'
+          } else if (activeTab === 'electronic') {
+            rssParams += '&category=Electronic Music'
+          } else if (activeTab === 'metal') {
+            rssParams += '&category=Metal Music'
+          } else if (activeTab === 'jazz') {
+            rssParams += '&category=Jazz Music'
+          } else if (activeTab === 'underground') {
+            rssParams += '&category=Underground Music'
+          } else if (activeTab === 'local') {
+            rssParams += '&category=Local Music'
           }
-        })
-        
-        // Sort content by positive sentiment score (higher scores first)
-        const sortedContent = contentWithZeroEngagement.sort((a: any, b: any) => 
-          (b.positive_score || 0) - (a.positive_score || 0)
-        )
-        
-        setContent(sortedContent)
-      } else {
-        console.log('[FYP] API failed, using hybrid content (mock + RSS + blogs)')
-        // Hybrid approach: Use mock data + try to fetch RSS news + real blogs
-        let hybridContent = generateMockContent()
-        console.log('[FYP] Generated mock content:', hybridContent.length, 'items')
-        
-        // Try to fetch real blog posts (always fetch for testing)
-        if (true) { // activeTab === 'blogs' || activeTab === 'all'
-          try {
-            console.log('[FYP] Attempting to fetch real blog posts... (activeTab:', activeTab, ')')
-            const blogsResponse = await fetch('/api/feed/blogs?limit=10')
-            console.log('[FYP] Blog API response status:', blogsResponse.status)
-            if (blogsResponse.ok) {
-              const blogsData = await blogsResponse.json()
-              console.log('[FYP] Blog API response data:', blogsData)
-              if (blogsData.data && blogsData.data.length > 0) {
-                console.log('[FYP] Successfully fetched blog posts:', blogsData.data.length, 'items')
+          
+          const rssResponse = await fetch(`/api/feed/rss-news?${rssParams}`)
+          if (rssResponse.ok) {
+            const rssData = await rssResponse.json()
+            if (rssData.success && rssData.news && rssData.news.length > 0) {
+              console.log('[FYP] RSS returned:', rssData.news.length, 'items')
+              
+              // Convert RSS items to ContentItem format with positive sentiment scoring
+              const rssContent = rssData.news.map((item: any, index: number) => {
+                const title = item.title || ''
+                const description = item.description || ''
                 
-                // Convert blog posts to ContentItem format
-                const blogContent = blogsData.data.map((blog: any) => ({
+                // Calculate positive sentiment score
+                const titleScore = calculatePositiveScore(title)
+                const descriptionScore = calculatePositiveScore(description)
+                const positiveScore = titleScore + descriptionScore
+                
+                return {
+                  id: `rss_${item.id || index}`,
+                  type: 'news' as const,
+                  title,
+                  description,
+                  author: {
+                    id: `rss_${item.source}`,
+                    name: item.author || item.source,
+                    username: item.source.toLowerCase().replace(/\s+/g, ''),
+                    avatar_url: item.image || `https://dummyimage.com/40x40/ef4444/ffffff?text=${item.source.charAt(0)}`,
+                    is_verified: true
+                  },
+                  cover_image: item.image || getPlaceholderImage('news', 400, 250),
+                  created_at: item.pubDate,
+                  engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+                  metadata: {
+                    url: item.link,
+                    tags: [item.category, item.source].filter(Boolean)
+                  },
+                  relevance_score: (0.8 + (index * 0.05)) + (positiveScore * 0.1),
+                  positive_score: positiveScore
+                }
+              })
+              
+              allContent = [...allContent, ...rssContent]
+            }
+          }
+        } catch (rssError) {
+          console.error('[FYP] RSS fetch failed:', rssError)
+        }
+      }
+      
+      // 3. Fetch real blog posts for blogs tab or all
+      if (activeTab === 'blogs' || activeTab === 'all') {
+        try {
+          console.log('[FYP] Fetching real blog posts')
+          const blogsResponse = await fetch('/api/feed/blogs?limit=15')
+          if (blogsResponse.ok) {
+            const blogsData = await blogsResponse.json()
+            if (blogsData.data && blogsData.data.length > 0) {
+              console.log('[FYP] Blogs API returned:', blogsData.data.length, 'items')
+              
+              // Convert blog posts to ContentItem format
+              const blogContent = blogsData.data.map((blog: any) => {
+                const title = blog.title || ''
+                const description = blog.description || ''
+                
+                // Calculate positive sentiment score
+                const titleScore = calculatePositiveScore(title)
+                const descriptionScore = calculatePositiveScore(description)
+                const positiveScore = titleScore + descriptionScore
+                
+                return {
                   id: blog.id,
                   type: 'blog' as const,
-                  title: blog.title,
-                  description: blog.description,
+                  title,
+                  description,
                   author: blog.author,
                   cover_image: blog.cover_image,
                   created_at: blog.created_at,
-                  engagement: blog.engagement,
+                  engagement: blog.engagement || { likes: 0, views: 0, shares: 0, comments: 0 },
                   metadata: {
                     ...blog.metadata,
                     url: blog.metadata?.url || `/blog/${blog.slug}`,
-                    // reading_time: blog.metadata?.reading_time || 5
                   },
-                  relevance_score: blog.relevance_score || 0.85
-                }))
-                
-                // Add blog content to hybrid content (prioritize real blogs)
-                hybridContent = [...blogContent, ...hybridContent.filter(item => item.type !== 'blog')]
-                console.log('[FYP] Hybrid content created with real blog posts:', hybridContent.length, 'total items')
-              }
+                  relevance_score: (blog.relevance_score || 0.85) + (positiveScore * 0.1),
+                  positive_score: positiveScore
+                }
+              })
+              
+              allContent = [...allContent, ...blogContent]
             }
-          } catch (blogsError) {
-            console.error('[FYP] Blog posts fetch failed in hybrid mode:', blogsError)
-            console.error('[FYP] Blog posts fetch error details:', blogsError instanceof Error ? blogsError.message : blogsError)
           }
+        } catch (blogsError) {
+          console.error('[FYP] Blog posts fetch failed:', blogsError)
         }
-        
-        // Try to fetch RSS news for various tabs
-                  const shouldFetchRSS = ['news', 'all', 'indie', 'hiphop', 'electronic', 'metal', 'jazz', 'underground', 'local'].includes(activeTab)
-        if (shouldFetchRSS) {
-          try {
-            console.log('[FYP] Attempting to fetch RSS news for hybrid content...')
-            
-            // Build RSS query parameters based on active tab
-            let rssParams = 'limit=15'
-                         if (activeTab === 'indie') {
-               rssParams += '&category=Indie Music'
-             } else if (activeTab === 'hiphop') {
-               rssParams += '&category=Hip-Hop'
-             } else if (activeTab === 'electronic') {
-               rssParams += '&category=Electronic Music'
-             } else if (activeTab === 'metal') {
-               rssParams += '&category=Metal Music'
-             } else if (activeTab === 'jazz') {
-               rssParams += '&category=Jazz Music'
-             } else if (activeTab === 'underground') {
-               rssParams += '&category=Underground Music'
-             } else if (activeTab === 'local') {
-               rssParams += '&category=Local Music'
-             }
-            
-            const rssResponse = await fetch(`/api/feed/rss-news?${rssParams}`)
-            if (rssResponse.ok) {
-              const rssData = await rssResponse.json()
-              if (rssData.success && rssData.news && rssData.news.length > 0) {
-                console.log('[FYP] Successfully fetched RSS news:', rssData.news.length, 'items')
-                
-                // Convert RSS items to ContentItem format with positive sentiment scoring
-                const rssContent = rssData.news.map((item: any, index: number) => {
-                  const title = item.title || ''
-                  const description = item.description || ''
-                  
-                  // Calculate positive sentiment score
-                  const titleScore = calculatePositiveScore(title)
-                  const descriptionScore = calculatePositiveScore(description)
-                  const positiveScore = titleScore + descriptionScore
-                  
-                  return {
-                    id: `rss_${item.id}`,
-                    type: 'news' as const,
-                    title,
-                    description,
-                    author: {
-                      id: `rss_${item.source}`,
-                      name: item.author || item.source,
-                      username: item.source.toLowerCase().replace(/\s+/g, ''),
-                      avatar_url: item.image || `https://dummyimage.com/40x40/ef4444/ffffff?text=${item.source.charAt(0)}`,
-                      is_verified: true
-                    },
-                    cover_image: item.image || getPlaceholderImage('news', 400, 250),
-                    created_at: item.pubDate,
-                    engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-                    metadata: {
-                      url: item.link,
-                      tags: [item.category, item.source].filter(Boolean)
-                    },
-                    relevance_score: (0.8 + (index * 0.05)) + (positiveScore * 0.1),
-                    positive_score: positiveScore
-                  }
-                })
-                
-                // Add RSS content to hybrid content
-                hybridContent = [...rssContent, ...hybridContent]
-                console.log('[FYP] Hybrid content created with RSS news:', hybridContent.length, 'total items')
-              }
-            }
-          } catch (rssError) {
-            console.error('[FYP] RSS fetch failed in hybrid mode:', rssError)
-          }
-        }
-        
-        console.log('[FYP] Final hybrid content:', hybridContent.length, 'items, types:', hybridContent.map(item => item.type))
-        setContent(hybridContent)
       }
+      
+      // 4. Add mock content if we don't have enough content
+      if (allContent.length < 5) {
+        console.log('[FYP] Adding mock content to supplement')
+        const mockContent = generateMockContent()
+        allContent = [...allContent, ...mockContent]
+      }
+      
+      // 5. Sort all content by positive sentiment score and relevance
+      const sortedContent = allContent.sort((a: any, b: any) => {
+        const aScore = (b.positive_score || 0) + (b.relevance_score || 0.8)
+        const bScore = (a.positive_score || 0) + (a.relevance_score || 0.8)
+        return aScore - bScore
+      })
+      
+      console.log('[FYP] Final content loaded:', sortedContent.length, 'items')
+      console.log('[FYP] Content types:', sortedContent.map(item => item.type))
+      
+      setContent(sortedContent)
+      
     } catch (error) {
-      console.error('Error loading content:', error)
+      console.error('[FYP] Error loading content:', error)
+      // Fallback to mock content
       setContent(generateMockContent())
     } finally {
       setLoading(false)
@@ -394,12 +410,12 @@ export function ForYouPage() {
 
   const generateMockContent = (): ContentItem[] => {
     const mockItems = [
-      // Add a hardcoded blog post for testing
+      // Enhanced positive content for jukebox theme
       {
-        id: 'test-blog-1',
+        id: 'positive-1',
         type: 'blog' as const,
-        title: 'The Future of Independent Music',
-        description: 'Exploring how independent artists are reshaping the music industry through digital platforms and direct fan engagement.',
+        title: '🎵 The Awesome Future of Independent Music 🎵',
+        description: 'Incredible independent artists are revolutionizing the music industry with amazing digital platforms and epic fan engagement strategies. This is truly the best time for music!',
         author: {
           id: 'test-author-1',
           name: 'Sarah Johnson',
@@ -407,21 +423,20 @@ export function ForYouPage() {
           avatar_url: 'https://dummyimage.com/150x150/8b5cf6/ffffff?text=SJ',
           is_verified: false
         },
-        cover_image: 'https://dummyimage.com/800x400/8b5cf6/ffffff?text=The+Future+of+Independent+Music',
+        cover_image: 'https://dummyimage.com/800x400/8b5cf6/ffffff?text=Awesome+Music+Future',
         created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
         engagement: { likes: 89, views: 1247, shares: 45, comments: 23 },
         metadata: {
-          url: '/blog/the-future-of-independent-music',
+          url: '/blog/awesome-future-of-independent-music',
           tags: ['Independent Music', 'Digital Age', 'Music Industry'],
-          // reading_time: 14
         },
         relevance_score: 0.95
       },
       {
-        id: '1',
+        id: 'positive-2',
         type: 'music',
-        title: 'Midnight Dreams - New Single',
-        description: 'Fresh indie rock vibes with haunting vocals and atmospheric production that will transport you to another dimension.',
+        title: '🎸 Epic Midnight Dreams - Amazing New Single 🎸',
+        description: 'Incredible indie rock vibes with fantastic vocals and brilliant atmospheric production that will absolutely transport you to another dimension. This is truly awesome music!',
         author: {
           id: '1',
           name: 'Luna Echo',
@@ -431,15 +446,15 @@ export function ForYouPage() {
         },
         cover_image: getPlaceholderImage('music', 400, 400),
         created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        engagement: { likes: 156, views: 2341, shares: 89, comments: 45 },
         metadata: { genre: 'Indie Rock', duration: 180 },
         relevance_score: 0.95
       },
       {
-        id: '2',
+        id: 'positive-3',
         type: 'event',
-        title: 'Summer Music Festival 2024',
-        description: 'Join us for an incredible day of live music featuring top indie artists from around the country. Food trucks, craft beer, and amazing vibes!',
+        title: '🎪 Super Epic Summer Music Festival 2024 🎪',
+        description: 'Join us for the most incredible day of live music featuring the best indie artists from around the country! Amazing food trucks, fantastic craft beer, and absolutely epic vibes! This will be legendary!',
         author: {
           id: '2',
           name: 'Central Park Arena',
@@ -449,7 +464,7 @@ export function ForYouPage() {
         },
         cover_image: getPlaceholderImage('event', 400, 300),
         created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        engagement: { likes: 234, views: 4567, shares: 123, comments: 67 },
         metadata: { date: '2024-07-15', location: 'Central Park Arena', venue: 'Central Park Arena', capacity: 5000, ticket_price: 75 },
         relevance_score: 0.88
       },
