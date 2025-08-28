@@ -977,91 +977,110 @@ export function ForYouPage() {
   }, [sortBy, activeTab])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/30 to-slate-950 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900/20 to-gray-900 relative overflow-hidden">
 
-      {/* Animated background elements */}
+      {/* Jukebox background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+        {/* Chrome accents */}
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400"></div>
+        <div className="absolute top-0 left-0 bottom-0 w-2 bg-gradient-to-b from-gray-400 via-gray-300 to-gray-400"></div>
+        <div className="absolute top-0 right-0 bottom-0 w-2 bg-gradient-to-b from-gray-400 via-gray-300 to-gray-400"></div>
+        
+        {/* Neon lights */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-red-500/60 blur-sm animate-pulse"></div>
+        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-blue-500/60 blur-sm animate-pulse delay-500"></div>
+        <div className="absolute top-12 left-1/2 transform -translate-x-1/2 w-28 h-1 bg-green-500/60 blur-sm animate-pulse delay-1000"></div>
+        
+        {/* Vinyl record background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 border-4 border-white rounded-full"></div>
+          <div className="absolute top-1/4 left-1/4 w-48 h-48 border-2 border-white rounded-full"></div>
+          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-white rounded-full"></div>
+          <div className="absolute top-1/4 left-1/4 w-8 h-8 bg-gray-900 rounded-full"></div>
+        </div>
       </div>
       
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
-        {/* Hero Section */}
+      <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
+        {/* Jukebox Display Section */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-center space-y-6 mb-12"
         >
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 blur-3xl rounded-full"></div>
-            <h1 className="relative text-5xl md:text-7xl font-black text-white tracking-tight">
-              For You <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">Feed</span>
-            </h1>
-          </div>
-          <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed px-4 font-light">
-            Personalized content curated just for you. Discover music, events, videos, and more based on your interests and preferences.
-          </p>
-          <div className="flex justify-center gap-6 md:gap-8 text-sm text-gray-400 flex-wrap">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
-            >
-              <div className="h-2 w-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
-              <span className="font-medium">Personalized</span>
-            </motion.div>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
-            >
-              <div className="h-2 w-2 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-pulse delay-500"></div>
-              <span className="font-medium">Real-time</span>
-            </motion.div>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 }}
-              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
-            >
-              <div className="h-2 w-2 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-pulse delay-1000"></div>
-              <span className="font-medium">Curated</span>
-            </motion.div>
+          {/* Jukebox Display Panel */}
+          <div className="relative mx-auto max-w-4xl">
+            <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl p-8">
+              {/* Display Screen */}
+              <div className="bg-black rounded-2xl border-2 border-gray-500 p-6 mb-6">
+                <div className="text-center space-y-4">
+                  <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight font-mono">
+                    <span className="text-red-500">♪</span> JUKEBOX <span className="text-blue-500">♪</span>
+                  </h1>
+                  <div className="text-2xl md:text-3xl font-mono text-green-400">
+                    FOR YOU FEED
+                  </div>
+                  <div className="text-lg text-yellow-400 font-mono">
+                    SELECT YOUR TUNES
+                  </div>
+                </div>
+              </div>
+              
+              {/* Status Lights */}
+              <div className="flex justify-center gap-4 mb-4">
+                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+                <div className="w-4 h-4 bg-yellow-500 rounded-full animate-pulse delay-300"></div>
+                <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse delay-600"></div>
+                <div className="w-4 h-4 bg-blue-500 rounded-full animate-pulse delay-900"></div>
+              </div>
+              
+              {/* Info Display */}
+              <div className="bg-gray-800 rounded-xl border border-gray-600 p-4">
+                <div className="grid grid-cols-3 gap-4 text-center text-sm font-mono">
+                  <div className="bg-red-900/50 rounded-lg p-2 border border-red-500/30">
+                    <div className="text-red-400">PERSONALIZED</div>
+                  </div>
+                  <div className="bg-blue-900/50 rounded-lg p-2 border border-blue-500/30">
+                    <div className="text-blue-400">REAL-TIME</div>
+                  </div>
+                  <div className="bg-green-900/50 rounded-lg p-2 border border-green-500/30">
+                    <div className="text-green-400">CURATED</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
 
         <div className="max-w-5xl mx-auto">
           {/* Main Content Area */}
           <div className="space-y-8">
-            {/* Search and Filter Bar */}
+            {/* Jukebox Control Panel */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-6">
+              <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl p-6">
                 <div className="flex flex-col lg:flex-row gap-6">
-                  {/* Search */}
+                  {/* Search - Jukebox Style */}
                   <div className="flex-1 relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-yellow-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                     <div className="relative">
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-red-400 transition-colors" />
                       <Input
-                        placeholder="Search content, artists, genres..."
+                        placeholder="SEARCH TUNES, ARTISTS, GENRES..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-12 pr-12 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-14 rounded-2xl focus:border-purple-400/50 focus:ring-purple-400/20 backdrop-blur-sm text-lg"
+                        className="pl-12 pr-12 bg-black border-2 border-gray-500 text-white placeholder:text-gray-400 h-14 rounded-2xl focus:border-red-400/50 focus:ring-red-400/20 font-mono text-lg"
                       />
                       {searchQuery && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setSearchQuery('')}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 text-gray-400 hover:text-white rounded-xl"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 text-gray-400 hover:text-white rounded-xl bg-gray-700 hover:bg-gray-600 border border-gray-500"
                         >
                           <X className="h-5 w-5" />
                         </Button>
@@ -1069,31 +1088,31 @@ export function ForYouPage() {
                     </div>
                   </div>
 
-                  {/* Sort Button */}
+                  {/* Sort Button - Jukebox Style */}
                   <Button
                     variant="outline"
                     onClick={() => setShowFilters(!showFilters)}
-                    className="h-14 border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 transition-all whitespace-nowrap rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10"
+                    className="h-14 border-2 border-gray-500 text-gray-300 hover:text-white hover:border-red-400/50 transition-all whitespace-nowrap rounded-2xl bg-black hover:bg-gray-800 font-mono"
                   >
                     <SlidersHorizontal className="h-5 w-5 mr-3" />
-                    <span className="text-lg font-medium">Sort</span>
+                    <span className="text-lg font-medium">SORT</span>
                   </Button>
                 </div>
 
-                {/* Sort Options */}
+                {/* Sort Options - Jukebox Style */}
                 <AnimatePresence>
                   {showFilters && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mt-6 pt-6 border-t border-white/10"
+                      className="mt-6 pt-6 border-t-2 border-gray-500"
                     >
                       <div className="flex gap-3 flex-wrap">
                         {[
-                          { value: 'relevant', label: 'Most Relevant', icon: Star },
-                          { value: 'recent', label: 'Most Recent', icon: Clock },
-                          { value: 'popular', label: 'Most Popular', icon: TrendingUp }
+                          { value: 'relevant', label: 'MOST RELEVANT', icon: Star },
+                          { value: 'recent', label: 'MOST RECENT', icon: Clock },
+                          { value: 'popular', label: 'MOST POPULAR', icon: TrendingUp }
                         ].map((option) => {
                           const Icon = option.icon
                           return (
@@ -1101,10 +1120,10 @@ export function ForYouPage() {
                               key={option.value}
                               variant={sortBy === option.value ? "default" : "outline"}
                               onClick={() => setSortBy(option.value as any)}
-                              className={`h-12 whitespace-nowrap rounded-2xl text-lg font-medium ${
+                              className={`h-12 whitespace-nowrap rounded-2xl text-lg font-medium font-mono border-2 ${
                                 sortBy === option.value 
-                                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25' 
-                                  : 'border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 bg-white/5 backdrop-blur-sm hover:bg-white/10'
+                                  ? 'bg-gradient-to-r from-red-600 to-yellow-600 hover:from-red-700 hover:to-yellow-700 text-white shadow-lg shadow-red-500/25 border-red-400' 
+                                  : 'bg-black border-gray-500 text-gray-300 hover:text-white hover:border-red-400/50 hover:bg-gray-800'
                               } transition-all duration-300`}
                             >
                               <Icon className="h-5 w-5 mr-3" />
@@ -1119,53 +1138,60 @@ export function ForYouPage() {
               </div>
             </motion.div>
 
-            {/* Content Tabs */}
+            {/* Jukebox Selection Panel */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               className="space-y-4"
             >
-                          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              {/* Main content types - Responsive grid */}
-              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2">
-                {contentTypes.slice(0, 6).map((type) => {
-                  const Icon = type.icon
-                  return (
-                    <TabsTrigger
-                      key={type.value}
-                      value={type.value}
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-4 touch-manipulation"
-                    >
-                      <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">{type.label}</span>
-                    </TabsTrigger>
-                  )
-                })}
-              </TabsList>
-              
-              {/* Music genre tabs - Multi-row layout to prevent scrolling */}
-              <div className="mt-3">
-                <div className="flex items-center mb-2 px-1">
-                  <span className="text-xs text-gray-400 font-medium">Music Genres</span>
-                </div>
-                <TabsList className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2">
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
-                    {contentTypes.slice(6).map((type) => {
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                {/* Main content types - Jukebox Style */}
+                <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl p-4">
+                  <div className="text-center mb-4">
+                    <div className="text-lg font-mono text-yellow-400">SELECT CONTENT TYPE</div>
+                  </div>
+                  <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-black border-2 border-gray-500 rounded-2xl p-2 gap-2">
+                    {contentTypes.slice(0, 6).map((type) => {
                       const Icon = type.icon
                       return (
                         <TabsTrigger
                           key={type.value}
                           value={type.value}
-                          className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
+                          className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-600 data-[state=active]:to-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-red-500/25 data-[state=active]:border-red-400 border-2 border-gray-500 bg-black text-gray-300 hover:text-white hover:border-red-400/50 hover:bg-gray-800 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium font-mono rounded-2xl h-10 sm:h-12 px-2 sm:px-4 touch-manipulation"
                         >
                           <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
                           <span className="hidden sm:inline">{type.label}</span>
                         </TabsTrigger>
                       )
                     })}
+                  </TabsList>
+                </div>
+              
+              {/* Music genre tabs - Jukebox Style */}
+              <div className="mt-4">
+                <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl p-4">
+                  <div className="text-center mb-4">
+                    <div className="text-lg font-mono text-blue-400">SELECT MUSIC GENRE</div>
                   </div>
-                </TabsList>
+                  <TabsList className="bg-black border-2 border-gray-500 rounded-2xl p-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
+                      {contentTypes.slice(6).map((type) => {
+                        const Icon = type.icon
+                        return (
+                          <TabsTrigger
+                            key={type.value}
+                            value={type.value}
+                            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 data-[state=active]:border-blue-400 border-2 border-gray-500 bg-black text-gray-300 hover:text-white hover:border-blue-400/50 hover:bg-gray-800 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium font-mono rounded-2xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
+                          >
+                            <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
+                            <span className="hidden sm:inline">{type.label}</span>
+                          </TabsTrigger>
+                        )
+                      })}
+                    </div>
+                  </TabsList>
+                </div>
               </div>
             </Tabs>
             </motion.div>
@@ -1245,12 +1271,13 @@ export function ForYouPage() {
                           />
                         </div>
                       ) : (
-                        <div className={`relative bg-white/5 backdrop-blur-xl border border-white/10 transition-all duration-500 group hover:shadow-2xl hover:shadow-purple-500/10 rounded-3xl overflow-hidden ${getContentCardBorder(item.type)} ${item.type === 'blog' && item.metadata?.url ? 'hover:border-purple-400/50 hover:bg-white/10' : ''}`}>
-                          {/* Enhanced gradient overlay on hover */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-pink-500/0 to-cyan-500/0 group-hover:from-purple-500/10 group-hover:via-pink-500/10 group-hover:to-cyan-500/10 transition-all duration-500"></div>
+                        <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 border-4 border-gray-400 transition-all duration-500 group hover:shadow-2xl hover:shadow-red-500/25 rounded-3xl overflow-hidden">
+                          {/* Jukebox chrome accents */}
+                          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400"></div>
+                          <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400"></div>
                           
-                          {/* Top accent bar */}
-                          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${getContentColor(item.type)} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                          {/* Neon glow effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-yellow-500/0 to-red-500/0 group-hover:from-red-500/10 group-hover:via-yellow-500/10 group-hover:to-red-500/10 transition-all duration-500"></div>
                           
                           <div className="relative p-6 md:p-8">
                             {/* Clickable overlay for blog posts */}
@@ -1271,7 +1298,7 @@ export function ForYouPage() {
                             {/* Enhanced Content Header */}
                             <div className="flex items-start gap-6 md:gap-8 mb-6">
                               {item.cover_image && (
-                                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-3xl overflow-hidden flex-shrink-0 ring-2 ring-purple-500/20 group-hover:ring-purple-500/50 transition-all duration-300 shadow-2xl group-hover:shadow-purple-500/25">
+                                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden flex-shrink-0 border-4 border-gray-300 shadow-2xl group-hover:shadow-red-500/25 transition-all duration-300">
                                   <Image
                                     src={item.cover_image}
                                     alt={item.title}
@@ -1280,26 +1307,34 @@ export function ForYouPage() {
                                     sizes="(max-width: 768px) 96px, 128px"
                                   />
                                   {item.type === 'video' && (
-                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm rounded-full">
                                       <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
                                         <Play className="h-6 w-6 md:h-8 md:w-8 text-white fill-white" />
                                       </div>
                                     </div>
                                   )}
-                                  {/* Image overlay gradient */}
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                  {/* Vinyl record center label */}
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-8 h-8 md:w-12 md:h-12 bg-gray-900 rounded-full border-2 border-gray-300 flex items-center justify-center">
+                                      <div className="w-2 h-2 md:w-3 md:h-3 bg-gray-300 rounded-full"></div>
+                                    </div>
+                                  </div>
+                                  {/* Record grooves */}
+                                  <div className="absolute inset-0 rounded-full border-2 border-gray-400 opacity-30"></div>
+                                  {/* Vinyl record shine effect */}
+                                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-full"></div>
                                 </div>
                               )}
 
                               <div className="flex-1 min-w-0">
-                                {/* Enhanced badges with better spacing */}
+                                {/* Jukebox badges */}
                                 <div className="flex items-center gap-3 mb-4 flex-wrap">
-                                  <Badge className={`${getContentColor(item.type)} text-sm md:text-base font-semibold px-4 py-2 rounded-2xl shadow-lg flex-shrink-0`}>
+                                  <Badge className="bg-black border-2 border-gray-500 text-gray-300 text-sm md:text-base font-semibold px-4 py-2 rounded-2xl shadow-lg flex-shrink-0 font-mono">
                                     {getContentIcon(item.type)}
-                                    <span className="ml-2 capitalize">{item.type}</span>
+                                    <span className="ml-2 uppercase">{item.type}</span>
                                   </Badge>
                                   {item.metadata?.genre && (
-                                    <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-sm px-4 py-2 rounded-2xl font-medium flex-shrink-0`}>
+                                    <Badge className="bg-black border-2 border-blue-500 text-blue-300 text-sm px-4 py-2 rounded-2xl font-medium flex-shrink-0 font-mono">
                                       {item.metadata.genre}
                                     </Badge>
                                   )}
@@ -1308,11 +1343,11 @@ export function ForYouPage() {
                                   </div>
                                 </div>
 
-                                {/* Enhanced title with better typography */}
-                                <h3 className="text-2xl md:text-3xl font-black text-white mb-4 group-hover:text-purple-300 transition-colors line-clamp-2 leading-tight tracking-tight">
+                                {/* Jukebox title */}
+                                <h3 className="text-2xl md:text-3xl font-black text-white mb-4 group-hover:text-red-300 transition-colors line-clamp-2 leading-tight tracking-tight font-mono">
                                   {item.title}
                                   {item.type === 'blog' && item.metadata?.url && (
-                                    <span className="ml-3 text-purple-400 text-xl font-normal opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">→ Read more</span>
+                                    <span className="ml-3 text-red-400 text-xl font-normal opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">♪ PLAY</span>
                                   )}
                                 </h3>
 
