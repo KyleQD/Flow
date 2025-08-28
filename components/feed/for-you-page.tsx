@@ -37,6 +37,7 @@ import Image from 'next/image'
 import { useAuth } from '@/contexts/auth-context'
 import { ThreadCardV2 } from '@/components/forums/thread-card-v2'
 import { ThreadComposerV2 } from '@/components/forums/thread-composer-v2'
+import { JukeboxPlayer } from '@/components/music/jukebox-player'
 
 
 interface ContentItem {
@@ -115,6 +116,9 @@ export function ForYouPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<'relevant' | 'recent' | 'popular'>('relevant')
   const [bookmarkedContent, setBookmarkedContent] = useState<Set<string>>(new Set())
+  const [showJukebox, setShowJukebox] = useState(false)
+  const [currentPlayingTrack, setCurrentPlayingTrack] = useState<any>(null)
+  const [isJukeboxPlaying, setIsJukeboxPlaying] = useState(false)
   const { user } = useAuth()
 
   const contentTypes = [
@@ -1166,8 +1170,31 @@ export function ForYouPage() {
                   
                   {/* Header Section - Golden Ratio Proportions */}
                   <div className="text-center py-8 px-6 bg-gradient-to-r from-gray-900 to-gray-800 border-b-2 border-gray-600">
-                    <div className="text-2xl font-mono text-yellow-400 mb-2">♪ JUKEBOX SELECTOR ♪</div>
-                    <div className="text-sm font-mono text-gray-400">SELECT YOUR TUNES</div>
+                    <div className="text-2xl font-mono text-yellow-400 mb-2">
+                      ♪ JUKEBOX SELECTOR ♪
+                      {isJukeboxPlaying && (
+                        <motion.div
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                          className="inline-block ml-2 text-red-400"
+                        >
+                          🎵
+                        </motion.div>
+                      )}
+                    </div>
+                    <div className="text-sm font-mono text-gray-400">
+                      {currentPlayingTrack ? `NOW PLAYING: ${currentPlayingTrack.name}` : 'SELECT YOUR TUNES'}
+                    </div>
+                    
+                    {/* Jukebox Toggle Button */}
+                    <div className="mt-4">
+                      <Button
+                        onClick={() => setShowJukebox(!showJukebox)}
+                        className="bg-gradient-to-r from-red-600 to-yellow-600 hover:from-red-700 hover:to-yellow-700 font-mono text-sm"
+                      >
+                        {showJukebox ? '🎵 HIDE JUKEBOX' : '🎵 OPEN JUKEBOX'}
+                      </Button>
+                    </div>
                   </div>
                   
                   {/* Main Content Area - Using Golden Ratio */}
@@ -1233,6 +1260,24 @@ export function ForYouPage() {
                 </div>
               </Tabs>
             </motion.div>
+
+            {/* Real Jukebox Player */}
+            <AnimatePresence>
+              {showJukebox && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  className="overflow-hidden"
+                >
+                  <JukeboxPlayer
+                    onTrackChange={setCurrentPlayingTrack}
+                    onPlaybackStateChange={setIsJukeboxPlaying}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Content Grid */}
             <motion.div
