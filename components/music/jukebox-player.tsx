@@ -12,11 +12,24 @@ import {
   Upload,
   Music,
   Disc3,
-  RotateCcw
+  RotateCcw,
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+  BookmarkPlus,
+  RefreshCw,
+  ExternalLink,
+  Rss,
+  TrendingUp,
+  Star
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Card } from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface Track {
   id: string
@@ -25,6 +38,23 @@ interface Track {
   file: File
   url: string
   duration?: number
+}
+
+interface RSSItem {
+  id: string
+  title: string
+  description: string
+  link: string
+  pubDate: string
+  source: string
+  category: string
+  image?: string
+  audioUrl?: string
+  likes: number
+  comments: number
+  shares: number
+  isLiked: boolean
+  isBookmarked: boolean
 }
 
 interface JukeboxPlayerProps {
@@ -42,11 +72,26 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
   const [duration, setDuration] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
   const [showEqualizer, setShowEqualizer] = useState(false)
+  const [activeTab, setActiveTab] = useState('upload')
+  const [rssItems, setRssItems] = useState<RSSItem[]>([])
+  const [isLoadingRSS, setIsLoadingRSS] = useState(false)
+  const [rssCategory, setRssCategory] = useState('all')
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number>()
+
+  // RSS Categories
+  const rssCategories = [
+    { value: 'all', label: 'All Music', icon: Music },
+    { value: 'new-releases', label: 'New Releases', icon: Star },
+    { value: 'indie', label: 'Indie Music', icon: TrendingUp },
+    { value: 'hiphop', label: 'Hip-Hop', icon: Music },
+    { value: 'electronic', label: 'Electronic', icon: Music },
+    { value: 'rock', label: 'Rock', icon: Music },
+    { value: 'jazz', label: 'Jazz', icon: Music }
+  ]
 
   // Initialize audio context
   useEffect(() => {
@@ -63,6 +108,133 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
       if (audioContextRef.current) {
         audioContextRef.current.close()
       }
+    }
+  }, [])
+
+  // Load RSS feed
+  const loadRSSFeed = useCallback(async (category: string = 'all') => {
+    setIsLoadingRSS(true)
+    try {
+      let url = '/api/feed/rss-news?limit=20'
+      if (category !== 'all') {
+        url += `&category=${encodeURIComponent(category)}`
+      }
+      
+      const response = await fetch(url)
+      const data = await response.json()
+      
+      if (data.success && data.news) {
+        const processedItems: RSSItem[] = data.news.map((item: any, index: number) => ({
+          id: `rss_${item.id || index}`,
+          title: item.title || 'Untitled',
+          description: item.description || '',
+          link: item.link || '#',
+          pubDate: item.pubDate || new Date().toISOString(),
+          source: item.source || 'Unknown',
+          category: item.category || 'Music',
+          image: item.image || `https://dummyimage.com/400x250/8b5cf6/ffffff?text=${item.source?.charAt(0) || 'M'}`,
+          audioUrl: item.audioUrl || null,
+          likes: Math.floor(Math.random() * 100),
+          comments: Math.floor(Math.random() * 50),
+          shares: Math.floor(Math.random() * 30),
+          isLiked: false,
+          isBookmarked: false
+        }))
+        
+        setRssItems(processedItems)
+      }
+    } catch (error) {
+      console.error('Failed to load RSS feed:', error)
+      // Fallback to mock data
+      setRssItems(generateMockRSSItems())
+    } finally {
+      setIsLoadingRSS(false)
+    }
+  }, [])
+
+  // Generate mock RSS items for fallback
+  const generateMockRSSItems = (): RSSItem[] => {
+    return [
+      {
+        id: 'mock_1',
+        title: '🎵 New Indie Rock Album "Midnight Dreams" Released',
+        description: 'The latest album from indie sensation "The Night Owls" features 12 tracks of atmospheric rock with haunting vocals and innovative production techniques.',
+        link: '#',
+        pubDate: new Date().toISOString(),
+        source: 'Indie Music Weekly',
+        category: 'Indie Music',
+        image: 'https://dummyimage.com/400x250/8b5cf6/ffffff?text=Indie+Rock',
+        likes: 89,
+        comments: 23,
+        shares: 15,
+        isLiked: false,
+        isBookmarked: false
+      },
+      {
+        id: 'mock_2',
+        title: '🔥 Hip-Hop Artist "MC Flow" Drops Surprise EP',
+        description: 'The underground hip-hop scene is buzzing with the unexpected release of "Street Poetry" - a 6-track EP that showcases raw talent and authentic storytelling.',
+        link: '#',
+        pubDate: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        source: 'Hip-Hop Daily',
+        category: 'Hip-Hop',
+        image: 'https://dummyimage.com/400x250/ef4444/ffffff?text=Hip-Hop',
+        likes: 156,
+        comments: 45,
+        shares: 28,
+        isLiked: false,
+        isBookmarked: false
+      },
+      {
+        id: 'mock_3',
+        title: '🎧 Electronic Producer "SynthWave" Announces World Tour',
+        description: 'Following the success of their latest album "Digital Dreams", electronic music producer SynthWave has announced a 20-city world tour starting next month.',
+        link: '#',
+        pubDate: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        source: 'Electronic Music News',
+        category: 'Electronic Music',
+        image: 'https://dummyimage.com/400x250/06b6d4/ffffff?text=Electronic',
+        likes: 234,
+        comments: 67,
+        shares: 42,
+        isLiked: false,
+        isBookmarked: false
+      }
+    ]
+  }
+
+  // Load RSS feed on mount and category change
+  useEffect(() => {
+    loadRSSFeed(rssCategory)
+  }, [rssCategory, loadRSSFeed])
+
+  // Handle RSS interactions
+  const handleLikeRSS = useCallback((itemId: string) => {
+    setRssItems(prev => prev.map(item => 
+      item.id === itemId 
+        ? { ...item, isLiked: !item.isLiked, likes: item.isLiked ? item.likes - 1 : item.likes + 1 }
+        : item
+    ))
+  }, [])
+
+  const handleBookmarkRSS = useCallback((itemId: string) => {
+    setRssItems(prev => prev.map(item => 
+      item.id === itemId 
+        ? { ...item, isBookmarked: !item.isBookmarked }
+        : item
+    ))
+  }, [])
+
+  const handleShareRSS = useCallback((item: RSSItem) => {
+    if (navigator.share) {
+      navigator.share({
+        title: item.title,
+        text: item.description,
+        url: item.link
+      })
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(`${item.title}\n${item.description}\n${item.link}`)
     }
   }, [])
 
@@ -216,37 +388,272 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
         className="text-center"
       >
         <div className="text-2xl font-mono text-yellow-400 mb-2">🎵 REAL JUKEBOX 🎵</div>
-        <div className="text-sm font-mono text-gray-400">UPLOAD & PLAY YOUR TUNES</div>
+        <div className="text-sm font-mono text-gray-400">UPLOAD & DISCOVER MUSIC</div>
       </motion.div>
 
-      {/* File Upload Area */}
+      {/* Main Jukebox Interface */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl p-6"
       >
-        <div
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          className="border-2 border-dashed border-gray-500 rounded-2xl p-8 text-center hover:border-yellow-400 transition-colors"
-        >
-          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <div className="text-lg font-mono text-gray-300 mb-2">DROP AUDIO FILES HERE</div>
-          <div className="text-sm font-mono text-gray-500 mb-4">MP3, WAV, OGG, M4A</div>
-          <input
-            type="file"
-            multiple
-            accept="audio/*"
-            onChange={(e) => handleFileUpload(e.target.files)}
-            className="hidden"
-            id="audio-upload"
-          />
-          <label htmlFor="audio-upload">
-            <Button className="bg-gradient-to-r from-red-600 to-yellow-600 hover:from-red-700 hover:to-yellow-700 font-mono">
-              SELECT FILES
-            </Button>
-          </label>
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-black border-2 border-gray-500 rounded-2xl p-2 mb-6">
+            <TabsTrigger 
+              value="upload"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-600 data-[state=active]:to-yellow-600 data-[state=active]:text-white font-mono text-sm"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              UPLOAD FILES
+            </TabsTrigger>
+            <TabsTrigger 
+              value="feed"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white font-mono text-sm"
+            >
+              <Rss className="h-4 w-4 mr-2" />
+              MUSIC FEED
+            </TabsTrigger>
+            <TabsTrigger 
+              value="playlist"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-emerald-600 data-[state=active]:text-white font-mono text-sm"
+            >
+              <Music className="h-4 w-4 mr-2" />
+              PLAYLIST
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Upload Files Tab */}
+          <TabsContent value="upload" className="space-y-4">
+            <div
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              className="border-2 border-dashed border-gray-500 rounded-2xl p-8 text-center hover:border-yellow-400 transition-colors"
+            >
+              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <div className="text-lg font-mono text-gray-300 mb-2">DROP AUDIO FILES HERE</div>
+              <div className="text-sm font-mono text-gray-500 mb-4">MP3, WAV, OGG, M4A</div>
+              <input
+                type="file"
+                multiple
+                accept="audio/*"
+                onChange={(e) => handleFileUpload(e.target.files)}
+                className="hidden"
+                id="audio-upload"
+              />
+              <label htmlFor="audio-upload">
+                <Button className="bg-gradient-to-r from-red-600 to-yellow-600 hover:from-red-700 hover:to-yellow-700 font-mono">
+                  SELECT FILES
+                </Button>
+              </label>
+            </div>
+          </TabsContent>
+
+          {/* Music Feed Tab */}
+          <TabsContent value="feed" className="space-y-4">
+            {/* RSS Category Filter */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-lg font-mono text-blue-400">MUSIC DISCOVERY</div>
+              <Button
+                onClick={() => loadRSSFeed(rssCategory)}
+                disabled={isLoadingRSS}
+                variant="outline"
+                size="sm"
+                className="font-mono border-gray-500 hover:border-blue-400"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingRSS ? 'animate-spin' : ''}`} />
+                REFRESH
+              </Button>
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {rssCategories.map((category) => {
+                const Icon = category.icon
+                return (
+                  <Button
+                    key={category.value}
+                    onClick={() => setRssCategory(category.value)}
+                    variant={rssCategory === category.value ? "default" : "outline"}
+                    size="sm"
+                    className={`font-mono text-xs ${
+                      rssCategory === category.value 
+                        ? 'bg-gradient-to-r from-blue-600 to-cyan-600' 
+                        : 'border-gray-500 hover:border-blue-400'
+                    }`}
+                  >
+                    <Icon className="h-3 w-3 mr-1" />
+                    {category.label}
+                  </Button>
+                )
+              })}
+            </div>
+
+            {/* RSS Feed Content */}
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {isLoadingRSS ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto"></div>
+                  <div className="text-sm font-mono text-gray-400 mt-2">LOADING MUSIC FEED...</div>
+                </div>
+              ) : rssItems.length > 0 ? (
+                rssItems.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-black border-2 border-gray-600 rounded-xl p-4 hover:border-blue-400 transition-colors"
+                  >
+                    <div className="flex items-start space-x-4">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                        <img 
+                          src={item.image} 
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Badge className="bg-blue-600 text-white text-xs font-mono">
+                            {item.category}
+                          </Badge>
+                          <span className="text-xs font-mono text-gray-400">
+                            {item.source}
+                          </span>
+                        </div>
+                        
+                        <h3 className="text-sm font-mono text-white mb-2 line-clamp-2">
+                          {item.title}
+                        </h3>
+                        
+                        <p className="text-xs font-mono text-gray-400 mb-3 line-clamp-2">
+                          {item.description}
+                        </p>
+                        
+                        {/* Interaction Buttons */}
+                        <div className="flex items-center space-x-4">
+                          <Button
+                            onClick={() => handleLikeRSS(item.id)}
+                            variant="ghost"
+                            size="sm"
+                            className={`font-mono text-xs ${
+                              item.isLiked ? 'text-red-400' : 'text-gray-400'
+                            } hover:text-red-400`}
+                          >
+                            <Heart className={`h-3 w-3 mr-1 ${item.isLiked ? 'fill-current' : ''}`} />
+                            {item.likes}
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="font-mono text-xs text-gray-400 hover:text-blue-400"
+                          >
+                            <MessageCircle className="h-3 w-3 mr-1" />
+                            {item.comments}
+                          </Button>
+                          
+                          <Button
+                            onClick={() => handleShareRSS(item)}
+                            variant="ghost"
+                            size="sm"
+                            className="font-mono text-xs text-gray-400 hover:text-green-400"
+                          >
+                            <Share2 className="h-3 w-3 mr-1" />
+                            {item.shares}
+                          </Button>
+                          
+                          <Button
+                            onClick={() => handleBookmarkRSS(item.id)}
+                            variant="ghost"
+                            size="sm"
+                            className={`font-mono text-xs ${
+                              item.isBookmarked ? 'text-yellow-400' : 'text-gray-400'
+                            } hover:text-yellow-400`}
+                          >
+                            {item.isBookmarked ? (
+                              <Bookmark className="h-3 w-3 mr-1 fill-current" />
+                            ) : (
+                              <BookmarkPlus className="h-3 w-3 mr-1" />
+                            )}
+                            SAVE
+                          </Button>
+                          
+                          <Button
+                            onClick={() => window.open(item.link, '_blank')}
+                            variant="ghost"
+                            size="sm"
+                            className="font-mono text-xs text-gray-400 hover:text-purple-400"
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            READ
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-sm font-mono text-gray-400">NO MUSIC CONTENT FOUND</div>
+                  <div className="text-xs font-mono text-gray-500 mt-1">Try refreshing or changing categories</div>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Playlist Tab */}
+          <TabsContent value="playlist" className="space-y-4">
+            {tracks.length > 0 ? (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {tracks.map((track, index) => (
+                  <motion.div
+                    key={track.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
+                      index === currentTrackIndex
+                        ? 'border-yellow-400 bg-yellow-400/10'
+                        : 'border-gray-500 hover:border-gray-400'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Music className="h-4 w-4 text-gray-400" />
+                      <div>
+                        <div className="text-sm font-mono text-white">{track.name}</div>
+                        <div className="text-xs font-mono text-gray-400">{track.artist}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {index === currentTrackIndex && isPlaying && (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Disc3 className="h-4 w-4 text-yellow-400" />
+                        </motion.div>
+                      )}
+                      <Button
+                        onClick={() => removeTrack(index)}
+                        variant="outline"
+                        size="icon"
+                        className="w-6 h-6 rounded-full border border-gray-500 hover:border-red-400"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-sm font-mono text-gray-400">NO TRACKS IN PLAYLIST</div>
+                <div className="text-xs font-mono text-gray-500 mt-1">Upload some music files to get started</div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </motion.div>
 
       {/* Main Player */}
@@ -342,61 +749,6 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
               max={100}
               className="flex-1"
             />
-          </div>
-        </motion.div>
-      )}
-
-      {/* Playlist */}
-      {tracks.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl p-6"
-        >
-          <div className="text-center mb-4">
-            <div className="text-lg font-mono text-blue-400">PLAYLIST</div>
-          </div>
-          
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {tracks.map((track, index) => (
-              <motion.div
-                key={track.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
-                  index === currentTrackIndex
-                    ? 'border-yellow-400 bg-yellow-400/10'
-                    : 'border-gray-500 hover:border-gray-400'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <Music className="h-4 w-4 text-gray-400" />
-                  <div>
-                    <div className="text-sm font-mono text-white">{track.name}</div>
-                    <div className="text-xs font-mono text-gray-400">{track.artist}</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  {index === currentTrackIndex && isPlaying && (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    >
-                      <Disc3 className="h-4 w-4 text-yellow-400" />
-                    </motion.div>
-                  )}
-                  <Button
-                    onClick={() => removeTrack(index)}
-                    variant="outline"
-                    size="icon"
-                    className="w-6 h-6 rounded-full border border-gray-500 hover:border-red-400"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
           </div>
         </motion.div>
       )}
