@@ -127,7 +127,9 @@ export function ForYouPage() {
     { value: 'hiphop', label: 'Hip-Hop', icon: Music2 },
     { value: 'electronic', label: 'Electronic', icon: Music2 },
     { value: 'metal', label: 'Metal', icon: Music2 },
-    { value: 'jazz', label: 'Jazz', icon: Music2 }
+    { value: 'jazz', label: 'Jazz', icon: Music2 },
+    { value: 'underground', label: 'Underground', icon: Music2 },
+    { value: 'local', label: 'Local', icon: MapPin }
   ]
 
   // Helper function to get placeholder images
@@ -244,24 +246,28 @@ export function ForYouPage() {
         }
         
         // Try to fetch RSS news for various tabs
-        const shouldFetchRSS = ['news', 'all', 'indie', 'hiphop', 'electronic', 'metal', 'jazz'].includes(activeTab)
+                  const shouldFetchRSS = ['news', 'all', 'indie', 'hiphop', 'electronic', 'metal', 'jazz', 'underground', 'local'].includes(activeTab)
         if (shouldFetchRSS) {
           try {
             console.log('[FYP] Attempting to fetch RSS news for hybrid content...')
             
             // Build RSS query parameters based on active tab
             let rssParams = 'limit=15'
-            if (activeTab === 'indie') {
-              rssParams += '&category=Indie Music'
-            } else if (activeTab === 'hiphop') {
-              rssParams += '&category=Hip-Hop'
-            } else if (activeTab === 'electronic') {
-              rssParams += '&category=Electronic Music'
-            } else if (activeTab === 'metal') {
-              rssParams += '&category=Metal Music'
-            } else if (activeTab === 'jazz') {
-              rssParams += '&category=Jazz Music'
-            }
+                         if (activeTab === 'indie') {
+               rssParams += '&category=Indie Music'
+             } else if (activeTab === 'hiphop') {
+               rssParams += '&category=Hip-Hop'
+             } else if (activeTab === 'electronic') {
+               rssParams += '&category=Electronic Music'
+             } else if (activeTab === 'metal') {
+               rssParams += '&category=Metal Music'
+             } else if (activeTab === 'jazz') {
+               rssParams += '&category=Jazz Music'
+             } else if (activeTab === 'underground') {
+               rssParams += '&category=Underground Music'
+             } else if (activeTab === 'local') {
+               rssParams += '&category=Local Music'
+             }
             
             const rssResponse = await fetch(`/api/feed/rss-news?${rssParams}`)
             if (rssResponse.ok) {
@@ -615,6 +621,48 @@ export function ForYouPage() {
           tags: ['Jazz Music', 'Fusion', 'Modern Jazz']
         },
         relevance_score: 0.87
+      },
+      {
+        id: 'underground_1',
+        type: 'news',
+        title: 'Underground Scene Explosion: DIY Venues and Independent Artists',
+        description: 'The underground music scene is thriving with DIY venues, independent labels, and artists creating innovative sounds outside the mainstream.',
+        author: {
+          id: 'tiny_mix_tapes',
+          name: 'Tiny Mix Tapes',
+          username: 'tinymixtapes',
+          avatar_url: 'https://dummyimage.com/40x40/7c3aed/ffffff?text=T',
+          is_verified: true
+        },
+        cover_image: getPlaceholderImage('music', 400, 250),
+        created_at: new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString(),
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        metadata: { 
+          url: '#',
+          tags: ['Underground Music', 'DIY', 'Independent']
+        },
+        relevance_score: 0.92
+      },
+      {
+        id: 'local_1',
+        type: 'news',
+        title: 'Local Music Scenes: Community-Driven Music Movements',
+        description: 'How local music scenes are fostering community connections and supporting emerging artists in cities across the country.',
+        author: {
+          id: 'chicago_reader',
+          name: 'Chicago Reader',
+          username: 'chicagoreader',
+          avatar_url: 'https://dummyimage.com/40x40/059669/ffffff?text=C',
+          is_verified: true
+        },
+        cover_image: getPlaceholderImage('music', 400, 250),
+        created_at: new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString(),
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        metadata: { 
+          url: '#',
+          tags: ['Local Music', 'Community', 'Emerging Artists']
+        },
+        relevance_score: 0.85
       }
     ]
   }
@@ -902,40 +950,40 @@ export function ForYouPage() {
               transition={{ delay: 0.2 }}
               className="space-y-4"
             >
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl overflow-x-auto rounded-3xl p-2">
-                  {contentTypes.slice(0, 6).map((type) => {
-                    const Icon = type.icon
-                    return (
-                      <TabsTrigger
-                        key={type.value}
-                        value={type.value}
-                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm md:text-base font-medium rounded-2xl h-12"
-                      >
-                        <Icon className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-                        <span className="hidden sm:inline">{type.label}</span>
-                      </TabsTrigger>
-                    )
-                  })}
-                </TabsList>
-                
-                {/* Second row for music genre tabs */}
-                <TabsList className="grid w-full grid-cols-5 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl overflow-x-auto rounded-3xl p-2">
-                  {contentTypes.slice(6).map((type) => {
-                    const Icon = type.icon
-                    return (
-                      <TabsTrigger
-                        key={type.value}
-                        value={type.value}
-                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm md:text-base font-medium rounded-2xl h-12"
-                      >
-                        <Icon className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-                        <span className="hidden sm:inline">{type.label}</span>
-                      </TabsTrigger>
-                    )
-                  })}
-                </TabsList>
-              </Tabs>
+                          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl overflow-x-auto rounded-3xl p-2">
+                {contentTypes.slice(0, 6).map((type) => {
+                  const Icon = type.icon
+                  return (
+                    <TabsTrigger
+                      key={type.value}
+                      value={type.value}
+                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm md:text-base font-medium rounded-2xl h-12"
+                    >
+                      <Icon className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                      <span className="hidden sm:inline">{type.label}</span>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+              
+              {/* Second row for music genre tabs */}
+              <TabsList className="grid w-full grid-cols-7 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl overflow-x-auto rounded-3xl p-2">
+                {contentTypes.slice(6).map((type) => {
+                  const Icon = type.icon
+                  return (
+                    <TabsTrigger
+                      key={type.value}
+                      value={type.value}
+                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm md:text-base font-medium rounded-2xl h-12"
+                    >
+                      <Icon className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                      <span className="hidden sm:inline">{type.label}</span>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+            </Tabs>
             </motion.div>
 
             {/* Content Grid */}
@@ -1062,23 +1110,25 @@ export function ForYouPage() {
                               <div className="flex-1 min-w-0">
                                 {/* Enhanced badges with better spacing */}
                                 <div className="flex items-center gap-3 mb-4 flex-wrap">
-                                  <Badge className={`${getContentColor(item.type)} text-sm md:text-base font-semibold px-4 py-2 rounded-2xl shadow-lg`}>
+                                  <Badge className={`${getContentColor(item.type)} text-sm md:text-base font-semibold px-4 py-2 rounded-2xl shadow-lg flex-shrink-0`}>
                                     {getContentIcon(item.type)}
                                     <span className="ml-2 capitalize">{item.type}</span>
                                   </Badge>
                                   {item.metadata?.genre && (
-                                    <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-sm px-4 py-2 rounded-2xl font-medium`}>
+                                    <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-sm px-4 py-2 rounded-2xl font-medium flex-shrink-0`}>
                                       {item.metadata.genre}
                                     </Badge>
                                   )}
-                                  {getRelevanceBadge(item.relevance_score)}
+                                  <div className="flex-shrink-0">
+                                    {getRelevanceBadge(item.relevance_score)}
+                                  </div>
                                 </div>
 
                                 {/* Enhanced title with better typography */}
                                 <h3 className="text-2xl md:text-3xl font-black text-white mb-4 group-hover:text-purple-300 transition-colors line-clamp-2 leading-tight tracking-tight">
                                   {item.title}
                                   {item.type === 'blog' && item.metadata?.url && (
-                                    <span className="ml-3 text-purple-400 text-xl font-normal opacity-0 group-hover:opacity-100 transition-opacity duration-300">→ Read more</span>
+                                    <span className="ml-3 text-purple-400 text-xl font-normal opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">→ Read more</span>
                                   )}
                                 </h3>
 
@@ -1104,7 +1154,7 @@ export function ForYouPage() {
                                 )}
 
                                 {/* Enhanced Metadata with better visual design */}
-                                <div className="flex items-center gap-4 md:gap-6 text-gray-400 text-sm md:text-base flex-wrap">
+                                <div className="flex items-center gap-3 md:gap-4 text-gray-400 text-sm md:text-base flex-wrap">
                                   {item.metadata?.duration && (
                                     <div className="flex items-center gap-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 group">
                                       <div className="p-2 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors">
@@ -1137,42 +1187,42 @@ export function ForYouPage() {
                                       <span className="font-semibold text-white">{new Date(item.metadata.date).toLocaleDateString()}</span>
                                     </div>
                                   )}
-                                  <div className="flex items-center gap-3 bg-gradient-to-r from-gray-500/10 to-slate-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-500/20">
+                                  <div className="flex items-center gap-3 bg-gradient-to-r from-gray-500/10 to-slate-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-500/20 flex-shrink-0">
                                     <div className="p-2 bg-gray-500/20 rounded-xl">
                                       <Clock className="h-4 w-4 text-gray-300" />
                                     </div>
-                                    <span className="font-semibold text-white">{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
+                                    <span className="font-semibold text-white whitespace-nowrap">{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
                                   </div>
                                 </div>
                                 
                                 {/* Action buttons */}
                                 <div className="mt-6 pt-6 border-t border-white/10">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                      <button className="flex items-center gap-2 text-gray-400 hover:text-purple-400 transition-colors duration-300 group">
+                                  <div className="flex items-center justify-between flex-wrap gap-4">
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                      <button className="flex items-center gap-2 text-gray-400 hover:text-purple-400 transition-colors duration-300 group flex-shrink-0">
                                         <div className="p-2 bg-white/5 rounded-xl group-hover:bg-purple-500/20 transition-colors">
                                           <Heart className="h-4 w-4 group-hover:scale-110 transition-transform" />
                                         </div>
-                                        <span className="text-sm font-medium">Like</span>
+                                        <span className="text-sm font-medium whitespace-nowrap">Like</span>
                                       </button>
-                                      <button className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors duration-300 group">
+                                      <button className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors duration-300 group flex-shrink-0">
                                         <div className="p-2 bg-white/5 rounded-xl group-hover:bg-blue-500/20 transition-colors">
                                           <MessageCircle className="h-4 w-4 group-hover:scale-110 transition-transform" />
                                         </div>
-                                        <span className="text-sm font-medium">Comment</span>
+                                        <span className="text-sm font-medium whitespace-nowrap">Comment</span>
                                       </button>
-                                      <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors duration-300 group">
+                                      <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors duration-300 group flex-shrink-0">
                                         <div className="p-2 bg-white/5 rounded-xl group-hover:bg-green-500/20 transition-colors">
                                           <Share2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
                                         </div>
-                                        <span className="text-sm font-medium">Share</span>
+                                        <span className="text-sm font-medium whitespace-nowrap">Share</span>
                                       </button>
                                     </div>
-                                    <button className="flex items-center gap-2 text-gray-400 hover:text-yellow-400 transition-colors duration-300 group">
+                                    <button className="flex items-center gap-2 text-gray-400 hover:text-yellow-400 transition-colors duration-300 group flex-shrink-0">
                                       <div className="p-2 bg-white/5 rounded-xl group-hover:bg-yellow-500/20 transition-colors">
                                         <Bookmark className="h-4 w-4 group-hover:scale-110 transition-transform" />
                                       </div>
-                                      <span className="text-sm font-medium">Save</span>
+                                      <span className="text-sm font-medium whitespace-nowrap">Save</span>
                                     </button>
                                   </div>
                                 </div>
