@@ -37,7 +37,6 @@ import Image from 'next/image'
 import { useAuth } from '@/contexts/auth-context'
 import { ThreadCardV2 } from '@/components/forums/thread-card-v2'
 import { ThreadComposerV2 } from '@/components/forums/thread-composer-v2'
-import { JukeboxPlayer } from '@/components/music/jukebox-player'
 
 
 interface ContentItem {
@@ -80,7 +79,7 @@ interface ContentItem {
   is_liked?: boolean
   is_following?: boolean
   relevance_score?: number
-  positive_score?: number
+  positiveScore?: number
   is_bookmarked?: boolean
 }
 
@@ -114,11 +113,8 @@ export function ForYouPage() {
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [sortBy, setSortBy] = useState<'relevant' | 'recent' | 'popular'>('relevant')
+  const [sortBy, setSortBy] = useState<'relevant' | 'recent' | 'popular' | 'positive'>('relevant')
   const [bookmarkedContent, setBookmarkedContent] = useState<Set<string>>(new Set())
-  const [showJukebox, setShowJukebox] = useState(false)
-  const [currentPlayingTrack, setCurrentPlayingTrack] = useState<any>(null)
-  const [isJukeboxPlaying, setIsJukeboxPlaying] = useState(false)
   const { user } = useAuth()
 
   const contentTypes = [
@@ -156,161 +152,136 @@ export function ForYouPage() {
     return `https://dummyimage.com/${width}x${height}/${color}/ffffff&text=${text}`
   }
 
-  // Positive sentiment keywords for content prioritization
-  const positiveKeywords = [
-    'awesome', 'amazing', 'incredible', 'fantastic', 'brilliant', 'outstanding',
-    'cool', 'epic', 'legendary', 'phenomenal', 'extraordinary', 'remarkable',
-    'best', 'greatest', 'top', 'premium', 'excellent', 'superb', 'perfect',
-    'super', 'amazing', 'wonderful', 'marvelous', 'splendid', 'magnificent',
-    'funny', 'hilarious', 'comedy', 'humorous', 'entertaining', 'joyful',
-    'elegant', 'beautiful', 'gorgeous', 'stunning', 'breathtaking', 'sophisticated',
-    'exciting', 'thrilling', 'energetic', 'dynamic', 'vibrant', 'lively',
-    'inspiring', 'motivational', 'uplifting', 'empowering', 'encouraging',
-    'innovative', 'creative', 'groundbreaking', 'revolutionary', 'cutting-edge',
-    'successful', 'winning', 'victorious', 'triumphant', 'achievement',
-    'love', 'passion', 'enthusiasm', 'excitement', 'happiness', 'joy'
-  ]
-
-  // Function to calculate positive sentiment score
-  const calculatePositiveScore = (text: string): number => {
-    if (!text) return 0
-    
-    const lowerText = text.toLowerCase()
-    let score = 0
-    
-    positiveKeywords.forEach(keyword => {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'gi')
-      const matches = lowerText.match(regex)
-      if (matches) {
-        score += matches.length * 2 // Weight positive keywords more heavily
-      }
-    })
-    
-    // Bonus for multiple positive words
-    const positiveWordCount = positiveKeywords.filter(keyword => 
-      lowerText.includes(keyword.toLowerCase())
-    ).length
-    
-    if (positiveWordCount > 1) {
-      score += positiveWordCount * 0.5 // Bonus for variety
-    }
-    
-    return score
-  }
-
   const loadPersonalizedContent = async () => {
     try {
       setLoading(true)
-      console.log('[FYP] Loading content for activeTab:', activeTab)
+      const params = new URLSearchParams({
+        limit: '50',
+        sort: sortBy
+      })
       
-      // Enhanced content loading with better type handling
-      let allContent: ContentItem[] = []
-      
-      // 1. Try to fetch from main API first
-      try {
-        const params = new URLSearchParams({
-          limit: '30',
-          sort: sortBy
-        })
-        
-        // Add type parameter if a specific tab is selected
-        if (activeTab !== 'all') {
-          const typeMapping: { [key: string]: string } = {
-            'videos': 'video',
-            'blogs': 'blog',
-            'forums': 'forum',
-            'news': 'news',
-            'music': 'music'
-          }
-          const targetType = typeMapping[activeTab] || activeTab
-          params.append('type', targetType)
+      // Add type parameter if a specific tab is selected
+      if (activeTab !== 'all') {
+        const typeMapping: { [key: string]: string } = {
+          'videos': 'video',
+          'blogs': 'blog',
+          'forums': 'forum',
+          'news': 'news' // Fix: explicitly map 'news' to 'news'
         }
-        
-        console.log('[FYP] Fetching from main API with params:', params.toString())
-        const response = await fetch(`/api/feed/for-you?${params}`)
-        const data = await response.json()
-        
-        if (data.success && data.content && data.content.length > 0) {
-          console.log('[FYP] Main API returned:', data.content.length, 'items')
-          
-          // Process main API content with positive sentiment scoring
-          const processedContent = data.content.map((item: any) => {
-            const title = item.title || item.metadata?.title || 'Untitled'
-            const description = item.description || ''
-            
-            // Calculate positive sentiment score
-            const titleScore = calculatePositiveScore(title)
-            const descriptionScore = calculatePositiveScore(description)
-            const positiveScore = titleScore + descriptionScore
-            
-            return {
-              ...item,
-              type: item.type,
-              title,
-              description,
-              author: item.author,
-              engagement: {
-                likes: item.engagement?.likes || 0,
-                views: item.engagement?.views || 0,
-                shares: item.engagement?.shares || 0,
-                comments: item.engagement?.comments || 0
-              },
-              relevance_score: (item.relevance_score || 0.8) + (positiveScore * 0.1),
-              positive_score: positiveScore
-            }
-          })
-          
-          allContent = [...allContent, ...processedContent]
-        }
-      } catch (apiError) {
-        console.error('[FYP] Main API failed:', apiError)
+        const targetType = typeMapping[activeTab] || activeTab.slice(0, -1)
+        params.append('type', targetType)
       }
       
-      // 2. Fetch RSS news for music genres and news
-      const shouldFetchRSS = ['news', 'all', 'indie', 'hiphop', 'electronic', 'metal', 'jazz', 'underground', 'local'].includes(activeTab)
-      if (shouldFetchRSS) {
-        try {
-          console.log('[FYP] Fetching RSS news for tab:', activeTab)
-          
-          // Build RSS query parameters based on active tab
-          let rssParams = 'limit=20'
-          if (activeTab === 'indie') {
-            rssParams += '&category=Indie Music'
-          } else if (activeTab === 'hiphop') {
-            rssParams += '&category=Hip-Hop'
-          } else if (activeTab === 'electronic') {
-            rssParams += '&category=Electronic Music'
-          } else if (activeTab === 'metal') {
-            rssParams += '&category=Metal Music'
-          } else if (activeTab === 'jazz') {
-            rssParams += '&category=Jazz Music'
-          } else if (activeTab === 'underground') {
-            rssParams += '&category=Underground Music'
-          } else if (activeTab === 'local') {
-            rssParams += '&category=Local Music'
+      console.log('[FYP] Loading content with params:', params.toString())
+      const response = await fetch(`/api/feed/for-you?${params}`)
+      const data = await response.json()
+      
+      if (data.success && data.content) {
+        console.log('[FYP] Received content from API:', {
+          totalItems: data.content.length,
+          contentTypes: data.content.map((item: any) => item.type),
+          newsItems: data.content.filter((item: any) => item.type === 'news').length
+        })
+        
+        // Initialize engagement data to zero for all content
+        const contentWithZeroEngagement = data.content.map((item: any) => ({
+          ...item,
+          // Harmonize forum payload keys into ContentItem shape
+          type: item.type,
+          title: item.title || item.metadata?.title || 'Untitled',
+          description: item.description,
+          author: item.author,
+          engagement: {
+            likes: item.engagement?.likes || 0,
+            views: item.engagement?.views || 0,
+            shares: item.engagement?.shares || 0,
+            comments: item.engagement?.comments || 0
           }
-          
-          const rssResponse = await fetch(`/api/feed/rss-news?${rssParams}`)
-          if (rssResponse.ok) {
-            const rssData = await rssResponse.json()
-            if (rssData.success && rssData.news && rssData.news.length > 0) {
-              console.log('[FYP] RSS returned:', rssData.news.length, 'items')
-              
-              // Convert RSS items to ContentItem format with positive sentiment scoring
-              const rssContent = rssData.news.map((item: any, index: number) => {
-                const title = item.title || ''
-                const description = item.description || ''
+        }))
+        setContent(contentWithZeroEngagement)
+      } else {
+        console.log('[FYP] API failed, using hybrid content (mock + RSS + blogs)')
+        // Hybrid approach: Use mock data + try to fetch RSS news + real blogs
+        let hybridContent = generateMockContent()
+        console.log('[FYP] Generated mock content:', hybridContent.length, 'items')
+        
+        // Try to fetch real blog posts (always fetch for testing)
+        if (true) { // activeTab === 'blogs' || activeTab === 'all'
+          try {
+            console.log('[FYP] Attempting to fetch real blog posts... (activeTab:', activeTab, ')')
+            const blogsResponse = await fetch('/api/feed/blogs?limit=10')
+            console.log('[FYP] Blog API response status:', blogsResponse.status)
+            if (blogsResponse.ok) {
+              const blogsData = await blogsResponse.json()
+              console.log('[FYP] Blog API response data:', blogsData)
+              if (blogsData.data && blogsData.data.length > 0) {
+                console.log('[FYP] Successfully fetched blog posts:', blogsData.data.length, 'items')
                 
-                // Calculate positive sentiment score
-                const titleScore = calculatePositiveScore(title)
-                const descriptionScore = calculatePositiveScore(description)
-                const positiveScore = titleScore + descriptionScore
+                // Convert blog posts to ContentItem format
+                const blogContent = blogsData.data.map((blog: any) => ({
+                  id: blog.id,
+                  type: 'blog' as const,
+                  title: blog.title,
+                  description: blog.description,
+                  author: blog.author,
+                  cover_image: blog.cover_image,
+                  created_at: blog.created_at,
+                  engagement: blog.engagement,
+                  metadata: {
+                    ...blog.metadata,
+                    url: blog.metadata?.url || `/blog/${blog.slug}`,
+                    // reading_time: blog.metadata?.reading_time || 5
+                  },
+                  relevance_score: blog.relevance_score || 0.85
+                }))
                 
-                return {
-                  id: `rss_${item.id || index}`,
+                // Add blog content to hybrid content (prioritize real blogs)
+                hybridContent = [...blogContent, ...hybridContent.filter(item => item.type !== 'blog')]
+                console.log('[FYP] Hybrid content created with real blog posts:', hybridContent.length, 'total items')
+              }
+            }
+          } catch (blogsError) {
+            console.error('[FYP] Blog posts fetch failed in hybrid mode:', blogsError)
+            console.error('[FYP] Blog posts fetch error details:', blogsError instanceof Error ? blogsError.message : blogsError)
+          }
+        }
+        
+        // Try to fetch RSS news for various tabs
+                  const shouldFetchRSS = ['news', 'all', 'indie', 'hiphop', 'electronic', 'metal', 'jazz', 'underground', 'local'].includes(activeTab)
+        if (shouldFetchRSS) {
+          try {
+            console.log('[FYP] Attempting to fetch RSS news for hybrid content...')
+            
+            // Build RSS query parameters based on active tab
+            let rssParams = 'limit=15'
+                         if (activeTab === 'indie') {
+               rssParams += '&category=Indie Music'
+             } else if (activeTab === 'hiphop') {
+               rssParams += '&category=Hip-Hop'
+             } else if (activeTab === 'electronic') {
+               rssParams += '&category=Electronic Music'
+             } else if (activeTab === 'metal') {
+               rssParams += '&category=Metal Music'
+             } else if (activeTab === 'jazz') {
+               rssParams += '&category=Jazz Music'
+             } else if (activeTab === 'underground') {
+               rssParams += '&category=Underground Music'
+             } else if (activeTab === 'local') {
+               rssParams += '&category=Local Music'
+             }
+            
+            const rssResponse = await fetch(`/api/feed/rss-news?${rssParams}`)
+            if (rssResponse.ok) {
+              const rssData = await rssResponse.json()
+              if (rssData.success && rssData.news && rssData.news.length > 0) {
+                console.log('[FYP] Successfully fetched RSS news:', rssData.news.length, 'items')
+                
+                // Convert RSS items to ContentItem format
+                const rssContent = rssData.news.map((item: any, index: number) => ({
+                  id: `rss_${item.id}`,
                   type: 'news' as const,
-                  title,
-                  description,
+                  title: item.title,
+                  description: item.description,
                   author: {
                     id: `rss_${item.source}`,
                     name: item.author || item.source,
@@ -325,87 +296,24 @@ export function ForYouPage() {
                     url: item.link,
                     tags: [item.category, item.source].filter(Boolean)
                   },
-                  relevance_score: (0.8 + (index * 0.05)) + (positiveScore * 0.1),
-                  positive_score: positiveScore
-                }
-              })
-              
-              allContent = [...allContent, ...rssContent]
-            }
-          }
-        } catch (rssError) {
-          console.error('[FYP] RSS fetch failed:', rssError)
-        }
-      }
-      
-      // 3. Fetch real blog posts for blogs tab or all
-      if (activeTab === 'blogs' || activeTab === 'all') {
-        try {
-          console.log('[FYP] Fetching real blog posts')
-          const blogsResponse = await fetch('/api/feed/blogs?limit=15')
-          if (blogsResponse.ok) {
-            const blogsData = await blogsResponse.json()
-            if (blogsData.data && blogsData.data.length > 0) {
-              console.log('[FYP] Blogs API returned:', blogsData.data.length, 'items')
-              
-              // Convert blog posts to ContentItem format
-              const blogContent = blogsData.data.map((blog: any) => {
-                const title = blog.title || ''
-                const description = blog.description || ''
+                  relevance_score: 0.8 + (index * 0.05) // Slightly different scores
+                }))
                 
-                // Calculate positive sentiment score
-                const titleScore = calculatePositiveScore(title)
-                const descriptionScore = calculatePositiveScore(description)
-                const positiveScore = titleScore + descriptionScore
-                
-                return {
-                  id: blog.id,
-                  type: 'blog' as const,
-                  title,
-                  description,
-                  author: blog.author,
-                  cover_image: blog.cover_image,
-                  created_at: blog.created_at,
-                  engagement: blog.engagement || { likes: 0, views: 0, shares: 0, comments: 0 },
-                  metadata: {
-                    ...blog.metadata,
-                    url: blog.metadata?.url || `/blog/${blog.slug}`,
-                  },
-                  relevance_score: (blog.relevance_score || 0.85) + (positiveScore * 0.1),
-                  positive_score: positiveScore
-                }
-              })
-              
-              allContent = [...allContent, ...blogContent]
+                // Add RSS content to hybrid content
+                hybridContent = [...rssContent, ...hybridContent]
+                console.log('[FYP] Hybrid content created with RSS news:', hybridContent.length, 'total items')
+              }
             }
+          } catch (rssError) {
+            console.error('[FYP] RSS fetch failed in hybrid mode:', rssError)
           }
-        } catch (blogsError) {
-          console.error('[FYP] Blog posts fetch failed:', blogsError)
         }
+        
+        console.log('[FYP] Final hybrid content:', hybridContent.length, 'items, types:', hybridContent.map(item => item.type))
+        setContent(hybridContent)
       }
-      
-      // 4. Add mock content if we don't have enough content
-      if (allContent.length < 5) {
-        console.log('[FYP] Adding mock content to supplement')
-        const mockContent = generateMockContent()
-        allContent = [...allContent, ...mockContent]
-      }
-      
-      // 5. Sort all content by positive sentiment score and relevance
-      const sortedContent = allContent.sort((a: any, b: any) => {
-        const aScore = (b.positive_score || 0) + (b.relevance_score || 0.8)
-        const bScore = (a.positive_score || 0) + (a.relevance_score || 0.8)
-        return aScore - bScore
-      })
-      
-      console.log('[FYP] Final content loaded:', sortedContent.length, 'items')
-      console.log('[FYP] Content types:', sortedContent.map(item => item.type))
-      
-      setContent(sortedContent)
-      
     } catch (error) {
-      console.error('[FYP] Error loading content:', error)
-      // Fallback to mock content
+      console.error('Error loading content:', error)
       setContent(generateMockContent())
     } finally {
       setLoading(false)
@@ -413,13 +321,13 @@ export function ForYouPage() {
   }
 
   const generateMockContent = (): ContentItem[] => {
-    const mockItems = [
-      // Enhanced positive content for jukebox theme
+    return [
+      // Add a hardcoded blog post for testing
       {
-        id: 'positive-1',
-        type: 'blog' as const,
-        title: '🎵 The Awesome Future of Independent Music 🎵',
-        description: 'Incredible independent artists are revolutionizing the music industry with amazing digital platforms and epic fan engagement strategies. This is truly the best time for music!',
+        id: 'test-blog-1',
+        type: 'blog',
+        title: 'The Future of Independent Music',
+        description: 'Exploring how independent artists are reshaping the music industry through digital platforms and direct fan engagement.',
         author: {
           id: 'test-author-1',
           name: 'Sarah Johnson',
@@ -427,20 +335,21 @@ export function ForYouPage() {
           avatar_url: 'https://dummyimage.com/150x150/8b5cf6/ffffff?text=SJ',
           is_verified: false
         },
-        cover_image: 'https://dummyimage.com/800x400/8b5cf6/ffffff?text=Awesome+Music+Future',
+        cover_image: 'https://dummyimage.com/800x400/8b5cf6/ffffff?text=The+Future+of+Independent+Music',
         created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
         engagement: { likes: 89, views: 1247, shares: 45, comments: 23 },
         metadata: {
-          url: '/blog/awesome-future-of-independent-music',
+          url: '/blog/the-future-of-independent-music',
           tags: ['Independent Music', 'Digital Age', 'Music Industry'],
+          // reading_time: 14
         },
         relevance_score: 0.95
       },
       {
-        id: 'positive-2',
+        id: '1',
         type: 'music',
-        title: '🎸 Epic Midnight Dreams - Amazing New Single 🎸',
-        description: 'Incredible indie rock vibes with fantastic vocals and brilliant atmospheric production that will absolutely transport you to another dimension. This is truly awesome music!',
+        title: 'Midnight Dreams - New Single',
+        description: 'Fresh indie rock vibes with haunting vocals and atmospheric production that will transport you to another dimension.',
         author: {
           id: '1',
           name: 'Luna Echo',
@@ -450,15 +359,15 @@ export function ForYouPage() {
         },
         cover_image: getPlaceholderImage('music', 400, 400),
         created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        engagement: { likes: 156, views: 2341, shares: 89, comments: 45 },
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
         metadata: { genre: 'Indie Rock', duration: 180 },
         relevance_score: 0.95
       },
       {
-        id: 'positive-3',
+        id: '2',
         type: 'event',
-        title: '🎪 Super Epic Summer Music Festival 2024 🎪',
-        description: 'Join us for the most incredible day of live music featuring the best indie artists from around the country! Amazing food trucks, fantastic craft beer, and absolutely epic vibes! This will be legendary!',
+        title: 'Summer Music Festival 2024',
+        description: 'Join us for an incredible day of live music featuring top indie artists from around the country. Food trucks, craft beer, and amazing vibes!',
         author: {
           id: '2',
           name: 'Central Park Arena',
@@ -468,7 +377,7 @@ export function ForYouPage() {
         },
         cover_image: getPlaceholderImage('event', 400, 300),
         created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        engagement: { likes: 234, views: 4567, shares: 123, comments: 67 },
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
         metadata: { date: '2024-07-15', location: 'Central Park Arena', venue: 'Central Park Arena', capacity: 5000, ticket_price: 75 },
         relevance_score: 0.88
       },
@@ -755,85 +664,47 @@ export function ForYouPage() {
           tags: ['Local Music', 'Community', 'Emerging Artists']
         },
         relevance_score: 0.85
-      },
-      // Positive sentiment mock content
-      {
-        id: 'positive-1',
-        type: 'news' as const,
-        title: 'Awesome New Album Release: Epic Collaboration Between Super Artists',
-        description: 'This incredible collaboration is absolutely amazing and features the best musicians in the industry. The result is nothing short of phenomenal!',
-        author: {
-          id: 'music-news',
-          name: 'Music News Daily',
-          username: 'musicnews',
-          avatar_url: 'https://dummyimage.com/40x40/ef4444/ffffff?text=M',
-          is_verified: true
-        },
-        cover_image: getPlaceholderImage('news', 400, 250),
-        created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-        metadata: {
-          url: '#',
-          tags: ['Awesome', 'Epic', 'Super', 'Best', 'Amazing']
-        },
-        relevance_score: 0.95
-      },
-      {
-        id: 'positive-2',
-        type: 'blog' as const,
-        title: 'Funny and Elegant: The Coolest Music Videos of 2024',
-        description: 'These hilarious and sophisticated music videos are absolutely brilliant and showcase the most creative artists in the industry.',
-        author: {
-          id: 'video-blog',
-          name: 'Video Blog Weekly',
-          username: 'videoblog',
-          avatar_url: 'https://dummyimage.com/40x40/3b82f6/ffffff?text=V',
-          is_verified: true
-        },
-        cover_image: getPlaceholderImage('video', 400, 250),
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-        metadata: {
-          url: '#',
-          tags: ['Funny', 'Elegant', 'Cool', 'Brilliant', 'Creative']
-        },
-        relevance_score: 0.92
-      },
-      {
-        id: 'positive-3',
-        type: 'news' as const,
-        title: 'Inspiring Success Story: From Local Talent to Global Superstar',
-        description: 'This extraordinary journey from humble beginnings to worldwide fame is truly remarkable and shows what passion and dedication can achieve.',
-        author: {
-          id: 'success-stories',
-          name: 'Success Stories',
-          username: 'successstories',
-          avatar_url: 'https://dummyimage.com/40x40/10b981/ffffff?text=S',
-          is_verified: true
-        },
-        cover_image: getPlaceholderImage('news', 400, 250),
-        created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-        metadata: {
-          url: '#',
-          tags: ['Inspiring', 'Success', 'Extraordinary', 'Remarkable', 'Passion']
-        },
-        relevance_score: 0.88
       }
     ]
+  }
 
-    // Apply positive sentiment scoring to all mock items
-    return mockItems.map((item: any) => {
-      const titleScore = calculatePositiveScore(item.title)
-      const descriptionScore = calculatePositiveScore(item.description)
-      const positiveScore = titleScore + descriptionScore
-      
-      return {
-        ...item,
-        relevance_score: (item.relevance_score || 0.8) + (positiveScore * 0.1),
-        positive_score: positiveScore
+  // Positive sentiment scoring system
+  const calculatePositiveScore = (text: string): number => {
+    const positiveWords = [
+      'awesome', 'amazing', 'incredible', 'fantastic', 'brilliant', 'outstanding',
+      'cool', 'epic', 'best', 'super', 'funny', 'elegant', 'beautiful', 'stunning',
+      'wonderful', 'excellent', 'perfect', 'great', 'amazing', 'incredible',
+      'fantastic', 'brilliant', 'outstanding', 'phenomenal', 'spectacular',
+      'magnificent', 'gorgeous', 'stunning', 'breathtaking', 'mind-blowing',
+      'revolutionary', 'groundbreaking', 'innovative', 'creative', 'inspiring',
+      'uplifting', 'energizing', 'exciting', 'thrilling', 'captivating',
+      'mesmerizing', 'enchanting', 'magical', 'extraordinary', 'remarkable',
+      'exceptional', 'superb', 'marvelous', 'splendid', 'glorious', 'divine',
+      'heavenly', 'celestial', 'cosmic', 'stellar', 'stellar', 'stellar',
+      'legendary', 'iconic', 'memorable', 'unforgettable', 'timeless',
+      'classic', 'masterpiece', 'genius', 'prodigy', 'virtuoso', 'maestro'
+    ]
+    
+    const lowerText = text.toLowerCase()
+    let score = 0
+    
+    positiveWords.forEach(word => {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi')
+      const matches = lowerText.match(regex)
+      if (matches) {
+        score += matches.length * 2 // Weight positive words more heavily
       }
-    }).sort((a: any, b: any) => (b.positive_score || 0) - (a.positive_score || 0))
+    })
+    
+    // Bonus for exclamation marks and positive punctuation
+    const exclamationCount = (text.match(/!/g) || []).length
+    score += exclamationCount * 0.5
+    
+    // Bonus for positive emojis and symbols
+    const positiveEmojis = (text.match(/[😀😃😄😁😆😅😂🤣😊😇🙂🙃😉😌😍🥰😘😗😙😚😋😛😝😜🤪🤨🧐🤓😎🤩🥳😏😒😞😔😟😕🙁☹️😣😖😫😩🥺😢😭😤😠😡🤬🤯😳🥵🥶😱😨😰😥😓🤗🤔🤭🤫🤥😶😐😑😯😦😧😮😲🥱😴🤤😪😵🤐🥴🤢🤮🤧😷🤒🤕🤑🤠💪👈👉☝️👆🖕👇✌️🤞🤟🤘🤙👌👈👉☝️👆🖕👇✌️🤞🤟🤘🤙👌]/g) || []).length
+    score += positiveEmojis * 1
+    
+    return score
   }
 
   const filteredContent = useMemo(() => {
@@ -846,11 +717,47 @@ export function ForYouPage() {
       contentTypes: content.map(item => item.type)
     })
 
-    // Temporarily disable filtering for testing
-    console.log('[FYP] Temporarily disabled filtering, returning all content')
-    console.log('[FYP] All content:', content.map(item => ({ id: item.id, type: item.type, title: item.title })))
+    // Apply sorting based on selected option
+    if (sortBy === 'positive') {
+      filtered = [...content].map(item => ({
+        ...item,
+        positiveScore: calculatePositiveScore(`${item.title} ${item.description || ''}`)
+      })).sort((a, b) => {
+        // Sort by positive score (highest first), then by relevance score
+        const scoreDiff = (b.positiveScore || 0) - (a.positiveScore || 0)
+        if (scoreDiff !== 0) return scoreDiff
+        return (b.relevance_score || 0) - (a.relevance_score || 0)
+      })
+      
+      console.log('[FYP] Positive sentiment sorting applied:', 
+        filtered.map(item => ({
+          title: item.title,
+          positiveScore: item.positiveScore,
+          relevance_score: item.relevance_score
+        }))
+      )
+    } else if (sortBy === 'relevant') {
+      // Sort by relevance score (highest first)
+      filtered = [...content].sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
+      console.log('[FYP] Relevance sorting applied')
+    } else if (sortBy === 'recent') {
+      // Sort by creation date (newest first)
+      filtered = [...content].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      console.log('[FYP] Recent sorting applied')
+    } else if (sortBy === 'popular') {
+      // Sort by engagement (likes + views + shares + comments)
+      filtered = [...content].sort((a, b) => {
+        const aEngagement = (a.engagement?.likes || 0) + (a.engagement?.views || 0) + (a.engagement?.shares || 0) + (a.engagement?.comments || 0)
+        const bEngagement = (b.engagement?.likes || 0) + (b.engagement?.views || 0) + (b.engagement?.shares || 0) + (b.engagement?.comments || 0)
+        return bEngagement - aEngagement
+      })
+      console.log('[FYP] Popular sorting applied')
+    } else {
+      // Default: return content as is
+      console.log('[FYP] No specific sorting applied, returning content as is')
+    }
 
-    return content
+    return filtered
   }, [content, searchQuery, activeTab, sortBy])
 
   const handleLike = (contentId: string) => {
@@ -936,50 +843,25 @@ export function ForYouPage() {
     }
   }
 
-  const getRelevanceBadge = (score?: number, positiveScore?: number) => {
+  const getRelevanceBadge = (score?: number) => {
     if (!score) return null
-    
-    // Check if content has high positive sentiment
-    const isPositive = positiveScore && positiveScore > 5
     
     let color = 'bg-gradient-to-r from-gray-500/20 to-slate-500/20 text-gray-300 border-gray-500/30'
     let text = 'Relevant'
     let iconColor = 'text-gray-300'
     
     if (score >= 0.9) {
-      if (isPositive) {
-        color = 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border-yellow-500/30'
-        text = '🌟 Positive & Highly Relevant'
-        iconColor = 'text-yellow-300'
-      } else {
-        color = 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/30'
-        text = 'Highly Relevant'
-        iconColor = 'text-green-300'
-      }
+      color = 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/30'
+      text = 'Highly Relevant'
+      iconColor = 'text-green-300'
     } else if (score >= 0.7) {
-      if (isPositive) {
-        color = 'bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-300 border-pink-500/30'
-        text = '✨ Positive & Very Relevant'
-        iconColor = 'text-pink-300'
-      } else {
-        color = 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-300 border-blue-500/30'
-        text = 'Very Relevant'
-        iconColor = 'text-blue-300'
-      }
+      color = 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-300 border-blue-500/30'
+      text = 'Very Relevant'
+      iconColor = 'text-blue-300'
     } else if (score >= 0.5) {
-      if (isPositive) {
-        color = 'bg-gradient-to-r from-purple-500/20 to-violet-500/20 text-purple-300 border-purple-500/30'
-        text = '💫 Positive & Relevant'
-        iconColor = 'text-purple-300'
-      } else {
-        color = 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-300 border-yellow-500/30'
-        text = 'Relevant'
-        iconColor = 'text-yellow-300'
-      }
-    } else if (isPositive) {
-      color = 'bg-gradient-to-r from-indigo-500/20 to-blue-500/20 text-indigo-300 border-indigo-500/30'
-      text = '⭐ Positive Content'
-      iconColor = 'text-indigo-300'
+      color = 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-300 border-yellow-500/30'
+      text = 'Relevant'
+      iconColor = 'text-yellow-300'
     }
     
     return (
@@ -996,110 +878,91 @@ export function ForYouPage() {
   }, [sortBy, activeTab])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900/20 to-gray-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/30 to-slate-950 relative overflow-hidden">
 
-      {/* Jukebox background elements */}
+      {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Chrome accents */}
-        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400"></div>
-        <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400"></div>
-        <div className="absolute top-0 left-0 bottom-0 w-2 bg-gradient-to-b from-gray-400 via-gray-300 to-gray-400"></div>
-        <div className="absolute top-0 right-0 bottom-0 w-2 bg-gradient-to-b from-gray-400 via-gray-300 to-gray-400"></div>
-        
-        {/* Neon lights */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-red-500/60 blur-sm animate-pulse"></div>
-        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-blue-500/60 blur-sm animate-pulse delay-500"></div>
-        <div className="absolute top-12 left-1/2 transform -translate-x-1/2 w-28 h-1 bg-green-500/60 blur-sm animate-pulse delay-1000"></div>
-        
-        {/* Vinyl record background pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 border-4 border-white rounded-full"></div>
-          <div className="absolute top-1/4 left-1/4 w-48 h-48 border-2 border-white rounded-full"></div>
-          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-white rounded-full"></div>
-          <div className="absolute top-1/4 left-1/4 w-8 h-8 bg-gray-900 rounded-full"></div>
-        </div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
       
-      <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
-        {/* Jukebox Display Section */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        {/* Hero Section */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-center space-y-6 mb-12"
         >
-          {/* Jukebox Display Panel */}
-          <div className="relative mx-auto max-w-4xl">
-            <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl p-8">
-              {/* Display Screen */}
-              <div className="bg-black rounded-2xl border-2 border-gray-500 p-6 mb-6">
-                <div className="text-center space-y-4">
-                  <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight font-mono">
-                    <span className="text-red-500">♪</span> JUKEBOX <span className="text-blue-500">♪</span>
-                  </h1>
-                  <div className="text-2xl md:text-3xl font-mono text-green-400">
-                    FOR YOU FEED
-                  </div>
-                  <div className="text-lg text-yellow-400 font-mono">
-                    SELECT YOUR TUNES
-                  </div>
-                </div>
-              </div>
-              
-              {/* Status Lights */}
-              <div className="flex justify-center gap-4 mb-4">
-                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
-                <div className="w-4 h-4 bg-yellow-500 rounded-full animate-pulse delay-300"></div>
-                <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse delay-600"></div>
-                <div className="w-4 h-4 bg-blue-500 rounded-full animate-pulse delay-900"></div>
-              </div>
-              
-              {/* Info Display */}
-              <div className="bg-gray-800 rounded-xl border border-gray-600 p-4">
-                <div className="grid grid-cols-3 gap-4 text-center text-sm font-mono">
-                  <div className="bg-red-900/50 rounded-lg p-2 border border-red-500/30">
-                    <div className="text-red-400">PERSONALIZED</div>
-                  </div>
-                  <div className="bg-blue-900/50 rounded-lg p-2 border border-blue-500/30">
-                    <div className="text-blue-400">REAL-TIME</div>
-                  </div>
-                  <div className="bg-green-900/50 rounded-lg p-2 border border-green-500/30">
-                    <div className="text-green-400">CURATED</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 blur-3xl rounded-full"></div>
+            <h1 className="relative text-5xl md:text-7xl font-black text-white tracking-tight">
+              For You <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">Feed</span>
+            </h1>
+          </div>
+          <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed px-4 font-light">
+            Personalized content curated just for you. Discover music, events, videos, and more based on your interests and preferences.
+          </p>
+          <div className="flex justify-center gap-6 md:gap-8 text-sm text-gray-400 flex-wrap">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
+            >
+              <div className="h-2 w-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
+              <span className="font-medium">Personalized</span>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
+            >
+              <div className="h-2 w-2 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-pulse delay-500"></div>
+              <span className="font-medium">Real-time</span>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
+            >
+              <div className="h-2 w-2 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-pulse delay-1000"></div>
+              <span className="font-medium">Curated</span>
+            </motion.div>
           </div>
         </motion.div>
 
         <div className="max-w-5xl mx-auto">
           {/* Main Content Area */}
           <div className="space-y-8">
-            {/* Jukebox Control Panel */}
+            {/* Search and Filter Bar */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl p-6">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-6">
                 <div className="flex flex-col lg:flex-row gap-6">
-                  {/* Search - Jukebox Style */}
+                  {/* Search */}
                   <div className="flex-1 relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-yellow-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                     <div className="relative">
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-red-400 transition-colors" />
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
                       <Input
-                        placeholder="SEARCH TUNES, ARTISTS, GENRES..."
+                        placeholder="Search content, artists, genres..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-12 pr-12 bg-black border-2 border-gray-500 text-white placeholder:text-gray-400 h-14 rounded-2xl focus:border-red-400/50 focus:ring-red-400/20 font-mono text-lg"
+                        className="pl-12 pr-12 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-14 rounded-2xl focus:border-purple-400/50 focus:ring-purple-400/20 backdrop-blur-sm text-lg"
                       />
                       {searchQuery && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setSearchQuery('')}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 text-gray-400 hover:text-white rounded-xl bg-gray-700 hover:bg-gray-600 border border-gray-500"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 text-gray-400 hover:text-white rounded-xl"
                         >
                           <X className="h-5 w-5" />
                         </Button>
@@ -1107,31 +970,34 @@ export function ForYouPage() {
                     </div>
                   </div>
 
-                  {/* Sort Button - Jukebox Style */}
+                  {/* Sort Button */}
                   <Button
                     variant="outline"
                     onClick={() => setShowFilters(!showFilters)}
-                    className="h-14 border-2 border-gray-500 text-gray-300 hover:text-white hover:border-red-400/50 transition-all whitespace-nowrap rounded-2xl bg-black hover:bg-gray-800 font-mono"
+                    className="h-14 border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 transition-all whitespace-nowrap rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10"
                   >
                     <SlidersHorizontal className="h-5 w-5 mr-3" />
-                    <span className="text-lg font-medium">SORT</span>
+                    <span className="text-lg font-medium">
+                      {sortBy === 'positive' ? 'Most Positive' : sortBy === 'relevant' ? 'Most Relevant' : sortBy === 'recent' ? 'Most Recent' : sortBy === 'popular' ? 'Most Popular' : 'Sort'}
+                    </span>
                   </Button>
                 </div>
 
-                {/* Sort Options - Jukebox Style */}
+                {/* Sort Options */}
                 <AnimatePresence>
                   {showFilters && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mt-6 pt-6 border-t-2 border-gray-500"
+                      className="mt-6 pt-6 border-t border-white/10"
                     >
                       <div className="flex gap-3 flex-wrap">
                         {[
-                          { value: 'relevant', label: 'MOST RELEVANT', icon: Star },
-                          { value: 'recent', label: 'MOST RECENT', icon: Clock },
-                          { value: 'popular', label: 'MOST POPULAR', icon: TrendingUp }
+                          { value: 'relevant', label: 'Most Relevant', icon: Star },
+                          { value: 'recent', label: 'Most Recent', icon: Clock },
+                          { value: 'popular', label: 'Most Popular', icon: TrendingUp },
+                          { value: 'positive', label: 'Most Positive', icon: Sparkles }
                         ].map((option) => {
                           const Icon = option.icon
                           return (
@@ -1139,10 +1005,10 @@ export function ForYouPage() {
                               key={option.value}
                               variant={sortBy === option.value ? "default" : "outline"}
                               onClick={() => setSortBy(option.value as any)}
-                              className={`h-12 whitespace-nowrap rounded-2xl text-lg font-medium font-mono border-2 ${
+                              className={`h-12 whitespace-nowrap rounded-2xl text-lg font-medium ${
                                 sortBy === option.value 
-                                  ? 'bg-gradient-to-r from-red-600 to-yellow-600 hover:from-red-700 hover:to-yellow-700 text-white shadow-lg shadow-red-500/25 border-red-400' 
-                                  : 'bg-black border-gray-500 text-gray-300 hover:text-white hover:border-red-400/50 hover:bg-gray-800'
+                                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25' 
+                                  : 'border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 bg-white/5 backdrop-blur-sm hover:bg-white/10'
                               } transition-all duration-300`}
                             >
                               <Icon className="h-5 w-5 mr-3" />
@@ -1157,127 +1023,56 @@ export function ForYouPage() {
               </div>
             </motion.div>
 
-                        {/* Golden Ratio Jukebox Selector */}
+            {/* Content Tabs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="w-full"
+              className="space-y-4"
             >
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                {/* Golden Ratio Layout: 61.8% Content Types, 38.2% Genres */}
-                <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl overflow-hidden">
-                  
-                  {/* Header Section - Golden Ratio Proportions */}
-                  <div className="text-center py-8 px-6 bg-gradient-to-r from-gray-900 to-gray-800 border-b-2 border-gray-600">
-                    <div className="text-2xl font-mono text-yellow-400 mb-2">
-                      ♪ JUKEBOX SELECTOR ♪
-                      {isJukeboxPlaying && (
-                        <motion.div
-                          animate={{ scale: [1, 1.2, 1] }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                          className="inline-block ml-2 text-red-400"
-                        >
-                          🎵
-                        </motion.div>
-                      )}
-                    </div>
-                    <div className="text-sm font-mono text-gray-400">
-                      {currentPlayingTrack ? `NOW PLAYING: ${currentPlayingTrack.name}` : 'SELECT YOUR TUNES'}
-                    </div>
-                    
-                    {/* Jukebox Toggle Button */}
-                    <div className="mt-4">
-                      <Button
-                        onClick={() => setShowJukebox(!showJukebox)}
-                        className="bg-gradient-to-r from-red-600 to-yellow-600 hover:from-red-700 hover:to-yellow-700 font-mono text-sm"
-                      >
-                        {showJukebox ? '🎵 HIDE JUKEBOX' : '🎵 OPEN JUKEBOX'}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Main Content Area - Using Golden Ratio */}
-                  <div className="p-6 space-y-8">
-                    
-                    {/* Content Types Section - 61.8% Visual Weight */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center space-x-2 mb-4">
-                        <div className="w-8 h-1 bg-gradient-to-r from-red-500 to-yellow-500 rounded-full"></div>
-                        <div className="text-lg font-mono text-red-400">CONTENT</div>
-                        <div className="w-8 h-1 bg-gradient-to-r from-red-500 to-yellow-500 rounded-full"></div>
-                      </div>
-                      
-                      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 bg-black border-2 border-gray-500 rounded-2xl p-3 gap-3">
-                        {contentTypes.slice(0, 6).map((type) => {
-                          const Icon = type.icon
-                          return (
-                            <TabsTrigger
-                              key={type.value}
-                              value={type.value}
-                              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-600 data-[state=active]:to-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-red-500/25 data-[state=active]:border-red-400 border-2 border-gray-500 bg-black text-gray-300 hover:text-white hover:border-red-400/50 hover:bg-gray-800 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium font-mono rounded-xl h-12 sm:h-14 px-3 sm:px-4 touch-manipulation"
-                            >
-                              <Icon className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                              <span className="hidden sm:inline">{type.label}</span>
-                            </TabsTrigger>
-                          )
-                        })}
-                      </TabsList>
-                    </div>
-                    
-                    {/* Divider with Golden Ratio Spacing */}
-                    <div className="flex items-center justify-center">
-                      <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-gray-500 to-transparent"></div>
-                    </div>
-                    
-                    {/* Music Genres Section - 38.2% Visual Weight */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center space-x-2 mb-4">
-                        <div className="w-6 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></div>
-                        <div className="text-base font-mono text-blue-400">GENRES</div>
-                        <div className="w-6 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></div>
-                      </div>
-                      
-                      <TabsList className="bg-black border-2 border-gray-500 rounded-2xl p-3">
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
-                          {contentTypes.slice(6).map((type) => {
-                            const Icon = type.icon
-                            return (
-                              <TabsTrigger
-                                key={type.value}
-                                value={type.value}
-                                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 data-[state=active]:border-blue-400 border-2 border-gray-500 bg-black text-gray-300 hover:text-white hover:border-blue-400/50 hover:bg-gray-800 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium font-mono rounded-xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
-                              >
-                                <Icon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                                <span className="hidden sm:inline">{type.label}</span>
-                              </TabsTrigger>
-                            )
-                          })}
-                        </div>
-                      </TabsList>
-                    </div>
-                  </div>
+                          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              {/* Main content types - Responsive grid */}
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2">
+                {contentTypes.slice(0, 6).map((type) => {
+                  const Icon = type.icon
+                  return (
+                    <TabsTrigger
+                      key={type.value}
+                      value={type.value}
+                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-4 touch-manipulation"
+                    >
+                      <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">{type.label}</span>
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+              
+              {/* Music genre tabs - Multi-row layout to prevent scrolling */}
+              <div className="mt-3">
+                <div className="flex items-center mb-2 px-1">
+                  <span className="text-xs text-gray-400 font-medium">Music Genres</span>
                 </div>
-              </Tabs>
+                <TabsList className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
+                    {contentTypes.slice(6).map((type) => {
+                      const Icon = type.icon
+                      return (
+                        <TabsTrigger
+                          key={type.value}
+                          value={type.value}
+                          className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
+                        >
+                          <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
+                          <span className="hidden sm:inline">{type.label}</span>
+                        </TabsTrigger>
+                      )
+                    })}
+                  </div>
+                </TabsList>
+              </div>
+            </Tabs>
             </motion.div>
-
-            {/* Real Jukebox Player */}
-            <AnimatePresence>
-              {showJukebox && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                  className="overflow-hidden"
-                >
-                  <JukeboxPlayer
-                    onTrackChange={setCurrentPlayingTrack}
-                    onPlaybackStateChange={setIsJukeboxPlaying}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Content Grid */}
             <motion.div
@@ -1354,13 +1149,12 @@ export function ForYouPage() {
                           />
                         </div>
                       ) : (
-                        <div className="relative bg-gradient-to-b from-gray-800 to-gray-900 border-4 border-gray-400 transition-all duration-500 group hover:shadow-2xl hover:shadow-red-500/25 rounded-3xl overflow-hidden">
-                          {/* Jukebox chrome accents */}
-                          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400"></div>
-                          <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400"></div>
+                        <div className={`relative bg-white/5 backdrop-blur-xl border border-white/10 transition-all duration-500 group hover:shadow-2xl hover:shadow-purple-500/10 rounded-3xl overflow-hidden ${getContentCardBorder(item.type)} ${item.type === 'blog' && item.metadata?.url ? 'hover:border-purple-400/50 hover:bg-white/10' : ''}`}>
+                          {/* Enhanced gradient overlay on hover */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-pink-500/0 to-cyan-500/0 group-hover:from-purple-500/10 group-hover:via-pink-500/10 group-hover:to-cyan-500/10 transition-all duration-500"></div>
                           
-                          {/* Neon glow effect */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 via-yellow-500/0 to-red-500/0 group-hover:from-red-500/10 group-hover:via-yellow-500/10 group-hover:to-red-500/10 transition-all duration-500"></div>
+                          {/* Top accent bar */}
+                          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${getContentColor(item.type)} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                           
                           <div className="relative p-6 md:p-8">
                             {/* Clickable overlay for blog posts */}
@@ -1381,7 +1175,7 @@ export function ForYouPage() {
                             {/* Enhanced Content Header */}
                             <div className="flex items-start gap-6 md:gap-8 mb-6">
                               {item.cover_image && (
-                                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden flex-shrink-0 border-4 border-gray-300 shadow-2xl group-hover:shadow-red-500/25 transition-all duration-300">
+                                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-3xl overflow-hidden flex-shrink-0 ring-2 ring-purple-500/20 group-hover:ring-purple-500/50 transition-all duration-300 shadow-2xl group-hover:shadow-purple-500/25">
                                   <Image
                                     src={item.cover_image}
                                     alt={item.title}
@@ -1390,47 +1184,45 @@ export function ForYouPage() {
                                     sizes="(max-width: 768px) 96px, 128px"
                                   />
                                   {item.type === 'video' && (
-                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm rounded-full">
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
                                       <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
                                         <Play className="h-6 w-6 md:h-8 md:w-8 text-white fill-white" />
                                       </div>
                                     </div>
                                   )}
-                                  {/* Vinyl record center label */}
-                                  <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="w-8 h-8 md:w-12 md:h-12 bg-gray-900 rounded-full border-2 border-gray-300 flex items-center justify-center">
-                                      <div className="w-2 h-2 md:w-3 md:h-3 bg-gray-300 rounded-full"></div>
-                                    </div>
-                                  </div>
-                                  {/* Record grooves */}
-                                  <div className="absolute inset-0 rounded-full border-2 border-gray-400 opacity-30"></div>
-                                  {/* Vinyl record shine effect */}
-                                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-full"></div>
+                                  {/* Image overlay gradient */}
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                 </div>
                               )}
 
                               <div className="flex-1 min-w-0">
-                                {/* Jukebox badges */}
+                                {/* Enhanced badges with better spacing */}
                                 <div className="flex items-center gap-3 mb-4 flex-wrap">
-                                  <Badge className="bg-black border-2 border-gray-500 text-gray-300 text-sm md:text-base font-semibold px-4 py-2 rounded-2xl shadow-lg flex-shrink-0 font-mono">
+                                  <Badge className={`${getContentColor(item.type)} text-sm md:text-base font-semibold px-4 py-2 rounded-2xl shadow-lg flex-shrink-0`}>
                                     {getContentIcon(item.type)}
-                                    <span className="ml-2 uppercase">{item.type}</span>
+                                    <span className="ml-2 capitalize">{item.type}</span>
                                   </Badge>
                                   {item.metadata?.genre && (
-                                    <Badge className="bg-black border-2 border-blue-500 text-blue-300 text-sm px-4 py-2 rounded-2xl font-medium flex-shrink-0 font-mono">
+                                    <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-sm px-4 py-2 rounded-2xl font-medium flex-shrink-0`}>
                                       {item.metadata.genre}
                                     </Badge>
                                   )}
                                   <div className="flex-shrink-0">
-                                    {getRelevanceBadge(item.relevance_score, item.positive_score)}
+                                    {getRelevanceBadge(item.relevance_score)}
+                                  {sortBy === 'positive' && item.positiveScore && item.positiveScore > 0 && (
+                                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border px-4 py-2 rounded-2xl font-semibold shadow-lg">
+                                      <Sparkles className="h-4 w-4 mr-2" />
+                                      +{item.positiveScore} Positive
+                                    </Badge>
+                                  )}
                                   </div>
                                 </div>
 
-                                {/* Jukebox title */}
-                                <h3 className="text-2xl md:text-3xl font-black text-white mb-4 group-hover:text-red-300 transition-colors line-clamp-2 leading-tight tracking-tight font-mono">
+                                {/* Enhanced title with better typography */}
+                                <h3 className="text-2xl md:text-3xl font-black text-white mb-4 group-hover:text-purple-300 transition-colors line-clamp-2 leading-tight tracking-tight">
                                   {item.title}
                                   {item.type === 'blog' && item.metadata?.url && (
-                                    <span className="ml-3 text-red-400 text-xl font-normal opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">♪ PLAY</span>
+                                    <span className="ml-3 text-purple-400 text-xl font-normal opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">→ Read more</span>
                                   )}
                                 </h3>
 

@@ -10,9 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { 
   Calendar, 
-  Clock, 
+  Clock,
   MapPin, 
-  Users, 
+  Users,
   Heart, 
   MessageCircle, 
   Share2,
@@ -107,7 +107,7 @@ export default function EventsPage() {
 
   // Load events
   useEffect(() => {
-    loadEvents()
+      loadEvents()
   }, [])
 
   const loadEvents = async () => {
@@ -139,7 +139,7 @@ export default function EventsPage() {
         .eq('id', eventId)
 
       if (error) throw error
-
+      
       setEvents(prev => prev.filter(e => e.id !== eventId))
       setDeleteEventId(null)
       toast.success('Event deleted successfully')
@@ -163,139 +163,139 @@ export default function EventsPage() {
         <div className="flex items-center gap-3">
           <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
           <span className="text-white">Loading events...</span>
-        </div>
+            </div>
       </div>
     )
   }
 
-  return (
+    return (
     <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500">
-              <Calendar className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Events</h1>
-              <p className="text-gray-400">Manage your shows, tours, and appearances</p>
-            </div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500">
+            <Calendar className="h-6 w-6 text-white" />
           </div>
-          <div className="flex items-center gap-2">
-            {events.length > 0 && (
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  // Simple CSV export functionality
-                  const csvData = events.map(event => ({
-                    title: event.title,
-                    date: event.event_date,
-                    venue: event.venue_name || '',
-                    city: event.venue_city || '',
-                    status: event.status,
-                    type: event.type
-                  }))
-                  
-                  const headers = Object.keys(csvData[0])
-                  const csvContent = [
-                    headers.join(','),
-                    ...csvData.map(row => 
-                      headers.map(header => row[header as keyof typeof row]).join(',')
-                    )
-                  ].join('\n')
-                  
-                  const blob = new Blob([csvContent], { type: 'text/csv' })
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url
-                  a.download = 'events.csv'
-                  document.body.appendChild(a)
-                  a.click()
-                  document.body.removeChild(a)
-                  URL.revokeObjectURL(url)
-                  
-                  toast.success('Events exported to CSV')
-                }}
-                className="border-slate-700 text-gray-300 hover:text-white"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            )}
-            <Button 
-              onClick={() => {
-                setEditingEvent(null)
-                setShowCreateModal(true)
-              }}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Event
-            </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Events</h1>
+            <p className="text-gray-400">Manage your shows, tours, and appearances</p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          {events.length > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                // Simple CSV export functionality
+                const csvData = events.map(event => ({
+                  title: event.title,
+                  date: event.event_date,
+                  venue: event.venue_name || '',
+                  city: event.venue_city || '',
+                  status: event.status,
+                  type: event.type
+                }))
+                
+                const headers = Object.keys(csvData[0])
+                const csvContent = [
+                  headers.join(','),
+                  ...csvData.map(row => 
+                    headers.map(header => row[header as keyof typeof row]).join(',')
+                  )
+                ].join('\n')
+                
+                const blob = new Blob([csvContent], { type: 'text/csv' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = 'events.csv'
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+                
+                toast.success('Events exported to CSV')
+              }}
+              className="border-slate-700 text-gray-300 hover:text-white"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          )}
+          <Button 
+            onClick={() => {
+              setEditingEvent(null)
+              setShowCreateModal(true)
+            }}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Event
+          </Button>
+        </div>
+      </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-400">Total Events</p>
-                  <p className="text-2xl font-bold text-white">{stats.totalEvents}</p>
-                </div>
-                <Calendar className="h-8 w-8 text-blue-500" />
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Total Events</p>
+                <p className="text-2xl font-bold text-white">{stats.totalEvents}</p>
               </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-400">Upcoming</p>
-                  <p className="text-2xl font-bold text-white">{stats.upcomingEvents}</p>
-                </div>
-                <Bell className="h-8 w-8 text-green-500" />
+              <Calendar className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Upcoming</p>
+                <p className="text-2xl font-bold text-white">{stats.upcomingEvents}</p>
               </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
+              <Bell className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
                   <p className="text-sm text-gray-400">Completed</p>
                   <p className="text-2xl font-bold text-white">{stats.completedEvents}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-500" />
               </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
+                <CheckCircle className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
                   <p className="text-sm text-gray-400">Cancelled</p>
                   <p className="text-2xl font-bold text-white">{stats.cancelledEvents}</p>
-                </div>
-                <XCircle className="h-8 w-8 text-red-500" />
               </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
+                <XCircle className="h-8 w-8 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
                   <p className="text-sm text-gray-400">Total Capacity</p>
                   <p className="text-2xl font-bold text-white">{stats.totalCapacity.toLocaleString()}</p>
-                </div>
-                <Users className="h-8 w-8 text-purple-500" />
               </div>
-            </CardContent>
-          </Card>
-        </div>
+                <Users className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Events List */}
+          {/* Events List */}
         <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
           <CardHeader>
             <CardTitle className="text-white">Your Events</CardTitle>
@@ -314,9 +314,9 @@ export default function EventsPage() {
                   Create Event
                 </Button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {events.map((event) => (
+          ) : (
+            <div className="space-y-4">
+              {events.map((event) => (
                   <div key={event.id} className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
                     <div className="flex-shrink-0">
                       {event.poster_url ? (
@@ -331,9 +331,9 @@ export default function EventsPage() {
                         <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                           <Calendar className="h-8 w-8 text-white" />
                         </div>
-                      )}
-                    </div>
-                    
+                          )}
+                        </div>
+                        
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-lg font-semibold text-white truncate">{event.title}</h3>
@@ -348,37 +348,37 @@ export default function EventsPage() {
                         >
                           {event.status.replace('_', ' ')}
                         </Badge>
-                      </div>
+                          </div>
                       <p className="text-gray-400 text-sm mb-2">{event.description}</p>
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           {format(new Date(event.event_date), 'MMM d, yyyy')}
                         </span>
-                        {event.venue_name && (
+                          {event.venue_name && (
                           <span className="flex items-center gap-1">
                             <MapPin className="h-4 w-4" />
                             {event.venue_name}
                           </span>
                         )}
-                        {event.capacity && (
+                            {event.capacity && (
                           <span className="flex items-center gap-1">
                             <Users className="h-4 w-4" />
                             {event.capacity}
-                          </span>
-                        )}
+                              </span>
+                            )}
+                          </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Button
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
                         onClick={() => router.push(`/events/${event.slug || event.id}`)}
-                        variant="outline"
-                        className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
-                        size="sm"
-                      >
+                          variant="outline"
+                          className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+                          size="sm"
+                        >
                         View Public Page
-                      </Button>
+                        </Button>
                       
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -415,7 +415,7 @@ export default function EventsPage() {
                             <Share2 className="h-4 w-4 mr-2" />
                             Copy Event Link
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                              <DropdownMenuItem 
                             onClick={() => setDeleteEventId(event.id || '')}
                             className="text-red-400 hover:bg-red-500/10"
                           >
@@ -424,15 +424,15 @@ export default function EventsPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      </div>
                     </div>
+              ))}
+            </div>
+          )}
+            </CardContent>
+          </Card>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
+                  
       {/* Enhanced Event Creator Modal */}
       <EnhancedEventCreator
         isOpen={showCreateModal}
@@ -447,23 +447,23 @@ export default function EventsPage() {
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteEventId} onOpenChange={() => setDeleteEventId(null)}>
         <AlertDialogContent className="bg-slate-900 border-slate-700">
-          <AlertDialogHeader>
+            <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Delete Event</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
               Are you sure you want to delete this event? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-slate-800 border-slate-600 text-white hover:bg-slate-700">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteEventId && handleDeleteEvent(deleteEventId)}
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteEventId && handleDeleteEvent(deleteEventId)}
               className="bg-red-600 hover:bg-red-700"
-            >
+                >
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
+                </AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
