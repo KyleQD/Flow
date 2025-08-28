@@ -969,25 +969,27 @@ export function ForYouPage() {
                 })}
               </TabsList>
               
-              {/* Music genre tabs - Responsive grid layout */}
+              {/* Music genre tabs - Multi-row layout to prevent scrolling */}
               <div className="mt-3">
                 <div className="flex items-center mb-2 px-1">
                   <span className="text-xs text-gray-400 font-medium">Music Genres</span>
                 </div>
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-7 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2">
-                  {contentTypes.slice(6).map((type) => {
-                    const Icon = type.icon
-                    return (
-                      <TabsTrigger
-                        key={type.value}
-                        value={type.value}
-                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
-                      >
-                        <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
-                        <span className="hidden sm:inline">{type.label}</span>
-                      </TabsTrigger>
-                    )
-                  })}
+                <TabsList className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
+                    {contentTypes.slice(6).map((type) => {
+                      const Icon = type.icon
+                      return (
+                        <TabsTrigger
+                          key={type.value}
+                          value={type.value}
+                          className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
+                        >
+                          <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
+                          <span className="hidden sm:inline">{type.label}</span>
+                        </TabsTrigger>
+                      )
+                    })}
+                  </div>
                 </TabsList>
               </div>
             </Tabs>
