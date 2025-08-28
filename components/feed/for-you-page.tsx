@@ -1138,65 +1138,82 @@ export function ForYouPage() {
               </div>
             </motion.div>
 
-                        {/* Jukebox Selection Panel */}
+                        {/* Golden Ratio Jukebox Selector */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="space-y-4"
+              className="w-full"
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                {/* Combined Selection Panel - Jukebox Style */}
-                <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl p-6">
-                  <div className="text-center mb-6">
-                    <div className="text-xl font-mono text-yellow-400 mb-2">♪ JUKEBOX SELECTOR ♪</div>
-                    <div className="text-sm font-mono text-gray-400">CHOOSE YOUR CONTENT & GENRE</div>
+                {/* Golden Ratio Layout: 61.8% Content Types, 38.2% Genres */}
+                <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-3xl border-4 border-gray-400 shadow-2xl overflow-hidden">
+                  
+                  {/* Header Section - Golden Ratio Proportions */}
+                  <div className="text-center py-8 px-6 bg-gradient-to-r from-gray-900 to-gray-800 border-b-2 border-gray-600">
+                    <div className="text-2xl font-mono text-yellow-400 mb-2">♪ JUKEBOX SELECTOR ♪</div>
+                    <div className="text-sm font-mono text-gray-400">SELECT YOUR TUNES</div>
                   </div>
                   
-                  {/* Content Type Selection */}
-                  <div className="mb-6">
-                    <div className="text-center mb-3">
-                      <div className="text-sm font-mono text-red-400">CONTENT TYPE</div>
-                    </div>
-                    <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-black border-2 border-gray-500 rounded-2xl p-2 gap-2">
-                      {contentTypes.slice(0, 6).map((type) => {
-                        const Icon = type.icon
-                        return (
-                          <TabsTrigger
-                            key={type.value}
-                            value={type.value}
-                            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-600 data-[state=active]:to-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-red-500/25 data-[state=active]:border-red-400 border-2 border-gray-500 bg-black text-gray-300 hover:text-white hover:border-red-400/50 hover:bg-gray-800 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium font-mono rounded-2xl h-10 sm:h-12 px-2 sm:px-4 touch-manipulation"
-                          >
-                            <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
-                            <span className="hidden sm:inline">{type.label}</span>
-                          </TabsTrigger>
-                        )
-                      })}
-                    </TabsList>
-                  </div>
-                  
-                  {/* Music Genre Selection */}
-                  <div>
-                    <div className="text-center mb-3">
-                      <div className="text-sm font-mono text-blue-400">MUSIC GENRE</div>
-                    </div>
-                    <TabsList className="bg-black border-2 border-gray-500 rounded-2xl p-2">
-                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
-                        {contentTypes.slice(6).map((type) => {
+                  {/* Main Content Area - Using Golden Ratio */}
+                  <div className="p-6 space-y-8">
+                    
+                    {/* Content Types Section - 61.8% Visual Weight */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center space-x-2 mb-4">
+                        <div className="w-8 h-1 bg-gradient-to-r from-red-500 to-yellow-500 rounded-full"></div>
+                        <div className="text-lg font-mono text-red-400">CONTENT</div>
+                        <div className="w-8 h-1 bg-gradient-to-r from-red-500 to-yellow-500 rounded-full"></div>
+                      </div>
+                      
+                      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 bg-black border-2 border-gray-500 rounded-2xl p-3 gap-3">
+                        {contentTypes.slice(0, 6).map((type) => {
                           const Icon = type.icon
                           return (
                             <TabsTrigger
                               key={type.value}
                               value={type.value}
-                              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 data-[state=active]:border-blue-400 border-2 border-gray-500 bg-black text-gray-300 hover:text-white hover:border-blue-400/50 hover:bg-gray-800 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium font-mono rounded-2xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
+                              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-600 data-[state=active]:to-yellow-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-red-500/25 data-[state=active]:border-red-400 border-2 border-gray-500 bg-black text-gray-300 hover:text-white hover:border-red-400/50 hover:bg-gray-800 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium font-mono rounded-xl h-12 sm:h-14 px-3 sm:px-4 touch-manipulation"
                             >
-                              <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
+                              <Icon className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                               <span className="hidden sm:inline">{type.label}</span>
                             </TabsTrigger>
                           )
                         })}
+                      </TabsList>
+                    </div>
+                    
+                    {/* Divider with Golden Ratio Spacing */}
+                    <div className="flex items-center justify-center">
+                      <div className="w-16 h-0.5 bg-gradient-to-r from-transparent via-gray-500 to-transparent"></div>
+                    </div>
+                    
+                    {/* Music Genres Section - 38.2% Visual Weight */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center space-x-2 mb-4">
+                        <div className="w-6 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></div>
+                        <div className="text-base font-mono text-blue-400">GENRES</div>
+                        <div className="w-6 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></div>
                       </div>
-                    </TabsList>
+                      
+                      <TabsList className="bg-black border-2 border-gray-500 rounded-2xl p-3">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
+                          {contentTypes.slice(6).map((type) => {
+                            const Icon = type.icon
+                            return (
+                              <TabsTrigger
+                                key={type.value}
+                                value={type.value}
+                                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 data-[state=active]:border-blue-400 border-2 border-gray-500 bg-black text-gray-300 hover:text-white hover:border-blue-400/50 hover:bg-gray-800 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium font-mono rounded-xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
+                              >
+                                <Icon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                                <span className="hidden sm:inline">{type.label}</span>
+                              </TabsTrigger>
+                            )
+                          })}
+                        </div>
+                      </TabsList>
+                    </div>
                   </div>
                 </div>
               </Tabs>
