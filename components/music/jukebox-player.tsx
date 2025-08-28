@@ -76,21 +76,22 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
   const [rssItems, setRssItems] = useState<RSSItem[]>([])
   const [isLoadingRSS, setIsLoadingRSS] = useState(false)
   const [rssCategory, setRssCategory] = useState('all')
+  const [isUsingRealRSS, setIsUsingRealRSS] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number>()
 
-  // RSS Categories
+  // RSS Categories - Updated to match actual RSS source categories
   const rssCategories = [
     { value: 'all', label: 'All Music', icon: Music },
-    { value: 'new-releases', label: 'New Releases', icon: Star },
-    { value: 'indie', label: 'Indie Music', icon: TrendingUp },
-    { value: 'hiphop', label: 'Hip-Hop', icon: Music },
-    { value: 'electronic', label: 'Electronic', icon: Music },
-    { value: 'rock', label: 'Rock', icon: Music },
-    { value: 'jazz', label: 'Jazz', icon: Music }
+    { value: 'Music News', label: 'Music News', icon: Star },
+    { value: 'Indie Music', label: 'Indie Music', icon: TrendingUp },
+    { value: 'Hip-Hop', label: 'Hip-Hop', icon: Music },
+    { value: 'Electronic Music', label: 'Electronic', icon: Music },
+    { value: 'Underground Music', label: 'Underground', icon: Music },
+    { value: 'Local Music', label: 'Local Music', icon: Music }
   ]
 
   // Initialize audio context
@@ -111,19 +112,33 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
     }
   }, [])
 
-  // Load RSS feed
+  // Load RSS feed - Enhanced to better handle real RSS sources
   const loadRSSFeed = useCallback(async (category: string = 'all') => {
     setIsLoadingRSS(true)
     try {
-      let url = '/api/feed/rss-news?limit=20'
+      console.log('[Jukebox] Loading RSS feed for category:', category)
+      
+      let url = '/api/feed/rss-news?limit=25'
       if (category !== 'all') {
         url += `&category=${encodeURIComponent(category)}`
       }
       
+      console.log('[Jukebox] Fetching from URL:', url)
       const response = await fetch(url)
-      const data = await response.json()
       
-      if (data.success && data.news) {
+      if (!response.ok) {
+        throw new Error(`RSS API responded with status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      console.log('[Jukebox] RSS API response:', {
+        success: data.success,
+        totalItems: data.news?.length || 0,
+        sources: data.sources,
+        categories: data.categories
+      })
+      
+      if (data.success && data.news && data.news.length > 0) {
         const processedItems: RSSItem[] = data.news.map((item: any, index: number) => ({
           id: `rss_${item.id || index}`,
           title: item.title || 'Untitled',
@@ -134,19 +149,26 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
           category: item.category || 'Music',
           image: item.image || `https://dummyimage.com/400x250/8b5cf6/ffffff?text=${item.source?.charAt(0) || 'M'}`,
           audioUrl: item.audioUrl || null,
-          likes: Math.floor(Math.random() * 100),
-          comments: Math.floor(Math.random() * 50),
-          shares: Math.floor(Math.random() * 30),
+          likes: Math.floor(Math.random() * 100) + 10,
+          comments: Math.floor(Math.random() * 50) + 5,
+          shares: Math.floor(Math.random() * 30) + 2,
           isLiked: false,
           isBookmarked: false
         }))
         
+        console.log('[Jukebox] Processed RSS items:', processedItems.length)
         setRssItems(processedItems)
+        setIsUsingRealRSS(true)
+      } else {
+        console.warn('[Jukebox] RSS API returned no data, using fallback')
+        setRssItems(generateMockRSSItems())
+        setIsUsingRealRSS(false)
       }
     } catch (error) {
-      console.error('Failed to load RSS feed:', error)
+      console.error('[Jukebox] Failed to load RSS feed:', error)
       // Fallback to mock data
       setRssItems(generateMockRSSItems())
+      setIsUsingRealRSS(false)
     } finally {
       setIsLoadingRSS(false)
     }
@@ -161,7 +183,7 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
         description: 'The latest album from indie sensation "The Night Owls" features 12 tracks of atmospheric rock with haunting vocals and innovative production techniques.',
         link: '#',
         pubDate: new Date().toISOString(),
-        source: 'Indie Music Weekly',
+        source: 'Indie Music Weekly (Demo)',
         category: 'Indie Music',
         image: 'https://dummyimage.com/400x250/8b5cf6/ffffff?text=Indie+Rock',
         likes: 89,
@@ -176,7 +198,7 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
         description: 'The underground hip-hop scene is buzzing with the unexpected release of "Street Poetry" - a 6-track EP that showcases raw talent and authentic storytelling.',
         link: '#',
         pubDate: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        source: 'Hip-Hop Daily',
+        source: 'Hip-Hop Daily (Demo)',
         category: 'Hip-Hop',
         image: 'https://dummyimage.com/400x250/ef4444/ffffff?text=Hip-Hop',
         likes: 156,
@@ -191,12 +213,42 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
         description: 'Following the success of their latest album "Digital Dreams", electronic music producer SynthWave has announced a 20-city world tour starting next month.',
         link: '#',
         pubDate: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        source: 'Electronic Music News',
+        source: 'Electronic Music News (Demo)',
         category: 'Electronic Music',
         image: 'https://dummyimage.com/400x250/06b6d4/ffffff?text=Electronic',
         likes: 234,
         comments: 67,
         shares: 42,
+        isLiked: false,
+        isBookmarked: false
+      },
+      {
+        id: 'mock_4',
+        title: '🎸 Rock Legends "The Thunder" Release First Album in 10 Years',
+        description: 'After a decade-long hiatus, rock legends "The Thunder" have surprised fans with their new album "Electric Storm", featuring 14 tracks of pure rock energy.',
+        link: '#',
+        pubDate: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        source: 'Rock Music Today (Demo)',
+        category: 'Music News',
+        image: 'https://dummyimage.com/400x250/dc2626/ffffff?text=Rock',
+        likes: 312,
+        comments: 89,
+        shares: 56,
+        isLiked: false,
+        isBookmarked: false
+      },
+      {
+        id: 'mock_5',
+        title: '🎷 Jazz Fusion Collective "Midnight Groove" Drops Experimental EP',
+        description: 'Pushing the boundaries of jazz fusion, "Midnight Groove" releases their experimental EP "Urban Rhythms" featuring collaborations with electronic artists.',
+        link: '#',
+        pubDate: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+        source: 'Jazz Weekly (Demo)',
+        category: 'Underground Music',
+        image: 'https://dummyimage.com/400x250/7c3aed/ffffff?text=Jazz',
+        likes: 78,
+        comments: 34,
+        shares: 12,
         isLiked: false,
         isBookmarked: false
       }
@@ -452,7 +504,18 @@ export function JukeboxPlayer({ onTrackChange, onPlaybackStateChange }: JukeboxP
           <TabsContent value="feed" className="space-y-4">
             {/* RSS Category Filter */}
             <div className="flex items-center justify-between mb-4">
-              <div className="text-lg font-mono text-blue-400">MUSIC DISCOVERY</div>
+              <div className="flex items-center space-x-3">
+                <div className="text-lg font-mono text-blue-400">MUSIC DISCOVERY</div>
+                {isUsingRealRSS ? (
+                  <Badge className="bg-green-600 text-white text-xs font-mono">
+                    LIVE RSS
+                  </Badge>
+                ) : (
+                  <Badge className="bg-yellow-600 text-white text-xs font-mono">
+                    DEMO DATA
+                  </Badge>
+                )}
+              </div>
               <Button
                 onClick={() => loadRSSFeed(rssCategory)}
                 disabled={isLoadingRSS}
