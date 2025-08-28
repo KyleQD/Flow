@@ -65,6 +65,7 @@ export default function DiscoverPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedProfile, setSelectedProfile] = useState<DemoProfile | null>(null)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const { user: currentUser } = useAuth()
 
   useEffect(() => {
@@ -164,8 +165,62 @@ export default function DiscoverPage() {
 
   // Consistent result counts for all sections
   const ITEMS_PER_SECTION = 4 // Reduced to 4 for horizontal scrolling
-  const artists = useMemo(() => profiles.filter(p => p.account_type === 'artist').slice(0, ITEMS_PER_SECTION), [profiles])
-  const venues = useMemo(() => profiles.filter(p => p.account_type === 'venue').slice(0, ITEMS_PER_SECTION), [profiles])
+  
+  // Filter profiles based on search query
+  const filteredProfiles = useMemo(() => {
+    if (!searchQuery.trim()) return profiles
+    
+    const query = searchQuery.toLowerCase().trim()
+    return profiles.filter(profile => {
+      const searchableText = [
+        profile.username,
+        profile.profile_data?.full_name,
+        profile.profile_data?.bio,
+        profile.profile_data?.location,
+        profile.account_type,
+        ...(profile.profile_data?.tags || [])
+      ].join(' ').toLowerCase()
+      
+      return searchableText.includes(query)
+    })
+  }, [profiles, searchQuery])
+  
+  const artists = useMemo(() => filteredProfiles.filter(p => p.account_type === 'artist').slice(0, ITEMS_PER_SECTION), [filteredProfiles])
+  const venues = useMemo(() => filteredProfiles.filter(p => p.account_type === 'venue').slice(0, ITEMS_PER_SECTION), [filteredProfiles])
+  
+  // Filter trending posts and events based on search query
+  const filteredTrendingPosts = useMemo(() => {
+    if (!searchQuery.trim()) return trendingPosts
+    
+    const query = searchQuery.toLowerCase().trim()
+    return trendingPosts.filter(post => {
+      const searchableText = [
+        post.content,
+        post.author?.username,
+        post.author?.name,
+        ...(post.tags || [])
+      ].join(' ').toLowerCase()
+      
+      return searchableText.includes(query)
+    })
+  }, [trendingPosts, searchQuery])
+  
+  const filteredUpcomingEvents = useMemo(() => {
+    if (!searchQuery.trim()) return upcomingEvents
+    
+    const query = searchQuery.toLowerCase().trim()
+    return upcomingEvents.filter(event => {
+      const searchableText = [
+        event.title,
+        event.description,
+        event.venue?.name,
+        event.venue?.location,
+        ...(event.tags || [])
+      ].join(' ').toLowerCase()
+      
+      return searchableText.includes(query)
+    })
+  }, [upcomingEvents, searchQuery])
 
   // Animation variants
   const fadeInUp = {
@@ -234,15 +289,7 @@ export default function DiscoverPage() {
         >
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-blue-500/5" />
         <div className="relative p-8 md:p-12 text-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-purple-200 text-sm mb-4 backdrop-blur-sm border border-white/20"
-            >
-              <Sparkles className="h-4 w-4" />
-            Discover Hub
-            </motion.div>
+
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -270,29 +317,7 @@ export default function DiscoverPage() {
             >
               Curated just for you. Explore trending posts, upcoming events, and people you'll love to follow.
             </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-              className="flex items-center justify-center gap-3 text-sm"
-            >
-              <Badge className="bg-purple-500/20 text-purple-200 border-purple-500/30 rounded-xl px-3 py-1">
-                <Music2 className="h-3 w-3 mr-1" />
-                Artists
-              </Badge>
-              <Badge className="bg-blue-500/20 text-blue-200 border-blue-500/30 rounded-xl px-3 py-1">
-                <Calendar className="h-3 w-3 mr-1" />
-                Events
-              </Badge>
-              <Badge className="bg-emerald-500/20 text-emerald-200 border-emerald-500/30 rounded-xl px-3 py-1">
-                <Building2 className="h-3 w-3 mr-1" />
-                Venues
-              </Badge>
-              <Badge className="bg-pink-500/20 text-pink-200 border-pink-500/30 rounded-xl px-3 py-1">
-                <Flame className="h-3 w-3 mr-1" />
-                Trending
-              </Badge>
-            </motion.div>
+
           </div>
         </motion.div>
 
@@ -340,13 +365,28 @@ export default function DiscoverPage() {
                   <input
                     type="text"
                     placeholder="Search artists, venues, events..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-2xl text-white placeholder:text-gray-400 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 backdrop-blur-sm transition-all duration-200"
-                    onFocus={() => {
-                      // Navigate to dedicated search page or show search modal
-                      window.location.href = '/search'
-                    }}
                   />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
+                {searchQuery && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center mt-2 text-sm text-gray-400"
+                  >
+                    Searching for "{searchQuery}" • {filteredProfiles.length + filteredTrendingPosts.length + filteredUpcomingEvents.length} results
+                  </motion.div>
+                )}
               </motion.div>
 
           {/* Trending Posts */}
@@ -363,7 +403,7 @@ export default function DiscoverPage() {
                 >
                   <HorizontalScrollGrid>
                     {isLoading && <SkeletonHorizontal count={4} />}
-                    {!isLoading && trendingPosts.slice(0, 4).map((p, index) => (
+                    {!isLoading && filteredTrendingPosts.slice(0, 4).map((p, index) => (
                       <motion.div
                         key={p.id}
                         initial={{ opacity: 0, x: 20 }}
@@ -423,7 +463,7 @@ export default function DiscoverPage() {
                 >
                   <HorizontalScrollGrid>
                     {isLoading && <SkeletonHorizontal count={4} />}
-                    {!isLoading && upcomingEvents.slice(0, 4).map((e, index) => (
+                    {!isLoading && filteredUpcomingEvents.slice(0, 4).map((e, index) => (
                       <motion.div
                         key={e.id}
                         initial={{ opacity: 0, x: 20 }}
