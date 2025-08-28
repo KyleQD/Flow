@@ -32,25 +32,35 @@ export async function GET(request: NextRequest) {
       let forumThreads: any[] = []
       let userVotesByThread: Record<string, number> = {}
       
-      const { data: allThreads } = await supabase
-        .from('forum_threads_v2')
-        .select(`
-          id,
-          title,
-          content_md,
-          link_url,
-          kind,
-          score,
-          comments_count,
-          created_at,
-          forum:forum_id(id, slug, title),
-          author:created_by(id, username, avatar_url, is_verified)
-        `)
-        .order('hot_score', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(limit * 2) // Get more for variety
+      try {
+        const { data: allThreads, error: threadsError } = await supabase
+          .from('forum_threads_v2')
+          .select(`
+            id,
+            title,
+            content_md,
+            link_url,
+            kind,
+            score,
+            comments_count,
+            created_at,
+            forum:forum_id(id, slug, title),
+            author:created_by(id, username, avatar_url, is_verified)
+          `)
+          .order('hot_score', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(limit * 2) // Get more for variety
 
-      forumThreads = allThreads || []
+        if (threadsError) {
+          console.error('[Feed For You API] Error fetching forum threads:', threadsError)
+          forumThreads = []
+        } else {
+          forumThreads = allThreads || []
+        }
+      } catch (error) {
+        console.error('[Feed For You API] Exception fetching forum threads:', error)
+        forumThreads = []
+      }
 
       // Hydrate user's existing votes if authenticated
       if (authResult?.user?.id && forumThreads.length) {
@@ -102,35 +112,39 @@ export async function GET(request: NextRequest) {
     // For non-forum content, get social posts
     let posts: any[] = []
     if (type !== 'forum') {
-      const { data: postsData, error: postsError } = await supabase
-        .from('posts')
-        .select(`
-          id,
-          content,
-          media_urls,
-          likes_count,
-          comments_count,
-          created_at,
-          updated_at,
-          user_id,
-          profiles:user_id (
+      try {
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select(`
             id,
-            username,
-            avatar_url,
-            verified
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(limit)
+            content,
+            media_urls,
+            likes_count,
+            comments_count,
+            created_at,
+            updated_at,
+            user_id,
+            profiles:user_id (
+              id,
+              username,
+              avatar_url,
+              verified
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(limit)
 
-      if (postsError) {
-        console.error('[Feed For You API] Error fetching posts:', postsError)
-        return NextResponse.json(
-          { error: 'Failed to fetch posts' },
-          { status: 500 }
-        )
+        if (postsError) {
+          console.error('[Feed For You API] Error fetching posts:', postsError)
+          // Don't return error, just continue with empty posts
+          posts = []
+        } else {
+          posts = postsData || []
+        }
+      } catch (error) {
+        console.error('[Feed For You API] Exception fetching posts:', error)
+        posts = []
       }
-      posts = postsData || []
     }
 
     // If authenticated and not filtering for specific type, include followed forum threads in mixed feed

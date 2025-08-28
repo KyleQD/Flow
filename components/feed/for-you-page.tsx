@@ -122,22 +122,24 @@ export function ForYouPage() {
   const searchSuggestions = useMemo(() => {
     const suggestions = [
       // Artists
-      'Blood Orange', 'Lorde', 'Zadie Smith', 'Dev Hynes',
+      'Blood Orange', 'Lorde', 'Zadie Smith', 'Dev Hynes', 'Luna Echo', 'Central Park Arena',
       // Genres
-      'Indie Pop', 'Hip-Hop', 'Electronic', 'Jazz', 'Rock',
+      'Indie Pop', 'Hip-Hop', 'Electronic', 'Jazz', 'Rock', 'Indie Rock',
       // Events
-      'Music Festival', 'Concert', 'Live Performance',
+      'Music Festival', 'Concert', 'Live Performance', 'Summer Music Festival',
       // Topics
-      'Album Review', 'New Release', 'Tour Dates', 'Music News'
+      'Album Review', 'New Release', 'Tour Dates', 'Music News', 'Independent Music',
+      // Content Types
+      'Music', 'Videos', 'News', 'Blogs', 'Forums'
     ]
     
-    if (!searchQuery) return suggestions.slice(0, 6)
+    if (!searchQuery) return suggestions.slice(0, 8)
     
     return suggestions
       .filter(suggestion => 
         suggestion.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      .slice(0, 6)
+      .slice(0, 8)
   }, [searchQuery])
 
   const contentTypes = [
@@ -333,6 +335,13 @@ export function ForYouPage() {
         }
         
         console.log('[FYP] Final hybrid content:', hybridContent.length, 'items, types:', hybridContent.map(item => item.type))
+        
+        // Ensure we always have some content
+        if (hybridContent.length === 0) {
+          console.log('[FYP] No content found, using fallback mock data')
+          hybridContent = generateMockContent()
+        }
+        
         setContent(hybridContent)
       }
     } catch (error) {
@@ -740,9 +749,34 @@ export function ForYouPage() {
       contentTypes: content.map(item => item.type)
     })
 
+    // Apply search filtering first
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      filtered = filtered.filter(item => {
+        const searchableText = [
+          item.title,
+          item.description,
+          item.author?.name,
+          item.author?.username,
+          ...(item.metadata?.tags || []),
+          item.metadata?.genre,
+          item.type
+        ].join(' ').toLowerCase()
+        
+        return searchableText.includes(query)
+      })
+      console.log('[FYP] Search filtering applied, remaining items:', filtered.length)
+    }
+
+    // Apply tab filtering
+    if (activeTab !== 'all') {
+      filtered = filtered.filter(item => item.type === activeTab)
+      console.log('[FYP] Tab filtering applied for', activeTab, 'remaining items:', filtered.length)
+    }
+
     // Apply sorting based on selected option
     if (sortBy === 'positive') {
-      filtered = [...content].map(item => ({
+      filtered = [...filtered].map(item => ({
         ...item,
         positiveScore: calculatePositiveScore(`${item.title} ${item.description || ''}`)
       })).sort((a, b) => {
@@ -761,23 +795,24 @@ export function ForYouPage() {
       )
     } else if (sortBy === 'relevant') {
       // Sort by relevance score (highest first)
-      filtered = [...content].sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
+      filtered = [...filtered].sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
       console.log('[FYP] Relevance sorting applied')
     } else if (sortBy === 'recent') {
       // Sort by creation date (newest first)
-      filtered = [...content].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      filtered = [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       console.log('[FYP] Recent sorting applied')
     } else if (sortBy === 'popular') {
       // Sort by engagement (likes + views + shares + comments)
-      filtered = [...content].sort((a, b) => {
+      filtered = [...filtered].sort((a, b) => {
         const aEngagement = (a.engagement?.likes || 0) + (a.engagement?.views || 0) + (a.engagement?.shares || 0) + (a.engagement?.comments || 0)
         const bEngagement = (b.engagement?.likes || 0) + (b.engagement?.views || 0) + (b.engagement?.shares || 0) + (b.engagement?.comments || 0)
         return bEngagement - aEngagement
       })
       console.log('[FYP] Popular sorting applied')
     } else {
-      // Default: return content as is
-      console.log('[FYP] No specific sorting applied, returning content as is')
+      // Default: sort by recent
+      filtered = [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      console.log('[FYP] Default recent sorting applied')
     }
 
     return filtered
@@ -1255,10 +1290,28 @@ export function ForYouPage() {
               className="space-y-6"
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">Latest Content</h2>
-                <Button variant="ghost" className="text-purple-400 hover:text-purple-300">
-                  View All
-                </Button>
+                <h2 className="text-xl font-bold text-white">
+                  {searchQuery ? `Search Results for "${searchQuery}"` : 'Latest Content'}
+                </h2>
+                <div className="flex items-center gap-4">
+                  {searchQuery && (
+                    <>
+                      <span className="text-sm text-gray-400">
+                        {filteredContent.length} result{filteredContent.length !== 1 ? 's' : ''}
+                      </span>
+                      <Button 
+                        variant="ghost" 
+                        onClick={() => setSearchQuery('')}
+                        className="text-gray-400 hover:text-white text-sm"
+                      >
+                        Clear Search
+                      </Button>
+                    </>
+                  )}
+                  <Button variant="ghost" className="text-purple-400 hover:text-purple-300">
+                    View All
+                  </Button>
+                </div>
               </div>
               {/* Thread composer for Forums tab */}
               {activeTab === 'forums' && user && (

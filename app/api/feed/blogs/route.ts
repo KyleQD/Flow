@@ -59,21 +59,35 @@ export async function GET(request: NextRequest) {
     // Transform posts to match expected format
     const transformedPosts = (posts || []).map((post: any) => ({
       id: post.id,
-      content: post.content,
-      media_urls: post.media_urls,
-      likes_count: post.likes_count || 0,
-      comments_count: post.comments_count || 0,
-      created_at: post.created_at,
-      updated_at: post.updated_at,
-      user: {
+      title: post.content.length > 80 ? post.content.slice(0, 77) + '…' : post.content,
+      description: post.content,
+      author: {
         id: post.user_id,
+        name: post.profiles?.username || 'user',
         username: post.profiles?.username || 'user',
         avatar_url: post.profiles?.avatar_url || '',
-        verified: post.profiles?.verified || false
-      }
+        is_verified: post.profiles?.verified || false
+      },
+      cover_image: post.media_urls?.[0] || undefined,
+      created_at: post.created_at,
+      engagement: {
+        likes: post.likes_count || 0,
+        views: 0,
+        shares: 0,
+        comments: post.comments_count || 0
+      },
+      metadata: {
+        url: `/blog/${post.id}`,
+        tags: ['Blog Post'],
+        reading_time: Math.ceil(post.content.length / 200) // Rough estimate
+      },
+      relevance_score: 0.85
     }))
 
-    return NextResponse.json({ posts: transformedPosts })
+    return NextResponse.json({ 
+      success: true,
+      data: transformedPosts 
+    })
   } catch (error) {
     console.error('[Feed Blogs API] Error:', error)
     return NextResponse.json(
