@@ -122,7 +122,12 @@ export function ForYouPage() {
     { value: 'videos', label: 'Videos', icon: Video },
     { value: 'news', label: 'News', icon: FileText },
     { value: 'blogs', label: 'Blogs', icon: FileText },
-    { value: 'forums', label: 'Forums', icon: Users }
+    { value: 'forums', label: 'Forums', icon: Users },
+    { value: 'indie', label: 'Indie', icon: Music2 },
+    { value: 'hiphop', label: 'Hip-Hop', icon: Music2 },
+    { value: 'electronic', label: 'Electronic', icon: Music2 },
+    { value: 'metal', label: 'Metal', icon: Music2 },
+    { value: 'jazz', label: 'Jazz', icon: Music2 }
   ]
 
   // Helper function to get placeholder images
@@ -238,11 +243,27 @@ export function ForYouPage() {
           }
         }
         
-        // Try to fetch RSS news if we're on news tab or all tab
-        if (activeTab === 'news' || activeTab === 'all') {
+        // Try to fetch RSS news for various tabs
+        const shouldFetchRSS = ['news', 'all', 'indie', 'hiphop', 'electronic', 'metal', 'jazz'].includes(activeTab)
+        if (shouldFetchRSS) {
           try {
             console.log('[FYP] Attempting to fetch RSS news for hybrid content...')
-            const rssResponse = await fetch('/api/feed/rss-news?limit=10')
+            
+            // Build RSS query parameters based on active tab
+            let rssParams = 'limit=15'
+            if (activeTab === 'indie') {
+              rssParams += '&category=Indie Music'
+            } else if (activeTab === 'hiphop') {
+              rssParams += '&category=Hip-Hop'
+            } else if (activeTab === 'electronic') {
+              rssParams += '&category=Electronic Music'
+            } else if (activeTab === 'metal') {
+              rssParams += '&category=Metal Music'
+            } else if (activeTab === 'jazz') {
+              rssParams += '&category=Jazz Music'
+            }
+            
+            const rssResponse = await fetch(`/api/feed/rss-news?${rssParams}`)
             if (rssResponse.ok) {
               const rssData = await rssResponse.json()
               if (rssData.success && rssData.news && rssData.news.length > 0) {
@@ -488,6 +509,112 @@ export function ForYouPage() {
           tags: ['News', 'Pitchfork', 'New Music']
         },
         relevance_score: 0.9
+      },
+      // Additional genre-specific content
+      {
+        id: 'indie_1',
+        type: 'news',
+        title: 'Indie Rock Revolution: New Bands Shaping the Scene',
+        description: 'Discover the latest wave of independent artists who are redefining the indie rock landscape with innovative sounds and DIY ethics.',
+        author: {
+          id: 'stereogum',
+          name: 'Stereogum',
+          username: 'stereogum',
+          avatar_url: 'https://dummyimage.com/40x40/10b981/ffffff?text=S',
+          is_verified: true
+        },
+        cover_image: getPlaceholderImage('music', 400, 250),
+        created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        metadata: { 
+          url: '#',
+          tags: ['Indie Music', 'Rock', 'New Artists']
+        },
+        relevance_score: 0.95
+      },
+      {
+        id: 'hiphop_1',
+        type: 'news',
+        title: 'Hip-Hop\'s Evolution: From the Streets to Global Dominance',
+        description: 'Exploring how hip-hop culture continues to influence music, fashion, and society worldwide.',
+        author: {
+          id: 'complex',
+          name: 'Complex',
+          username: 'complex',
+          avatar_url: 'https://dummyimage.com/40x40/f59e0b/ffffff?text=C',
+          is_verified: true
+        },
+        cover_image: getPlaceholderImage('music', 400, 250),
+        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        metadata: { 
+          url: '#',
+          tags: ['Hip-Hop', 'Culture', 'Music History']
+        },
+        relevance_score: 0.92
+      },
+      {
+        id: 'electronic_1',
+        type: 'news',
+        title: 'Electronic Music Festival Season: What to Expect in 2024',
+        description: 'A comprehensive guide to the biggest electronic music festivals and events happening around the world this year.',
+        author: {
+          id: 'resident_advisor',
+          name: 'Resident Advisor',
+          username: 'residentadvisor',
+          avatar_url: 'https://dummyimage.com/40x40/3b82f6/ffffff?text=R',
+          is_verified: true
+        },
+        cover_image: getPlaceholderImage('music', 400, 250),
+        created_at: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        metadata: { 
+          url: '#',
+          tags: ['Electronic Music', 'Festivals', 'Events']
+        },
+        relevance_score: 0.88
+      },
+      {
+        id: 'metal_1',
+        type: 'news',
+        title: 'Metal Scene Report: Underground Bands Breaking Through',
+        description: 'Discover the most promising underground metal bands that are pushing the boundaries of the genre.',
+        author: {
+          id: 'metal_injection',
+          name: 'Metal Injection',
+          username: 'metalinjection',
+          avatar_url: 'https://dummyimage.com/40x40/64748b/ffffff?text=M',
+          is_verified: true
+        },
+        cover_image: getPlaceholderImage('music', 400, 250),
+        created_at: new Date(Date.now() - 9 * 60 * 60 * 1000).toISOString(),
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        metadata: { 
+          url: '#',
+          tags: ['Metal Music', 'Underground', 'New Bands']
+        },
+        relevance_score: 0.85
+      },
+      {
+        id: 'jazz_1',
+        type: 'news',
+        title: 'Jazz Fusion: Modern Artists Bridging Traditional and Contemporary',
+        description: 'Meet the jazz musicians who are creating innovative sounds by blending traditional jazz with modern influences.',
+        author: {
+          id: 'jazz_times',
+          name: 'JazzTimes',
+          username: 'jazztimes',
+          avatar_url: 'https://dummyimage.com/40x40/8b5cf6/ffffff?text=J',
+          is_verified: true
+        },
+        cover_image: getPlaceholderImage('music', 400, 250),
+        created_at: new Date(Date.now() - 11 * 60 * 60 * 1000).toISOString(),
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        metadata: { 
+          url: '#',
+          tags: ['Jazz Music', 'Fusion', 'Modern Jazz']
+        },
+        relevance_score: 0.87
       }
     ]
   }
@@ -744,8 +871,25 @@ export function ForYouPage() {
               transition={{ delay: 0.2 }}
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-7 bg-slate-900/50 border-slate-700/50 backdrop-blur-sm overflow-x-auto rounded-2xl">
-                  {contentTypes.map((type) => {
+                <TabsList className="grid w-full grid-cols-6 bg-slate-900/50 border-slate-700/50 backdrop-blur-sm overflow-x-auto rounded-2xl">
+                  {contentTypes.slice(0, 6).map((type) => {
+                    const Icon = type.icon
+                    return (
+                      <TabsTrigger
+                        key={type.value}
+                        value={type.value}
+                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap text-xs md:text-sm"
+                      >
+                        <Icon className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                        <span className="hidden sm:inline">{type.label}</span>
+                      </TabsTrigger>
+                    )
+                  })}
+                </TabsList>
+                
+                {/* Second row for music genre tabs */}
+                <TabsList className="grid w-full grid-cols-5 bg-slate-900/50 border-slate-700/50 backdrop-blur-sm overflow-x-auto rounded-2xl mt-2">
+                  {contentTypes.slice(6).map((type) => {
                     const Icon = type.icon
                     return (
                       <TabsTrigger
