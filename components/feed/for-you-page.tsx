@@ -79,6 +79,7 @@ interface ContentItem {
   is_liked?: boolean
   is_following?: boolean
   relevance_score?: number
+  positive_score?: number
   is_bookmarked?: boolean
 }
 
@@ -151,6 +152,48 @@ export function ForYouPage() {
     return `https://dummyimage.com/${width}x${height}/${color}/ffffff&text=${text}`
   }
 
+  // Positive sentiment keywords for content prioritization
+  const positiveKeywords = [
+    'awesome', 'amazing', 'incredible', 'fantastic', 'brilliant', 'outstanding',
+    'cool', 'epic', 'legendary', 'phenomenal', 'extraordinary', 'remarkable',
+    'best', 'greatest', 'top', 'premium', 'excellent', 'superb', 'perfect',
+    'super', 'amazing', 'wonderful', 'marvelous', 'splendid', 'magnificent',
+    'funny', 'hilarious', 'comedy', 'humorous', 'entertaining', 'joyful',
+    'elegant', 'beautiful', 'gorgeous', 'stunning', 'breathtaking', 'sophisticated',
+    'exciting', 'thrilling', 'energetic', 'dynamic', 'vibrant', 'lively',
+    'inspiring', 'motivational', 'uplifting', 'empowering', 'encouraging',
+    'innovative', 'creative', 'groundbreaking', 'revolutionary', 'cutting-edge',
+    'successful', 'winning', 'victorious', 'triumphant', 'achievement',
+    'love', 'passion', 'enthusiasm', 'excitement', 'happiness', 'joy'
+  ]
+
+  // Function to calculate positive sentiment score
+  const calculatePositiveScore = (text: string): number => {
+    if (!text) return 0
+    
+    const lowerText = text.toLowerCase()
+    let score = 0
+    
+    positiveKeywords.forEach(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi')
+      const matches = lowerText.match(regex)
+      if (matches) {
+        score += matches.length * 2 // Weight positive keywords more heavily
+      }
+    })
+    
+    // Bonus for multiple positive words
+    const positiveWordCount = positiveKeywords.filter(keyword => 
+      lowerText.includes(keyword.toLowerCase())
+    ).length
+    
+    if (positiveWordCount > 1) {
+      score += positiveWordCount * 0.5 // Bonus for variety
+    }
+    
+    return score
+  }
+
   const loadPersonalizedContent = async () => {
     try {
       setLoading(true)
@@ -182,22 +225,41 @@ export function ForYouPage() {
           newsItems: data.content.filter((item: any) => item.type === 'news').length
         })
         
-        // Initialize engagement data to zero for all content
-        const contentWithZeroEngagement = data.content.map((item: any) => ({
-          ...item,
-          // Harmonize forum payload keys into ContentItem shape
-          type: item.type,
-          title: item.title || item.metadata?.title || 'Untitled',
-          description: item.description,
-          author: item.author,
-          engagement: {
-            likes: item.engagement?.likes || 0,
-            views: item.engagement?.views || 0,
-            shares: item.engagement?.shares || 0,
-            comments: item.engagement?.comments || 0
+        // Initialize engagement data to zero for all content and apply positive sentiment scoring
+        const contentWithZeroEngagement = data.content.map((item: any) => {
+          const title = item.title || item.metadata?.title || 'Untitled'
+          const description = item.description || ''
+          
+          // Calculate positive sentiment score
+          const titleScore = calculatePositiveScore(title)
+          const descriptionScore = calculatePositiveScore(description)
+          const positiveScore = titleScore + descriptionScore
+          
+          return {
+            ...item,
+            // Harmonize forum payload keys into ContentItem shape
+            type: item.type,
+            title,
+            description,
+            author: item.author,
+            engagement: {
+              likes: item.engagement?.likes || 0,
+              views: item.engagement?.views || 0,
+              shares: item.engagement?.shares || 0,
+              comments: item.engagement?.comments || 0
+            },
+            // Add positive sentiment score to relevance
+            relevance_score: (item.relevance_score || 0.8) + (positiveScore * 0.1),
+            positive_score: positiveScore
           }
-        }))
-        setContent(contentWithZeroEngagement)
+        })
+        
+        // Sort content by positive sentiment score (higher scores first)
+        const sortedContent = contentWithZeroEngagement.sort((a: any, b: any) => 
+          (b.positive_score || 0) - (a.positive_score || 0)
+        )
+        
+        setContent(sortedContent)
       } else {
         console.log('[FYP] API failed, using hybrid content (mock + RSS + blogs)')
         // Hybrid approach: Use mock data + try to fetch RSS news + real blogs
@@ -275,28 +337,39 @@ export function ForYouPage() {
               if (rssData.success && rssData.news && rssData.news.length > 0) {
                 console.log('[FYP] Successfully fetched RSS news:', rssData.news.length, 'items')
                 
-                // Convert RSS items to ContentItem format
-                const rssContent = rssData.news.map((item: any, index: number) => ({
-                  id: `rss_${item.id}`,
-                  type: 'news' as const,
-                  title: item.title,
-                  description: item.description,
-                  author: {
-                    id: `rss_${item.source}`,
-                    name: item.author || item.source,
-                    username: item.source.toLowerCase().replace(/\s+/g, ''),
-                    avatar_url: item.image || `https://dummyimage.com/40x40/ef4444/ffffff?text=${item.source.charAt(0)}`,
-                    is_verified: true
-                  },
-                  cover_image: item.image || getPlaceholderImage('news', 400, 250),
-                  created_at: item.pubDate,
-                  engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-                  metadata: {
-                    url: item.link,
-                    tags: [item.category, item.source].filter(Boolean)
-                  },
-                  relevance_score: 0.8 + (index * 0.05) // Slightly different scores
-                }))
+                // Convert RSS items to ContentItem format with positive sentiment scoring
+                const rssContent = rssData.news.map((item: any, index: number) => {
+                  const title = item.title || ''
+                  const description = item.description || ''
+                  
+                  // Calculate positive sentiment score
+                  const titleScore = calculatePositiveScore(title)
+                  const descriptionScore = calculatePositiveScore(description)
+                  const positiveScore = titleScore + descriptionScore
+                  
+                  return {
+                    id: `rss_${item.id}`,
+                    type: 'news' as const,
+                    title,
+                    description,
+                    author: {
+                      id: `rss_${item.source}`,
+                      name: item.author || item.source,
+                      username: item.source.toLowerCase().replace(/\s+/g, ''),
+                      avatar_url: item.image || `https://dummyimage.com/40x40/ef4444/ffffff?text=${item.source.charAt(0)}`,
+                      is_verified: true
+                    },
+                    cover_image: item.image || getPlaceholderImage('news', 400, 250),
+                    created_at: item.pubDate,
+                    engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+                    metadata: {
+                      url: item.link,
+                      tags: [item.category, item.source].filter(Boolean)
+                    },
+                    relevance_score: (0.8 + (index * 0.05)) + (positiveScore * 0.1),
+                    positive_score: positiveScore
+                  }
+                })
                 
                 // Add RSS content to hybrid content
                 hybridContent = [...rssContent, ...hybridContent]
@@ -320,11 +393,11 @@ export function ForYouPage() {
   }
 
   const generateMockContent = (): ContentItem[] => {
-    return [
+    const mockItems = [
       // Add a hardcoded blog post for testing
       {
         id: 'test-blog-1',
-        type: 'blog',
+        type: 'blog' as const,
         title: 'The Future of Independent Music',
         description: 'Exploring how independent artists are reshaping the music industry through digital platforms and direct fan engagement.',
         author: {
@@ -663,8 +736,85 @@ export function ForYouPage() {
           tags: ['Local Music', 'Community', 'Emerging Artists']
         },
         relevance_score: 0.85
+      },
+      // Positive sentiment mock content
+      {
+        id: 'positive-1',
+        type: 'news' as const,
+        title: 'Awesome New Album Release: Epic Collaboration Between Super Artists',
+        description: 'This incredible collaboration is absolutely amazing and features the best musicians in the industry. The result is nothing short of phenomenal!',
+        author: {
+          id: 'music-news',
+          name: 'Music News Daily',
+          username: 'musicnews',
+          avatar_url: 'https://dummyimage.com/40x40/ef4444/ffffff?text=M',
+          is_verified: true
+        },
+        cover_image: getPlaceholderImage('news', 400, 250),
+        created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        metadata: {
+          url: '#',
+          tags: ['Awesome', 'Epic', 'Super', 'Best', 'Amazing']
+        },
+        relevance_score: 0.95
+      },
+      {
+        id: 'positive-2',
+        type: 'blog' as const,
+        title: 'Funny and Elegant: The Coolest Music Videos of 2024',
+        description: 'These hilarious and sophisticated music videos are absolutely brilliant and showcase the most creative artists in the industry.',
+        author: {
+          id: 'video-blog',
+          name: 'Video Blog Weekly',
+          username: 'videoblog',
+          avatar_url: 'https://dummyimage.com/40x40/3b82f6/ffffff?text=V',
+          is_verified: true
+        },
+        cover_image: getPlaceholderImage('video', 400, 250),
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        metadata: {
+          url: '#',
+          tags: ['Funny', 'Elegant', 'Cool', 'Brilliant', 'Creative']
+        },
+        relevance_score: 0.92
+      },
+      {
+        id: 'positive-3',
+        type: 'news' as const,
+        title: 'Inspiring Success Story: From Local Talent to Global Superstar',
+        description: 'This extraordinary journey from humble beginnings to worldwide fame is truly remarkable and shows what passion and dedication can achieve.',
+        author: {
+          id: 'success-stories',
+          name: 'Success Stories',
+          username: 'successstories',
+          avatar_url: 'https://dummyimage.com/40x40/10b981/ffffff?text=S',
+          is_verified: true
+        },
+        cover_image: getPlaceholderImage('news', 400, 250),
+        created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+        engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+        metadata: {
+          url: '#',
+          tags: ['Inspiring', 'Success', 'Extraordinary', 'Remarkable', 'Passion']
+        },
+        relevance_score: 0.88
       }
     ]
+
+    // Apply positive sentiment scoring to all mock items
+    return mockItems.map((item: any) => {
+      const titleScore = calculatePositiveScore(item.title)
+      const descriptionScore = calculatePositiveScore(item.description)
+      const positiveScore = titleScore + descriptionScore
+      
+      return {
+        ...item,
+        relevance_score: (item.relevance_score || 0.8) + (positiveScore * 0.1),
+        positive_score: positiveScore
+      }
+    }).sort((a: any, b: any) => (b.positive_score || 0) - (a.positive_score || 0))
   }
 
   const filteredContent = useMemo(() => {
@@ -767,25 +917,50 @@ export function ForYouPage() {
     }
   }
 
-  const getRelevanceBadge = (score?: number) => {
+  const getRelevanceBadge = (score?: number, positiveScore?: number) => {
     if (!score) return null
+    
+    // Check if content has high positive sentiment
+    const isPositive = positiveScore && positiveScore > 5
     
     let color = 'bg-gradient-to-r from-gray-500/20 to-slate-500/20 text-gray-300 border-gray-500/30'
     let text = 'Relevant'
     let iconColor = 'text-gray-300'
     
     if (score >= 0.9) {
-      color = 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/30'
-      text = 'Highly Relevant'
-      iconColor = 'text-green-300'
+      if (isPositive) {
+        color = 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-300 border-yellow-500/30'
+        text = '🌟 Positive & Highly Relevant'
+        iconColor = 'text-yellow-300'
+      } else {
+        color = 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/30'
+        text = 'Highly Relevant'
+        iconColor = 'text-green-300'
+      }
     } else if (score >= 0.7) {
-      color = 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-300 border-blue-500/30'
-      text = 'Very Relevant'
-      iconColor = 'text-blue-300'
+      if (isPositive) {
+        color = 'bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-300 border-pink-500/30'
+        text = '✨ Positive & Very Relevant'
+        iconColor = 'text-pink-300'
+      } else {
+        color = 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-300 border-blue-500/30'
+        text = 'Very Relevant'
+        iconColor = 'text-blue-300'
+      }
     } else if (score >= 0.5) {
-      color = 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-300 border-yellow-500/30'
-      text = 'Relevant'
-      iconColor = 'text-yellow-300'
+      if (isPositive) {
+        color = 'bg-gradient-to-r from-purple-500/20 to-violet-500/20 text-purple-300 border-purple-500/30'
+        text = '💫 Positive & Relevant'
+        iconColor = 'text-purple-300'
+      } else {
+        color = 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-300 border-yellow-500/30'
+        text = 'Relevant'
+        iconColor = 'text-yellow-300'
+      }
+    } else if (isPositive) {
+      color = 'bg-gradient-to-r from-indigo-500/20 to-blue-500/20 text-indigo-300 border-indigo-500/30'
+      text = '⭐ Positive Content'
+      iconColor = 'text-indigo-300'
     }
     
     return (
@@ -1129,7 +1304,7 @@ export function ForYouPage() {
                                     </Badge>
                                   )}
                                   <div className="flex-shrink-0">
-                                    {getRelevanceBadge(item.relevance_score)}
+                                    {getRelevanceBadge(item.relevance_score, item.positive_score)}
                                   </div>
                                 </div>
 
