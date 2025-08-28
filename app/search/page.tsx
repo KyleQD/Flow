@@ -688,38 +688,38 @@ export default function SearchPage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <TabsList className="grid w-full grid-cols-5 bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-2">
+            <TabsList className="grid w-full grid-cols-5 bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-1 gap-1">
               <TabsTrigger 
                 value="all" 
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white rounded-xl transition-all duration-300"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white rounded-xl transition-all duration-300 flex items-center justify-center text-gray-300 hover:text-white data-[state=active]:!bg-gradient-to-r data-[state=active]:!from-purple-500 data-[state=active]:!to-pink-500 data-[state=active]:!text-white"
               >
                 <Globe className="h-4 w-4 mr-2" />
                 All
               </TabsTrigger>
               <TabsTrigger 
                 value="artists"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all duration-300"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white rounded-xl transition-all duration-300 flex items-center justify-center text-gray-300 hover:text-white data-[state=active]:!bg-gradient-to-r data-[state=active]:!from-purple-500 data-[state=active]:!to-blue-500 data-[state=active]:!text-white"
               >
                 <Music className="h-4 w-4 mr-2" />
                 Artists
               </TabsTrigger>
               <TabsTrigger 
                 value="venues"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white rounded-xl transition-all duration-300"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white rounded-xl transition-all duration-300 flex items-center justify-center text-gray-300 hover:text-white data-[state=active]:!bg-gradient-to-r data-[state=active]:!from-blue-500 data-[state=active]:!to-cyan-500 data-[state=active]:!text-white"
               >
                 <Building2 className="h-4 w-4 mr-2" />
                 Venues
               </TabsTrigger>
               <TabsTrigger 
                 value="events"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white rounded-xl transition-all duration-300"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white rounded-xl transition-all duration-300 flex items-center justify-center text-gray-300 hover:text-white data-[state=active]:!bg-gradient-to-r data-[state=active]:!from-orange-500 data-[state=active]:!to-red-500 data-[state=active]:!text-white"
               >
                 <Calendar className="h-4 w-4 mr-2" />
                 Events
               </TabsTrigger>
               <TabsTrigger 
                 value="users"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white rounded-xl transition-all duration-300"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white rounded-xl transition-all duration-300 flex items-center justify-center text-gray-300 hover:text-white data-[state=active]:!bg-gradient-to-r data-[state=active]:!from-emerald-500 data-[state=active]:!to-teal-500 data-[state=active]:!text-white"
               >
                 <Users className="h-4 w-4 mr-2" />
                 Citizens

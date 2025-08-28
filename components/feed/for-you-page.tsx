@@ -993,14 +993,14 @@ export function ForYouPage() {
                 {/* Content Type Toggle */}
                 <div className="flex-1">
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2">
+                    <TabsList className="grid w-full grid-cols-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-1 gap-1">
                       {contentTypes.slice(0, 4).map((type) => {
                         const Icon = type.icon
                         return (
                           <TabsTrigger
                             key={type.value}
                             value={type.value}
-                            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm font-medium rounded-2xl h-12 px-4 touch-manipulation"
+                            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm font-medium rounded-2xl h-12 px-4 touch-manipulation flex items-center justify-center text-gray-300 hover:text-white data-[state=active]:!bg-gradient-to-r data-[state=active]:!from-purple-600 data-[state=active]:!to-pink-600 data-[state=active]:!text-white"
                           >
                             <Icon className="h-4 w-4 mr-2" />
                             {type.label}
