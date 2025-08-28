@@ -113,9 +113,32 @@ export function ForYouPage() {
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [sortBy, setSortBy] = useState<'relevant' | 'recent' | 'popular' | 'positive'>('recent')
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
+  const [sortBy, setSortBy] = useState<'relevant' | 'recent' | 'popular' | 'positive' | 'trending' | 'local' | 'following'>('recent')
   const [bookmarkedContent, setBookmarkedContent] = useState<Set<string>>(new Set())
   const { user } = useAuth()
+
+  // Search suggestions for autocomplete
+  const searchSuggestions = useMemo(() => {
+    const suggestions = [
+      // Artists
+      'Blood Orange', 'Lorde', 'Zadie Smith', 'Dev Hynes',
+      // Genres
+      'Indie Pop', 'Hip-Hop', 'Electronic', 'Jazz', 'Rock',
+      // Events
+      'Music Festival', 'Concert', 'Live Performance',
+      // Topics
+      'Album Review', 'New Release', 'Tour Dates', 'Music News'
+    ]
+    
+    if (!searchQuery) return suggestions.slice(0, 6)
+    
+    return suggestions
+      .filter(suggestion => 
+        suggestion.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .slice(0, 6)
+  }, [searchQuery])
 
   const contentTypes = [
     { value: 'all', label: 'All', icon: Sparkles },
@@ -913,7 +936,7 @@ export function ForYouPage() {
               transition={{ delay: 0.1 }}
               className="space-y-4"
             >
-              {/* Prominent Search Bar */}
+              {/* Enhanced Search Bar with Autocomplete */}
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                 <div className="relative">
@@ -922,6 +945,8 @@ export function ForYouPage() {
                     placeholder="Search artists, genres, events, or topics..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setShowSearchSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
                     className="pl-16 pr-16 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-16 rounded-3xl focus:border-purple-400/50 focus:ring-purple-400/20 backdrop-blur-sm text-lg"
                   />
                   {searchQuery && (
@@ -934,6 +959,32 @@ export function ForYouPage() {
                       <X className="h-5 w-5" />
                     </Button>
                   )}
+                  
+                  {/* Search Suggestions */}
+                  <AnimatePresence>
+                    {showSearchSuggestions && searchSuggestions.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full left-0 right-0 mt-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden z-50"
+                      >
+                        {searchSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              setSearchQuery(suggestion)
+                              setShowSearchSuggestions(false)
+                            }}
+                            className="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-colors flex items-center gap-3"
+                          >
+                            <Search className="h-4 w-4 text-gray-400" />
+                            <span>{suggestion}</span>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -1040,7 +1091,7 @@ export function ForYouPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mb-8"
+              className="mb-6"
             >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-white">For You Mix</h2>
@@ -1094,11 +1145,111 @@ export function ForYouPage() {
               </div>
             </motion.div>
 
-            {/* Main Content Grid */}
+            {/* Trending Topics Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="mb-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white">Trending Topics</h2>
+                <Button variant="ghost" className="text-purple-400 hover:text-purple-300">
+                  Explore
+                </Button>
+              </div>
+              <div className="flex gap-3 flex-wrap">
+                {[
+                  { label: 'Blood Orange', count: '2.3k' },
+                  { label: 'Album Reviews', count: '1.8k' },
+                  { label: 'Indie Music', count: '3.1k' },
+                  { label: 'Live Events', count: '1.2k' },
+                  { label: 'New Releases', count: '2.7k' },
+                  { label: 'Music News', count: '1.9k' }
+                ].map((topic, index) => (
+                  <motion.button
+                    key={topic.label}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 * index }}
+                    className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-xl border border-purple-500/30 rounded-full px-4 py-2 text-white hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-300 group"
+                  >
+                    <span className="text-sm font-medium">{topic.label}</span>
+                    <span className="ml-2 text-xs text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {topic.count}
+                    </span>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Local Events Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
+              className="mb-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white">Local Events</h2>
+                <Button variant="ghost" className="text-purple-400 hover:text-purple-300">
+                  View All Events
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  {
+                    title: 'Indie Night at The Basement',
+                    date: 'Tomorrow, 8:00 PM',
+                    location: 'Downtown Music Hall',
+                    price: '$15',
+                    image: '🎵'
+                  },
+                  {
+                    title: 'Jazz Fusion Workshop',
+                    date: 'Friday, 7:30 PM',
+                    location: 'Blue Note Club',
+                    price: '$25',
+                    image: '🎷'
+                  },
+                  {
+                    title: 'Electronic Music Festival',
+                    date: 'Saturday, 6:00 PM',
+                    location: 'Warehouse District',
+                    price: '$45',
+                    image: '🎧'
+                  }
+                ].map((event, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * index }}
+                    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="text-3xl">{event.image}</div>
+                      <div className="flex-1">
+                        <h3 className="text-white font-semibold group-hover:text-purple-300 transition-colors">
+                          {event.title}
+                        </h3>
+                        <p className="text-gray-400 text-sm">{event.date}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-300">{event.location}</span>
+                      <span className="text-purple-300 font-medium">{event.price}</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Main Content Grid */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
               className="space-y-6"
             >
               {/* Thread composer for Forums tab */}
@@ -1161,7 +1312,10 @@ export function ForYouPage() {
                           />
                         </div>
                       ) : (
-                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl overflow-hidden group hover:bg-white/10 transition-all duration-300 cursor-pointer">
+                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl overflow-hidden group hover:bg-white/10 hover:shadow-purple-500/20 transition-all duration-300 cursor-pointer relative">
+                          {/* Hover Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 to-pink-500/0 group-hover:from-purple-500/5 group-hover:to-pink-500/5 transition-all duration-300 z-10 pointer-events-none"></div>
+                          
                           {/* Visual Header */}
                           <div className="h-48 bg-gradient-to-br from-purple-500/20 to-pink-500/20 relative overflow-hidden">
                             {item.cover_image ? (
@@ -1172,12 +1326,22 @@ export function ForYouPage() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <div className="text-6xl text-white/30">
+                                <div className="text-6xl text-white/30 group-hover:scale-110 transition-transform duration-300">
                                   {item.type === 'music' ? '🎵' : item.type === 'video' ? '🎬' : item.type === 'news' ? '📰' : '📝'}
                                 </div>
                               </div>
                             )}
-                            <div className="absolute top-3 right-3 flex gap-2">
+                            
+                            {/* Play Button for Video/Music */}
+                            {(item.type === 'video' || item.type === 'music') && (
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 group-hover:scale-110 transition-transform duration-300">
+                                  <Play className="h-8 w-8 text-white fill-white" />
+                                </div>
+                              </div>
+                            )}
+                            
+                            <div className="absolute top-3 right-3 flex gap-2 z-20">
                               <Badge className="bg-black/50 text-white border-0">
                                 {item.type}
                               </Badge>
@@ -1195,7 +1359,7 @@ export function ForYouPage() {
                           </div>
 
                           {/* Content */}
-                          <div className="p-4">
+                          <div className="p-4 relative z-20">
                             {/* Title */}
                             <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 group-hover:text-purple-300 transition-colors">
                               {item.title}
@@ -1229,18 +1393,21 @@ export function ForYouPage() {
                             {/* Engagement Metrics */}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4 text-xs text-gray-400">
-                                <div className="flex items-center gap-1">
-                                  <Heart className="h-3 w-3" />
+                                <button className="flex items-center gap-1 hover:text-purple-400 transition-colors group/btn">
+                                  <Heart className="h-3 w-3 group-hover/btn:scale-110 transition-transform" />
                                   <span>{item.engagement?.likes || 0}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <MessageCircle className="h-3 w-3" />
+                                </button>
+                                <button className="flex items-center gap-1 hover:text-blue-400 transition-colors group/btn">
+                                  <MessageCircle className="h-3 w-3 group-hover/btn:scale-110 transition-transform" />
                                   <span>{item.engagement?.comments || 0}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Share2 className="h-3 w-3" />
+                                </button>
+                                <button className="flex items-center gap-1 hover:text-green-400 transition-colors group/btn">
+                                  <Share2 className="h-3 w-3 group-hover/btn:scale-110 transition-transform" />
                                   <span>{item.engagement?.shares || 0}</span>
-                                </div>
+                                </button>
+                                <button className="flex items-center gap-1 hover:text-yellow-400 transition-colors group/btn">
+                                  <Bookmark className="h-3 w-3 group-hover/btn:scale-110 transition-transform" />
+                                </button>
                               </div>
                               {sortBy === 'positive' && item.positiveScore && item.positiveScore > 0 && (
                                 <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 px-2 py-1 text-xs">
