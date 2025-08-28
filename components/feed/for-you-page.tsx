@@ -1086,64 +1086,66 @@ export function ForYouPage() {
               )}
             </motion.div>
 
-            {/* For You Mix Carousel */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mb-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">For You Mix</h2>
-                <Button variant="ghost" className="text-purple-400 hover:text-purple-300">
-                  View All
-                </Button>
-              </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                {filteredContent.slice(0, 5).map((item, index) => (
-                  <motion.div
-                    key={`carousel-${item.id}`}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 * index }}
-                    className="flex-shrink-0 w-80 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-all duration-300 group cursor-pointer"
-                  >
-                    <div className="h-48 bg-gradient-to-br from-purple-500/20 to-pink-500/20 relative overflow-hidden">
-                      {item.cover_image ? (
-                        <img 
-                          src={item.cover_image} 
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <div className="text-6xl text-white/30">
-                            {item.type === 'music' ? '🎵' : item.type === 'video' ? '🎬' : item.type === 'news' ? '📰' : '📝'}
+            {/* Optional For You Mix Carousel - Only show when explicitly enabled */}
+            {false && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mb-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-white">For You Mix</h2>
+                  <Button variant="ghost" className="text-purple-400 hover:text-purple-300">
+                    View All
+                  </Button>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                  {filteredContent.slice(0, 5).map((item, index) => (
+                    <motion.div
+                      key={`carousel-${item.id}`}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                      className="flex-shrink-0 w-80 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-all duration-300 group cursor-pointer"
+                    >
+                      <div className="h-48 bg-gradient-to-br from-purple-500/20 to-pink-500/20 relative overflow-hidden">
+                        {item.cover_image ? (
+                          <img 
+                            src={item.cover_image} 
+                            alt={item.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-6xl text-white/30">
+                              {item.type === 'music' ? '🎵' : item.type === 'video' ? '🎬' : item.type === 'news' ? '📰' : '📝'}
+                            </div>
                           </div>
+                        )}
+                        <div className="absolute top-3 right-3">
+                          <Badge className="bg-black/50 text-white border-0">
+                            {item.type}
+                          </Badge>
                         </div>
-                      )}
-                      <div className="absolute top-3 right-3">
-                        <Badge className="bg-black/50 text-white border-0">
-                          {item.type}
-                        </Badge>
                       </div>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 group-hover:text-purple-300 transition-colors">
-                        {item.title}
-                      </h3>
-                      <p className="text-sm text-gray-400 line-clamp-2 mb-3">
-                        {item.description}
-                      </p>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{item.author?.name || 'Unknown'}</span>
-                        <span>{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
+                      <div className="p-4">
+                        <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 group-hover:text-purple-300 transition-colors">
+                          {item.title}
+                        </h3>
+                        <p className="text-sm text-gray-400 line-clamp-2 mb-3">
+                          {item.description}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>{item.author?.name || 'Unknown'}</span>
+                          <span>{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
             {/* Trending Topics Section */}
             <motion.div
@@ -1252,6 +1254,12 @@ export function ForYouPage() {
               transition={{ delay: 0.35 }}
               className="space-y-6"
             >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white">Latest Content</h2>
+                <Button variant="ghost" className="text-purple-400 hover:text-purple-300">
+                  View All
+                </Button>
+              </div>
               {/* Thread composer for Forums tab */}
               {activeTab === 'forums' && user && (
                 <motion.div
@@ -1312,110 +1320,57 @@ export function ForYouPage() {
                           />
                         </div>
                       ) : (
-                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl overflow-hidden group hover:bg-white/10 hover:shadow-purple-500/20 transition-all duration-300 cursor-pointer relative">
-                          {/* Hover Overlay */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 to-pink-500/0 group-hover:from-purple-500/5 group-hover:to-pink-500/5 transition-all duration-300 z-10 pointer-events-none"></div>
+                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 cursor-pointer group">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="text-3xl">
+                              {item.type === 'music' ? '🎵' : item.type === 'video' ? '🎬' : item.type === 'news' ? '📰' : item.type === 'blog' ? '📝' : '🎪'}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="text-white font-semibold group-hover:text-purple-300 transition-colors line-clamp-2">
+                                {item.title}
+                              </h3>
+                              {item.description && (
+                                <p className="text-gray-400 text-sm line-clamp-2 mt-1">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                           
-                          {/* Visual Header */}
-                          <div className="h-48 bg-gradient-to-br from-purple-500/20 to-pink-500/20 relative overflow-hidden">
-                            {item.cover_image ? (
-                              <img 
-                                src={item.cover_image} 
-                                alt={item.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <div className="text-6xl text-white/30 group-hover:scale-110 transition-transform duration-300">
-                                  {item.type === 'music' ? '🎵' : item.type === 'video' ? '🎬' : item.type === 'news' ? '📰' : '📝'}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Play Button for Video/Music */}
-                            {(item.type === 'video' || item.type === 'music') && (
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 group-hover:scale-110 transition-transform duration-300">
-                                  <Play className="h-8 w-8 text-white fill-white" />
-                                </div>
-                              </div>
-                            )}
-                            
-                            <div className="absolute top-3 right-3 flex gap-2 z-20">
-                              <Badge className="bg-black/50 text-white border-0">
-                                {item.type}
-                              </Badge>
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              {item.author?.name && (
+                                <span className="text-purple-300 font-medium">{item.author.name}</span>
+                              )}
                               {item.metadata?.genre && (
-                                <Badge className="bg-purple-500/80 text-white border-0">
+                                <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-2 py-1 text-xs">
                                   {item.metadata.genre}
                                 </Badge>
                               )}
                             </div>
-                            {item.metadata?.duration && (
-                              <div className="absolute bottom-3 left-3 bg-black/50 text-white px-2 py-1 rounded-lg text-sm">
-                                {Math.floor(item.metadata.duration / 60)}:{String(item.metadata.duration % 60).padStart(2, '0')}
-                              </div>
-                            )}
+                            <span className="text-gray-400">{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
                           </div>
-
-                          {/* Content */}
-                          <div className="p-4 relative z-20">
-                            {/* Title */}
-                            <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 group-hover:text-purple-300 transition-colors">
-                              {item.title}
-                            </h3>
-
-                            {/* Description */}
-                            {item.description && (
-                              <p className="text-sm text-gray-400 line-clamp-2 mb-3">
-                                {item.description}
-                              </p>
+                          
+                          {/* Engagement Metrics */}
+                          <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                            <div className="flex items-center gap-1">
+                              <Heart className="h-3 w-3" />
+                              <span>{item.engagement?.likes || 0}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MessageCircle className="h-3 w-3" />
+                              <span>{item.engagement?.comments || 0}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Share2 className="h-3 w-3" />
+                              <span>{item.engagement?.shares || 0}</span>
+                            </div>
+                            {sortBy === 'positive' && item.positiveScore && item.positiveScore > 0 && (
+                              <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 px-2 py-1 text-xs ml-auto">
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                +{item.positiveScore}
+                              </Badge>
                             )}
-
-                            {/* Source and Metadata */}
-                            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                              <div className="flex items-center gap-2">
-                                {item.author?.name && (
-                                  <>
-                                    <span className="text-purple-300">by</span>
-                                    <span className="text-white font-medium">{item.author.name}</span>
-                                    {item.author.is_verified && (
-                                      <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 px-1 py-0 text-xs">
-                                        ✓
-                                      </Badge>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                              <span>{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
-                            </div>
-
-                            {/* Engagement Metrics */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4 text-xs text-gray-400">
-                                <button className="flex items-center gap-1 hover:text-purple-400 transition-colors group/btn">
-                                  <Heart className="h-3 w-3 group-hover/btn:scale-110 transition-transform" />
-                                  <span>{item.engagement?.likes || 0}</span>
-                                </button>
-                                <button className="flex items-center gap-1 hover:text-blue-400 transition-colors group/btn">
-                                  <MessageCircle className="h-3 w-3 group-hover/btn:scale-110 transition-transform" />
-                                  <span>{item.engagement?.comments || 0}</span>
-                                </button>
-                                <button className="flex items-center gap-1 hover:text-green-400 transition-colors group/btn">
-                                  <Share2 className="h-3 w-3 group-hover/btn:scale-110 transition-transform" />
-                                  <span>{item.engagement?.shares || 0}</span>
-                                </button>
-                                <button className="flex items-center gap-1 hover:text-yellow-400 transition-colors group/btn">
-                                  <Bookmark className="h-3 w-3 group-hover/btn:scale-110 transition-transform" />
-                                </button>
-                              </div>
-                              {sortBy === 'positive' && item.positiveScore && item.positiveScore > 0 && (
-                                <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 px-2 py-1 text-xs">
-                                  <Sparkles className="h-3 w-3 mr-1" />
-                                  +{item.positiveScore}
-                                </Badge>
-                              )}
-                            </div>
                           </div>
                         </div>
                       )}
