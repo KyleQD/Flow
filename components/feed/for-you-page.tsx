@@ -30,7 +30,9 @@ import {
   TrendingUp,
   Users,
   Search,
-  Filter
+  Filter,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import Image from 'next/image'
@@ -803,6 +805,15 @@ export function ForYouPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/30 to-slate-950 relative overflow-hidden">
+      <style jsx>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -951,38 +962,53 @@ export function ForYouPage() {
               className="space-y-4"
             >
                           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl overflow-x-auto rounded-3xl p-2">
+              {/* Main content types - Responsive grid */}
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2">
                 {contentTypes.slice(0, 6).map((type) => {
                   const Icon = type.icon
                   return (
                     <TabsTrigger
                       key={type.value}
                       value={type.value}
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm md:text-base font-medium rounded-2xl h-12"
+                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-4 touch-manipulation"
                     >
-                      <Icon className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                      <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
                       <span className="hidden sm:inline">{type.label}</span>
                     </TabsTrigger>
                   )
                 })}
               </TabsList>
               
-              {/* Second row for music genre tabs */}
-              <TabsList className="grid w-full grid-cols-7 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl overflow-x-auto rounded-3xl p-2">
-                {contentTypes.slice(6).map((type) => {
-                  const Icon = type.icon
-                  return (
-                    <TabsTrigger
-                      key={type.value}
-                      value={type.value}
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm md:text-base font-medium rounded-2xl h-12"
-                    >
-                      <Icon className="h-4 w-4 md:h-5 md:w-5 mr-2" />
-                      <span className="hidden sm:inline">{type.label}</span>
-                    </TabsTrigger>
-                  )
-                })}
-              </TabsList>
+              {/* Music genre tabs - Scrollable horizontal layout */}
+              <div className="mt-3 relative">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <span className="text-xs text-gray-400 font-medium">Music Genres</span>
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <ChevronLeft className="h-3 w-3" />
+                    <span>Scroll</span>
+                    <ChevronRight className="h-3 w-3" />
+                  </div>
+                </div>
+                <TabsList className="flex w-full bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2 overflow-x-auto scrollbar-hide">
+                  {/* Left fade indicator */}
+                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none z-10 rounded-l-3xl"></div>
+                  {/* Right fade indicator */}
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none z-10 rounded-r-3xl"></div>
+                  {contentTypes.slice(6).map((type) => {
+                    const Icon = type.icon
+                    return (
+                      <TabsTrigger
+                        key={type.value}
+                        value={type.value}
+                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-3 sm:px-4 flex-shrink-0 touch-manipulation"
+                      >
+                        <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
+                        <span>{type.label}</span>
+                      </TabsTrigger>
+                    )
+                  })}
+                </TabsList>
+              </div>
             </Tabs>
             </motion.div>
 
