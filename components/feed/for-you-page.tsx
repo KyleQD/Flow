@@ -937,15 +937,15 @@ export function ForYouPage() {
 
         <div className="max-w-5xl mx-auto">
           {/* Main Content Area */}
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Search and Filter Bar */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-6">
-                <div className="flex flex-col lg:flex-row gap-6">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   {/* Search */}
                   <div className="flex-1 relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
@@ -974,7 +974,7 @@ export function ForYouPage() {
                   <Button
                     variant="outline"
                     onClick={() => setShowFilters(!showFilters)}
-                    className="h-14 border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 transition-all whitespace-nowrap rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10"
+                    className="h-14 border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 transition-all whitespace-nowrap rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 sm:w-auto w-full"
                   >
                     <SlidersHorizontal className="h-5 w-5 mr-3" />
                     <span className="text-lg font-medium">
@@ -990,7 +990,7 @@ export function ForYouPage() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mt-6 pt-6 border-t border-white/10"
+                      className="mt-4 pt-4 border-t border-white/10"
                     >
                       <div className="flex gap-3 flex-wrap">
                         {[
@@ -1005,13 +1005,13 @@ export function ForYouPage() {
                               key={option.value}
                               variant={sortBy === option.value ? "default" : "outline"}
                               onClick={() => setSortBy(option.value as any)}
-                              className={`h-12 whitespace-nowrap rounded-2xl text-lg font-medium ${
+                              className={`h-10 whitespace-nowrap rounded-2xl text-base font-medium ${
                                 sortBy === option.value 
                                   ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25' 
                                   : 'border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 bg-white/5 backdrop-blur-sm hover:bg-white/10'
                               } transition-all duration-300`}
                             >
-                              <Icon className="h-5 w-5 mr-3" />
+                              <Icon className="h-4 w-4 mr-2" />
                               {option.label}
                             </Button>
                           )
@@ -1028,11 +1028,11 @@ export function ForYouPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="space-y-4"
+              className="space-y-3"
             >
-                          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              {/* Main content types - Responsive grid */}
-              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                {/* Main content types - Responsive grid */}
+                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2">
                 {contentTypes.slice(0, 6).map((type) => {
                   const Icon = type.icon
                   return (
@@ -1048,11 +1048,8 @@ export function ForYouPage() {
                 })}
               </TabsList>
               
-              {/* Music genre tabs - Multi-row layout to prevent scrolling */}
-              <div className="mt-3">
-                <div className="flex items-center mb-2 px-1">
-                  <span className="text-xs text-gray-400 font-medium">Music Genres</span>
-                </div>
+              {/* Music genre tabs - Clean layout without label */}
+              <div className="mt-4">
                 <TabsList className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2">
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
                     {contentTypes.slice(6).map((type) => {
