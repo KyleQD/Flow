@@ -888,186 +888,213 @@ export function ForYouPage() {
       </div>
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
-        {/* Hero Section */}
+        {/* Compact Header Section */}
         <motion.div 
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="text-center space-y-6 mb-12"
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="text-center mb-8"
         >
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 blur-3xl rounded-full"></div>
-            <h1 className="relative text-5xl md:text-7xl font-black text-white tracking-tight">
-              For You <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">Feed</span>
-            </h1>
-          </div>
-          <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed px-4 font-light">
-            Personalized content curated just for you. Discover music, events, videos, and more based on your interests and preferences.
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
+            For You <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">Feed</span>
+          </h1>
+          <p className="text-sm md:text-base text-gray-400 max-w-2xl mx-auto">
+            Discover music, events, and discussions tailored to your taste
           </p>
-          <div className="flex justify-center gap-6 md:gap-8 text-sm text-gray-400 flex-wrap">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
-            >
-              <div className="h-2 w-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
-              <span className="font-medium">Personalized</span>
-            </motion.div>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
-            >
-              <div className="h-2 w-2 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-pulse delay-500"></div>
-              <span className="font-medium">Real-time</span>
-            </motion.div>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 }}
-              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
-            >
-              <div className="h-2 w-2 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-pulse delay-1000"></div>
-              <span className="font-medium">Curated</span>
-            </motion.div>
-          </div>
         </motion.div>
 
         <div className="max-w-5xl mx-auto">
           {/* Main Content Area */}
           <div className="space-y-6">
-                        {/* Unified Search, Sort, and Content Tabs */}
+                        {/* Enhanced Search and Filter Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
+              className="space-y-4"
             >
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-4">
-                <div className="space-y-4">
-                  {/* Search and Sort Row */}
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    {/* Search */}
-                    <div className="flex-1 relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-                      <div className="relative">
-                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
-                        <Input
-                          placeholder="Search content, artists, genres..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-12 pr-12 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-14 rounded-2xl focus:border-purple-400/50 focus:ring-purple-400/20 backdrop-blur-sm text-lg"
-                        />
-                        {searchQuery && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 text-gray-400 hover:text-white rounded-xl"
+              {/* Prominent Search Bar */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                <div className="relative">
+                  <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-400 group-hover:text-purple-400 transition-colors" />
+                  <Input
+                    placeholder="Search artists, genres, events, or topics..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-16 pr-16 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-16 rounded-3xl focus:border-purple-400/50 focus:ring-purple-400/20 backdrop-blur-sm text-lg"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-12 w-12 p-0 text-gray-400 hover:text-white rounded-2xl"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Simplified Filter Row */}
+              <div className="flex flex-col lg:flex-row gap-4">
+                {/* Content Type Toggle */}
+                <div className="flex-1">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2">
+                      {contentTypes.slice(0, 4).map((type) => {
+                        const Icon = type.icon
+                        return (
+                          <TabsTrigger
+                            key={type.value}
+                            value={type.value}
+                            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm font-medium rounded-2xl h-12 px-4 touch-manipulation"
                           >
-                            <X className="h-5 w-5" />
+                            <Icon className="h-4 w-4 mr-2" />
+                            {type.label}
+                          </TabsTrigger>
+                        )
+                      })}
+                    </TabsList>
+                  </Tabs>
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="lg:w-48">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="w-full h-12 border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 transition-all rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10"
+                  >
+                    <SlidersHorizontal className="h-5 w-5 mr-3" />
+                    <span className="text-sm font-medium">
+                      {sortBy === 'positive' ? 'Most Positive' : sortBy === 'relevant' ? 'Most Relevant' : sortBy === 'recent' ? 'Most Recent' : sortBy === 'popular' ? 'Most Popular' : 'Sort'}
+                    </span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Sort Options */}
+              <AnimatePresence>
+                {showFilters && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-4"
+                  >
+                    <div className="flex gap-3 flex-wrap">
+                      {[
+                        { value: 'recent', label: 'Latest', icon: Clock },
+                        { value: 'trending', label: 'Trending', icon: TrendingUp },
+                        { value: 'local', label: 'Local', icon: MapPin },
+                        { value: 'following', label: 'Following', icon: Users },
+                        { value: 'relevant', label: 'Relevant', icon: Star },
+                        { value: 'positive', label: 'Positive', icon: Sparkles }
+                      ].map((option) => {
+                        const Icon = option.icon
+                        return (
+                          <Button
+                            key={option.value}
+                            variant={sortBy === option.value ? "default" : "outline"}
+                            onClick={() => setSortBy(option.value as any)}
+                            className={`h-10 whitespace-nowrap rounded-2xl text-sm font-medium ${
+                              sortBy === option.value 
+                                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25' 
+                                : 'border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 bg-white/5 backdrop-blur-sm hover:bg-white/10'
+                            } transition-all duration-300`}
+                          >
+                            <Icon className="h-4 w-4 mr-2" />
+                            {option.label}
                           </Button>
-                        )}
+                        )
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Genre Pills (Conditional) */}
+              {activeTab === 'music' && (
+                <div className="flex gap-2 flex-wrap">
+                  {contentTypes.slice(6).map((type) => {
+                    const Icon = type.icon
+                    return (
+                      <Button
+                        key={type.value}
+                        variant="outline"
+                        className="h-8 px-4 text-xs font-medium rounded-full border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
+                      >
+                        <Icon className="h-3 w-3 mr-1" />
+                        {type.label}
+                      </Button>
+                    )
+                  })}
+                </div>
+              )}
+            </motion.div>
+
+            {/* For You Mix Carousel */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-8"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white">For You Mix</h2>
+                <Button variant="ghost" className="text-purple-400 hover:text-purple-300">
+                  View All
+                </Button>
+              </div>
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                {filteredContent.slice(0, 5).map((item, index) => (
+                  <motion.div
+                    key={`carousel-${item.id}`}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 * index }}
+                    className="flex-shrink-0 w-80 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-all duration-300 group cursor-pointer"
+                  >
+                    <div className="h-48 bg-gradient-to-br from-purple-500/20 to-pink-500/20 relative overflow-hidden">
+                      {item.cover_image ? (
+                        <img 
+                          src={item.cover_image} 
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <div className="text-6xl text-white/30">
+                            {item.type === 'music' ? '🎵' : item.type === 'video' ? '🎬' : item.type === 'news' ? '📰' : '📝'}
+                          </div>
+                        </div>
+                      )}
+                      <div className="absolute top-3 right-3">
+                        <Badge className="bg-black/50 text-white border-0">
+                          {item.type}
+                        </Badge>
                       </div>
                     </div>
-
-                    {/* Sort Button */}
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="h-14 border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 transition-all whitespace-nowrap rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10 sm:w-auto w-full"
-                    >
-                      <SlidersHorizontal className="h-5 w-5 mr-3" />
-                      <span className="text-lg font-medium">
-                        {sortBy === 'positive' ? 'Most Positive' : sortBy === 'relevant' ? 'Most Relevant' : sortBy === 'recent' ? 'Most Recent' : sortBy === 'popular' ? 'Most Popular' : 'Sort'}
-                      </span>
-                    </Button>
-                  </div>
-
-                  {/* Sort Options */}
-                  <AnimatePresence>
-                    {showFilters && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="pt-4 border-t border-white/10"
-                      >
-                        <div className="flex gap-3 flex-wrap">
-                          {[
-                            { value: 'relevant', label: 'Most Relevant', icon: Star },
-                            { value: 'recent', label: 'Most Recent', icon: Clock },
-                            { value: 'popular', label: 'Most Popular', icon: TrendingUp },
-                            { value: 'positive', label: 'Most Positive', icon: Sparkles }
-                          ].map((option) => {
-                            const Icon = option.icon
-                            return (
-                              <Button
-                                key={option.value}
-                                variant={sortBy === option.value ? "default" : "outline"}
-                                onClick={() => setSortBy(option.value as any)}
-                                className={`h-10 whitespace-nowrap rounded-2xl text-base font-medium ${
-                                  sortBy === option.value 
-                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25' 
-                                    : 'border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 bg-white/5 backdrop-blur-sm hover:bg-white/10'
-                                } transition-all duration-300`}
-                              >
-                                <Icon className="h-4 w-4 mr-2" />
-                                {option.label}
-                              </Button>
-                            )
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Content Tabs */}
-                  <div className="pt-4 border-t border-white/10">
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                      {/* Main content types - Responsive grid */}
-                      <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2 gap-2 mb-3">
-                        {contentTypes.slice(0, 6).map((type) => {
-                          const Icon = type.icon
-                          return (
-                            <TabsTrigger
-                              key={type.value}
-                              value={type.value}
-                              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-4 touch-manipulation"
-                            >
-                              <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
-                              <span className="hidden sm:inline">{type.label}</span>
-                            </TabsTrigger>
-                          )
-                        })}
-                      </TabsList>
-                      
-                      {/* Music genre tabs - Clean layout without label */}
-                      <TabsList className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-2">
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 w-full">
-                          {contentTypes.slice(6).map((type) => {
-                            const Icon = type.icon
-                            return (
-                              <TabsTrigger
-                                key={type.value}
-                                value={type.value}
-                                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-xs sm:text-sm md:text-base font-medium rounded-2xl h-10 sm:h-12 px-2 sm:px-3 touch-manipulation"
-                              >
-                                <Icon className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2" />
-                                <span className="hidden sm:inline">{type.label}</span>
-                              </TabsTrigger>
-                            )
-                          })}
-                        </div>
-                      </TabsList>
-                    </Tabs>
-                  </div>
-                </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 group-hover:text-purple-300 transition-colors">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-gray-400 line-clamp-2 mb-3">
+                        {item.description}
+                      </p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{item.author?.name || 'Unknown'}</span>
+                        <span>{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
 
-            {/* Content Grid */}
+            {/* Main Content Grid */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1086,28 +1113,20 @@ export function ForYouPage() {
               )}
 
               {loading ? (
-                <div className="grid grid-cols-1 gap-8">
-                  {[...Array(3)].map((_, i) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[...Array(6)].map((_, i) => (
                     <div key={i} className="bg-white/5 backdrop-blur-xl border border-white/10 animate-pulse rounded-3xl overflow-hidden">
-                      <div className="p-6 md:p-8">
-                        <div className="flex items-start gap-6">
-                          <div className="w-20 h-20 md:w-24 md:h-24 bg-white/10 rounded-2xl flex-shrink-0"></div>
-                          <div className="flex-1 space-y-4">
-                            <div className="h-6 bg-white/10 rounded-xl w-3/4"></div>
-                            <div className="h-4 bg-white/10 rounded-xl w-1/2"></div>
-                            <div className="h-4 bg-white/10 rounded-xl w-2/3"></div>
-                            <div className="flex gap-3">
-                              <div className="h-8 bg-white/10 rounded-xl w-20"></div>
-                              <div className="h-8 bg-white/10 rounded-xl w-24"></div>
-                            </div>
-                          </div>
-                        </div>
+                      <div className="h-48 bg-white/10"></div>
+                      <div className="p-4 space-y-3">
+                        <div className="h-4 bg-white/10 rounded w-3/4"></div>
+                        <div className="h-3 bg-white/10 rounded w-1/2"></div>
+                        <div className="h-3 bg-white/10 rounded w-2/3"></div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : filteredContent.length > 0 ? (
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredContent.map((item, index) => (
                     <motion.div
                       key={item.id}
@@ -1142,202 +1161,93 @@ export function ForYouPage() {
                           />
                         </div>
                       ) : (
-                        <div className={`relative bg-white/5 backdrop-blur-xl border border-white/10 transition-all duration-500 group hover:shadow-2xl hover:shadow-purple-500/10 rounded-3xl overflow-hidden ${getContentCardBorder(item.type)} ${item.type === 'blog' && item.metadata?.url ? 'hover:border-purple-400/50 hover:bg-white/10' : ''}`}>
-                          {/* Enhanced gradient overlay on hover */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-pink-500/0 to-cyan-500/0 group-hover:from-purple-500/10 group-hover:via-pink-500/10 group-hover:to-cyan-500/10 transition-all duration-500"></div>
-                          
-                          {/* Top accent bar */}
-                          <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${getContentColor(item.type)} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-                          
-                          <div className="relative p-6 md:p-8">
-                            {/* Clickable overlay for blog posts */}
-                            {item.type === 'blog' && item.metadata?.url && (
-                              <div 
-                                className="absolute inset-0 z-10 cursor-pointer"
-                                onClick={(e) => {
-                                  // Don't trigger if clicking on interactive elements
-                                  const target = e.target as HTMLElement
-                                  if (target.closest('button') || target.closest('a') || target.closest('[role="button"]')) {
-                                    return
-                                  }
-                                  window.location.href = item.metadata?.url || '#'
-                                }}
-                                title="Read full blog post"
+                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl overflow-hidden group hover:bg-white/10 transition-all duration-300 cursor-pointer">
+                          {/* Visual Header */}
+                          <div className="h-48 bg-gradient-to-br from-purple-500/20 to-pink-500/20 relative overflow-hidden">
+                            {item.cover_image ? (
+                              <img 
+                                src={item.cover_image} 
+                                alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
-                            )}
-                            {/* Enhanced Content Header */}
-                            <div className="flex items-start gap-6 md:gap-8 mb-6">
-                              {item.cover_image && (
-                                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-3xl overflow-hidden flex-shrink-0 ring-2 ring-purple-500/20 group-hover:ring-purple-500/50 transition-all duration-300 shadow-2xl group-hover:shadow-purple-500/25">
-                                  <Image
-                                    src={item.cover_image}
-                                    alt={item.title}
-                                    fill
-                                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                    sizes="(max-width: 768px) 96px, 128px"
-                                  />
-                                  {item.type === 'video' && (
-                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
-                                      <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
-                                        <Play className="h-6 w-6 md:h-8 md:w-8 text-white fill-white" />
-                                      </div>
-                                    </div>
-                                  )}
-                                  {/* Image overlay gradient */}
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                </div>
-                              )}
-
-                              <div className="flex-1 min-w-0">
-                                {/* Enhanced badges with better spacing */}
-                                <div className="flex items-center gap-3 mb-4 flex-wrap">
-                                  <Badge className={`${getContentColor(item.type)} text-sm md:text-base font-semibold px-4 py-2 rounded-2xl shadow-lg flex-shrink-0`}>
-                                    {getContentIcon(item.type)}
-                                    <span className="ml-2 capitalize">{item.type}</span>
-                                  </Badge>
-                                  {item.metadata?.genre && (
-                                    <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-sm px-4 py-2 rounded-2xl font-medium flex-shrink-0`}>
-                                      {item.metadata.genre}
-                                    </Badge>
-                                  )}
-                                  <div className="flex-shrink-0">
-                                    {getRelevanceBadge(item.relevance_score)}
-                                  {sortBy === 'positive' && item.positiveScore && item.positiveScore > 0 && (
-                                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border px-4 py-2 rounded-2xl font-semibold shadow-lg">
-                                      <Sparkles className="h-4 w-4 mr-2" />
-                                      +{item.positiveScore} Positive
-                                    </Badge>
-                                  )}
-                                  </div>
-                                </div>
-
-                                {/* Enhanced title with better typography */}
-                                <h3 className="text-2xl md:text-3xl font-black text-white mb-4 group-hover:text-purple-300 transition-colors line-clamp-2 leading-tight tracking-tight">
-                                  {item.title}
-                                  {item.type === 'blog' && item.metadata?.url && (
-                                    <span className="ml-3 text-purple-400 text-xl font-normal opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">→ Read more</span>
-                                  )}
-                                </h3>
-
-                                {item.metadata?.forum && (
-                                  <div className="mb-2 text-xs md:text-sm text-slate-400">
-                                    in <a className="text-purple-300 hover:text-purple-200" href={`/forums/${item.metadata.forum.slug}`}>{item.metadata.forum.name}</a>
-                                  </div>
-                                )}
-
-                                {/* Enhanced description with source information */}
-                                {item.description && (
-                                  <div className="mb-6">
-                                    <p className="text-gray-300 text-lg md:text-xl line-clamp-3 leading-relaxed font-light">
-                                      {item.description}
-                                    </p>
-                                    
-                                    {/* Source and metadata information */}
-                                    <div className="mt-4 flex items-center gap-4 text-gray-400 text-sm flex-wrap">
-                                      {/* Source information */}
-                                      {item.author?.name && (
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-purple-300 font-medium">Source:</span>
-                                          <span className="text-white">{item.author.name}</span>
-                                          {item.author.is_verified && (
-                                            <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 px-2 py-1 text-xs">
-                                              Verified
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      )}
-                                      
-                                      {/* Reading time indicator for blog posts */}
-                                      {item.type === 'blog' && (
-                                        <div className="flex items-center gap-2">
-                                          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                                          <span>5 min read</span>
-                                        </div>
-                                      )}
-                                      
-                                      {/* Content type indicator */}
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                                        <span className="capitalize">{item.type}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Enhanced Metadata with better visual design */}
-                                <div className="flex items-center gap-3 md:gap-4 text-gray-400 text-sm md:text-base flex-wrap">
-                                  {item.metadata?.duration && (
-                                    <div className="flex items-center gap-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 group">
-                                      <div className="p-2 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-colors">
-                                        <Clock className="h-4 w-4 text-purple-300" />
-                                      </div>
-                                      <span className="font-semibold text-white">{Math.floor(item.metadata.duration / 60)}:{String(item.metadata.duration % 60).padStart(2, '0')}</span>
-                                    </div>
-                                  )}
-                                  {item.metadata?.forum && (
-                                    <a className="flex items-center gap-3 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 group" href={`/forums/${item.metadata?.forum?.slug}/thread/${item.id.replace('thread_','')}`}>
-                                      <div className="p-2 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-colors">
-                                        <MessageCircle className="h-4 w-4 text-blue-300" />
-                                      </div>
-                                      <span className="font-semibold text-white">Open thread</span>
-                                    </a>
-                                  )}
-                                  {item.metadata?.location && (
-                                    <div className="flex items-center gap-3 bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-green-500/20">
-                                      <div className="p-2 bg-green-500/20 rounded-xl">
-                                        <MapPin className="h-4 w-4 text-green-300" />
-                                      </div>
-                                      <span className="truncate max-w-32 font-semibold text-white">{item.metadata.location}</span>
-                                    </div>
-                                  )}
-                                  {item.metadata?.date && (
-                                    <div className="flex items-center gap-3 bg-gradient-to-r from-orange-500/10 to-yellow-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-orange-500/20">
-                                      <div className="p-2 bg-orange-500/20 rounded-xl">
-                                        <Calendar className="h-4 w-4 text-orange-300" />
-                                      </div>
-                                      <span className="font-semibold text-white">{new Date(item.metadata.date).toLocaleDateString()}</span>
-                                    </div>
-                                  )}
-                                  <div className="flex items-center gap-3 bg-gradient-to-r from-gray-500/10 to-slate-500/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-gray-500/20 flex-shrink-0">
-                                    <div className="p-2 bg-gray-500/20 rounded-xl">
-                                      <Clock className="h-4 w-4 text-gray-300" />
-                                    </div>
-                                    <span className="font-semibold text-white whitespace-nowrap">{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
-                                  </div>
-                                </div>
-                                
-                                {/* Action buttons */}
-                                <div className="mt-6 pt-6 border-t border-white/10">
-                                  <div className="flex items-center justify-between flex-wrap gap-4">
-                                    <div className="flex items-center gap-3 flex-wrap">
-                                      <button className="flex items-center gap-2 text-gray-400 hover:text-purple-400 transition-colors duration-300 group flex-shrink-0">
-                                        <div className="p-2 bg-white/5 rounded-xl group-hover:bg-purple-500/20 transition-colors">
-                                          <Heart className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                                        </div>
-                                        <span className="text-sm font-medium whitespace-nowrap">Like</span>
-                                      </button>
-                                      <button className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors duration-300 group flex-shrink-0">
-                                        <div className="p-2 bg-white/5 rounded-xl group-hover:bg-blue-500/20 transition-colors">
-                                          <MessageCircle className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                                        </div>
-                                        <span className="text-sm font-medium whitespace-nowrap">Comment</span>
-                                      </button>
-                                      <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors duration-300 group flex-shrink-0">
-                                        <div className="p-2 bg-white/5 rounded-xl group-hover:bg-green-500/20 transition-colors">
-                                          <Share2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                                        </div>
-                                        <span className="text-sm font-medium whitespace-nowrap">Share</span>
-                                      </button>
-                                    </div>
-                                    <button className="flex items-center gap-2 text-gray-400 hover:text-yellow-400 transition-colors duration-300 group flex-shrink-0">
-                                      <div className="p-2 bg-white/5 rounded-xl group-hover:bg-yellow-500/20 transition-colors">
-                                        <Bookmark className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                                      </div>
-                                      <span className="text-sm font-medium whitespace-nowrap">Save</span>
-                                    </button>
-                                  </div>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <div className="text-6xl text-white/30">
+                                  {item.type === 'music' ? '🎵' : item.type === 'video' ? '🎬' : item.type === 'news' ? '📰' : '📝'}
                                 </div>
                               </div>
+                            )}
+                            <div className="absolute top-3 right-3 flex gap-2">
+                              <Badge className="bg-black/50 text-white border-0">
+                                {item.type}
+                              </Badge>
+                              {item.metadata?.genre && (
+                                <Badge className="bg-purple-500/80 text-white border-0">
+                                  {item.metadata.genre}
+                                </Badge>
+                              )}
+                            </div>
+                            {item.metadata?.duration && (
+                              <div className="absolute bottom-3 left-3 bg-black/50 text-white px-2 py-1 rounded-lg text-sm">
+                                {Math.floor(item.metadata.duration / 60)}:{String(item.metadata.duration % 60).padStart(2, '0')}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Content */}
+                          <div className="p-4">
+                            {/* Title */}
+                            <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 group-hover:text-purple-300 transition-colors">
+                              {item.title}
+                            </h3>
+
+                            {/* Description */}
+                            {item.description && (
+                              <p className="text-sm text-gray-400 line-clamp-2 mb-3">
+                                {item.description}
+                              </p>
+                            )}
+
+                            {/* Source and Metadata */}
+                            <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                              <div className="flex items-center gap-2">
+                                {item.author?.name && (
+                                  <>
+                                    <span className="text-purple-300">by</span>
+                                    <span className="text-white font-medium">{item.author.name}</span>
+                                    {item.author.is_verified && (
+                                      <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 px-1 py-0 text-xs">
+                                        ✓
+                                      </Badge>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                              <span>{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
+                            </div>
+
+                            {/* Engagement Metrics */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 text-xs text-gray-400">
+                                <div className="flex items-center gap-1">
+                                  <Heart className="h-3 w-3" />
+                                  <span>{item.engagement?.likes || 0}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <MessageCircle className="h-3 w-3" />
+                                  <span>{item.engagement?.comments || 0}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Share2 className="h-3 w-3" />
+                                  <span>{item.engagement?.shares || 0}</span>
+                                </div>
+                              </div>
+                              {sortBy === 'positive' && item.positiveScore && item.positiveScore > 0 && (
+                                <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 px-2 py-1 text-xs">
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  +{item.positiveScore}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
