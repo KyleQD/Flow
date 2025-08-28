@@ -750,137 +750,165 @@ export function ForYouPage() {
   }, [sortBy, activeTab])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/30 to-slate-950 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/5 rounded-full blur-3xl animate-pulse delay-500"></div>
+      </div>
+      
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
         {/* Hero Section */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-4 mb-8"
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-center space-y-6 mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
-            For You <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Feed</span>
-          </h1>
-          <p className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed px-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 blur-3xl rounded-full"></div>
+            <h1 className="relative text-5xl md:text-7xl font-black text-white tracking-tight">
+              For You <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">Feed</span>
+            </h1>
+          </div>
+          <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed px-4 font-light">
             Personalized content curated just for you. Discover music, events, videos, and more based on your interests and preferences.
           </p>
-          <div className="flex justify-center gap-4 md:gap-6 text-sm text-gray-300 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-              <span>Personalized</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></div>
-              <span>Real-time</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-3 w-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
-              <span>Curated</span>
-            </div>
+          <div className="flex justify-center gap-6 md:gap-8 text-sm text-gray-400 flex-wrap">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
+            >
+              <div className="h-2 w-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"></div>
+              <span className="font-medium">Personalized</span>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
+            >
+              <div className="h-2 w-2 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-pulse delay-500"></div>
+              <span className="font-medium">Real-time</span>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+              className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
+            >
+              <div className="h-2 w-2 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-pulse delay-1000"></div>
+              <span className="font-medium">Curated</span>
+            </motion.div>
           </div>
         </motion.div>
 
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           {/* Main Content Area */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Search and Filter Bar */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm shadow-xl rounded-2xl">
-                <CardContent className="p-4 md:p-6">
-                  <div className="flex flex-col lg:flex-row gap-4">
-                    {/* Search */}
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-6">
+                <div className="flex flex-col lg:flex-row gap-6">
+                  {/* Search */}
+                  <div className="flex-1 relative group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                    <div className="relative">
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-purple-400 transition-colors" />
                       <Input
                         placeholder="Search content, artists, genres..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-gray-400 h-12 focus:border-purple-500/50 focus:ring-purple-500/20"
+                        className="pl-12 pr-12 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-14 rounded-2xl focus:border-purple-400/50 focus:ring-purple-400/20 backdrop-blur-sm text-lg"
                       />
                       {searchQuery && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setSearchQuery('')}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-gray-400 hover:text-white"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 text-gray-400 hover:text-white rounded-xl"
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-5 w-5" />
                         </Button>
                       )}
                     </div>
-
-                    {/* Sort Button */}
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="h-12 border-slate-700 text-gray-300 hover:text-white hover:border-purple-500/50 transition-all whitespace-nowrap rounded-xl"
-                    >
-                      <SlidersHorizontal className="h-4 w-4 mr-2" />
-                      Sort
-                    </Button>
                   </div>
 
-                  {/* Sort Options */}
-                  <AnimatePresence>
-                    {showFilters && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="mt-4 pt-4 border-t border-slate-700/50"
-                      >
-                        <div className="flex gap-2 flex-wrap">
-                          {[
-                            { value: 'relevant', label: 'Most Relevant', icon: Star },
-                            { value: 'recent', label: 'Most Recent', icon: Clock },
-                            { value: 'popular', label: 'Most Popular', icon: TrendingUp }
-                          ].map((option) => {
-                            const Icon = option.icon
-                            return (
-                              <Button
-                                key={option.value}
-                                variant={sortBy === option.value ? "default" : "outline"}
-                                onClick={() => setSortBy(option.value as any)}
-                                className={`h-10 whitespace-nowrap rounded-xl ${
-                                  sortBy === option.value 
-                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white' 
-                                    : 'border-slate-700 text-gray-300 hover:text-white hover:border-purple-500/50'
-                                } transition-all`}
-                              >
-                                <Icon className="h-4 w-4 mr-2" />
-                                {option.label}
-                              </Button>
-                            )
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
+                  {/* Sort Button */}
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="h-14 border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 transition-all whitespace-nowrap rounded-2xl bg-white/5 backdrop-blur-sm hover:bg-white/10"
+                  >
+                    <SlidersHorizontal className="h-5 w-5 mr-3" />
+                    <span className="text-lg font-medium">Sort</span>
+                  </Button>
+                </div>
+
+                {/* Sort Options */}
+                <AnimatePresence>
+                  {showFilters && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-6 pt-6 border-t border-white/10"
+                    >
+                      <div className="flex gap-3 flex-wrap">
+                        {[
+                          { value: 'relevant', label: 'Most Relevant', icon: Star },
+                          { value: 'recent', label: 'Most Recent', icon: Clock },
+                          { value: 'popular', label: 'Most Popular', icon: TrendingUp }
+                        ].map((option) => {
+                          const Icon = option.icon
+                          return (
+                            <Button
+                              key={option.value}
+                              variant={sortBy === option.value ? "default" : "outline"}
+                              onClick={() => setSortBy(option.value as any)}
+                              className={`h-12 whitespace-nowrap rounded-2xl text-lg font-medium ${
+                                sortBy === option.value 
+                                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25' 
+                                  : 'border-white/20 text-gray-300 hover:text-white hover:border-purple-400/50 bg-white/5 backdrop-blur-sm hover:bg-white/10'
+                              } transition-all duration-300`}
+                            >
+                              <Icon className="h-5 w-5 mr-3" />
+                              {option.label}
+                            </Button>
+                          )
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
 
-            {/* Content Tabs - Removed number counters */}
+            {/* Content Tabs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
+              className="space-y-4"
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-6 bg-slate-900/50 border-slate-700/50 backdrop-blur-sm overflow-x-auto rounded-2xl">
+                <TabsList className="grid w-full grid-cols-6 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl overflow-x-auto rounded-3xl p-2">
                   {contentTypes.slice(0, 6).map((type) => {
                     const Icon = type.icon
                     return (
                       <TabsTrigger
                         key={type.value}
                         value={type.value}
-                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap text-xs md:text-sm"
+                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm md:text-base font-medium rounded-2xl h-12"
                       >
-                        <Icon className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                        <Icon className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                         <span className="hidden sm:inline">{type.label}</span>
                       </TabsTrigger>
                     )
@@ -888,16 +916,16 @@ export function ForYouPage() {
                 </TabsList>
                 
                 {/* Second row for music genre tabs */}
-                <TabsList className="grid w-full grid-cols-5 bg-slate-900/50 border-slate-700/50 backdrop-blur-sm overflow-x-auto rounded-2xl mt-2">
+                <TabsList className="grid w-full grid-cols-5 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl overflow-x-auto rounded-3xl p-2">
                   {contentTypes.slice(6).map((type) => {
                     const Icon = type.icon
                     return (
                       <TabsTrigger
                         key={type.value}
                         value={type.value}
-                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white transition-all duration-300 whitespace-nowrap text-xs md:text-sm"
+                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 transition-all duration-300 whitespace-nowrap text-sm md:text-base font-medium rounded-2xl h-12"
                       >
-                        <Icon className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                        <Icon className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                         <span className="hidden sm:inline">{type.label}</span>
                       </TabsTrigger>
                     )
@@ -925,20 +953,24 @@ export function ForYouPage() {
               )}
 
               {loading ? (
-                <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 gap-8">
                   {[...Array(3)].map((_, i) => (
-                                          <Card key={i} className="bg-slate-900/50 border-slate-700/50 animate-pulse rounded-2xl">
-                      <CardContent className="p-4 md:p-6">
-                        <div className="flex items-start gap-4">
-                          <div className="w-16 h-16 md:w-20 md:h-20 bg-slate-800 rounded-lg flex-shrink-0"></div>
-                          <div className="flex-1 space-y-3">
-                            <div className="h-4 bg-slate-800 rounded w-3/4"></div>
-                            <div className="h-3 bg-slate-800 rounded w-1/2"></div>
-                            <div className="h-3 bg-slate-800 rounded w-2/3"></div>
+                    <div key={i} className="bg-white/5 backdrop-blur-xl border border-white/10 animate-pulse rounded-3xl overflow-hidden">
+                      <div className="p-6 md:p-8">
+                        <div className="flex items-start gap-6">
+                          <div className="w-20 h-20 md:w-24 md:h-24 bg-white/10 rounded-2xl flex-shrink-0"></div>
+                          <div className="flex-1 space-y-4">
+                            <div className="h-6 bg-white/10 rounded-xl w-3/4"></div>
+                            <div className="h-4 bg-white/10 rounded-xl w-1/2"></div>
+                            <div className="h-4 bg-white/10 rounded-xl w-2/3"></div>
+                            <div className="flex gap-3">
+                              <div className="h-8 bg-white/10 rounded-xl w-20"></div>
+                              <div className="h-8 bg-white/10 rounded-xl w-24"></div>
+                            </div>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : filteredContent.length > 0 ? (
@@ -977,8 +1009,10 @@ export function ForYouPage() {
                           />
                         </div>
                       ) : (
-                        <Card className={`relative bg-slate-900/50 border-slate-700/30 transition-all duration-300 group hover:shadow-xl rounded-2xl ${getContentCardBorder(item.type)} ${item.type === 'blog' && item.metadata?.url ? 'hover:border-purple-500/50 hover:bg-slate-900/70' : ''}`}>
-                          <CardContent className="p-4 md:p-6">
+                        <div className={`relative bg-white/5 backdrop-blur-xl border border-white/10 transition-all duration-500 group hover:shadow-2xl hover:shadow-purple-500/10 rounded-3xl overflow-hidden ${getContentCardBorder(item.type)} ${item.type === 'blog' && item.metadata?.url ? 'hover:border-purple-400/50 hover:bg-white/10' : ''}`}>
+                          {/* Gradient overlay on hover */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-pink-500/0 to-cyan-500/0 group-hover:from-purple-500/5 group-hover:via-pink-500/5 group-hover:to-cyan-500/5 transition-all duration-500"></div>
+                          <div className="relative p-6 md:p-8">
                             {/* Clickable overlay for blog posts */}
                             {item.type === 'blog' && item.metadata?.url && (
                               <div 
@@ -995,42 +1029,42 @@ export function ForYouPage() {
                               />
                             )}
                             {/* Content Header */}
-                            <div className="flex items-start gap-3 md:gap-4 mb-4">
+                            <div className="flex items-start gap-4 md:gap-6 mb-6">
                               {item.cover_image && (
-                                <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 ring-2 ring-purple-500/20 group-hover:ring-purple-500/50 transition-all">
+                                <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden flex-shrink-0 ring-2 ring-purple-500/20 group-hover:ring-purple-500/50 transition-all duration-300 shadow-lg">
                                   <Image
                                     src={item.cover_image}
                                     alt={item.title}
                                     fill
                                     className="object-cover"
-                                    sizes="(max-width: 768px) 64px, 80px"
+                                    sizes="(max-width: 768px) 80px, 96px"
                                   />
                                   {item.type === 'video' && (
-                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                      <Play className="h-4 w-4 md:h-6 md:w-6 text-white" />
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm">
+                                      <Play className="h-6 w-6 md:h-8 md:w-8 text-white" />
                                     </div>
                                   )}
                                 </div>
                               )}
 
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                  <Badge className={`${getContentColor(item.type)} text-xs md:text-sm`}>
+                                <div className="flex items-center gap-3 mb-3 flex-wrap">
+                                  <Badge className={`${getContentColor(item.type)} text-sm md:text-base font-medium px-3 py-1 rounded-xl`}>
                                     {getContentIcon(item.type)}
-                                    <span className="ml-1 capitalize hidden sm:inline">{item.type}</span>
+                                    <span className="ml-2 capitalize">{item.type}</span>
                                   </Badge>
                                   {item.metadata?.genre && (
-                                    <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-xs`}>
+                                    <Badge variant="secondary" className={`${getContentTypeIndicator(item.type)} text-sm px-3 py-1 rounded-xl`}>
                                       {item.metadata.genre}
                                     </Badge>
                                   )}
                                   {getRelevanceBadge(item.relevance_score)}
                                 </div>
 
-                                <h3 className="text-lg md:text-xl font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors line-clamp-2">
+                                <h3 className="text-xl md:text-2xl font-bold text-white mb-3 group-hover:text-purple-300 transition-colors line-clamp-2 leading-tight">
                                   {item.title}
                                   {item.type === 'blog' && item.metadata?.url && (
-                                    <span className="ml-2 text-purple-400 text-sm font-normal">→ Read more</span>
+                                    <span className="ml-3 text-purple-400 text-lg font-normal">→ Read more</span>
                                   )}
                                 </h3>
 
@@ -1041,56 +1075,59 @@ export function ForYouPage() {
                                 )}
 
                                 {item.description && (
-                                  <p className="text-slate-300 text-sm mb-3 line-clamp-3 leading-relaxed">
+                                  <p className="text-gray-300 text-base md:text-lg mb-4 line-clamp-3 leading-relaxed font-light">
                                     {item.description}
                                   </p>
                                 )}
 
                                 {/* Metadata */}
-                                <div className="flex items-center gap-3 md:gap-4 text-slate-400 text-xs md:text-sm flex-wrap">
+                                <div className="flex items-center gap-4 md:gap-6 text-gray-400 text-sm md:text-base flex-wrap">
                                   {item.metadata?.duration && (
-                                    <div className="flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      <span>{Math.floor(item.metadata.duration / 60)}:{String(item.metadata.duration % 60).padStart(2, '0')}</span>
+                                    <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-xl px-3 py-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span className="font-medium">{Math.floor(item.metadata.duration / 60)}:{String(item.metadata.duration % 60).padStart(2, '0')}</span>
                                     </div>
                                   )}
                                   {item.metadata?.forum && (
-                                    <a className="flex items-center gap-1 text-purple-300 hover:text-purple-200" href={`/forums/${item.metadata?.forum?.slug}/thread/${item.id.replace('thread_','')}`}>
-                                      <MessageCircle className="h-3 w-3" />
-                                      <span>Open thread</span>
+                                    <a className="flex items-center gap-2 text-purple-300 hover:text-purple-200 bg-white/5 backdrop-blur-sm rounded-xl px-3 py-2 transition-colors" href={`/forums/${item.metadata?.forum?.slug}/thread/${item.id.replace('thread_','')}`}>
+                                      <MessageCircle className="h-4 w-4" />
+                                      <span className="font-medium">Open thread</span>
                                     </a>
                                   )}
                                   {item.metadata?.location && (
-                                    <div className="flex items-center gap-1">
-                                      <MapPin className="h-3 w-3" />
-                                      <span className="truncate max-w-32">{item.metadata.location}</span>
+                                    <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-xl px-3 py-2">
+                                      <MapPin className="h-4 w-4" />
+                                      <span className="truncate max-w-32 font-medium">{item.metadata.location}</span>
                                     </div>
                                   )}
                                   {item.metadata?.date && (
-                                    <div className="flex items-center gap-1">
-                                      <Calendar className="h-3 w-3" />
-                                      <span>{new Date(item.metadata.date).toLocaleDateString()}</span>
+                                    <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-xl px-3 py-2">
+                                      <Calendar className="h-4 w-4" />
+                                      <span className="font-medium">{new Date(item.metadata.date).toLocaleDateString()}</span>
                                     </div>
                                   )}
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    <span>{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
+                                  <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-xl px-3 py-2">
+                                    <Clock className="h-4 w-4" />
+                                    <span className="font-medium">{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
                                   </div>
                                 </div>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
+                          </div>
+                        </div>
                       )}
                     </motion.div>
                   ))}
                 </div>
               ) : (
-                <Card className="bg-slate-900/50 border-slate-700/50 rounded-2xl">
-                  <CardContent className="p-8 md:p-12 text-center">
-                    <Search className="h-12 w-12 md:h-16 md:w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg md:text-xl font-semibold text-white mb-2">No content found</h3>
-                    <p className="text-gray-400 mb-6 text-sm md:text-base">
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden">
+                  <div className="p-12 md:p-16 text-center">
+                    <div className="relative mb-8">
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 blur-3xl rounded-full"></div>
+                      <Search className="relative h-16 w-16 md:h-20 md:w-20 text-gray-400 mx-auto" />
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">No content found</h3>
+                    <p className="text-gray-300 mb-8 text-lg md:text-xl font-light max-w-2xl mx-auto">
                       Try adjusting your search or filters to discover more content.
                     </p>
                     <Button
@@ -1098,12 +1135,12 @@ export function ForYouPage() {
                         setSearchQuery('')
                         setActiveTab('all')
                       }}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl"
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-2xl px-8 py-3 text-lg font-medium shadow-lg shadow-purple-500/25"
                     >
                       Clear Filters
                     </Button>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               )}
             </motion.div>
           </div>
