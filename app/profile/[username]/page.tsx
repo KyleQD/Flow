@@ -72,6 +72,9 @@ export default function ProfilePage() {
             if (profileUsername === username || profileUsername?.toLowerCase() === username.toLowerCase()) {
               console.log('✅ Found matching profile for current user:', username)
               setProfile(currentUserData.profile)
+              setPortfolio(currentUserData.portfolio || [])
+              setExperiences(currentUserData.experiences || [])
+              setCertifications(currentUserData.certifications || [])
               setIsOwnProfile(true)
               return
             }

@@ -117,7 +117,22 @@ export async function GET(request: NextRequest) {
 
     console.log('[Profile Current API] Returning profile with stats')
 
-    return NextResponse.json({ profile: profileWithStats })
+    // Fetch portfolio data for the current user
+    let portfolio: any[] = []
+    try {
+      const { data: portfolioRows } = await supabase
+        .from('portfolio_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      
+      portfolio = portfolioRows || []
+      console.log('[Profile Current API] Found portfolio items:', portfolio.length)
+    } catch (error) {
+      console.log('[Profile Current API] Could not fetch portfolio data:', error)
+    }
+
+    return NextResponse.json({ profile: profileWithStats, portfolio })
   } catch (error) {
     console.error('[Profile Current API] Error:', error)
     return NextResponse.json(

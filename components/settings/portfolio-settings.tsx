@@ -91,22 +91,65 @@ export function PortfolioSettings() {
   async function upload(kind: 'image'|'video'|'audio'|'file', id?: string) {
     const input = fileRef.current
     if (!input || !input.files || input.files.length === 0) return toast.error('Choose a file')
+    
     const file = input.files[0]
-    const fd = new FormData()
-    fd.append('file', file)
-    fd.append('kind', kind)
-    fd.append('tos', 'accepted')
-    const res = await fetch('/api/portfolio/upload', { method: 'POST', body: fd })
-    const j = await res.json()
-    if (!res.ok) return toast.error(j.error || 'Upload failed')
-    if (id) {
-      const it = items.find(i => i.id === id)
-      const media = [...(it?.media || []) , { kind, url: j.url }]
-      await updateItem(id, { media })
-    } else {
-      setNewItem(prev => ({ ...prev, media: [...(prev.media || []), { kind, url: j.url }] }))
+    
+    // Validate file type
+    const allowedTypes = {
+      image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+      video: ['video/mp4', 'video/webm', 'video/ogg'],
+      audio: ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/aac', 'audio/m4a', 'audio/ogg']
     }
-    input.value = ''
+    
+    if (!allowedTypes[kind]?.includes(file.type)) {
+      toast.error(`Invalid file type for ${kind}. Please select a valid ${kind} file.`)
+      return
+    }
+    
+    // Validate file size (8MB for images/audio, 100MB for videos)
+    const maxSize = kind === 'video' ? 100 * 1024 * 1024 : 8 * 1024 * 1024
+    if (file.size > maxSize) {
+      const maxSizeMB = kind === 'video' ? '100MB' : '8MB'
+      toast.error(`File too large. Maximum size for ${kind} is ${maxSizeMB}.`)
+      return
+    }
+    
+    try {
+      toast.loading(`Uploading ${kind}...`)
+      
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('kind', kind)
+      fd.append('tos', 'accepted')
+      
+      const res = await fetch('/api/portfolio/upload', { method: 'POST', body: fd })
+      const j = await res.json()
+      
+      if (!res.ok) {
+        toast.dismiss()
+        toast.error(j.error || `Failed to upload ${kind}`)
+        console.error('Upload error:', j)
+        return
+      }
+      
+      toast.dismiss()
+      toast.success(`${kind} uploaded successfully!`)
+      
+      if (id) {
+        const it = items.find(i => i.id === id)
+        const media = [...(it?.media || []) , { kind, url: j.url }]
+        await updateItem(id, { media })
+      } else {
+        setNewItem(prev => ({ ...prev, media: [...(prev.media || []), { kind, url: j.url }] }))
+      }
+      
+      input.value = ''
+      
+    } catch (error) {
+      toast.dismiss()
+      console.error('Upload error:', error)
+      toast.error(`Failed to upload ${kind}. Please try again.`)
+    }
   }
 
   if (loading) return <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div>

@@ -271,7 +271,7 @@ export async function GET(
 
     try {
       const [{ data: portfolioRows }, { data: experienceRows }, { data: certRows }] = await Promise.all([
-        supabase.from('portfolio_items').select('*').eq('user_id', profile.id).eq('is_public', true).order('order_index', { ascending: true }),
+        supabase.from('portfolio_items').select('*').eq('user_id', profile.id).or('is_public.eq.true,is_public.is.null').order('created_at', { ascending: false }),
         supabase.from('profile_experiences').select('*').eq('user_id', profile.id).eq('is_visible', true).order('order_index', { ascending: true }),
         supabase.from('profile_certifications').select('*').eq('user_id', profile.id).eq('is_public', true).order('issue_date', { ascending: false })
       ])
