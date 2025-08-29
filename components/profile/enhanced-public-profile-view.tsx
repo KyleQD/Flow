@@ -233,132 +233,167 @@ export function EnhancedPublicProfileView({
         setProjects(mappedProjects)
         setExperience(mappedExp)
         setCertifications(mappedCerts)
-      } else if (profile.account_type === 'artist') {
-        const mockTracks: Track[] = [
-          {
-            id: "1",
-            title: "Midnight Dreams",
-            album: "Electric Nights",
-            duration: "3:45",
-            streams: 1250000,
-            release_date: "2023-11-15",
-            cover_art: "/track-1.jpg",
-            preview_url: "/preview-1.mp3",
-            spotify_url: "https://spotify.com/track/example"
-          },
-          {
-            id: "2",
-            title: "Neon Lights",
-            album: "Electric Nights",
-            duration: "4:12",
-            streams: 890000,
-            release_date: "2023-11-15",
-            cover_art: "/track-2.jpg",
-            preview_url: "/preview-2.mp3"
-          }
-        ]
-        
-        const mockShows: Show[] = [
-          {
-            id: "1",
-            date: "2024-03-15",
-            venue: "The Grand Hall",
-            city: "Los Angeles, CA",
-            status: "upcoming",
-            ticket_url: "https://tickets.com/show/1"
-          },
-          {
-            id: "2",
-            date: "2024-02-28",
-            venue: "Club Nova",
-            city: "San Francisco, CA",
-            status: "past"
-          }
-        ]
-        
-        setTracks(mockTracks)
-        setShows(mockShows)
       } else {
-        // General user data
-        const mockSkills: Skill[] = [
-          { name: "Audio Engineering", level: 95, category: "Technical", endorsed_count: 23 },
-          { name: "Live Sound", level: 88, category: "Technical", endorsed_count: 19 },
-          { name: "Music Production", level: 92, category: "Creative", endorsed_count: 31 },
-          { name: "Project Management", level: 85, category: "Management", endorsed_count: 15 },
-          { name: "Team Leadership", level: 78, category: "Management", endorsed_count: 12 },
-          { name: "Client Relations", level: 90, category: "Business", endorsed_count: 27 }
-        ]
-        
-        const mockExperience: Experience[] = [
-          {
-            id: "1",
-            title: "Senior Audio Engineer",
-            company: "Stellar Studios",
-            duration: "2022 - Present",
-            description: "Lead audio engineer for major recording projects. Responsible for mixing, mastering, and live sound for high-profile artists.",
-            skills_used: ["Audio Engineering", "Music Production", "Project Management"],
-            featured: true
-          },
-          {
-            id: "2",
-            title: "Freelance Sound Designer",
-            company: "Independent",
-            duration: "2020 - 2022",
-            description: "Provided sound design services for films, podcasts, and live events. Built strong client relationships and delivered high-quality audio solutions.",
-            skills_used: ["Audio Engineering", "Live Sound", "Client Relations"],
-            featured: false
+        // Fallback: Fetch portfolio data directly from API
+        try {
+          console.log('Fetching portfolio data for profile:', profile.id)
+          const response = await fetch(`/api/settings/portfolio`)
+          if (response.ok) {
+            const { items } = await response.json()
+            console.log('Portfolio items fetched:', items)
+            
+            const mappedProjects: Project[] = (items || []).map((it: any) => {
+              const firstImage = Array.isArray(it.media) ? (it.media.find((m: any) => m?.kind === 'image') || it.media[0]) : undefined
+              const firstLink = Array.isArray(it.links) ? it.links[0]?.url : undefined
+              return {
+                id: it.id,
+                title: it.title,
+                description: it.description || '',
+                image: firstImage?.url || '/placeholder-project.jpg',
+                category: it.type || 'Portfolio',
+                tags: it.tags || [],
+                completion_date: it.updated_at || it.created_at || new Date().toISOString(),
+                url: firstLink
+              }
+            })
+            
+            setProjects(mappedProjects)
+            console.log('Projects set:', mappedProjects)
+          } else {
+            console.error('Failed to fetch portfolio data:', response.status)
           }
-        ]
-        
-        const mockProjects: Project[] = [
-          {
-            id: "1",
-            title: "Electronic Album Production",
-            description: "Full production and mixing for indie electronic artist's debut album. Achieved over 1M streams on Spotify.",
-            image: "/project-1.jpg",
-            category: "Music Production",
-            tags: ["Electronic", "Mixing", "Mastering"],
-            completion_date: "2023-12-15",
-            client_name: "Nova Sounds",
-            testimonial: "Exceptional work! The production quality exceeded our expectations.",
-            rating: 5,
-            url: "https://spotify.com/album/example"
-          },
-          {
-            id: "2",
-            title: "Festival Live Sound Setup",
-            description: "Managed live sound for 3-day music festival with 50+ artists across multiple stages.",
-            image: "/project-2.jpg",
-            category: "Live Sound",
-            tags: ["Festival", "Live Sound", "Team Management"],
-            completion_date: "2023-08-20",
-            client_name: "Summer Beats Festival",
-            rating: 5
-          }
-        ]
-        
-        const mockCertifications: Certification[] = [
-          {
-            id: "1",
-            name: "Pro Tools Certified User",
-            organization: "Avid Technology",
-            date: "2023-03-15",
-            credential_url: "https://avid.com/certification",
-            verified: true
-          },
-          {
-            id: "2",
-            name: "Audio Engineering Society Member",
-            organization: "AES",
-            date: "2022-01-01",
-            verified: true
-          }
-        ]
-        
-        setSkills(mockSkills)
-        setExperience(mockExperience)
-        setProjects(mockProjects)
-        setCertifications(mockCertifications)
+        } catch (error) {
+          console.error('Error fetching portfolio data:', error)
+        }
+
+        if (profile.account_type === 'artist') {
+          const mockTracks: Track[] = [
+            {
+              id: "1",
+              title: "Midnight Dreams",
+              album: "Electric Nights",
+              duration: "3:45",
+              streams: 1250000,
+              release_date: "2023-11-15",
+              cover_art: "/track-1.jpg",
+              preview_url: "/preview-1.mp3",
+              spotify_url: "https://spotify.com/track/example"
+            },
+            {
+              id: "2",
+              title: "Neon Lights",
+              album: "Electric Nights",
+              duration: "4:12",
+              streams: 890000,
+              release_date: "2023-11-15",
+              cover_art: "/track-2.jpg",
+              preview_url: "/preview-2.mp3"
+            }
+          ]
+          
+          const mockShows: Show[] = [
+            {
+              id: "1",
+              date: "2024-03-15",
+              venue: "The Grand Hall",
+              city: "Los Angeles, CA",
+              status: "upcoming",
+              ticket_url: "https://tickets.com/show/1"
+            },
+            {
+              id: "2",
+              date: "2024-02-28",
+              venue: "Club Nova",
+              city: "San Francisco, CA",
+              status: "past"
+            }
+          ]
+          
+          setTracks(mockTracks)
+          setShows(mockShows)
+        } else {
+          // General user data
+          const mockSkills: Skill[] = [
+            { name: "Audio Engineering", level: 95, category: "Technical", endorsed_count: 23 },
+            { name: "Live Sound", level: 88, category: "Technical", endorsed_count: 19 },
+            { name: "Music Production", level: 92, category: "Creative", endorsed_count: 31 },
+            { name: "Project Management", level: 85, category: "Management", endorsed_count: 15 },
+            { name: "Team Leadership", level: 78, category: "Management", endorsed_count: 12 },
+            { name: "Client Relations", level: 90, category: "Business", endorsed_count: 27 }
+          ]
+          
+          const mockExperience: Experience[] = [
+            {
+              id: "1",
+              title: "Senior Audio Engineer",
+              company: "Stellar Studios",
+              duration: "2022 - Present",
+              description: "Lead audio engineer for major recording projects. Responsible for mixing, mastering, and live sound for high-profile artists.",
+              skills_used: ["Audio Engineering", "Music Production", "Project Management"],
+              featured: true
+            },
+            {
+              id: "2",
+              title: "Freelance Sound Designer",
+              company: "Independent",
+              duration: "2020 - 2022",
+              description: "Provided sound design services for films, podcasts, and live events. Built strong client relationships and delivered high-quality audio solutions.",
+              skills_used: ["Audio Engineering", "Live Sound", "Client Relations"],
+              featured: false
+            }
+          ]
+          
+          const mockProjects: Project[] = [
+            {
+              id: "1",
+              title: "Electronic Album Production",
+              description: "Full production and mixing for indie electronic artist's debut album. Achieved over 1M streams on Spotify.",
+              image: "/project-1.jpg",
+              category: "Music Production",
+              tags: ["Electronic", "Mixing", "Mastering"],
+              completion_date: "2023-12-15",
+              client_name: "Nova Sounds",
+              testimonial: "Exceptional work! The production quality exceeded our expectations.",
+              rating: 5,
+              url: "https://spotify.com/album/example"
+            },
+            {
+              id: "2",
+              title: "Festival Live Sound Setup",
+              description: "Managed live sound for 3-day music festival with 50+ artists across multiple stages.",
+              image: "/project-2.jpg",
+              category: "Live Sound",
+              tags: ["Festival", "Live Sound", "Team Management"],
+              completion_date: "2023-08-20",
+              client_name: "Summer Beats Festival",
+              rating: 5
+            }
+          ]
+          
+          const mockCertifications: Certification[] = [
+            {
+              id: "1",
+              name: "Pro Tools Certified User",
+              organization: "Avid Technology",
+              date: "2023-03-15",
+              credential_url: "https://avid.com/certification",
+              verified: true
+            },
+            {
+              id: "2",
+              name: "Audio Engineering Society Member",
+              organization: "AES",
+              date: "2022-01-01",
+              verified: true
+            }
+          ]
+          
+          setSkills(mockSkills)
+          setExperience(mockExperience)
+          // Don't override real portfolio data with mock data
+          // setProjects(mockProjects)
+          setCertifications(mockCertifications)
+        }
       }
       
     } catch (error) {
@@ -575,7 +610,7 @@ export function EnhancedPublicProfileView({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   <div className="text-center p-4 bg-white/5 rounded-xl">
                     <Briefcase className="h-8 w-8 text-emerald-400 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-white">{profile.stats.projects_completed || 0}</div>
+                    <div className="text-2xl font-bold text-white">{projects.length}</div>
                     <div className="text-sm text-white/60">Projects</div>
                   </div>
                   <div className="text-center p-4 bg-white/5 rounded-xl">

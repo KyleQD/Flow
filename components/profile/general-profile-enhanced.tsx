@@ -139,7 +139,38 @@ export function GeneralProfileEnhanced({ profile, isOwnProfile = false, onFollow
     try {
       setLoading(true)
       
-      // TODO: Replace with real API calls
+      // Fetch real portfolio data
+      try {
+        console.log('Fetching portfolio data for general profile:', profile.id)
+        const response = await fetch(`/api/settings/portfolio`)
+        if (response.ok) {
+          const { items } = await response.json()
+          console.log('Portfolio items fetched for general profile:', items)
+          
+          const mappedProjects: Project[] = (items || []).map((it: any) => {
+            const firstImage = Array.isArray(it.media) ? (it.media.find((m: any) => m?.kind === 'image') || it.media[0]) : undefined
+            const firstLink = Array.isArray(it.links) ? it.links[0]?.url : undefined
+            return {
+              id: it.id,
+              title: it.title,
+              description: it.description || '',
+              image: firstImage?.url || '/placeholder-project.jpg',
+              category: it.type || 'Portfolio',
+              tags: it.tags || [],
+              completion_date: it.updated_at || it.created_at || new Date().toISOString(),
+              url: firstLink
+            }
+          })
+          
+          setProjects(mappedProjects)
+          console.log('Projects set for general profile:', mappedProjects)
+        } else {
+          console.error('Failed to fetch portfolio data for general profile:', response.status)
+        }
+      } catch (error) {
+        console.error('Error fetching portfolio data for general profile:', error)
+      }
+
       // Mock skills data
       const mockSkills: Skill[] = [
         { name: "Audio Engineering", level: 95, category: "Technical", endorsed_count: 23 },
@@ -172,46 +203,6 @@ export function GeneralProfileEnhanced({ profile, isOwnProfile = false, onFollow
         }
       ]
       
-      // Mock projects portfolio
-      const mockProjects: Project[] = [
-        {
-          id: "1",
-          title: "Electronic Album Production",
-          description: "Full production and mixing for indie electronic artist's debut album. Achieved over 1M streams on Spotify.",
-          image: "/project-1.jpg",
-          category: "Music Production",
-          tags: ["Electronic", "Mixing", "Mastering"],
-          completion_date: "2023-12-15",
-          client_name: "Nova Sounds",
-          testimonial: "Exceptional work! The production quality exceeded our expectations.",
-          rating: 5,
-          url: "https://spotify.com/album/example"
-        },
-        {
-          id: "2",
-          title: "Festival Live Sound Setup",
-          description: "Managed live sound for 3-day music festival with 50+ artists across multiple stages.",
-          image: "/project-2.jpg",
-          category: "Live Sound",
-          tags: ["Festival", "Live Sound", "Team Management"],
-          completion_date: "2023-08-20",
-          client_name: "Summer Beats Festival",
-          rating: 5
-        },
-        {
-          id: "3",
-          title: "Podcast Studio Design",
-          description: "Designed and built professional podcast recording studio with acoustic treatment and equipment selection.",
-          image: "/project-3.jpg",
-          category: "Studio Design",
-          tags: ["Acoustics", "Equipment", "Consultation"],
-          completion_date: "2023-06-10",
-          client_name: "TechTalk Media",
-          testimonial: "Professional setup that transformed our podcast quality.",
-          rating: 5
-        }
-      ]
-      
       // Mock certifications
       const mockCertifications: Certification[] = [
         {
@@ -233,7 +224,8 @@ export function GeneralProfileEnhanced({ profile, isOwnProfile = false, onFollow
       
       setSkills(mockSkills)
       setExperience(mockExperience)
-      setProjects(mockProjects)
+      // Don't override real portfolio data with mock data
+      // setProjects(mockProjects)
       setCertifications(mockCertifications)
       
     } catch (error) {
@@ -442,7 +434,7 @@ export function GeneralProfileEnhanced({ profile, isOwnProfile = false, onFollow
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   <div className="text-center p-4 bg-white/5 rounded-xl">
                     <Briefcase className="h-8 w-8 text-emerald-400 mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-white">{profile.stats.projects_completed || 0}</div>
+                    <div className="text-2xl font-bold text-white">{projects.length}</div>
                     <div className="text-sm text-white/60">Projects</div>
                   </div>
                   <div className="text-center p-4 bg-white/5 rounded-xl">
