@@ -1,71 +1,52 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  Search, 
-  User, 
-  Music, 
-  Building2, 
-  Verified,
-  Loader2,
-  X,
-  Clock,
-  TrendingUp,
-  Hash,
-  ArrowRight,
-  Command as CommandIcon,
-  Sparkles
-} from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { useEnhancedSearch, type SearchResult } from '@/hooks/use-enhanced-search'
-import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
-import { SearchResultItem } from './search-result-item'
+import { Search, X, Clock, Sparkles, ArrowRight, User, Music, Building2, Loader2, Hash, Verified } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Command, CommandEmpty, CommandList } from '@/components/ui/command'
+import { useEnhancedSearch } from '@/hooks/use-enhanced-search'
+import { cn } from '@/lib/utils'
+
+interface SearchResult {
+  id: string
+  username: string
+  account_type: 'artist' | 'venue' | 'general'
+  profile_data?: any
+  avatar_url?: string
+  verified?: boolean
+  bio?: string
+  location?: string
+  stats?: {
+    followers?: number
+    following?: number
+  }
+}
 
 interface EnhancedAccountSearchProps {
   placeholder?: string
   className?: string
   onResultSelect?: (result: SearchResult) => void
   showRecentSearches?: boolean
-  showTrendingSearches?: boolean
 }
 
-// Mock recent and trending searches (in a real app, these would come from localStorage/API)
+// Mock recent searches (in a real app, these would come from localStorage/API)
 const RECENT_SEARCHES = [
   { query: "taylor swift", type: "artist" },
   { query: "madison square", type: "venue" },
   { query: "rock concerts", type: "general" }
 ]
 
-const TRENDING_SEARCHES = [
-  { query: "indie artists", type: "artist", trend: "+24%" },
-  { query: "live venues", type: "venue", trend: "+18%" },
-  { query: "new music", type: "general", trend: "+35%" }
-]
-
 export function EnhancedAccountSearch({ 
   placeholder = "Search artists, venues, and users...", 
   className,
   onResultSelect,
-  showRecentSearches = true,
-  showTrendingSearches = true
+  showRecentSearches = true
 }: EnhancedAccountSearchProps) {
   const router = useRouter()
   const [selectedIndex, setSelectedIndex] = useState(-1)
@@ -167,7 +148,7 @@ export function EnhancedAccountSearch({
   }
 
   // Enhanced keyboard navigation
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) return
 
     switch (e.key) {
@@ -208,7 +189,7 @@ export function EnhancedAccountSearch({
         }
         break
     }
-  }, [isOpen, hasResults, results, selectedIndex, handleResultSelect, clearSearch, setIsOpen])
+  }
 
   // Global keyboard shortcut
   useEffect(() => {
@@ -231,95 +212,53 @@ export function EnhancedAccountSearch({
   }, [results])
 
   const shouldShowEmptyState = !isLoading && !hasResults && !query
-  const shouldShowSuggestions = shouldShowEmptyState && isFocused && (showRecentSearches || showTrendingSearches)
+  const shouldShowSuggestions = shouldShowEmptyState && isFocused && (showRecentSearches || defaultSuggestions.length > 0)
 
   return (
     <div className={cn("relative", className)}>
-      {/* Debug: Simple test input to verify functionality */}
-      {process.env.NODE_ENV === 'development' && (
-        <input
-          type="text"
-          placeholder="Test input"
-          className="absolute top-0 left-0 w-20 h-8 bg-red-500 text-white text-xs z-50"
-          onChange={(e) => console.log('Test input changed:', e.target.value)}
-        />
-      )}
-      
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <motion.div
             className="relative"
             whileHover={{ scale: 1.02 }}
-            whileFocus={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Search className={cn(
-              "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200",
-              isFocused ? "text-purple-500" : "text-muted-foreground"
-            )} />
-            <Input
-              ref={searchInputRef}
-              type="search"
-              placeholder={placeholder}
-              value={query}
-              onChange={(e) => {
-                console.log('Search input changed:', e.target.value)
-                setQuery(e.target.value)
-              }}
-              onFocus={() => {
-                console.log('Search input focused')
-                setIsOpen(true)
-                setIsFocused(true)
-              }}
-              onBlur={() => {
-                console.log('Search input blurred')
-                setIsFocused(false)
-              }}
-              onKeyDown={(e) => {
-                console.log('Search input keydown:', e.key)
-                handleKeyDown(e)
-              }}
-              onClick={(e) => {
-                console.log('Search input clicked')
-                e.stopPropagation()
-                setIsOpen(true)
-              }}
-              className={cn(
-                "w-full pl-10 pr-20 rounded-xl border-2 transition-all duration-300",
-                "hover:border-purple-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20",
-                "bg-white text-black placeholder:text-gray-500",
-                isFocused && "border-purple-500 shadow-lg shadow-purple-500/10"
-              )}
-              style={{ pointerEvents: 'auto', zIndex: 10 }}
-            />
-            
-            {/* Right side controls */}
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              {query && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearSearch}
-                    className="h-6 w-6 p-0 hover:bg-muted rounded-full"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </motion.div>
-              )}
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               
-              {/* Keyboard shortcut hint */}
-              <div className={cn(
-                "hidden sm:flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all duration-200",
-                isFocused ? "bg-purple-100 text-purple-700" : "bg-muted text-muted-foreground"
-              )}>
-                <CommandIcon className="h-3 w-3" />
-                <span>K</span>
-              </div>
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder={placeholder}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => {
+                  setIsOpen(true)
+                  setIsFocused(true)
+                }}
+                onBlur={() => setIsFocused(false)}
+                onClick={() => setIsOpen(true)}
+                onKeyDown={handleKeyDown}
+                className={cn(
+                  "w-full pl-10 pr-4 rounded-xl border-2 transition-all duration-300",
+                  "hover:border-purple-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20",
+                  "bg-white text-black placeholder:text-gray-500",
+                  isFocused && "border-purple-500 shadow-lg shadow-purple-500/10"
+                )}
+              />
+              
+              {/* Clear button */}
+              {query && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSearch}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted rounded-full"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
             </div>
           </motion.div>
         </PopoverTrigger>
@@ -372,40 +311,11 @@ export function EnhancedAccountSearch({
                     </div>
                   )}
 
-                  {/* Trending Searches */}
-                  {showTrendingSearches && TRENDING_SEARCHES.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <TrendingUp className="h-4 w-4 text-emerald-500" />
-                        <span className="text-sm font-medium text-muted-foreground">Trending Searches</span>
-                      </div>
-                      <div className="space-y-1">
-                        {TRENDING_SEARCHES.map((search, index) => (
-                          <motion.button
-                            key={`trending-${index}`}
-                            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
-                            onClick={() => handleRecentSearchClick(search.query)}
-                            whileHover={{ x: 4 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <div className="flex items-center gap-3">
-                              {getAccountIcon(search.type)}
-                              <span className="text-sm text-foreground">{search.query}</span>
-                            </div>
-                            <Badge variant="secondary" className="text-emerald-600 bg-emerald-50">
-                              {search.trend}
-                            </Badge>
-                          </motion.button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Default Suggestions for New Users */}
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <Sparkles className="h-4 w-4 text-purple-500" />
-                      <span className="text-sm font-medium text-muted-foreground">Discover Accounts</span>
+                      <span className="text-sm font-medium text-muted-foreground">Popular Searches</span>
                     </div>
                     <div className="space-y-1">
                       {defaultSuggestions.map((suggestion, index) => (
@@ -423,17 +333,6 @@ export function EnhancedAccountSearch({
                           <ArrowRight className="h-3 w-3 text-muted-foreground group-hover:text-purple-500 transition-colors" />
                         </motion.button>
                       ))}
-                    </div>
-                  </div>
-
-                  {/* Search Tips */}
-                  <div className="pt-3 border-t border-border/50">
-                    <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                      <Sparkles className="h-3 w-3 mt-0.5 text-purple-500" />
-                      <div>
-                        <p className="font-medium mb-1">Pro tip:</p>
-                        <p>Use <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Cmd+K</kbd> to quickly access search</p>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -519,13 +418,37 @@ export function EnhancedAccountSearch({
                   <div className="p-2 space-y-1">
                     <AnimatePresence>
                       {results.map((result, index) => (
-                        <SearchResultItem
+                        <motion.div
                           key={result.id}
-                          result={result}
-                          index={index}
-                          isSelected={selectedIndex === index}
-                          onSelect={handleResultSelect}
-                        />
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          layout
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleResultSelect(result)}
+                            className={cn(
+                              "w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left",
+                              selectedIndex === index && "bg-purple-500/10"
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={result.avatar_url} alt={getDisplayName(result)} />
+                                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs">
+                                  {getDisplayName(result).charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">{getDisplayName(result)}</p>
+                                <p className="text-xs text-muted-foreground">{result.account_type}</p>
+                              </div>
+                            </div>
+                            {result.verified && <Verified className="h-4 w-4 text-purple-500" />}
+                          </Button>
+                        </motion.div>
                       ))}
                     </AnimatePresence>
                   </div>
