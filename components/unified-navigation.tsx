@@ -257,7 +257,7 @@ export function UnifiedNavigation({ variant = 'header', className = '' }: Unifie
             <div className="hidden lg:flex flex-1 max-w-lg mx-8">
               <EnhancedAccountSearch
                 placeholder="Search artists, venues, and users..."
-                className="w-full"
+                className="w-full max-w-xs"
                 showRecentSearches={true}
               />
             </div>
@@ -270,7 +270,6 @@ export function UnifiedNavigation({ variant = 'header', className = '' }: Unifie
                   placeholder="Search..." 
                   className="w-full max-w-xs"
                   showRecentSearches={true}
-                  showTrendingSearches={false}
                 />
               </div>
 
