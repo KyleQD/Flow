@@ -61,7 +61,7 @@ const TRENDING_SEARCHES = [
 ]
 
 export function EnhancedAccountSearch({ 
-  placeholder = "Search accounts...", 
+  placeholder = "Search artists, venues, and users...", 
   className,
   onResultSelect,
   showRecentSearches = true,
@@ -86,6 +86,20 @@ export function EnhancedAccountSearch({
     recentSearches,
     addToRecentSearches
   } = useEnhancedSearch()
+
+  // Show search hints when input is focused and empty
+  useEffect(() => {
+    setShowSearchHints(isFocused && !query.trim() && !isOpen)
+  }, [isFocused, query, isOpen])
+
+  // Default suggestions for new users
+  const defaultSuggestions = [
+    { query: "neon pulse", type: "artist", label: "Neon Pulse - Electronic Artist" },
+    { query: "neon lounge", type: "venue", label: "The Neon Lounge - Nightclub" },
+    { query: "vegas music", type: "general", label: "Vegas Music Scene" },
+    { query: "electronic", type: "artist", label: "Electronic Artists" },
+    { query: "live venues", type: "venue", label: "Live Music Venues" }
+  ]
 
   const handleResultSelect = (result: SearchResult) => {
     // Save to recent searches
@@ -360,6 +374,31 @@ export function EnhancedAccountSearch({
                     </div>
                   </div>
                 )}
+
+                {/* Default Suggestions for New Users */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-4 w-4 text-purple-500" />
+                    <span className="text-sm font-medium text-muted-foreground">Discover Accounts</span>
+                  </div>
+                  <div className="space-y-1">
+                    {defaultSuggestions.map((suggestion, index) => (
+                      <motion.button
+                        key={`suggestion-${index}`}
+                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+                        onClick={() => handleRecentSearchClick(suggestion.query)}
+                        whileHover={{ x: 4 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {getAccountIcon(suggestion.type)}
+                        <div className="flex-1">
+                          <span className="text-sm text-foreground">{suggestion.label}</span>
+                        </div>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground group-hover:text-purple-500 transition-colors" />
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Search Tips */}
                 <div className="pt-3 border-t border-border/50">
