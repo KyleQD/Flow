@@ -209,16 +209,16 @@ export async function GET(request: NextRequest) {
           const enhancedResult: EnhancedSearchResult = {
             id: artist.id,
             type: 'artist',
-            username: artist.profiles?.username || `artist-${artist.id.slice(0, 8)}`,
+            username: artist.profiles?.[0]?.username || `artist-${artist.id.slice(0, 8)}`,
             displayName: artist.artist_name,
-            avatar: artist.profiles?.avatar_url,
+            avatar: artist.profiles?.[0]?.avatar_url,
             bio: artist.bio,
             location: artist.location,
             genres: artist.genres || [],
             skills: [], // Would fetch from skills table
             experience: artist.experience_level || 'intermediate',
             availability: artist.availability_status || 'available',
-            verified: artist.profiles?.is_verified || false,
+            verified: artist.profiles?.[0]?.is_verified || false,
             rating: 0, // Would calculate from reviews
             followers: 0, // Would fetch from followers table
             following: 0,
@@ -290,16 +290,16 @@ export async function GET(request: NextRequest) {
           const enhancedResult: EnhancedSearchResult = {
             id: venue.id,
             type: 'venue',
-            username: venue.profiles?.username || `venue-${venue.id.slice(0, 8)}`,
+            username: venue.profiles?.[0]?.username || `venue-${venue.id.slice(0, 8)}`,
             displayName: venue.venue_name,
-            avatar: venue.profiles?.avatar_url,
+            avatar: venue.profiles?.[0]?.avatar_url,
             bio: venue.description,
             location: venue.location,
             genres: [venue.venue_type || 'General'],
             skills: venue.amenities || [],
             experience: 'expert', // Venues are typically established
             availability: 'available',
-            verified: venue.profiles?.is_verified || false,
+            verified: venue.profiles?.[0]?.is_verified || false,
             rating: 0,
             followers: 0,
             following: 0,
