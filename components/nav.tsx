@@ -199,7 +199,6 @@ export function Nav() {
             placeholder="Search artists, venues, and users..." 
             className="w-full"
             showRecentSearches={true}
-            showTrendingSearches={true}
           />
         </div>
 
