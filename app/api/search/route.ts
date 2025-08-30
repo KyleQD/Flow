@@ -37,50 +37,149 @@ export async function GET(request: NextRequest) {
 
     // Search profiles (artists, venues, general users)
     if (type === 'all' || type === 'artists' || type === 'venues' || type === 'users') {
-      let profileQuery = supabase
-        .from('demo_profiles')
-        .select('*')
-        .order('stats->followers', { ascending: false })
+      // Search in profiles table (general users)
+      let profilesQuery = supabase
+        .from('profiles')
+        .select(`
+          id,
+          name,
+          username,
+          bio,
+          avatar_url,
+          created_at,
+          updated_at
+        `)
+        .order('created_at', { ascending: false })
 
       // Apply filters
       if (query) {
-        profileQuery = profileQuery.or(`username.ilike.%${query}%,bio.ilike.%${query}%,profile_data->>artist_name.ilike.%${query}%,profile_data->>venue_name.ilike.%${query}%,profile_data->>name.ilike.%${query}%`)
+        profilesQuery = profilesQuery.or(`username.ilike.%${query}%,name.ilike.%${query}%,bio.ilike.%${query}%`)
       }
 
-      if (location) {
-        profileQuery = profileQuery.ilike('location', `%${location}%`)
-      }
-
-      if (verified === 'true') {
-        profileQuery = profileQuery.eq('verified', true)
-      }
-
-      if (genre) {
-        profileQuery = profileQuery.contains('profile_data->genres', [genre])
-      }
-
-      // Apply type-specific filters
-      if (type === 'artists') {
-        profileQuery = profileQuery.eq('account_type', 'artist')
-      } else if (type === 'venues') {
-        profileQuery = profileQuery.eq('account_type', 'venue')
-      } else if (type === 'users') {
-        profileQuery = profileQuery.eq('account_type', 'general')
-      }
-
-      const { data: profiles, error: profileError } = await profileQuery
+      const { data: profiles, error: profileError } = await profilesQuery
         .range(offset, offset + limit - 1)
 
       if (!profileError && profiles) {
-        profiles.forEach(profile => {
-          if (profile.account_type === 'artist') {
-            results.artists.push(profile)
-          } else if (profile.account_type === 'venue') {
-            results.venues.push(profile)
-          } else {
-            results.users.push(profile)
-          }
-        })
+        results.users.push(...profiles.map(profile => ({
+          ...profile,
+          account_type: 'general',
+          display_name: profile.name || profile.username,
+          location: null,
+          verified: false,
+          stats: { followers: 0, following: 0, posts: 0 }
+        })))
+      }
+
+      // Search in artist_profiles table
+      if (type === 'all' || type === 'artists') {
+        let artistQuery = supabase
+          .from('artist_profiles')
+          .select(`
+            id,
+            user_id,
+            artist_name,
+            bio,
+            genres,
+            social_links,
+            created_at,
+            updated_at,
+            profiles!inner(
+              username,
+              avatar_url
+            )
+          `)
+          .order('created_at', { ascending: false })
+
+        if (query) {
+          artistQuery = artistQuery.or(`artist_name.ilike.%${query}%,bio.ilike.%${query}%`)
+        }
+
+        if (genre) {
+          artistQuery = artistQuery.contains('genres', [genre])
+        }
+
+        const { data: artists, error: artistError } = await artistQuery
+          .range(offset, offset + limit - 1)
+
+        if (!artistError && artists) {
+          results.artists.push(...artists.map(artist => ({
+            id: artist.id,
+            user_id: artist.user_id,
+            username: artist.profiles?.username,
+            artist_name: artist.artist_name,
+            bio: artist.bio,
+            genres: artist.genres || [],
+            social_links: artist.social_links,
+            avatar_url: artist.profiles?.avatar_url,
+            account_type: 'artist',
+            display_name: artist.artist_name,
+            location: null,
+            verified: false,
+            stats: { followers: 0, following: 0, posts: 0 },
+            created_at: artist.created_at,
+            updated_at: artist.updated_at
+          })))
+        }
+      }
+
+      // Search in venue_profiles table
+      if (type === 'all' || type === 'venues') {
+        let venueQuery = supabase
+          .from('venue_profiles')
+          .select(`
+            id,
+            user_id,
+            venue_name,
+            description,
+            address,
+            city,
+            state,
+            country,
+            capacity,
+            amenities,
+            created_at,
+            updated_at,
+            profiles!inner(
+              username,
+              avatar_url
+            )
+          `)
+          .order('created_at', { ascending: false })
+
+        if (query) {
+          venueQuery = venueQuery.or(`venue_name.ilike.%${query}%,description.ilike.%${query}%,city.ilike.%${query}%`)
+        }
+
+        if (location) {
+          venueQuery = venueQuery.or(`city.ilike.%${location}%,state.ilike.%${location}%,country.ilike.%${location}%`)
+        }
+
+        const { data: venues, error: venueError } = await venueQuery
+          .range(offset, offset + limit - 1)
+
+        if (!venueError && venues) {
+          results.venues.push(...venues.map(venue => ({
+            id: venue.id,
+            user_id: venue.user_id,
+            username: venue.profiles?.username,
+            venue_name: venue.venue_name,
+            description: venue.description,
+            address: venue.address,
+            city: venue.city,
+            state: venue.state,
+            country: venue.country,
+            capacity: venue.capacity,
+            amenities: venue.amenities || [],
+            avatar_url: venue.profiles?.avatar_url,
+            account_type: 'venue',
+            display_name: venue.venue_name,
+            location: `${venue.city || ''}${venue.city && venue.state ? ', ' : ''}${venue.state || ''}`,
+            verified: false,
+            stats: { followers: 0, following: 0, posts: 0 },
+            created_at: venue.created_at,
+            updated_at: venue.updated_at
+          })))
+        }
       }
     }
 
