@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     }
 
     const results: EnhancedSearchResult[] = []
-    const { user } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     const currentUserId = user?.id
 
     // 1. Search Demo Profiles (existing demo data)
