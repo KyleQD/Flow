@@ -152,6 +152,17 @@ export default function EnhancedSignupForm() {
     setSuccess(null)
 
     try {
+      // Check for configuration issues first
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseAnonKey || 
+          supabaseAnonKey.includes('your_anon_key') || 
+          supabaseAnonKey.includes('your_supabase_anon_key')) {
+        setError('Authentication service is not properly configured. Please contact support.')
+        return
+      }
+
       // Prepare signup data
       const signupData = {
         email: formData.email,
@@ -195,7 +206,23 @@ export default function EnhancedSignupForm() {
 
     } catch (error) {
       console.error('Signup error:', error)
-      setError('An unexpected error occurred. Please try again.')
+      
+      // Provide more specific error messages
+      let errorMessage = 'An unexpected error occurred. Please try again.'
+      
+      if (error instanceof Error) {
+        if (error.message.includes('rate limit')) {
+          errorMessage = 'Too many signup attempts. Please wait a few minutes before trying again.'
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.'
+        } else if (error.message.includes('configuration')) {
+          errorMessage = 'Authentication service is not properly configured. Please contact support.'
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }

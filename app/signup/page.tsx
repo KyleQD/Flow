@@ -11,9 +11,10 @@ import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Facebook, Mail, ArrowRight, CheckCircle, Music, User, Building, Briefcase, Users } from 'lucide-react'
+import { Facebook, Mail, ArrowRight, CheckCircle, Music, User, Building, Briefcase, Users, XCircle } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { TourifyLogo } from '@/components/tourify-logo'
+import { AuthDiagnostic } from '@/components/auth/auth-diagnostic'
 
 interface SignupFormData {
   email: string
@@ -54,6 +55,7 @@ export default function SignUpPage() {
   const [invitationData, setInvitationData] = useState<any>(null)
   const [bookingData, setBookingData] = useState<any>(null)
   const [loadingInvitation, setLoadingInvitation] = useState(false)
+  const [showDiagnostics, setShowDiagnostics] = useState(false)
   
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -270,6 +272,32 @@ export default function SignUpPage() {
       
       <div className="flex flex-1 items-center justify-center w-full z-20 pt-32">
         <Card className="w-full max-w-lg p-8 rounded-2xl bg-[#181A20] border-none shadow-xl">
+          {/* Configuration Error Alert */}
+          {(!process.env.NEXT_PUBLIC_SUPABASE_URL || 
+            !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.includes('your_anon_key')) && (
+            <Alert className="mb-6 bg-red-900/20 border-red-700">
+              <XCircle className="h-4 w-4 text-red-400" />
+              <AlertDescription className="text-red-200">
+                <strong>Configuration Issue:</strong> Authentication service is not properly configured.
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto text-red-300 underline"
+                  onClick={() => setShowDiagnostics(!showDiagnostics)}
+                >
+                  {showDiagnostics ? 'Hide' : 'Show'} diagnostics
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Diagnostic Section */}
+          {showDiagnostics && (
+            <div className="mb-6">
+              <AuthDiagnostic />
+            </div>
+          )}
+
           {/* Invitation Headers */}
           {isArtistInvite && (
             <Alert className="mb-6 bg-red-900/20 border-red-700">

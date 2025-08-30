@@ -1,19 +1,39 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../database.types'
 
-// Validate environment variables
+// Validate environment variables with better error handling
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Missing Supabase environment variables. Please check your .env.local file.'
-  )
+// Check for placeholder values that indicate missing configuration
+const hasPlaceholderValues = !supabaseUrl || 
+  !supabaseAnonKey || 
+  supabaseAnonKey.includes('your_anon_key') || 
+  supabaseAnonKey.includes('your_supabase_anon_key') ||
+  supabaseAnonKey.length < 50
+
+if (hasPlaceholderValues) {
+  console.error('❌ Supabase Configuration Error:')
+  console.error('Missing or invalid Supabase environment variables.')
+  console.error('Please ensure your .env.local file contains:')
+  console.error('NEXT_PUBLIC_SUPABASE_URL=your_actual_supabase_url')
+  console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_anon_key')
+  console.error('')
+  console.error('You can find these values in your Supabase project dashboard:')
+  console.error('Settings > API > Project URL and anon/public key')
+  
+  // Don't throw error in development, just warn
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Missing Supabase environment variables. Please check your .env.local file.'
+    )
+  }
 }
 
 // Debug logging for environment variables
-console.log('Supabase URL:', supabaseUrl)
-console.log('Supabase Anon Key:', supabaseAnonKey ? 'Set' : 'Not set')
+console.log('🔧 Supabase Configuration:')
+console.log('URL:', supabaseUrl ? '✅ Set' : '❌ Missing')
+console.log('Anon Key:', supabaseAnonKey ? (hasPlaceholderValues ? '❌ Placeholder' : '✅ Valid') : '❌ Missing')
 
 // Custom cookie storage for Supabase to ensure server-side compatibility
 const cookieStorage = {

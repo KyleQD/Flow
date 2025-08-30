@@ -131,6 +131,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       console.log('[Auth] Attempting sign up for:', email, 'with metadata:', metadata)
       
+      // Check for configuration issues first
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseAnonKey || 
+          supabaseAnonKey.includes('your_anon_key') || 
+          supabaseAnonKey.includes('your_supabase_anon_key')) {
+        return { 
+          error: {
+            message: 'Authentication service is not properly configured. Please contact support.',
+            status: 500,
+            name: 'ConfigurationError'
+          } as AuthError
+        }
+      }
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -148,7 +164,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           status: error.status,
           name: error.name
         })
-        return { error }
+        
+        // Provide more user-friendly error messages
+        let userFriendlyMessage = error.message
+        
+        if (error.message.includes('rate limit')) {
+          userFriendlyMessage = 'Too many signup attempts. Please wait a few minutes before trying again.'
+        } else if (error.message.includes('invalid email')) {
+          userFriendlyMessage = 'Please enter a valid email address.'
+        } else if (error.message.includes('weak password')) {
+          userFriendlyMessage = 'Password must be at least 6 characters long.'
+        } else if (error.message.includes('already registered')) {
+          userFriendlyMessage = 'An account with this email already exists. Please sign in instead.'
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          userFriendlyMessage = 'Network error. Please check your internet connection and try again.'
+        }
+        
+        return { 
+          error: {
+            ...error,
+            message: userFriendlyMessage
+          } as AuthError
+        }
       }
       
       console.log('[Auth] Sign up successful:', {
@@ -159,7 +196,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: undefined }
     } catch (error) {
       console.error('[Auth] Sign up failed with exception:', error)
-      return { error: error as AuthError }
+      return { 
+        error: {
+          message: 'An unexpected error occurred. Please try again.',
+          status: 500,
+          name: 'UnexpectedError'
+        } as AuthError
+      }
     } finally {
       setLoading(false)
     }
