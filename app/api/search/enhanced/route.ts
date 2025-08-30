@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     const currentUserId = user?.id
 
     // 1. Search Demo Profiles (existing demo data)
-    if (['all', 'artists', 'venues', 'users'].includes(params.type)) {
+    if (params.type && ['all', 'artists', 'venues', 'users'].includes(params.type)) {
       let demoQuery = supabase
         .from('demo_profiles')
         .select('*')
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. Search Real Artist Profiles
-    if (['all', 'artists'].includes(params.type) && results.length < params.limit) {
+    if (params.type && ['all', 'artists'].includes(params.type) && results.length < params.limit) {
       let artistQuery = supabase
         .from('artist_profiles')
         .select(`
@@ -252,7 +252,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Search Real Venue Profiles
-    if (['all', 'venues'].includes(params.type) && results.length < params.limit) {
+    if (params.type && ['all', 'venues'].includes(params.type) && results.length < params.limit) {
       let venueQuery = supabase
         .from('venue_profiles')
         .select(`
@@ -333,7 +333,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. Search Real General User Profiles
-    if (['all', 'users'].includes(params.type) && results.length < params.limit) {
+    if (params.type && ['all', 'users'].includes(params.type) && results.length < params.limit) {
       let profileQuery = supabase
         .from('profiles')
         .select(`
