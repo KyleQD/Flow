@@ -118,27 +118,20 @@ export function useEnhancedSearch(): UseEnhancedSearchReturn {
         limit: '6' // Optimal for dropdown display
       })
       
-      // Try unified search first, fallback to original search
-      let response = await fetch(`/api/search/unified?${params}`)
+      // Use the working search API
+      const response = await fetch(`/api/search?${params}`)
       
       if (!response.ok) {
-        // Fallback to original search API
-        response = await fetch(`/api/search?${params}`)
-        if (!response.ok) {
-          throw new Error('Search failed')
-        }
+        throw new Error('Search failed')
       }
       
       const data: any = await response.json()
       
-      // Handle both unified and legacy response formats
+      // Handle the search response format
       let allResults: SearchResult[] = []
       
-      if (data.unified_results) {
-        // New unified search response
-        allResults = data.unified_results
-      } else if (data.results) {
-        // Legacy search response - combine all account types
+      if (data.results) {
+        // Combine all account types
         allResults = [
           ...data.results.artists || [],
           ...data.results.venues || [],

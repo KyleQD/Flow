@@ -154,39 +154,28 @@ export function EnhancedAccountSearch({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        if (hasResults) {
-          setSelectedIndex(prev => 
-            prev < results.length - 1 ? prev + 1 : 0
-          )
-        }
+        setSelectedIndex(prev => 
+          prev < results.length - 1 ? prev + 1 : 0
+        )
         break
       case 'ArrowUp':
         e.preventDefault()
-        if (hasResults) {
-          setSelectedIndex(prev => 
-            prev > 0 ? prev - 1 : results.length - 1
-          )
-        }
+        setSelectedIndex(prev => 
+          prev > 0 ? prev - 1 : results.length - 1
+        )
         break
       case 'Enter':
         e.preventDefault()
-        if (selectedIndex >= 0 && selectedIndex < results.length) {
+        if (selectedIndex >= 0 && results[selectedIndex]) {
           handleResultSelect(results[selectedIndex])
+        } else if (query.trim()) {
+          // Navigate to search results page
+          router.push(`/search?q=${encodeURIComponent(query.trim())}`)
+          clearSearch()
         }
         break
       case 'Escape':
-        e.preventDefault()
         clearSearch()
-        setIsOpen(false)
-        setSelectedIndex(-1)
-        setIsFocused(false)
-        searchInputRef.current?.blur()
-        break
-      case '/':
-        if (e.metaKey || e.ctrlKey) {
-          e.preventDefault()
-          searchInputRef.current?.focus()
-        }
         break
     }
   }
@@ -241,12 +230,27 @@ export function EnhancedAccountSearch({
                 onClick={() => setIsOpen(true)}
                 onKeyDown={handleKeyDown}
                 className={cn(
-                  "w-full pl-10 pr-4 rounded-xl border-2 transition-all duration-300",
+                  "w-full pl-10 pr-12 rounded-xl border-2 transition-all duration-300",
                   "hover:border-purple-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20",
                   "bg-white text-black placeholder:text-gray-500",
                   isFocused && "border-purple-500 shadow-lg shadow-purple-500/10"
                 )}
               />
+              
+              {/* Search button */}
+              {query.trim() && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    router.push(`/search?q=${encodeURIComponent(query.trim())}`)
+                    clearSearch()
+                  }}
+                  className="absolute right-8 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted rounded-full"
+                >
+                  <Search className="h-3 w-3" />
+                </Button>
+              )}
               
               {/* Clear button */}
               {query && (

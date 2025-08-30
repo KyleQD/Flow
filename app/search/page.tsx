@@ -55,6 +55,26 @@ export default function SearchPage() {
     fetchTrendingTags()
   }, [searchQuery, activeTab, selectedLocation, selectedGenre, showVerifiedOnly])
 
+  // Load suggested accounts when there are no search results
+  useEffect(() => {
+    if (!searchQuery && searchResults.total === 0 && !isSearching) {
+      loadSuggestedAccounts()
+    }
+  }, [searchQuery, searchResults.total, isSearching])
+
+  const loadSuggestedAccounts = async () => {
+    try {
+      const response = await fetch('/api/search?type=all&limit=12')
+      const data = await response.json()
+      
+      if (response.ok && data.results) {
+        setSearchResults(data.results)
+      }
+    } catch (error) {
+      console.error('Error loading suggested accounts:', error)
+    }
+  }
+
   const fetchSearchResults = async () => {
     try {
       setIsSearching(true)
@@ -66,32 +86,14 @@ export default function SearchPage() {
       if (selectedGenre) params.append('genre', selectedGenre)
       if (showVerifiedOnly) params.append('verified', 'true')
       
-      // Try unified search first, fallback to original search
-      let response = await fetch(`/api/search/unified?${params.toString()}`)
-      let data = await response.json()
+      // Use the working search API
+      const response = await fetch(`/api/search?${params.toString()}`)
+      const data = await response.json()
       
-      if (response.ok && data.unified_results) {
-        // Convert unified results to the expected format
-        const convertedResults = {
-          artists: data.unified_results.filter((p: any) => p.account_type === 'artist'),
-          venues: data.unified_results.filter((p: any) => p.account_type === 'venue'),
-          users: data.unified_results.filter((p: any) => p.account_type === 'general'),
-          events: data.results?.events || [],
-          music: data.results?.music || [],
-          posts: data.results?.posts || [],
-          total: data.unified_results.length
-        }
-        setSearchResults(convertedResults)
+      if (response.ok && data.results) {
+        setSearchResults(data.results)
       } else {
-        // Fallback to original search API
-        response = await fetch(`/api/search?${params.toString()}`)
-        data = await response.json()
-        
-        if (data.success) {
-          setSearchResults(data.results)
-        } else {
-          toast.error('Failed to load search results')
-        }
+        toast.error('Failed to load search results')
       }
     } catch (error) {
       console.error('Error fetching search results:', error)
@@ -565,6 +567,30 @@ export default function SearchPage() {
     )
   }
 
+  const getSuggestedAccounts = () => {
+    const suggested: any[] = [];
+    const allProfiles = [...searchResults.artists, ...searchResults.venues, ...searchResults.users];
+    const profileCounts: { [key: string]: number } = {};
+
+    allProfiles.forEach(profile => {
+      const key = `${profile.id}-${profile.account_type}`;
+      profileCounts[key] = (profileCounts[key] || 0) + 1;
+    });
+
+    const sortedProfiles = Object.entries(profileCounts).sort(([, countA], [, countB]) => countB - countA);
+
+    let currentIndex = 0;
+    for (const [key, count] of sortedProfiles) {
+      const [profileId, accountType] = key.split('-');
+      const profile = allProfiles.find(p => p.id === profileId && p.account_type === accountType);
+      if (profile) {
+        suggested.push({ ...profile, count });
+        if (suggested.length >= 6) break; // Limit to 6 suggested accounts
+      }
+    }
+    return suggested;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
       {/* Floating Orbs Background */}
@@ -727,110 +753,98 @@ export default function SearchPage() {
             </TabsList>
           </motion.div>
 
-          <TabsContent value="all" className="space-y-8 mt-8">
-            {/* Featured Artists */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-semibold flex items-center text-white">
-                  <Music className="h-7 w-7 mr-3 text-purple-400" />
-                  Digital Artists
-                </h2>
-                <Button variant="outline" size="sm" className="border-purple-400/30 text-purple-300 hover:bg-purple-500/20">
-                  <Radio className="h-4 w-4 mr-2" />
-                  View All
-                </Button>
-              </div>
-              {isSearching ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {[...Array(2)].map((_, i) => (
-                    <Card key={i} className="bg-slate-900/50 border-slate-700/50 animate-pulse">
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-slate-800 rounded-full"></div>
-                          <div className="flex-1">
-                            <div className="h-4 bg-slate-800 rounded mb-2"></div>
-                            <div className="h-3 bg-slate-800 rounded w-3/4"></div>
-                          </div>
+          <TabsContent value="all" className="space-y-6 mt-8">
+            {isSearching ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <Card key={i} className="bg-slate-900/50 border-slate-700/50 animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 bg-slate-800 rounded-full"></div>
+                        <div className="flex-1">
+                          <div className="h-4 bg-slate-800 rounded mb-2"></div>
+                          <div className="h-3 bg-slate-800 rounded w-3/4"></div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {searchResults.artists.slice(0, 2).map((artist: any, index: number) => renderArtistCard(artist, index))}
-                </div>
-              )}
-            </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : searchResults.total > 0 ? (
+              <div className="space-y-8">
+                {/* Artists Section */}
+                {searchResults.artists.length > 0 && (
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+                      <Music className="h-5 w-5 mr-2 text-purple-400" />
+                      Artists ({searchResults.artists.length})
+                    </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {searchResults.artists.map((artist: any, index: number) => renderArtistCard(artist, index))}
+                    </div>
+                  </div>
+                )}
 
-            {/* Featured Venues */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-semibold flex items-center text-white">
-                  <Building2 className="h-7 w-7 mr-3 text-blue-400" />
-                  Cyber Venues
-                </h2>
-                <Button variant="outline" size="sm" className="border-blue-400/30 text-blue-300 hover:bg-blue-500/20">
-                  <Eye className="h-4 w-4 mr-2" />
-                  View All
-                </Button>
-              </div>
-              {isSearching ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {[...Array(2)].map((_, i) => (
-                    <Card key={i} className="bg-slate-900/50 border-slate-700/50 animate-pulse">
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-slate-800 rounded-full"></div>
-                          <div className="flex-1">
-                            <div className="h-4 bg-slate-800 rounded mb-2"></div>
-                            <div className="h-3 bg-slate-800 rounded w-3/4"></div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {searchResults.venues.map((venue: any, index: number) => renderVenueCard(venue, index))}
-                </div>
-              )}
-            </div>
+                {/* Venues Section */}
+                {searchResults.venues.length > 0 && (
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+                      <Building2 className="h-5 w-5 mr-2 text-blue-400" />
+                      Venues ({searchResults.venues.length})
+                    </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {searchResults.venues.map((venue: any, index: number) => renderVenueCard(venue, index))}
+                    </div>
+                  </div>
+                )}
 
-            {/* Featured Events */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-semibold flex items-center text-white">
-                  <Calendar className="h-7 w-7 mr-3 text-pink-400" />
-                  Upcoming Experiences
-                </h2>
-                <Button variant="outline" size="sm" className="border-pink-400/30 text-pink-300 hover:bg-pink-500/20">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  View All
-                </Button>
+                {/* Users Section */}
+                {searchResults.users.length > 0 && (
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+                      <Users className="h-5 w-5 mr-2 text-green-400" />
+                      Users ({searchResults.users.length})
+                    </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {searchResults.users.map((user: any, index: number) => renderUserCard(user, index))}
+                    </div>
+                  </div>
+                )}
               </div>
-              {isSearching ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {[...Array(2)].map((_, i) => (
-                    <Card key={i} className="bg-slate-900/50 border-slate-700/50 animate-pulse">
-                      <CardContent className="p-6">
-                        <div className="h-4 bg-slate-800 rounded mb-2"></div>
-                        <div className="h-3 bg-slate-800 rounded w-3/4 mb-4"></div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="h-3 bg-slate-800 rounded"></div>
-                          <div className="h-3 bg-slate-800 rounded"></div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+            ) : (
+              <div className="space-y-8">
+                {/* No Results Message */}
+                <Card className="bg-slate-900/50 border-slate-700/50">
+                  <CardContent className="p-12 text-center">
+                    <Search className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">No Results Found</h3>
+                    <p className="text-gray-400 mb-6">Try adjusting your search criteria or check out these popular accounts to follow.</p>
+                  </CardContent>
+                </Card>
+
+                {/* Suggested Accounts to Follow */}
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
+                    <Sparkles className="h-6 w-6 mr-3 text-purple-400" />
+                    Suggested Accounts to Follow
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {getSuggestedAccounts().map((account: any, index: number) => (
+                      <motion.div
+                        key={account.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                      >
+                        {account.account_type === 'artist' && renderArtistCard(account, index)}
+                        {account.account_type === 'venue' && renderVenueCard(account, index)}
+                        {account.account_type === 'general' && renderUserCard(account, index)}
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {searchResults.events.map((event: any, index: number) => renderEventCard(event, index))}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="artists" className="space-y-6 mt-8">
