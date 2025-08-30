@@ -178,43 +178,17 @@ export default function LoginPage() {
         setError(errorInfo)
       } else {
         // Handle invitations if present
-        if (inviteToken && result.user) {
+        if (inviteToken) {
           try {
             if (inviteType === 'artist') {
-              await fetch(`/api/booking-requests`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  token: inviteToken,
-                  status: 'pending',
-                  userId: result.user.id
-                })
-              })
+              // For artist bookings, we'll handle this after email confirmation
+              console.log('Artist booking invitation detected, will be processed after email confirmation')
             } else if (inviteType === 'staff') {
-              // Handle staff onboarding invitation
-              await fetch(`/api/invitations`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  token: inviteToken,
-                  status: 'accepted',
-                  userId: result.user.id
-                })
-              })
-              
-              // Redirect to onboarding completion page
-              router.push(`/onboarding/complete?token=${inviteToken}`)
-              return
+              // For staff invitations, we'll handle this after email confirmation
+              console.log('Staff invitation detected, will be processed after email confirmation')
             } else {
-              await fetch(`/api/invitations`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  token: inviteToken,
-                  status: 'accepted',
-                  userId: result.user.id
-                })
-              })
+              // For general invitations, we'll handle this after email confirmation
+              console.log('General invitation detected, will be processed after email confirmation')
             }
           } catch (inviteError) {
             console.error('Error handling invitation:', inviteError)
