@@ -101,6 +101,11 @@ export function PortfolioSettings() {
       audio: ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/aac', 'audio/m4a', 'audio/ogg']
     }
     
+    if (kind !== 'image' && kind !== 'video' && kind !== 'audio') {
+      toast.error(`Invalid file kind: ${kind}`)
+      return
+    }
+    
     if (!allowedTypes[kind]?.includes(file.type)) {
       toast.error(`Invalid file type for ${kind}. Please select a valid ${kind} file.`)
       return
