@@ -234,9 +234,19 @@ export function EnhancedAccountSearch({
   const shouldShowSuggestions = shouldShowEmptyState && isFocused && (showRecentSearches || showTrendingSearches)
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <div className={cn("relative flex-1 max-w-sm", className)}>
+    <div className={cn("relative", className)}>
+      {/* Debug: Simple test input to verify functionality */}
+      {process.env.NODE_ENV === 'development' && (
+        <input
+          type="text"
+          placeholder="Test input"
+          className="absolute top-0 left-0 w-20 h-8 bg-red-500 text-white text-xs z-50"
+          onChange={(e) => console.log('Test input changed:', e.target.value)}
+        />
+      )}
+      
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
           <motion.div
             className="relative"
             whileHover={{ scale: 1.02 }}
@@ -252,18 +262,35 @@ export function EnhancedAccountSearch({
               type="search"
               placeholder={placeholder}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                console.log('Search input changed:', e.target.value)
+                setQuery(e.target.value)
+              }}
               onFocus={() => {
+                console.log('Search input focused')
                 setIsOpen(true)
                 setIsFocused(true)
               }}
-              onBlur={() => setIsFocused(false)}
-              onKeyDown={handleKeyDown}
+              onBlur={() => {
+                console.log('Search input blurred')
+                setIsFocused(false)
+              }}
+              onKeyDown={(e) => {
+                console.log('Search input keydown:', e.key)
+                handleKeyDown(e)
+              }}
+              onClick={(e) => {
+                console.log('Search input clicked')
+                e.stopPropagation()
+                setIsOpen(true)
+              }}
               className={cn(
                 "w-full pl-10 pr-20 rounded-xl border-2 transition-all duration-300",
                 "hover:border-purple-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20",
+                "bg-white text-black placeholder:text-gray-500",
                 isFocused && "border-purple-500 shadow-lg shadow-purple-500/10"
               )}
+              style={{ pointerEvents: 'auto', zIndex: 10 }}
             />
             
             {/* Right side controls */}
@@ -295,219 +322,219 @@ export function EnhancedAccountSearch({
               </div>
             </div>
           </motion.div>
-        </div>
-      </PopoverTrigger>
-      
-      <PopoverContent 
-        className="w-[480px] p-0 bg-background/95 backdrop-blur-sm border rounded-xl shadow-xl border-purple-200/50" 
-        align="start"
-        sideOffset={8}
-      >
-        <Command className="rounded-xl border-0">
-          <CommandList className="max-h-[450px] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-transparent">
-            
-            {/* Loading State */}
-            {isLoading && (
-              <motion.div 
-                className="py-8 text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <Loader2 className="h-6 w-6 animate-spin mx-auto text-purple-500 mb-3" />
-                <p className="text-sm text-muted-foreground">Searching accounts...</p>
-              </motion.div>
-            )}
-            
-            {/* Empty State with Suggestions */}
-            {shouldShowSuggestions && (
-              <div className="p-4 space-y-4">
-                {/* Recent Searches */}
-                {showRecentSearches && recentSearches.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-muted-foreground">Recent Searches</span>
-                    </div>
-                    <div className="space-y-1">
-                      {recentSearches.map((search, index) => (
-                        <motion.button
-                          key={`recent-${index}`}
-                          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
-                          onClick={() => handleRecentSearchClick(search.query)}
-                          whileHover={{ x: 4 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          {search.type ? getAccountIcon(search.type) : <Search className="h-4 w-4 text-muted-foreground" />}
-                          <span className="text-sm text-foreground">{search.query}</span>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Trending Searches */}
-                {showTrendingSearches && TRENDING_SEARCHES.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <TrendingUp className="h-4 w-4 text-emerald-500" />
-                      <span className="text-sm font-medium text-muted-foreground">Trending Searches</span>
-                    </div>
-                    <div className="space-y-1">
-                      {TRENDING_SEARCHES.map((search, index) => (
-                        <motion.button
-                          key={`trending-${index}`}
-                          className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
-                          onClick={() => handleRecentSearchClick(search.query)}
-                          whileHover={{ x: 4 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <div className="flex items-center gap-3">
-                            {getAccountIcon(search.type)}
-                            <span className="text-sm text-foreground">{search.query}</span>
-                          </div>
-                          <Badge variant="secondary" className="text-emerald-600 bg-emerald-50">
-                            {search.trend}
-                          </Badge>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Default Suggestions for New Users */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="h-4 w-4 text-purple-500" />
-                    <span className="text-sm font-medium text-muted-foreground">Discover Accounts</span>
-                  </div>
-                  <div className="space-y-1">
-                    {defaultSuggestions.map((suggestion, index) => (
-                      <motion.button
-                        key={`suggestion-${index}`}
-                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
-                        onClick={() => handleRecentSearchClick(suggestion.query)}
-                        whileHover={{ x: 4 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        {getAccountIcon(suggestion.type)}
-                        <div className="flex-1">
-                          <span className="text-sm text-foreground">{suggestion.label}</span>
-                        </div>
-                        <ArrowRight className="h-3 w-3 text-muted-foreground group-hover:text-purple-500 transition-colors" />
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Search Tips */}
-                <div className="pt-3 border-t border-border/50">
-                  <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <Sparkles className="h-3 w-3 mt-0.5 text-purple-500" />
-                    <div>
-                      <p className="font-medium mb-1">Pro tip:</p>
-                      <p>Use <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Cmd+K</kbd> to quickly access search</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* No Results State */}
-            {!isLoading && !hasResults && query && (
-              <CommandEmpty>
+        </PopoverTrigger>
+        
+        <PopoverContent 
+          className="w-[480px] p-0 bg-background/95 backdrop-blur-sm border rounded-xl shadow-xl border-purple-200/50" 
+          align="start"
+          sideOffset={8}
+        >
+          <Command className="rounded-xl border-0">
+            <CommandList className="max-h-[450px] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-transparent">
+              
+              {/* Loading State */}
+              {isLoading && (
                 <motion.div 
-                  className="py-8 px-4 text-center"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
+                  className="py-8 text-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                 >
-                  <div className="mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                      <Search className="h-8 w-8 text-purple-500" />
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-purple-500 mb-3" />
+                  <p className="text-sm text-muted-foreground">Searching accounts...</p>
+                </motion.div>
+              )}
+              
+              {/* Empty State with Suggestions */}
+              {shouldShowSuggestions && (
+                <div className="p-4 space-y-4">
+                  {/* Recent Searches */}
+                  {showRecentSearches && recentSearches.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-muted-foreground">Recent Searches</span>
+                      </div>
+                      <div className="space-y-1">
+                        {recentSearches.map((search, index) => (
+                          <motion.button
+                            key={`recent-${index}`}
+                            className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                            onClick={() => handleRecentSearchClick(search.query)}
+                            whileHover={{ x: 4 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            {search.type ? getAccountIcon(search.type) : <Search className="h-4 w-4 text-muted-foreground" />}
+                            <span className="text-sm text-foreground">{search.query}</span>
+                          </motion.button>
+                        ))}
+                      </div>
                     </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                      No results for "{query}"
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
-                      We couldn't find any artists, venues, or users matching your search. Try different keywords or check your spelling.
-                    </p>
-                    
-                    {/* Search suggestions */}
-                    <div className="text-xs text-muted-foreground mb-4">
-                      <p className="mb-2">Suggestions:</p>
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        <span className="px-2 py-1 bg-muted rounded-full">Try shorter keywords</span>
-                        <span className="px-2 py-1 bg-muted rounded-full">Check spelling</span>
-                        <span className="px-2 py-1 bg-muted rounded-full">Use @username</span>
+                  )}
+
+                  {/* Trending Searches */}
+                  {showTrendingSearches && TRENDING_SEARCHES.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <TrendingUp className="h-4 w-4 text-emerald-500" />
+                        <span className="text-sm font-medium text-muted-foreground">Trending Searches</span>
+                      </div>
+                      <div className="space-y-1">
+                        {TRENDING_SEARCHES.map((search, index) => (
+                          <motion.button
+                            key={`trending-${index}`}
+                            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+                            onClick={() => handleRecentSearchClick(search.query)}
+                            whileHover={{ x: 4 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <div className="flex items-center gap-3">
+                              {getAccountIcon(search.type)}
+                              <span className="text-sm text-foreground">{search.query}</span>
+                            </div>
+                            <Badge variant="secondary" className="text-emerald-600 bg-emerald-50">
+                              {search.trend}
+                            </Badge>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Default Suggestions for New Users */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="h-4 w-4 text-purple-500" />
+                      <span className="text-sm font-medium text-muted-foreground">Discover Accounts</span>
+                    </div>
+                    <div className="space-y-1">
+                      {defaultSuggestions.map((suggestion, index) => (
+                        <motion.button
+                          key={`suggestion-${index}`}
+                          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+                          onClick={() => handleRecentSearchClick(suggestion.query)}
+                          whileHover={{ x: 4 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {getAccountIcon(suggestion.type)}
+                          <div className="flex-1">
+                            <span className="text-sm text-foreground">{suggestion.label}</span>
+                          </div>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground group-hover:text-purple-500 transition-colors" />
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Search Tips */}
+                  <div className="pt-3 border-t border-border/50">
+                    <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                      <Sparkles className="h-3 w-3 mt-0.5 text-purple-500" />
+                      <div>
+                        <p className="font-medium mb-1">Pro tip:</p>
+                        <p>Use <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Cmd+K</kbd> to quickly access search</p>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => router.push('/discover')}
-                      className="text-purple-600 border-purple-200 hover:bg-purple-50 mr-2"
-                    >
-                      <Hash className="h-3 w-3 mr-1" />
-                      Browse All Accounts
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => {
-                        clearSearch()
-                        setQuery("")
-                      }}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      Clear Search
-                    </Button>
-                  </div>
-                </motion.div>
-              </CommandEmpty>
-            )}
-            
-            {/* Search Results */}
-            {hasResults && !isLoading && (
-              <div>
-                {/* Results Header */}
-                <div className="px-4 py-2 border-b border-border/50 bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Found {results.length} result{results.length !== 1 ? 's' : ''} for "{query}"
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/search?q=${encodeURIComponent(query)}`)}
-                      className="text-xs text-purple-600 hover:text-purple-700 h-6 px-2"
-                    >
-                      View All
-                    </Button>
-                  </div>
                 </div>
+              )}
+              
+              {/* No Results State */}
+              {!isLoading && !hasResults && query && (
+                <CommandEmpty>
+                  <motion.div 
+                    className="py-8 px-4 text-center"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="mb-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                        <Search className="h-8 w-8 text-purple-500" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        No results for "{query}"
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
+                        We couldn't find any artists, venues, or users matching your search. Try different keywords or check your spelling.
+                      </p>
+                      
+                      {/* Search suggestions */}
+                      <div className="text-xs text-muted-foreground mb-4">
+                        <p className="mb-2">Suggestions:</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          <span className="px-2 py-1 bg-muted rounded-full">Try shorter keywords</span>
+                          <span className="px-2 py-1 bg-muted rounded-full">Check spelling</span>
+                          <span className="px-2 py-1 bg-muted rounded-full">Use @username</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => router.push('/discover')}
+                        className="text-purple-600 border-purple-200 hover:bg-purple-50 mr-2"
+                      >
+                        <Hash className="h-3 w-3 mr-1" />
+                        Browse All Accounts
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          clearSearch()
+                          setQuery("")
+                        }}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        Clear Search
+                      </Button>
+                    </div>
+                  </motion.div>
+                </CommandEmpty>
+              )}
+              
+              {/* Search Results */}
+              {hasResults && !isLoading && (
+                <div>
+                  {/* Results Header */}
+                  <div className="px-4 py-2 border-b border-border/50 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Found {results.length} result{results.length !== 1 ? 's' : ''} for "{query}"
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/search?q=${encodeURIComponent(query)}`)}
+                        className="text-xs text-purple-600 hover:text-purple-700 h-6 px-2"
+                      >
+                        View All
+                      </Button>
+                    </div>
+                  </div>
 
-                <div className="p-2 space-y-1">
-                  <AnimatePresence>
-                    {results.map((result, index) => (
-                      <SearchResultItem
-                        key={result.id}
-                        result={result}
-                        index={index}
-                        isSelected={selectedIndex === index}
-                        onSelect={handleResultSelect}
-                      />
-                    ))}
-                  </AnimatePresence>
+                  <div className="p-2 space-y-1">
+                    <AnimatePresence>
+                      {results.map((result, index) => (
+                        <SearchResultItem
+                          key={result.id}
+                          result={result}
+                          index={index}
+                          isSelected={selectedIndex === index}
+                          onSelect={handleResultSelect}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </div>
                 </div>
-              </div>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   )
 }
