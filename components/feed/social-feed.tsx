@@ -98,11 +98,11 @@ export function SocialFeed() {
 
   const loadPosts = async (feedType = activeTab) => {
     try {
-      // Use personal feed API for "following" tab, regular posts API for others
-      const endpoint = feedType === 'following' ? '/api/feed/personal' : '/api/feed/posts'
+      // Use the main posts API for all feed types
+      const endpoint = '/api/feed/posts'
       const params = new URLSearchParams({
         limit: '20',
-        type: feedType === 'following' ? 'following' : feedType
+        type: feedType
       })
       
       console.log(`[SocialFeed] Loading ${feedType} feed from ${endpoint}`)
@@ -122,7 +122,7 @@ export function SocialFeed() {
       }
       
       // Handle both API response formats
-      const postsData = result.content || result.data || []
+      const postsData = result.posts || result.data || []
       setPosts(postsData)
       
       console.log(`[SocialFeed] Loaded ${postsData.length} posts for ${feedType} feed`)

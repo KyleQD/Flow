@@ -82,6 +82,7 @@ export function DashboardFeed() {
   const [showComments, setShowComments] = useState<{ [postId: string]: boolean }>({})
   const [loadingComments, setLoadingComments] = useState<{ [postId: string]: boolean }>({})
   const [followingUsers, setFollowingUsers] = useState(new Set<string>())
+  const [feedMessage, setFeedMessage] = useState<string | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
   
   const { user } = useAuth()
@@ -106,6 +107,13 @@ export function DashboardFeed() {
       
       // Standardize on { posts } but gracefully support { data }
       setPosts(result.posts || result.data || [])
+      
+      // Handle API messages (like empty feed guidance)
+      if (result.message) {
+        setFeedMessage(result.message)
+      } else {
+        setFeedMessage(null)
+      }
     } catch (error) {
       console.error('Error loading posts:', error)
     }
@@ -582,8 +590,12 @@ export function DashboardFeed() {
                     {activeTab === 'following' ? (
                       <>
                         <Users className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                        <p className="text-sm">No posts from people you follow yet.</p>
-                        <p className="text-xs mt-1">Follow some users to see their posts here!</p>
+                        <p className="text-sm">
+                          {feedMessage || "No posts from people you follow yet."}
+                        </p>
+                        <p className="text-xs mt-1">
+                          {feedMessage ? "Try switching to the Discover tab to see all posts!" : "Follow some users to see their posts here!"}
+                        </p>
                       </>
                     ) : activeTab === 'personal' ? (
                       <>

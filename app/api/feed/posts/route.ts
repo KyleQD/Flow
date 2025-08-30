@@ -99,7 +99,39 @@ export async function GET(request: NextRequest) {
 
       // Filter by user when explicitly requested
       if (type === 'user' && user_id) baseQuery = baseQuery.eq('user_id', user_id)
-      // Ignore non-post "types" like 'following'/'network' to avoid bad filters
+      
+      // Handle following feed - only show posts from users the current user follows
+      if (type === 'following' && authResult?.user) {
+        console.log('[Feed Posts API] Fetching following feed for user:', authResult.user.id)
+        
+        // Get the list of users the current user follows
+        const { data: followingData, error: followingError } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', authResult.user.id)
+
+        if (followingError) {
+          console.error('[Feed Posts API] Error fetching following relationships:', followingError)
+          return NextResponse.json(
+            { error: 'Failed to fetch following relationships' },
+            { status: 500 }
+          )
+        }
+
+        if (followingData && followingData.length > 0) {
+          const followingIds = followingData.map(f => f.following_id)
+          console.log('[Feed Posts API] User follows', followingIds.length, 'users')
+          baseQuery = baseQuery.in('user_id', followingIds)
+        } else {
+          console.log('[Feed Posts API] User follows no one, returning empty feed with message')
+          return NextResponse.json({ 
+            data: [],
+            message: "You're not following anyone yet. Start following other users to see their posts in your feed!"
+          })
+        }
+      }
+      
+      // Ignore non-post "types" like 'network' to avoid bad filters
 
       const { data: basePosts, error: baseError } = await baseQuery
 
