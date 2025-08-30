@@ -285,7 +285,7 @@ export function EnhancedAddStaffDialog({ open, onOpenChange, onAdd, existingProf
               email: inviteEmail,
               phone: invitePhone,
               positionDetails,
-              signupLink: `${window.location.origin}/signup?token=${inviteToken}`,
+              signupLink: `${window.location.origin}/login?token=${inviteToken}`,
               inviteMessage
             }
           })
@@ -321,7 +321,7 @@ export function EnhancedAddStaffDialog({ open, onOpenChange, onAdd, existingProf
     setIsLoading(true)
     try {
       const inviteToken = crypto.randomUUID()
-      const link = `${window.location.origin}/signup?token=${inviteToken}&position=${encodeURIComponent(positionDetails.title)}&department=${encodeURIComponent(positionDetails.department)}`
+              const link = `${window.location.origin}/login?token=${inviteToken}&position=${encodeURIComponent(positionDetails.title)}&department=${encodeURIComponent(positionDetails.department)}`
       
       // Store the invitation
       await fetch("/api/invitations", {

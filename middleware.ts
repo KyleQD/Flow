@@ -18,7 +18,6 @@ export async function middleware(request: NextRequest) {
   // Define route categories
   const publicRoutes = [
     '/login',
-    '/signup', 
     '/auth/callback',
     '/auth/verification',
     '/forgot-password',
@@ -31,9 +30,7 @@ export async function middleware(request: NextRequest) {
 
   const authRoutes = [
     '/login',
-    '/signup',
     '/auth/signin', // Keep for backward compatibility
-    '/auth/signup',
   ]
 
   const protectedRoutes = [
@@ -100,8 +97,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === '/auth/signup') {
-    console.log(`[Main Middleware] Legacy route redirect: ${pathname} -> /signup`)
-    return NextResponse.redirect(new URL('/signup', request.url))
+    console.log(`[Main Middleware] Legacy route redirect: ${pathname} -> /login`)
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Redirect /signup to /login
+  if (pathname === '/signup') {
+    console.log(`[Main Middleware] Redirecting /signup to /login`)
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   console.log(`[Main Middleware] Allowing access to: ${pathname}`)
@@ -113,4 +116,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
-

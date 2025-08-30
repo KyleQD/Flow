@@ -161,7 +161,7 @@ export function AddStaffDialog({ open, onOpenChange, onAdd, existingProfiles }: 
               email: inviteEmail,
               phone: invitePhone,
               positionDetails,
-              signupLink: `${window.location.origin}/signup?token=${inviteToken}`
+              signupLink: `${window.location.origin}/login?token=${inviteToken}`
             }
           })
         })

@@ -1827,7 +1827,7 @@ function TeamPermissionsStep({ eventData, onUpdate }: {
               startDate: new Date().toISOString(),
               location: eventData.name || 'Event Location'
             },
-            signupLink: `${window.location.origin}/signup?token=${inviteToken}`
+            signupLink: `${window.location.origin}/login?token=${inviteToken}`
           }
         })
       })

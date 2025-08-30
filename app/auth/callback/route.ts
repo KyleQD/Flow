@@ -47,10 +47,10 @@ export async function GET(request: NextRequest) {
           }
         }
         
-        // If this is from signup flow, redirect to onboarding
+        // If this is from signup flow, redirect to login page
         if (type === "signup") {
-          console.log(`[Auth Callback] Signup flow completed, redirecting to onboarding`)
-          return NextResponse.redirect(`${requestUrl.origin}/onboarding`)
+          console.log(`[Auth Callback] Signup flow completed, redirecting to login page`)
+          return NextResponse.redirect(`${requestUrl.origin}/login?message=account_created&email=${encodeURIComponent(data?.session?.user?.email || '')}`)
         }
       }
     } catch (err) {

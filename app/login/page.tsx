@@ -46,6 +46,10 @@ export default function LoginPage() {
   const emailConfirmed = searchParams.get('message') === 'email_confirmed'
   const accountCreated = searchParams.get('message') === 'account_created'
   const confirmedEmail = searchParams.get('email') || ''
+  const inviteToken = searchParams.get('token') || ''
+  const inviteType = searchParams.get('type') || ''
+  const position = searchParams.get('position') || ''
+  const department = searchParams.get('department') || ''
 
   // Handle email confirmation and account creation messages
   useEffect(() => {
@@ -173,6 +177,50 @@ export default function LoginPage() {
         const errorInfo = mapAuthError(result.error)
         setError(errorInfo)
       } else {
+        // Handle invitations if present
+        if (inviteToken && result.user) {
+          try {
+            if (inviteType === 'artist') {
+              await fetch(`/api/booking-requests`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  token: inviteToken,
+                  status: 'pending',
+                  userId: result.user.id
+                })
+              })
+            } else if (inviteType === 'staff') {
+              // Handle staff onboarding invitation
+              await fetch(`/api/invitations`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  token: inviteToken,
+                  status: 'accepted',
+                  userId: result.user.id
+                })
+              })
+              
+              // Redirect to onboarding completion page
+              router.push(`/onboarding/complete?token=${inviteToken}`)
+              return
+            } else {
+              await fetch(`/api/invitations`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  token: inviteToken,
+                  status: 'accepted',
+                  userId: result.user.id
+                })
+              })
+            }
+          } catch (inviteError) {
+            console.error('Error handling invitation:', inviteError)
+          }
+        }
+        
         setSuccess('Account created successfully! Please check your email to confirm your account.')
         // Don't redirect immediately for sign up - let them confirm email first
       }
@@ -297,6 +345,27 @@ export default function LoginPage() {
               </CardHeader>
               
               <CardContent>
+                {/* Invitation Alert */}
+                {inviteToken && (
+                  <div className="mb-6 p-4 rounded-lg bg-purple-500/20 border border-purple-500/50 backdrop-blur-sm">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="h-5 w-5 text-purple-400" />
+                      <div>
+                        <p className="text-sm font-medium text-purple-200">
+                          {inviteType === 'artist' ? 'Artist Booking Invitation' : 
+                           inviteType === 'staff' ? 'Staff Position Invitation' : 'Invitation'}
+                        </p>
+                        {position && (
+                          <p className="text-xs text-purple-300">
+                            Position: {position}
+                            {department && ` • ${department}`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Success Message */}
                 {success && (
                   <div className="mb-6 p-4 rounded-lg bg-green-500/20 border border-green-500/50 backdrop-blur-sm">

@@ -191,7 +191,6 @@ export function UnifiedNavigation({ variant = 'header', className = '' }: Unifie
   // Don't show nav on auth pages or artist pages (they have their own sidebar)
   const hideNav = pathname.startsWith('/auth') || 
                   pathname.startsWith('/login') || 
-                  pathname.startsWith('/signup') ||
                   pathname.startsWith('/artist') ||
                   pathname === '/' && !user
 

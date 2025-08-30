@@ -187,7 +187,7 @@ export function AddArtistDialog({
               phone: invitePhone,
               bookingDetails,
               eventDetails: eventDetails || { title: "Upcoming Event" },
-              signupLink: `${window.location.origin}/signup?token=${inviteToken}&type=artist`
+              signupLink: `${window.location.origin}/login?token=${inviteToken}&type=artist`
             }
           })
         })

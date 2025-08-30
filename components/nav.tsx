@@ -102,8 +102,7 @@ export function Nav() {
 
   // Don't show nav on auth pages or onboarding
   const hideNav = pathname.startsWith('/auth') || 
-                  pathname.startsWith('/login') || 
-                  pathname.startsWith('/signup') ||
+                  pathname.startsWith('/login') ||
                   pathname === '/' && !user
 
   if (hideNav) {
