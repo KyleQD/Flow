@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. Search Real Artist Profiles
-    if (params.type && ['all', 'artists'].includes(params.type) && results.length < params.limit) {
+    if (params.type && ['all', 'artists'].includes(params.type) && results.length < (params.limit || 10)) {
       let artistQuery = supabase
         .from('artist_profiles')
         .select(`
@@ -252,7 +252,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Search Real Venue Profiles
-    if (params.type && ['all', 'venues'].includes(params.type) && results.length < params.limit) {
+    if (params.type && ['all', 'venues'].includes(params.type) && results.length < (params.limit || 10)) {
       let venueQuery = supabase
         .from('venue_profiles')
         .select(`
@@ -333,7 +333,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. Search Real General User Profiles
-    if (params.type && ['all', 'users'].includes(params.type) && results.length < params.limit) {
+    if (params.type && ['all', 'users'].includes(params.type) && results.length < (params.limit || 10)) {
       let profileQuery = supabase
         .from('profiles')
         .select(`
