@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       }
 
       const { data: demoProfiles, error: demoError } = await demoQuery
-        .range(params.offset, params.offset + params.limit - 1)
+        .range(params.offset || 0, (params.offset || 0) + (params.limit || 10) - 1)
 
       if (!demoError && demoProfiles) {
         for (const profile of demoProfiles) {
@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
       }
 
       const { data: artistProfiles, error: artistError } = await artistQuery
-        .range(0, Math.max(0, params.limit - results.length - 1))
+        .range(0, Math.max(0, (params.limit || 10) - results.length - 1))
 
       if (!artistError && artistProfiles) {
         for (const artist of artistProfiles) {
@@ -283,7 +283,7 @@ export async function GET(request: NextRequest) {
       }
 
       const { data: venueProfiles, error: venueError } = await venueQuery
-        .range(0, Math.max(0, params.limit - results.length - 1))
+        .range(0, Math.max(0, (params.limit || 10) - results.length - 1))
 
       if (!venueError && venueProfiles) {
         for (const venue of venueProfiles) {
@@ -362,7 +362,7 @@ export async function GET(request: NextRequest) {
       }
 
       const { data: generalProfiles, error: profileError } = await profileQuery
-        .range(0, Math.max(0, params.limit - results.length - 1))
+        .range(0, Math.max(0, (params.limit || 10) - results.length - 1))
 
       if (!profileError && generalProfiles) {
         for (const profile of generalProfiles) {
@@ -430,12 +430,12 @@ export async function GET(request: NextRequest) {
     })
 
     // Apply final limit
-    const finalResults = sortedResults.slice(0, params.limit)
+    const finalResults = sortedResults.slice(0, params.limit || 10)
 
     return NextResponse.json({
       results: finalResults,
       total: finalResults.length,
-      hasMore: results.length > params.limit,
+      hasMore: results.length > (params.limit || 10),
       searchParams: params,
       metadata: {
         searchTime: new Date().toISOString(),
