@@ -232,9 +232,9 @@ export default function WorkingSignupForm() {
           account_mode: formData.accountMode
         }))
         
-        // Redirect to confirmation page
+        // Redirect to login page
         setTimeout(() => {
-          router.push('/auth/confirmation')
+          router.push(`/login?message=account_created&email=${encodeURIComponent(formData.email)}`)
         }, 2000)
       } else {
         setSuccess('Account created successfully! Redirecting to dashboard...')

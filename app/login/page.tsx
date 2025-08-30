@@ -43,6 +43,24 @@ export default function LoginPage() {
   })
 
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+  const emailConfirmed = searchParams.get('message') === 'email_confirmed'
+  const accountCreated = searchParams.get('message') === 'account_created'
+  const confirmedEmail = searchParams.get('email') || ''
+
+  // Handle email confirmation and account creation messages
+  useEffect(() => {
+    if (emailConfirmed) {
+      setSuccess('Email confirmed successfully! You can now sign in to your account.')
+      if (confirmedEmail) {
+        setSignInData(prev => ({ ...prev, email: confirmedEmail }))
+      }
+    } else if (accountCreated) {
+      setSuccess('Account created successfully! Please check your email to confirm your account before signing in.')
+      if (confirmedEmail) {
+        setSignInData(prev => ({ ...prev, email: confirmedEmail }))
+      }
+    }
+  }, [emailConfirmed, accountCreated, confirmedEmail])
 
   // Clear error when user starts typing
   useEffect(() => {

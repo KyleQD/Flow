@@ -33,10 +33,18 @@ export async function GET(request: NextRequest) {
         console.log(`[Auth Callback] Session established for user: ${data?.session?.user?.id || 'unknown'}`)
         console.log(`[Auth Callback] Session token expires at: ${data?.session?.expires_at ? new Date(data.session.expires_at * 1000).toISOString() : 'unknown'}`)
         
-        // For email verification flows, redirect to verification success page
+        // For email verification flows, redirect to login page for sign in
         if (emailConfirmed || type === "signup") {
-          console.log(`[Auth Callback] Email confirmed, redirecting to verification page`)
-          return NextResponse.redirect(`${requestUrl.origin}/auth/verification?type=${type}&success=true`)
+          console.log(`[Auth Callback] Email confirmed, checking if user is authenticated`)
+          
+          // Check if user is already authenticated (some email confirmations auto-sign-in)
+          if (data?.session?.user) {
+            console.log(`[Auth Callback] User is authenticated after email confirmation, redirecting to dashboard`)
+            return NextResponse.redirect(`${requestUrl.origin}/dashboard?welcome=true`)
+          } else {
+            console.log(`[Auth Callback] User needs to sign in, redirecting to login page`)
+            return NextResponse.redirect(`${requestUrl.origin}/login?message=email_confirmed&email=${encodeURIComponent(data?.session?.user?.email || '')}`)
+          }
         }
         
         // If this is from signup flow, redirect to onboarding

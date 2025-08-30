@@ -214,8 +214,8 @@ export default function SignUpPage() {
         }
       }
 
-      // Redirect to email verification
-      router.push(`/auth/signup/confirmation?email=${encodeURIComponent(formData.email)}`)
+      // Redirect to login page after successful signup
+      router.push(`/login?message=account_created&email=${encodeURIComponent(formData.email)}`)
     } catch (err: any) {
       setError(err.message || 'Sign up failed')
     } finally {
