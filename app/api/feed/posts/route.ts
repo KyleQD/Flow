@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (followingData && followingData.length > 0) {
-          const followingIds = followingData.map(f => f.following_id)
+          const followingIds = followingData.map((f: { following_id: string }) => f.following_id)
           console.log('[Feed Posts API] User follows', followingIds.length, 'users')
           baseQuery = baseQuery.in('user_id', followingIds)
         } else {
