@@ -63,11 +63,10 @@ export function MobileSearchModal({ isOpen, onClose }: MobileSearchModalProps) {
           {/* Search Content */}
           <div className="flex-1 p-4">
             <div className="max-w-2xl mx-auto">
-              <EnhancedAccountSearch 
+              <EnhancedAccountSearch
                 placeholder="Search artists, venues, and users..."
                 className="w-full"
                 showRecentSearches={true}
-                showTrendingSearches={true}
                 onResultSelect={() => onClose()}
               />
             </div>
