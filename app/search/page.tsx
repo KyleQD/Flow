@@ -32,6 +32,7 @@ export default function SearchPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<any>({ artists: [], venues: [], users: [], total: 0 })
   const [followedProfiles, setFollowedProfiles] = useState<Set<string>>(new Set())
+  const [followStatuses, setFollowStatuses] = useState<Record<string, { isFollowing: boolean; hasRequest: boolean; requestStatus: string | null }>>({})
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, isAuthenticated } = useAuth()
@@ -44,6 +45,50 @@ export default function SearchPage() {
       fetchSearchResults(query)
     }
   }, [searchParams])
+
+  // Check follow status for all profiles in search results
+  useEffect(() => {
+    if (isAuthenticated) {
+      const allProfileIds = [
+        ...searchResults.users.map((user: any) => user.id),
+        ...searchResults.artists.map((artist: any) => artist.id),
+        ...searchResults.venues.map((venue: any) => venue.id)
+      ]
+      
+      if (allProfileIds.length > 0) {
+        checkFollowStatuses(allProfileIds)
+      }
+    }
+  }, [searchResults.users, searchResults.artists, searchResults.venues, isAuthenticated])
+
+  const checkFollowStatuses = async (profileIds: string[]) => {
+    try {
+      const statusPromises = profileIds.map(async (profileId) => {
+        const response = await fetch(`/api/social/follow-request?action=check&targetUserId=${profileId}`, {
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          return { profileId, ...data }
+        }
+        return { profileId, isFollowing: false, hasRequest: false, requestStatus: null }
+      })
+
+      const statuses = await Promise.all(statusPromises)
+      const statusMap = statuses.reduce((acc, status) => {
+        acc[status.profileId] = {
+          isFollowing: status.isFollowing,
+          hasRequest: status.hasRequest,
+          requestStatus: status.requestStatus
+        }
+        return acc
+      }, {} as Record<string, { isFollowing: boolean; hasRequest: boolean; requestStatus: string | null }>)
+
+      setFollowStatuses(statusMap)
+    } catch (error) {
+      console.error('Error checking follow statuses:', error)
+    }
+  }
 
   const fetchSearchResults = async (query: string) => {
     if (!query.trim()) return
@@ -85,26 +130,48 @@ export default function SearchPage() {
       return
     }
 
+    const currentStatus = followStatuses[profileId]
+    
+    // If already following, show message
+    if (currentStatus?.isFollowing) {
+      toast.info('You are already following this user')
+      return
+    }
+
+    // If there's a pending request, show message
+    if (currentStatus?.hasRequest && currentStatus?.requestStatus === 'pending') {
+      toast.info('Follow request already sent')
+      return
+    }
+
     try {
-      const response = await fetch('/api/social/follow', {
+      const response = await fetch('/api/social/follow-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          followingId: profileId, 
-          action: 'follow' 
+          targetUserId: profileId, 
+          action: 'send' 
         })
       })
 
       if (response.ok) {
-        setFollowedProfiles(prev => new Set([...prev, profileId]))
-        toast.success('Successfully followed!')
+        // Update the follow status
+        setFollowStatuses(prev => ({
+          ...prev,
+          [profileId]: {
+            isFollowing: false,
+            hasRequest: true,
+            requestStatus: 'pending'
+          }
+        }))
+        toast.success('Follow request sent! Waiting for approval...')
       } else {
-        const errorData = await response.json()
-        toast.error(errorData.error || 'Failed to follow account')
+        const error = await response.json()
+        toast.error(error.error || 'Failed to send follow request')
       }
     } catch (error) {
-      console.error('Error following account:', error)
-      toast.error('Failed to follow account')
+      console.error('Error sending follow request:', error)
+      toast.error('Failed to send follow request')
     }
   }
 
@@ -129,7 +196,24 @@ export default function SearchPage() {
   const renderUserCard = (user: any, index: number) => {
     const displayName = getDisplayName(user)
     const gradient = getProfileGradient(user.account_type)
-    const isFollowing = followedProfiles.has(user.id)
+    const followStatus = followStatuses[user.id]
+    const isFollowing = followStatus?.isFollowing || false
+    const hasRequest = followStatus?.hasRequest || false
+    const requestStatus = followStatus?.requestStatus
+
+    const getButtonText = () => {
+      if (isFollowing) return 'Following'
+      if (hasRequest && requestStatus === 'pending') return 'Request Sent'
+      return 'Follow'
+    }
+
+    const getButtonVariant = () => {
+      if (isFollowing) return 'bg-gradient-to-r from-green-600 to-emerald-600'
+      if (hasRequest && requestStatus === 'pending') return 'bg-gradient-to-r from-yellow-600 to-orange-600'
+      return `bg-gradient-to-r ${gradient}`
+    }
+
+    const isButtonDisabled = isFollowing || (hasRequest && requestStatus === 'pending')
 
     return (
       <motion.div
@@ -174,12 +258,12 @@ export default function SearchPage() {
               <div className="flex flex-col space-y-2" onClick={(e) => e.stopPropagation()}>
                 <Button 
                   size="sm" 
-                  className={`${isFollowing ? 'bg-gradient-to-r from-green-600 to-emerald-600' : `bg-gradient-to-r ${gradient}`} hover:shadow-lg hover:shadow-purple-500/25 text-white border-0`}
+                  className={`${getButtonVariant()} hover:shadow-lg hover:shadow-purple-500/25 text-white border-0`}
                   onClick={() => handleFollow(user.id, user.account_type)}
-                  disabled={isFollowing}
+                  disabled={isButtonDisabled}
                 >
                   <Heart className={`h-4 w-4 mr-1 ${isFollowing ? 'fill-current' : ''}`} />
-                  {isFollowing ? 'Following' : 'Follow'}
+                  {getButtonText()}
                 </Button>
               </div>
             </div>
@@ -192,7 +276,24 @@ export default function SearchPage() {
   const renderArtistCard = (artist: any, index: number) => {
     const displayName = getDisplayName(artist)
     const gradient = getProfileGradient(artist.account_type)
-    const isFollowing = followedProfiles.has(artist.id)
+    const followStatus = followStatuses[artist.id]
+    const isFollowing = followStatus?.isFollowing || false
+    const hasRequest = followStatus?.hasRequest || false
+    const requestStatus = followStatus?.requestStatus
+
+    const getButtonText = () => {
+      if (isFollowing) return 'Following'
+      if (hasRequest && requestStatus === 'pending') return 'Request Sent'
+      return 'Follow'
+    }
+
+    const getButtonVariant = () => {
+      if (isFollowing) return 'bg-gradient-to-r from-green-600 to-emerald-600'
+      if (hasRequest && requestStatus === 'pending') return 'bg-gradient-to-r from-yellow-600 to-orange-600'
+      return `bg-gradient-to-r ${gradient}`
+    }
+
+    const isButtonDisabled = isFollowing || (hasRequest && requestStatus === 'pending')
 
     return (
       <motion.div
@@ -247,12 +348,12 @@ export default function SearchPage() {
               <div className="flex flex-col space-y-2" onClick={(e) => e.stopPropagation()}>
                 <Button 
                   size="sm" 
-                  className={`${isFollowing ? 'bg-gradient-to-r from-green-600 to-emerald-600' : `bg-gradient-to-r ${gradient}`} hover:shadow-lg hover:shadow-purple-500/25 text-white border-0`}
+                  className={`${getButtonVariant()} hover:shadow-lg hover:shadow-purple-500/25 text-white border-0`}
                   onClick={() => handleFollow(artist.id, artist.account_type)}
-                  disabled={isFollowing}
+                  disabled={isButtonDisabled}
                 >
                   <Heart className={`h-4 w-4 mr-1 ${isFollowing ? 'fill-current' : ''}`} />
-                  {isFollowing ? 'Following' : 'Follow'}
+                  {getButtonText()}
                 </Button>
               </div>
             </div>
@@ -265,7 +366,24 @@ export default function SearchPage() {
   const renderVenueCard = (venue: any, index: number) => {
     const displayName = getDisplayName(venue)
     const gradient = getProfileGradient(venue.account_type)
-    const isFollowing = followedProfiles.has(venue.id)
+    const followStatus = followStatuses[venue.id]
+    const isFollowing = followStatus?.isFollowing || false
+    const hasRequest = followStatus?.hasRequest || false
+    const requestStatus = followStatus?.requestStatus
+
+    const getButtonText = () => {
+      if (isFollowing) return 'Following'
+      if (hasRequest && requestStatus === 'pending') return 'Request Sent'
+      return 'Follow'
+    }
+
+    const getButtonVariant = () => {
+      if (isFollowing) return 'bg-gradient-to-r from-green-600 to-emerald-600'
+      if (hasRequest && requestStatus === 'pending') return 'bg-gradient-to-r from-yellow-600 to-orange-600'
+      return `bg-gradient-to-r ${gradient}`
+    }
+
+    const isButtonDisabled = isFollowing || (hasRequest && requestStatus === 'pending')
 
     return (
       <motion.div
@@ -326,12 +444,12 @@ export default function SearchPage() {
               <div className="flex flex-col space-y-2" onClick={(e) => e.stopPropagation()}>
                 <Button 
                   size="sm" 
-                  className={`${isFollowing ? 'bg-gradient-to-r from-green-600 to-emerald-600' : `bg-gradient-to-r ${gradient}`} hover:shadow-lg hover:shadow-blue-500/25 text-white border-0`}
+                  className={`${getButtonVariant()} hover:shadow-lg hover:shadow-blue-500/25 text-white border-0`}
                   onClick={() => handleFollow(venue.id, venue.account_type)}
-                  disabled={isFollowing}
+                  disabled={isButtonDisabled}
                 >
                   <Heart className={`h-4 w-4 mr-1 ${isFollowing ? 'fill-current' : ''}`} />
-                  {isFollowing ? 'Following' : 'Follow'}
+                  {getButtonText()}
                 </Button>
               </div>
             </div>
