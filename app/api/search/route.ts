@@ -37,7 +37,101 @@ export async function GET(request: NextRequest) {
 
     // Search profiles (artists, venues, general users)
     if (type === 'all' || type === 'artists' || type === 'venues' || type === 'users') {
-      // Search in profiles table (all account types)
+      // First, try to search the unified accounts table (new structure)
+      try {
+        let accountsQuery = supabase
+          .from('accounts')
+          .select(`
+            id,
+            owner_user_id,
+            account_type,
+            profile_table,
+            profile_id,
+            display_name,
+            username,
+            avatar_url,
+            is_verified,
+            is_active,
+            metadata,
+            created_at,
+            updated_at
+          `)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+
+        // Apply filters based on account type
+        if (type === 'artists') {
+          accountsQuery = accountsQuery.eq('account_type', 'artist')
+        } else if (type === 'venues') {
+          accountsQuery = accountsQuery.eq('account_type', 'venue')
+        } else if (type === 'users') {
+          accountsQuery = accountsQuery.eq('account_type', 'general')
+        }
+
+        // Apply search query
+        if (query) {
+          accountsQuery = accountsQuery.or(`display_name.ilike.%${query}%,username.ilike.%${query}%`)
+        }
+
+        const { data: accounts, error: accountsError } = await accountsQuery
+          .range(offset, offset + limit - 1)
+
+        if (!accountsError && accounts && accounts.length > 0) {
+          console.log(`Found ${accounts.length} accounts in unified accounts table`)
+          
+          // Categorize accounts by type
+          accounts.forEach(account => {
+            const accountData = {
+              id: account.id,
+              user_id: account.owner_user_id,
+              username: account.username,
+              display_name: account.display_name,
+              avatar_url: account.avatar_url,
+              account_type: account.account_type,
+              location: null,
+              verified: account.is_verified,
+              stats: { followers: 0, following: 0, posts: 0 },
+              created_at: account.created_at,
+              updated_at: account.updated_at,
+              metadata: account.metadata
+            }
+
+            if (account.account_type === 'artist') {
+              results.artists.push({
+                ...accountData,
+                artist_name: account.display_name,
+                bio: account.metadata?.bio || '',
+                genres: account.metadata?.genres || [],
+                social_links: account.metadata?.social_links || {}
+              })
+            } else if (account.account_type === 'venue') {
+              results.venues.push({
+                ...accountData,
+                venue_name: account.display_name,
+                description: account.metadata?.description || '',
+                address: account.metadata?.address || '',
+                city: account.metadata?.city || '',
+                state: account.metadata?.state || '',
+                country: account.metadata?.country || '',
+                capacity: account.metadata?.capacity || 0,
+                amenities: account.metadata?.amenities || []
+              })
+            } else {
+              results.users.push({
+                ...accountData,
+                name: account.display_name,
+                bio: account.metadata?.bio || ''
+              })
+            }
+          })
+        } else {
+          console.log('No accounts found in unified accounts table, falling back to profiles table')
+        }
+      } catch (accountsError) {
+        console.log('Unified accounts table not available, falling back to profiles table:', accountsError)
+      }
+
+      // Fallback: Search in profiles table (legacy structure)
       let profilesQuery = supabase
         .from('profiles')
         .select(`
