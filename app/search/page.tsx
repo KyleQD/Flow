@@ -89,14 +89,18 @@ export default function SearchPage() {
       const response = await fetch('/api/social/follow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, accountType })
+        body: JSON.stringify({ 
+          followingId: profileId, 
+          action: 'follow' 
+        })
       })
 
       if (response.ok) {
         setFollowedProfiles(prev => new Set([...prev, profileId]))
         toast.success('Successfully followed!')
       } else {
-        toast.error('Failed to follow account')
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Failed to follow account')
       }
     } catch (error) {
       console.error('Error following account:', error)
