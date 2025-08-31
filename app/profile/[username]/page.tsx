@@ -4,9 +4,10 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { EnhancedPublicProfileView } from "@/components/profile/enhanced-public-profile-view"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2, Users } from "lucide-react"
 import { toast } from "sonner"
 import { MessageModal } from "@/components/messaging/message-modal"
+import { FollowRequestsModal } from "@/components/profile/follow-requests-modal"
 import { useAuth } from "@/contexts/auth-context"
 
 interface ProfileData {
@@ -45,6 +46,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [isOwnProfile, setIsOwnProfile] = useState(false)
   const [showMessageModal, setShowMessageModal] = useState(false)
+  const [showFollowRequestsModal, setShowFollowRequestsModal] = useState(false)
   
   const { user, isAuthenticated } = useAuth()
 
@@ -119,29 +121,34 @@ export default function ProfilePage() {
     }
 
     try {
-      const response = await fetch('/api/social/follow', {
+      console.log('Sending follow request for profile:', profileId)
+      
+      const response = await fetch('/api/social/follow-request', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          followingId: profileId,
-          action: 'follow'
+          targetUserId: profileId,
+          action: 'send'
         })
       })
 
+      console.log('Follow request response status:', response.status)
+      
       if (response.ok) {
         const result = await response.json()
-        toast.success('Profile followed successfully! 🎵')
-        // Refresh the profile to update follower count
+        console.log('Follow request result:', result)
+        toast.success('Follow request sent! Waiting for approval...')
+        // Refresh the profile to update any UI state
         await fetchProfile()
       } else {
         const error = await response.json()
-        console.error('Follow action failed:', error)
-        toast.error(error.error || 'Failed to follow profile')
+        console.error('Follow request failed:', error)
+        toast.error(error.error || 'Failed to send follow request')
       }
     } catch (error) {
-      console.error('Error following profile:', error)
-      toast.error('Failed to follow profile')
+      console.error('Error sending follow request:', error)
+      toast.error('Failed to send follow request')
     }
   }
 
@@ -222,8 +229,8 @@ export default function ProfilePage() {
 
   return (
     <div className="relative">
-      {/* Back Button */}
-      <div className="absolute top-4 left-4 z-50">
+      {/* Back Button and Follow Requests */}
+      <div className="absolute top-4 left-4 z-50 flex gap-2">
         <Button
           onClick={() => router.back()}
           variant="outline"
@@ -233,6 +240,19 @@ export default function ProfilePage() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
+        
+        {/* Follow Requests Button - only show for authenticated users */}
+        {user && isAuthenticated && (
+          <Button
+            onClick={() => setShowFollowRequestsModal(true)}
+            variant="outline"
+            size="sm"
+            className="bg-black/20 backdrop-blur-sm border-purple-400/50 text-purple-300 hover:bg-purple-400/20"
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Requests
+          </Button>
+        )}
       </div>
 
       {/* Profile View */}
@@ -259,6 +279,14 @@ export default function ProfilePage() {
             full_name: profile.profile_data?.name || profile.profile_data?.artist_name || profile.profile_data?.venue_name,
             avatar_url: profile.avatar_url
           }}
+        />
+      )}
+
+      {/* Follow Requests Modal */}
+      {user && isAuthenticated && (
+        <FollowRequestsModal
+          isOpen={showFollowRequestsModal}
+          onClose={() => setShowFollowRequestsModal(false)}
         />
       )}
     </div>
