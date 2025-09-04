@@ -148,8 +148,6 @@ export function DashboardFeed() {
   const handleLike = async (postId: string) => {
     if (!user) return
 
-    triggerHaptic('light')
-
     try {
       const currentPost = posts.find(p => p.id === postId)
       if (!currentPost) return

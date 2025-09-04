@@ -26,41 +26,61 @@ export function useMobilePerformance(options: UseMobilePerformanceOptions = {}) 
   // Detect user preferences and device capabilities
   useEffect(() => {
     // Check for low power mode (iOS)
-    if ('getBattery' in navigator) {
-      (navigator as any).getBattery().then((battery: any) => {
-        setIsLowPowerMode(battery.level < 0.2)
-        
-        battery.addEventListener('levelchange', () => {
+    if (typeof navigator !== 'undefined' && 'getBattery' in navigator) {
+      try {
+        (navigator as any).getBattery().then((battery: any) => {
           setIsLowPowerMode(battery.level < 0.2)
+          
+          battery.addEventListener('levelchange', () => {
+            setIsLowPowerMode(battery.level < 0.2)
+          })
+        }).catch(() => {
+          // Silently fail if battery API is not supported
         })
-      })
+      } catch (error) {
+        // Silently fail if battery API is not supported
+      }
     }
 
     // Check for slow connection
-    if ('connection' in navigator) {
-      const connection = (navigator as any).connection
-      setIsSlowConnection(connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')
-      
-      connection.addEventListener('change', () => {
+    if (typeof navigator !== 'undefined' && 'connection' in navigator) {
+      try {
+        const connection = (navigator as any).connection
         setIsSlowConnection(connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')
-      })
+        
+        connection.addEventListener('change', () => {
+          setIsSlowConnection(connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g')
+        })
+      } catch (error) {
+        // Silently fail if connection API is not supported
+      }
     }
 
     // Check for reduced motion preference
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setIsReducedMotion(mediaQuery.matches)
-    
-    mediaQuery.addEventListener('change', (e) => {
-      setIsReducedMotion(e.matches)
-    })
+    if (typeof window !== 'undefined') {
+      try {
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+        setIsReducedMotion(mediaQuery.matches)
+        
+        mediaQuery.addEventListener('change', (e) => {
+          setIsReducedMotion(e.matches)
+        })
+      } catch (error) {
+        // Silently fail if media query is not supported
+      }
 
-    // Check for reduced data preference
-    const dataQuery = window.matchMedia('(prefers-reduced-data: reduce)')
-    setIsReducedData(dataQuery.matches)
-    
-    dataQuery.addEventListener('change', (e) => {
-      setIsReducedData(e.matches)
-    })
+      // Check for reduced data preference
+      try {
+        const dataQuery = window.matchMedia('(prefers-reduced-data: reduce)')
+        setIsReducedData(dataQuery.matches)
+        
+        dataQuery.addEventListener('change', (e) => {
+          setIsReducedData(e.matches)
+        })
+      } catch (error) {
+        // Silently fail if media query is not supported
+      }
+    }
   }, [])
 
   // Lazy loading hook
@@ -75,24 +95,34 @@ export function useMobilePerformance(options: UseMobilePerformanceOptions = {}) 
         return
       }
 
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true)
-            observer.disconnect()
+      if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+        try {
+          const observer = new IntersectionObserver(
+            ([entry]) => {
+              if (entry.isIntersecting) {
+                setIsVisible(true)
+                observer.disconnect()
+              }
+            },
+            {
+              threshold: options.threshold || 0.1,
+              rootMargin: options.rootMargin || '50px'
+            }
+          )
+
+          if (elementRef.current) {
+            observer.observe(elementRef.current)
           }
-        },
-        {
-          threshold: options.threshold || 0.1,
-          rootMargin: options.rootMargin || '50px'
+
+          return () => observer.disconnect()
+        } catch (error) {
+          // Fallback if IntersectionObserver fails
+          setIsVisible(true)
         }
-      )
-
-      if (elementRef.current) {
-        observer.observe(elementRef.current)
+      } else {
+        // Fallback if IntersectionObserver is not supported
+        setIsVisible(true)
       }
-
-      return () => observer.disconnect()
     }, [isMobile, options.enableIntersectionObserver, options.threshold, options.rootMargin])
 
     return {
@@ -144,25 +174,30 @@ export function useMobilePerformance(options: UseMobilePerformanceOptions = {}) 
     
     // Generate optimized image URL based on device capabilities
     const getOptimizedSrc = useCallback(() => {
-      if (!isMobile) return src
+      if (!isMobile || typeof window === 'undefined') return src
 
-      // For mobile, we can add optimization parameters
-      const url = new URL(src, window.location.origin)
-      
-      if (isSlowConnection) {
-        url.searchParams.set('quality', '60')
-        url.searchParams.set('format', 'webp')
-      } else if (isLowPowerMode) {
-        url.searchParams.set('quality', '70')
-        url.searchParams.set('format', 'webp')
-      } else {
-        url.searchParams.set('quality', quality.toString())
-        if (format !== 'auto') {
-          url.searchParams.set('format', format)
+      try {
+        // For mobile, we can add optimization parameters
+        const url = new URL(src, window.location.origin)
+        
+        if (isSlowConnection) {
+          url.searchParams.set('quality', '60')
+          url.searchParams.set('format', 'webp')
+        } else if (isLowPowerMode) {
+          url.searchParams.set('quality', '70')
+          url.searchParams.set('format', 'webp')
+        } else {
+          url.searchParams.set('quality', quality.toString())
+          if (format !== 'auto') {
+            url.searchParams.set('format', format)
+          }
         }
-      }
 
-      return url.toString()
+        return url.toString()
+      } catch (error) {
+        // Fallback to original src if URL manipulation fails
+        return src
+      }
     }, [src, isMobile, isSlowConnection, isLowPowerMode, quality, format])
 
     return {
@@ -182,32 +217,37 @@ export function useMobilePerformance(options: UseMobilePerformanceOptions = {}) 
     const [loadedResources, setLoadedResources] = useState<Set<string>>(new Set())
 
     useEffect(() => {
-      if (!isMobile || isReducedData) return
+      if (!isMobile || isReducedData || typeof window === 'undefined') return
 
-      const preloadPromises = resources.map(resource => {
-        return new Promise<string>((resolve, reject) => {
-          if (type === 'image') {
-            const img = new Image()
-            img.onload = () => {
-              setLoadedResources(prev => new Set([...prev, resource]))
-              resolve(resource)
+      try {
+        const preloadPromises = resources.map(resource => {
+          return new Promise<string>((resolve, reject) => {
+            if (type === 'image') {
+              const img = new Image()
+              img.onload = () => {
+                setLoadedResources(prev => new Set([...prev, resource]))
+                resolve(resource)
+              }
+              img.onerror = () => reject(resource)
+              img.src = resource
+            } else if (type === 'script') {
+              const script = document.createElement('script')
+              script.src = resource
+              script.onload = () => {
+                setLoadedResources(prev => new Set([...prev, resource]))
+                resolve(resource)
+              }
+              script.onerror = () => reject(resource)
+              document.head.appendChild(script)
             }
-            img.onerror = () => reject(resource)
-            img.src = resource
-          } else if (type === 'script') {
-            const script = document.createElement('script')
-            script.src = resource
-            script.onload = () => {
-              setLoadedResources(prev => new Set([...prev, resource]))
-              resolve(resource)
-            }
-            script.onerror = () => reject(resource)
-            document.head.appendChild(script)
-          }
+          })
         })
-      })
 
-      Promise.allSettled(preloadPromises)
+        Promise.allSettled(preloadPromises)
+      } catch (error) {
+        // Silently fail if preloading is not supported
+        console.debug('Preloading not supported:', error)
+      }
     }, [resources, type, isMobile, isReducedData])
 
     return {
@@ -242,30 +282,40 @@ export function useMobilePerformance(options: UseMobilePerformanceOptions = {}) 
           lastTime = currentTime
         }
 
-        animationId = requestAnimationFrame(measureFPS)
+        if (typeof requestAnimationFrame !== 'undefined') {
+          animationId = requestAnimationFrame(measureFPS)
+        }
       }
 
       // Measure memory usage (if available)
-      if ('memory' in performance) {
-        const memory = (performance as any).memory
-        setMetrics(prev => ({ 
-          ...prev, 
-          memoryUsage: Math.round(memory.usedJSHeapSize / 1024 / 1024) 
-        }))
+      if (typeof performance !== 'undefined' && 'memory' in performance) {
+        try {
+          const memory = (performance as any).memory
+          setMetrics(prev => ({ 
+            ...prev, 
+            memoryUsage: Math.round(memory.usedJSHeapSize / 1024 / 1024) 
+          }))
+        } catch (error) {
+          // Silently fail if memory API is not supported
+        }
       }
 
       // Measure network speed
-      if ('connection' in navigator) {
-        const connection = (navigator as any).connection
-        if (connection.downlink) {
-          setMetrics(prev => ({ ...prev, networkSpeed: connection.downlink }))
+      if (typeof navigator !== 'undefined' && 'connection' in navigator) {
+        try {
+          const connection = (navigator as any).connection
+          if (connection.downlink) {
+            setMetrics(prev => ({ ...prev, networkSpeed: connection.downlink }))
+          }
+        } catch (error) {
+          // Silently fail if connection API is not supported
         }
       }
 
       measureFPS()
 
       return () => {
-        if (animationId) {
+        if (animationId && typeof cancelAnimationFrame !== 'undefined') {
           cancelAnimationFrame(animationId)
         }
       }
