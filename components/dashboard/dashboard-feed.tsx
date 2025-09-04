@@ -31,7 +31,7 @@ import { Database } from '@/lib/database.types'
 import { useAuth } from '@/contexts/auth-context'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useIsMobile, useHapticFeedback } from '@/hooks/use-mobile'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileOptimizedCard } from '@/components/mobile/mobile-optimized-card'
 
 interface PostData {
@@ -92,7 +92,6 @@ export function DashboardFeed() {
   const router = useRouter()
   const supabase = createClientComponentClient<Database>()
   const { isMobile } = useIsMobile()
-  const { triggerHaptic } = useHapticFeedback()
 
   const loadPosts = async (feedType = activeTab) => {
     try {
