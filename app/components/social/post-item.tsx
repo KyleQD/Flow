@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useSocial } from "@/contexts/social-context"
 import { useToast } from "@/hooks/use-toast"
 import { LoadingSpinner } from "../loading-spinner"
+import { LinkPreview, extractUrls, hasUrls } from "@/components/ui/link-preview"
 import {
   Heart,
   MessageSquare,
@@ -422,6 +423,14 @@ export function PostItem({
                 >
                   Read more
                 </Button>
+              )}
+
+              {/* Link Preview for URLs in content */}
+              {hasUrls(post.content) && (
+                <LinkPreview 
+                  url={extractUrls(post.content)[0]} 
+                  className="mt-2"
+                />
               )}
 
               {post.tags && post.tags.length > 0 && (

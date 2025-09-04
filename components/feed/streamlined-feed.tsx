@@ -13,6 +13,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Database } from '@/lib/database.types'
 import { useArtist } from '@/contexts/artist-context'
 import { normalizeMediaData, renderMediaContent } from '@/utils/media-utils'
+import { LinkPreview, extractUrls, hasUrls } from '@/components/ui/link-preview'
 import Link from 'next/link'
 
 interface Post {
@@ -583,6 +584,14 @@ export function StreamlinedFeed() {
                     <p className="text-slate-200 leading-relaxed">
                       {post.content}
                     </p>
+
+                    {/* Link Preview for URLs in content */}
+                    {hasUrls(post.content) && (
+                      <LinkPreview 
+                        url={extractUrls(post.content)[0]} 
+                        className="mt-2"
+                      />
+                    )}
 
                     {/* Media display */}
                     {(() => {

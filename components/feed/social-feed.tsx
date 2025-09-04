@@ -26,6 +26,7 @@ import {
 import { EnhancedPostCreator } from './enhanced-post-creator'
 import { formatDistanceToNow } from 'date-fns'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { LinkPreview, extractUrls, hasUrls } from '@/components/ui/link-preview'
 import { Database } from '@/lib/database.types'
 import { useAuth } from '@/contexts/auth-context'
 import Link from 'next/link'
@@ -538,6 +539,15 @@ export function SocialFeed() {
                                 <p className="text-white leading-relaxed">
                                   {post.content}
                                 </p>
+                                
+                                {/* Link Preview for URLs in content */}
+                                {hasUrls(post.content) && (
+                                  <LinkPreview 
+                                    url={extractUrls(post.content)[0]} 
+                                    className="mt-3"
+                                  />
+                                )}
+                                
                                 {post.hashtags && post.hashtags.length > 0 && (
                                   <div className="flex flex-wrap gap-2 mt-3">
                                     {post.hashtags.map((hashtag) => (

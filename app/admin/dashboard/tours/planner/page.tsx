@@ -74,12 +74,27 @@ interface TourData {
     name: string
     role: string
     events: string[]
+    team_id?: string
   }>
   crew: Array<{
     id: string
     name: string
     role: string
     events: string[]
+    team_id?: string
+  }>
+  teams: Array<{
+    id: string
+    name: string
+    role: string
+    description?: string
+    members: Array<{
+      id: string
+      name: string
+      email: string
+      role: string
+    }>
+    created_at: string
   }>
   
   // Step 5: Logistics
@@ -87,11 +102,31 @@ interface TourData {
     type: string
     details: string
     cost: number
+    departure_city?: string
+    arrival_city?: string
+    departure_date?: string
+    departure_time?: string
+    arrival_date?: string
+    arrival_time?: string
+    flight_number?: string
+    airline?: string
+    vehicle_type?: string
+    driver_name?: string
+    driver_phone?: string
   }
   accommodation: {
     type: string
     details: string
     cost: number
+    hotel_name?: string
+    check_in_date?: string
+    check_out_date?: string
+    check_in_time?: string
+    check_out_time?: string
+    room_type?: string
+    confirmation_number?: string
+    contact_phone?: string
+    special_requests?: string
   }
   equipment: Array<{
     id: string
@@ -102,10 +137,19 @@ interface TourData {
   
   // Step 6: Ticketing & Financials
   ticketTypes: Array<{
+    id: string
     name: string
     price: number
     quantity: number
     description: string
+    event_id?: string
+    is_third_party?: boolean
+    third_party_url?: string
+    third_party_fee?: number
+    sale_start?: string
+    sale_end?: string
+    max_per_customer?: number
+    benefits?: string[]
   }>
   budget: {
     total: number
@@ -190,6 +234,7 @@ export default function TourPlannerPage() {
     events: [],
     artists: [],
     crew: [],
+    teams: [],
     transportation: { type: "", details: "", cost: 0 },
     accommodation: { type: "", details: "", cost: 0 },
     equipment: [],

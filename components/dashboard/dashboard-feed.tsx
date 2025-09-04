@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
+import { LinkPreview, extractUrls, hasUrls } from '@/components/ui/link-preview'
 import { 
   Heart, 
   MessageCircle, 
@@ -30,6 +31,8 @@ import { Database } from '@/lib/database.types'
 import { useAuth } from '@/contexts/auth-context'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useIsMobile, useHapticFeedback } from '@/hooks/use-mobile'
+import { MobileOptimizedCard } from '@/components/mobile/mobile-optimized-card'
 
 interface PostData {
   id: string
@@ -88,6 +91,8 @@ export function DashboardFeed() {
   const { user } = useAuth()
   const router = useRouter()
   const supabase = createClientComponentClient<Database>()
+  const { isMobile } = useIsMobile()
+  const { triggerHaptic } = useHapticFeedback()
 
   const loadPosts = async (feedType = activeTab) => {
     try {
@@ -143,6 +148,8 @@ export function DashboardFeed() {
 
   const handleLike = async (postId: string) => {
     if (!user) return
+
+    triggerHaptic('light')
 
     try {
       const currentPost = posts.find(p => p.id === postId)
@@ -438,6 +445,15 @@ export function DashboardFeed() {
                           <p className="text-white text-sm leading-relaxed">
                             {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
                           </p>
+                          
+                          {/* Link Preview */}
+                          {hasUrls(post.content) && (
+                            <LinkPreview 
+                              url={extractUrls(post.content)[0]} 
+                              className="mt-2"
+                            />
+                          )}
+                          
                           {post.hashtags && post.hashtags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {post.hashtags.slice(0, 3).map((hashtag) => (

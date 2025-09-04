@@ -31,6 +31,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useFeed } from '@/hooks/use-feed'
 import { useAuth } from '@/hooks/use-auth'
 import type { ExtendedPost as BaseExtendedPost } from '@/lib/services/feed.service'
+import { LinkPreview, extractUrls, hasUrls } from '@/components/ui/link-preview'
 import Link from 'next/link'
 
 // Extend the base interface to include additional media properties
@@ -351,6 +352,14 @@ export function PostCard({ post, onCommentClick, onShareClick }: PostCardProps) 
                 )
               }}
             />
+            
+            {/* Link Preview for URLs in content */}
+            {hasUrls(post.content) && (
+              <LinkPreview 
+                url={extractUrls(post.content)[0]} 
+                className="mt-3"
+              />
+            )}
             
             {isLongContent && (
               <Button

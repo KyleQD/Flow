@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,7 +16,13 @@ import {
   Edit3,
   DollarSign,
   Package,
-  CheckCircle
+  CheckCircle,
+  Plane,
+  Train,
+  Car,
+  MapPin,
+  Calendar,
+  Clock
 } from "lucide-react"
 
 interface LogisticsStepProps {
@@ -25,11 +31,31 @@ interface LogisticsStepProps {
       type: string
       details: string
       cost: number
+      departure_city?: string
+      arrival_city?: string
+      departure_date?: string
+      departure_time?: string
+      arrival_date?: string
+      arrival_time?: string
+      flight_number?: string
+      airline?: string
+      vehicle_type?: string
+      driver_name?: string
+      driver_phone?: string
     }
     accommodation: {
       type: string
       details: string
       cost: number
+      hotel_name?: string
+      check_in_date?: string
+      check_out_date?: string
+      check_in_time?: string
+      check_out_time?: string
+      room_type?: string
+      confirmation_number?: string
+      contact_phone?: string
+      special_requests?: string
     }
     equipment: Array<{
       id: string
@@ -106,12 +132,251 @@ export function LogisticsStep({ tourData, updateTourData }: LogisticsStepProps) 
     tourData.accommodation.cost + 
     tourData.equipment.reduce((sum, item) => sum + item.cost, 0)
 
+  // Get transportation icon based on type
+  const getTransportationIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'flight': return <Plane className="h-4 w-4" />
+      case 'train': return <Train className="h-4 w-4" />
+      case 'car rental':
+      case 'van':
+      case 'motorcycle': return <Car className="h-4 w-4" />
+      default: return <Truck className="h-4 w-4" />
+    }
+  }
+
+  // Render dynamic transportation fields based on type
+  const renderTransportationDetails = () => {
+    const type = tourData.transportation.type.toLowerCase()
+    
+    if (type === 'flight') {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Airline</Label>
+            <Input
+              placeholder="e.g., Delta, United"
+              value={tourData.transportation.airline || ''}
+              onChange={(e) => handleTransportationChange("airline", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Flight Number</Label>
+            <Input
+              placeholder="e.g., DL1234"
+              value={tourData.transportation.flight_number || ''}
+              onChange={(e) => handleTransportationChange("flight_number", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Departure City</Label>
+            <Input
+              placeholder="e.g., Los Angeles"
+              value={tourData.transportation.departure_city || ''}
+              onChange={(e) => handleTransportationChange("departure_city", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Arrival City</Label>
+            <Input
+              placeholder="e.g., New York"
+              value={tourData.transportation.arrival_city || ''}
+              onChange={(e) => handleTransportationChange("arrival_city", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Departure Date</Label>
+            <Input
+              type="date"
+              value={tourData.transportation.departure_date || ''}
+              onChange={(e) => handleTransportationChange("departure_date", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Departure Time</Label>
+            <Input
+              type="time"
+              value={tourData.transportation.departure_time || ''}
+              onChange={(e) => handleTransportationChange("departure_time", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white"
+            />
+          </div>
+        </div>
+      )
+    } else if (type === 'train') {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Departure City</Label>
+            <Input
+              placeholder="e.g., Los Angeles"
+              value={tourData.transportation.departure_city || ''}
+              onChange={(e) => handleTransportationChange("departure_city", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Arrival City</Label>
+            <Input
+              placeholder="e.g., New York"
+              value={tourData.transportation.arrival_city || ''}
+              onChange={(e) => handleTransportationChange("arrival_city", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Departure Date</Label>
+            <Input
+              type="date"
+              value={tourData.transportation.departure_date || ''}
+              onChange={(e) => handleTransportationChange("departure_date", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Departure Time</Label>
+            <Input
+              type="time"
+              value={tourData.transportation.departure_time || ''}
+              onChange={(e) => handleTransportationChange("departure_time", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white"
+            />
+          </div>
+        </div>
+      )
+    } else if (['van', 'car rental', 'motorcycle'].includes(type)) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Vehicle Type</Label>
+            <Input
+              placeholder="e.g., SUV, Sedan, Motorcycle"
+              value={tourData.transportation.vehicle_type || ''}
+              onChange={(e) => handleTransportationChange("vehicle_type", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Driver Name</Label>
+            <Input
+              placeholder="e.g., John Smith"
+              value={tourData.transportation.driver_name || ''}
+              onChange={(e) => handleTransportationChange("driver_name", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Driver Phone</Label>
+            <Input
+              placeholder="e.g., (555) 123-4567"
+              value={tourData.transportation.driver_phone || ''}
+              onChange={(e) => handleTransportationChange("driver_phone", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+        </div>
+      )
+    }
+    
+    return null
+  }
+
+  // Render dynamic accommodation fields based on type
+  const renderAccommodationDetails = () => {
+    const type = tourData.accommodation.type.toLowerCase()
+    
+    if (['hotel', 'motel'].includes(type)) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Hotel Name</Label>
+            <Input
+              placeholder="e.g., Marriott Downtown"
+              value={tourData.accommodation.hotel_name || ''}
+              onChange={(e) => handleAccommodationChange("hotel_name", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Room Type</Label>
+            <Input
+              placeholder="e.g., Standard, Suite, Deluxe"
+              value={tourData.accommodation.room_type || ''}
+              onChange={(e) => handleAccommodationChange("room_type", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Check-in Date</Label>
+            <Input
+              type="date"
+              value={tourData.accommodation.check_in_date || ''}
+              onChange={(e) => handleAccommodationChange("check_in_date", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Check-out Date</Label>
+            <Input
+              type="date"
+              value={tourData.accommodation.check_out_date || ''}
+              onChange={(e) => handleAccommodationChange("check_out_date", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Check-in Time</Label>
+            <Input
+              type="time"
+              value={tourData.accommodation.check_in_time || ''}
+              onChange={(e) => handleAccommodationChange("check_in_time", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Confirmation Number</Label>
+            <Input
+              placeholder="e.g., ABC123456"
+              value={tourData.accommodation.confirmation_number || ''}
+              onChange={(e) => handleAccommodationChange("confirmation_number", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-white text-sm">Contact Phone</Label>
+            <Input
+              placeholder="e.g., (555) 123-4567"
+              value={tourData.accommodation.contact_phone || ''}
+              onChange={(e) => handleAccommodationChange("contact_phone", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
+            />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label className="text-white text-sm">Special Requests</Label>
+            <Textarea
+              placeholder="e.g., Accessible room, late check-in, etc."
+              value={tourData.accommodation.special_requests || ''}
+              onChange={(e) => handleAccommodationChange("special_requests", e.target.value)}
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500 min-h-[80px]"
+            />
+          </div>
+        </div>
+      )
+    }
+    
+    return null
+  }
+
   return (
     <div className="space-y-8">
       {/* Transportation */}
       <div className="space-y-4">
         <div className="flex items-center space-x-2">
-          <Truck className="w-5 h-5 text-blue-400" />
+          {getTransportationIcon(tourData.transportation.type)}
           <h3 className="text-lg font-semibold text-white">Transportation</h3>
         </div>
         
@@ -135,16 +400,20 @@ export function LogisticsStep({ tourData, updateTourData }: LogisticsStepProps) 
               <Input
                 type="number"
                 placeholder="Enter cost..."
-                value={tourData.transportation.cost}
-                onChange={(e) => handleTransportationChange("cost", parseInt(e.target.value) || 0)}
+                value={tourData.transportation.cost || ''}
+                onChange={(e) => handleTransportationChange("cost", parseFloat(e.target.value) || 0)}
                 className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
               />
             </div>
           </div>
+          
+          {/* Dynamic transportation details */}
+          {renderTransportationDetails()}
+          
           <div className="space-y-2 mt-4">
-            <Label className="text-white text-sm">Details</Label>
+            <Label className="text-white text-sm">Additional Details</Label>
             <Textarea
-              placeholder="Enter transportation details, requirements, or special arrangements..."
+              placeholder="Enter additional transportation details, requirements, or special arrangements..."
               value={tourData.transportation.details}
               onChange={(e) => handleTransportationChange("details", e.target.value)}
               className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500 min-h-[80px]"
@@ -180,16 +449,20 @@ export function LogisticsStep({ tourData, updateTourData }: LogisticsStepProps) 
               <Input
                 type="number"
                 placeholder="Enter cost..."
-                value={tourData.accommodation.cost}
-                onChange={(e) => handleAccommodationChange("cost", parseInt(e.target.value) || 0)}
+                value={tourData.accommodation.cost || ''}
+                onChange={(e) => handleAccommodationChange("cost", parseFloat(e.target.value) || 0)}
                 className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
               />
             </div>
           </div>
+          
+          {/* Dynamic accommodation details */}
+          {renderAccommodationDetails()}
+          
           <div className="space-y-2 mt-4">
-            <Label className="text-white text-sm">Details</Label>
+            <Label className="text-white text-sm">Additional Details</Label>
             <Textarea
-              placeholder="Enter accommodation details, requirements, or special arrangements..."
+              placeholder="Enter additional accommodation details, requirements, or special arrangements..."
               value={tourData.accommodation.details}
               onChange={(e) => handleAccommodationChange("details", e.target.value)}
               className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500 min-h-[80px]"
@@ -209,7 +482,7 @@ export function LogisticsStep({ tourData, updateTourData }: LogisticsStepProps) 
             onClick={() => setIsAddingEquipment(true)}
             className="bg-purple-600 hover:bg-purple-700 text-white"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 w-4" />
             Add Equipment
           </Button>
         </div>
@@ -242,8 +515,8 @@ export function LogisticsStep({ tourData, updateTourData }: LogisticsStepProps) 
                 <Input
                   type="number"
                   placeholder="Enter cost..."
-                  value={newEquipment.cost}
-                  onChange={(e) => setNewEquipment({ ...newEquipment, cost: parseInt(e.target.value) || 0 })}
+                  value={newEquipment.cost || ''}
+                  onChange={(e) => setNewEquipment({ ...newEquipment, cost: parseFloat(e.target.value) || 0 })}
                   className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-500"
                 />
               </div>

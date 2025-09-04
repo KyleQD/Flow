@@ -12,6 +12,7 @@ import { Carousel } from "@/components/ui/carousel"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { LinkPreview, extractUrls, hasUrls } from "@/components/ui/link-preview"
 
 export function PostItem({
   post,
@@ -285,6 +286,15 @@ export function PostItem({
       </CardHeader>
       <CardContent>
         <p className="whitespace-pre-wrap">{post.content}</p>
+        
+        {/* Link Preview for URLs in content */}
+        {hasUrls(post.content) && (
+          <LinkPreview 
+            url={extractUrls(post.content)[0]} 
+            className="mt-3"
+          />
+        )}
+        
         {renderMedia()}
         {renderLinkPreview()}
         {renderEventDetails()}

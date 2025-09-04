@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { Plus, Edit, Trash2, CheckCircle, Clock, XCircle, Users, Mail, Phone, Calendar, User } from "lucide-react"
+import { Plus, Edit, Trash2, CheckCircle, Clock, XCircle, Users, Mail, Phone, Calendar, User, UserPlus, Building } from "lucide-react"
 import { toast } from "sonner"
 
 interface TourMember {
@@ -24,6 +24,16 @@ interface TourMember {
   arrival_date?: string
   departure_date?: string
   responsibilities?: string
+  team_id?: string
+}
+
+interface TourTeam {
+  id: string
+  name: string
+  role: string
+  description?: string
+  members: TourMember[]
+  created_at: string
 }
 
 interface TourTeamManagerProps {
@@ -37,13 +47,22 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
+  const [isCreateTeamDialogOpen, setIsCreateTeamDialogOpen] = useState(false)
+  const [isAddUserToTeamDialogOpen, setIsAddUserToTeamDialogOpen] = useState(false)
   const [isSearchLoading, setIsSearchLoading] = useState(false)
   const [selectedMember, setSelectedMember] = useState<TourMember | null>(null)
+  const [selectedTeam, setSelectedTeam] = useState<TourTeam | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [filterStatus, setFilterStatus] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [userQuery, setUserQuery] = useState('')
   const [userResults, setUserResults] = useState<Array<{ id: string; email: string; display_name?: string }>>([])
+  const [teams, setTeams] = useState<TourTeam[]>([])
+  const [newTeam, setNewTeam] = useState({
+    name: '',
+    role: '',
+    description: ''
+  })
 
   const [formData, setFormData] = useState({
     name: '',
@@ -53,7 +72,8 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
     status: 'pending' as const,
     arrival_date: '',
     departure_date: '',
-    responsibilities: ''
+    responsibilities: '',
+    team_id: ''
   })
 
   const resetForm = () => {
@@ -65,7 +85,8 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
       status: 'pending',
       arrival_date: '',
       departure_date: '',
-      responsibilities: ''
+      responsibilities: '',
+      team_id: ''
     })
   }
 
@@ -84,7 +105,8 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
       status: member.status as "pending",
       arrival_date: member.arrival_date || '',
       departure_date: member.departure_date || '',
-      responsibilities: member.responsibilities || ''
+      responsibilities: member.responsibilities || '',
+      team_id: member.team_id || ''
     })
     setIsEditDialogOpen(true)
   }
@@ -92,6 +114,66 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
   const handleDeleteMember = (member: TourMember) => {
     setSelectedMember(member)
     setIsDeleteDialogOpen(true)
+  }
+
+  const handleCreateTeam = () => {
+    if (newTeam.name && newTeam.role) {
+      const team: TourTeam = {
+        id: Date.now().toString(),
+        name: newTeam.name,
+        role: newTeam.role,
+        description: newTeam.description,
+        members: [],
+        created_at: new Date().toISOString()
+      }
+      setTeams([...teams, team])
+      setNewTeam({ name: '', role: '', description: '' })
+      setIsCreateTeamDialogOpen(false)
+      toast.success('Team created successfully')
+    }
+  }
+
+  const handleAddUserToTeam = (team: TourTeam) => {
+    setSelectedTeam(team)
+    setIsAddUserToTeamDialogOpen(true)
+  }
+
+  const handleAssignUserToTeam = async (userId: string, teamId: string) => {
+    setIsSubmitting(true)
+    try {
+      const res = await fetch(`/api/tours/${tourId}/assign-user-to-team`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, teamId })
+      })
+      if (!res.ok) throw new Error('Failed to assign user to team')
+      
+      // Update local state
+      const user = userResults.find(u => u.id === userId)
+      if (!user) return
+      
+      const newMember: TourMember = {
+        id: user.id,
+        name: user.display_name || user.email.split('@')[0],
+        role: 'member',
+        email: user.email,
+        status: 'confirmed'
+      }
+      
+      const updatedTeams = teams.map(team => 
+        team.id === teamId 
+          ? { ...team, members: [...team.members, newMember] }
+          : team
+      )
+      setTeams(updatedTeams)
+      
+      toast.success('User assigned to team successfully')
+      setIsAddUserToTeamDialogOpen(false)
+    } catch {
+      toast.error('Failed to assign user to team')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const searchExistingUsers = async () => {
@@ -265,6 +347,10 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
           <p className="text-slate-400">Manage team members for this tour</p>
         </div>
         <div className="flex gap-2">
+          <Button onClick={() => setIsCreateTeamDialogOpen(true)} variant="outline" className="border-slate-600 text-slate-300">
+            <Building className="mr-2 h-4 w-4" />
+            Create Team
+          </Button>
           <Button onClick={() => setIsInviteDialogOpen(true)} variant="outline" className="border-slate-600 text-slate-300">
             Invite
           </Button>
@@ -274,6 +360,62 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
           </Button>
         </div>
       </div>
+
+      {/* Teams Section */}
+      {teams.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-white">Teams</h3>
+          <div className="grid gap-4">
+            {teams.map((team) => (
+              <Card key={team.id} className="bg-slate-900/50 border-slate-700/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <Building className="h-5 w-5 text-blue-400" />
+                        <h4 className="font-medium text-white">{team.name}</h4>
+                        <Badge variant="secondary" className="text-xs">
+                          {team.role}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {team.members.length} members
+                        </Badge>
+                      </div>
+                      {team.description && (
+                        <p className="text-sm text-slate-400">{team.description}</p>
+                      )}
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddUserToTeam(team)}
+                        className="border-slate-600 text-slate-300"
+                      >
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Add User
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Team Members */}
+                  {team.members.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-700">
+                      <div className="flex flex-wrap gap-2">
+                        {team.members.map((member) => (
+                          <Badge key={member.id} variant="outline" className="text-xs">
+                            {member.name || member.email}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center space-x-4">
@@ -333,6 +475,13 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
                     </div>
                     {member.responsibilities && (
                       <p className="text-xs text-slate-500 mt-1">{member.responsibilities}</p>
+                    )}
+                    {member.team_id && (
+                      <div className="mt-2">
+                        <Badge variant="outline" className="text-xs">
+                          Team: {teams.find(t => t.id === member.team_id)?.name || 'Unknown'}
+                        </Badge>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -464,6 +613,20 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
             </div>
 
             <div>
+              <Label className="text-slate-300">Team (Optional)</Label>
+              <Select value={formData.team_id} onValueChange={(value: any) => setFormData({ ...formData, team_id: value })}>
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                  <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>{team.name} - {team.role}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <Label className="text-slate-300">Responsibilities (Optional)</Label>
               <Textarea
                 value={formData.responsibilities}
@@ -574,6 +737,20 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
             </div>
 
             <div>
+              <Label className="text-slate-300">Team (Optional)</Label>
+              <Select value={formData.team_id} onValueChange={(value: any) => setFormData({ ...formData, team_id: value })}>
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                  <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>{team.name} - {team.role}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <Label className="text-slate-300">Responsibilities (Optional)</Label>
               <Textarea
                 value={formData.responsibilities}
@@ -624,6 +801,114 @@ export function TourTeamManager({ tourId, members, onMembersUpdate }: TourTeamMa
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Team Dialog */}
+      <Dialog open={isCreateTeamDialogOpen} onOpenChange={setIsCreateTeamDialogOpen}>
+        <DialogContent className="max-w-md bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Create New Team</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-slate-300">Team Name</Label>
+              <Input
+                value={newTeam.name}
+                onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                placeholder="e.g., Sound Crew, Lighting Team"
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-slate-300">Team Role</Label>
+              <Input
+                value={newTeam.role}
+                onChange={(e) => setNewTeam({ ...newTeam, role: e.target.value })}
+                placeholder="e.g., Technical Support, Stage Management"
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+            </div>
+
+            <div>
+              <Label className="text-slate-300">Description (Optional)</Label>
+              <Textarea
+                value={newTeam.description}
+                onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
+                placeholder="Describe the team's responsibilities..."
+                className="bg-slate-700 border-slate-600 text-white"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateTeamDialogOpen(false)}
+                className="border-slate-600 text-slate-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateTeam}
+                disabled={!newTeam.name || !newTeam.role}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Create Team
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add User to Team Dialog */}
+      <Dialog open={isAddUserToTeamDialogOpen} onOpenChange={setIsAddUserToTeamDialogOpen}>
+        <DialogContent className="max-w-md bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Add User to {selectedTeam?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-slate-300">Search existing users (email)</Label>
+              <div className="flex gap-2">
+                <Input 
+                  value={userQuery} 
+                  onChange={(e) => setUserQuery(e.target.value)} 
+                  placeholder="jane@company.com" 
+                  className="bg-slate-700 border-slate-600 text-white" 
+                />
+                <Button variant="outline" onClick={searchExistingUsers} className="border-slate-600 text-slate-300">
+                  {isSearchLoading ? '...' : 'Search'}
+                </Button>
+              </div>
+              {userResults.length > 0 && (
+                <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-slate-600">
+                  {userResults.map(u => (
+                    <div key={u.id} className="flex items-center justify-between px-3 py-2 text-sm text-slate-200">
+                      <div>
+                        <div className="font-medium">{u.display_name || u.email}</div>
+                        <div className="text-xs text-slate-400">{u.email}</div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleAssignUserToTeam(u.id, selectedTeam!.id)} 
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        Add to Team
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAddUserToTeamDialogOpen(false)} className="border-slate-600 text-slate-300">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Invite Dialog */}
       <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>

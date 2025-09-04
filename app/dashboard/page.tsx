@@ -70,6 +70,7 @@ import {
   ChevronRight
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 interface DashboardData {
   stats: {
@@ -775,6 +776,54 @@ export default function DashboardPage() {
               <div className="w-full">
                 <EnhancedQuickActions />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Test Links */}
+        <div className="mb-6 space-y-3">
+          <div className="p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Mobile Optimization Test</h3>
+                <p className="text-slate-400 text-sm">Test the new mobile optimization features</p>
+              </div>
+              <Link 
+                href="/mobile-test"
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-lg transition-all duration-200"
+              >
+                Test Mobile Features
+              </Link>
+            </div>
+          </div>
+          
+          <div className="p-4 bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Mobile Navigation Audit</h3>
+                <p className="text-slate-400 text-sm">Audit and test mobile navigation across the platform</p>
+              </div>
+              <Link 
+                href="/mobile-navigation-test"
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white rounded-lg transition-all duration-200"
+              >
+                Test Navigation
+              </Link>
+            </div>
+          </div>
+
+          <div className="p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Venue Discovery</h3>
+                <p className="text-slate-400 text-sm">Browse and view public venue profiles</p>
+              </div>
+              <Link 
+                href="/venues"
+                className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition-all duration-200"
+              >
+                Discover Venues
+              </Link>
             </div>
           </div>
         </div>

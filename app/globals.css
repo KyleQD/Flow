@@ -875,3 +875,365 @@ select:focus {
 .animate-scan {
   animation: scan 2s infinite;
 }
+
+/* ==== MOBILE OPTIMIZATION UTILITIES ==== */
+
+/* Safe area support for mobile devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Touch optimization */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-pan-x {
+  touch-action: pan-x;
+}
+
+.touch-pan-y {
+  touch-action: pan-y;
+}
+
+.touch-none {
+  touch-action: none;
+}
+
+/* Mobile-specific spacing */
+.mobile-p-2 {
+  padding: 0.5rem;
+}
+
+.mobile-p-3 {
+  padding: 0.75rem;
+}
+
+.mobile-p-4 {
+  padding: 1rem;
+}
+
+.mobile-p-6 {
+  padding: 1.5rem;
+}
+
+/* Mobile text sizing */
+.mobile-text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.mobile-text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.mobile-text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.mobile-text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+/* Mobile button sizing */
+.mobile-btn-sm {
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.mobile-btn-md {
+  min-height: 3rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.mobile-btn-lg {
+  min-height: 3.5rem;
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+/* Mobile card optimizations */
+.mobile-card {
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.mobile-card-elevated {
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Mobile navigation optimizations */
+.mobile-nav-item {
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-item:active {
+  transform: scale(0.98);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile form optimizations */
+.mobile-input {
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+}
+
+.mobile-textarea {
+  min-height: 6rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+  resize: vertical;
+}
+
+/* Mobile list optimizations */
+.mobile-list-item {
+  min-height: 3.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.mobile-list-item:active {
+  transform: scale(0.98);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Mobile modal optimizations */
+.mobile-modal {
+  border-radius: 1rem 1rem 0 0;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.mobile-modal-full {
+  border-radius: 0;
+  height: 100vh;
+}
+
+/* Mobile bottom sheet */
+.mobile-bottom-sheet {
+  border-radius: 1rem 1rem 0 0;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Mobile swipe indicators */
+.swipe-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, rgba(139, 92, 246, 0.5), transparent);
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.swipe-indicator.left {
+  left: 8px;
+}
+
+.swipe-indicator.right {
+  right: 8px;
+}
+
+.swipe-indicator.visible {
+  opacity: 1;
+}
+
+/* Mobile pull-to-refresh indicator */
+.pull-to-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  color: rgba(139, 92, 246, 0.8);
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.pull-to-refresh.loading {
+  color: rgb(139, 92, 246);
+}
+
+/* Mobile loading states */
+.mobile-skeleton {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: mobile-skeleton-loading 1.5s infinite;
+}
+
+@keyframes mobile-skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Mobile gesture feedback */
+.gesture-feedback {
+  transition: transform 0.1s ease;
+}
+
+.gesture-feedback:active {
+  transform: scale(0.95);
+}
+
+/* Mobile scroll optimizations */
+.mobile-scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-scroll-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.mobile-scroll-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile focus states */
+.mobile-focus-visible {
+  outline: 2px solid rgb(139, 92, 246);
+  outline-offset: 2px;
+}
+
+/* Mobile responsive utilities */
+@media (max-width: 767px) {
+  .mobile-only {
+    display: block;
+  }
+  
+  .desktop-only {
+    display: none;
+  }
+  
+  .mobile-text-responsive {
+    font-size: clamp(0.875rem, 4vw, 1rem);
+  }
+  
+  .mobile-spacing-responsive {
+    padding: clamp(0.5rem, 2vw, 1rem);
+  }
+  
+  .mobile-height-responsive {
+    min-height: clamp(2.5rem, 8vh, 3rem);
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none;
+  }
+  
+  .desktop-only {
+    display: block;
+  }
+}
+
+/* Mobile performance optimizations */
+.mobile-gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
+}
+
+.mobile-reduce-motion {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Mobile accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-gpu-accelerated {
+    transform: none;
+    will-change: auto;
+  }
+  
+  .mobile-reduce-motion {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Mobile dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  .mobile-card {
+    background-color: rgba(30, 41, 59, 0.8);
+    border-color: rgba(71, 85, 105, 0.5);
+  }
+  
+  .mobile-input {
+    background-color: rgba(30, 41, 59, 0.8);
+    border-color: rgba(71, 85, 105, 0.5);
+    color: white;
+  }
+}
+
+/* Mobile landscape optimizations */
+@media (max-width: 767px) and (orientation: landscape) {
+  .mobile-landscape-hidden {
+    display: none;
+  }
+  
+  .mobile-landscape-compact {
+    padding: 0.5rem;
+  }
+  
+  .mobile-landscape-text-sm {
+    font-size: 0.75rem;
+  }
+}
+
+/* Mobile high-DPI optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .mobile-high-dpi {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Mobile battery optimization */
+@media (prefers-reduced-data: reduce) {
+  .mobile-data-save {
+    background-image: none;
+    animation: none;
+  }
+  
+  .mobile-data-save img {
+    display: none;
+  }
+}

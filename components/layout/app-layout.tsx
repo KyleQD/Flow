@@ -7,6 +7,8 @@ import { tourifyTheme, themeUtils } from '@/lib/design-system/theme'
 import { NavigationSidebar } from './navigation-sidebar'
 import { TopBar } from './top-bar'
 import { MobileNavigation } from './mobile-navigation'
+import { EnhancedMobileNavigation } from '@/components/mobile/enhanced-mobile-navigation'
+import { UnifiedMobileNavigation } from '@/components/mobile/unified-mobile-navigation'
 import { ConnectionStatusIndicator } from './connection-status-indicator'
 import { NotificationCenter } from './notification-center'
 import { EnhancedNotificationCenter } from '@/components/notifications/enhanced-notification-center'
@@ -199,7 +201,7 @@ export function AppLayout({
                 className="fixed inset-0 bg-black/50 backdrop-blur-sm"
                 onClick={() => setSidebarOpen(false)}
               />
-              <MobileNavigation
+              <EnhancedMobileNavigation
                 user={user}
                 isOpen={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
@@ -262,17 +264,12 @@ export function AppLayout({
           )}
         </div>
 
-        {/* Mobile Bottom Navigation */}
+        {/* Unified Mobile Bottom Navigation */}
         {isMobile && !layoutConfig.sidebar && (
-          <div className="fixed bottom-0 left-0 right-0 z-30">
-            <MobileNavigation
-              user={user}
-              isOpen={true}
-              onClose={() => {}}
-              roleTheme={layoutConfig.theme}
-              bottomNav={true}
-            />
-          </div>
+          <UnifiedMobileNavigation
+            user={user}
+            variant="bottom-nav"
+          />
         )}
 
         {/* Role Theme Accent */}

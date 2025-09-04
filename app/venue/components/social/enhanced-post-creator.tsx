@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useSocial } from "@/contexts/social-context"
 import { useToast } from "@/hooks/use-toast"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { LinkPreview } from "@/components/ui/link-preview"
 import { MediaUploader } from "./media-uploader"
 import { EmojiPicker } from "./emoji-picker"
 import {
@@ -126,16 +127,21 @@ export function EnhancedPostCreator({
       if (matches && matches.length > 0 && !linkPreview) {
         setIsGeneratingLinkPreview(true)
         try {
-          // In a real app, this would call an API to get link metadata
-          // For demo purposes, we'll simulate a response
-          await new Promise((resolve) => setTimeout(resolve, 1500))
-
-          setLinkPreview({
-            url: matches[0],
-            title: "Sample Link Preview",
-            description: "This is a preview of the linked content that would appear in your post.",
-            image: "/placeholder.svg?height=200&width=400",
+          // Call our link preview API
+          const response = await fetch('/api/link-preview', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url: matches[0] }),
           })
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch link preview')
+          }
+
+          const data = await response.json()
+          setLinkPreview(data)
         } catch (error) {
           console.error("Error generating link preview:", error)
         } finally {
@@ -543,32 +549,20 @@ export function EnhancedPostCreator({
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="relative bg-gray-800 border border-gray-700 rounded-md overflow-hidden"
+                    className="relative"
                   >
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute top-2 right-2 h-6 w-6 rounded-full z-10"
+                      className="absolute top-2 right-2 h-6 w-6 rounded-full z-10 z-20"
                       onClick={handleRemoveLinkPreview}
                     >
                       <X className="h-3 w-3" />
                     </Button>
-                    <div className="flex flex-col sm:flex-row">
-                      {linkPreview.image && (
-                        <div className="sm:w-1/3">
-                          <img
-                            src={linkPreview.image || "/placeholder.svg"}
-                            alt={linkPreview.title || "Link preview"}
-                            className="w-full h-32 sm:h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      <div className={`p-3 ${linkPreview.image ? "sm:w-2/3" : "w-full"}`}>
-                        <p className="text-xs text-gray-400 mb-1">{linkPreview.url}</p>
-                        <h4 className="font-medium mb-1">{linkPreview.title}</h4>
-                        <p className="text-sm text-gray-300">{linkPreview.description}</p>
-                      </div>
-                    </div>
+                    <LinkPreview 
+                      url={linkPreview.url}
+                      className="pointer-events-none"
+                    />
                   </motion.div>
                 )}
                 {isGeneratingLinkPreview && (

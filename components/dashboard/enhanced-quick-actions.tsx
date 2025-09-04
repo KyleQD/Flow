@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useMultiAccount } from "@/hooks/use-multi-account"
+import { JukeboxPlayer } from "@/components/dashboard/jukebox-player"
 import { 
   Music, 
   Building, 
@@ -311,49 +312,8 @@ export function EnhancedQuickActions() {
 
   return (
     <div className="space-y-6 max-w-full overflow-hidden">
-      {/* Recent Actions */}
-      {recentActions.length > 0 && (
-        <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-white flex items-center gap-2 text-lg">
-              <Clock className="h-5 w-5 text-yellow-400" />
-              Recent Actions
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 px-4 pb-4">
-            {recentActions.map((action) => {
-              const priorityColor = getPriorityColor(action.priority)
-              
-              return (
-                <Button
-                  key={action.id}
-                  variant="ghost"
-                  className="w-full justify-start p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 group h-auto"
-                  onClick={() => handleActionClick(action)}
-                >
-                  <div className={`w-8 h-8 bg-gradient-to-br ${priorityColor} rounded-lg flex items-center justify-center mr-3 flex-shrink-0`}>
-                    <action.icon className="h-4 w-4 text-white" />
-                  </div>
-                  
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-white truncate text-sm sm:text-base">{action.title}</span>
-                      {action.badge && (
-                        <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs flex-shrink-0">
-                          {action.badge}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-400 truncate">{action.description}</p>
-                  </div>
-                  
-                  <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-white transition-colors flex-shrink-0 ml-2" />
-                </Button>
-              )
-            })}
-          </CardContent>
-        </Card>
-      )}
+      {/* Jukebox Player - Replaces Recent Actions */}
+      <JukeboxPlayer />
 
       {/* Quick Actions */}
       <Card className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden">

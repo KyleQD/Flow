@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useSocial } from "@/context/social-context"
 import { useToast } from "@/hooks/use-toast"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { LinkPreview, extractUrls, hasUrls } from "@/components/ui/link-preview"
 import {
   Heart,
   MessageSquare,
@@ -605,7 +606,7 @@ export function PostItem({
               </DropdownMenu>
             </div>
 
-            <div className="mt-2">
+                        <div className="mt-2">
               <p className="whitespace-pre-line">{truncateContent(post.content)}</p>
               {!showAllContent && post.content.length > 300 && (
                 <Button
@@ -621,6 +622,14 @@ export function PostItem({
                 </Button>
               )}
 
+              {/* Link Preview for URLs in content */}
+              {hasUrls(post.content) && (
+                <LinkPreview 
+                  url={extractUrls(post.content)[0]} 
+                  className="mt-2"
+                />
+              )}
+
               {post.tags && post.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {post.tags.map((tag: string, index: number) => (
@@ -631,13 +640,13 @@ export function PostItem({
                       onClick={(e) => {
                         e.stopPropagation()
                         router.push(`/social/hashtag/${tag.replace("#", "")}`)
-                      }}
-                    >
-                      {tag.startsWith("#") ? tag : `#${tag}`}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+                        }}
+                      >
+                        {tag.startsWith("#") ? tag : `#${tag}`}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
 
               {renderMediaContent()}
               {renderLinkPreview()}
