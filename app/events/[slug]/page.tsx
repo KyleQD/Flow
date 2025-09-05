@@ -10,15 +10,23 @@ export default async function EventPage({ params }: EventPageProps) {
   const { slug } = await params
   const supabase = await createClient()
 
-  // Find event by slug
-  const { data: event, error } = await supabase
+  // Try by slug first
+  let { data: event, error } = await supabase
     .from('artist_events')
     .select('*')
     .eq('slug', slug)
     .single()
 
   if (error || !event) {
-    notFound()
+    // Fallback: treat param as id
+    const { data: byId, error: idErr } = await supabase
+      .from('artist_events')
+      .select('*')
+      .eq('id', slug)
+      .single()
+
+    if (idErr || !byId) notFound()
+    event = byId
   }
 
   return <EnhancedEventPage eventId={event.id} event={event} />

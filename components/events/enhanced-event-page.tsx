@@ -214,7 +214,16 @@ export function EnhancedEventPage({ eventId, event: initialEvent, onEventUpdated
     try {
       const { data: attendanceData, error } = await supabase
         .from('event_attendance')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            username,
+            full_name,
+            avatar_url,
+            is_verified
+          )
+        `)
         .eq('event_id', eventId)
         .eq('event_table', 'artist_events')
 
@@ -273,17 +282,16 @@ export function EnhancedEventPage({ eventId, event: initialEvent, onEventUpdated
     try {
       setIsUpdatingAttendance(true)
 
-      const { error } = await supabase
-        .from('event_attendance')
-        .upsert({
-          event_id: eventId,
-          user_id: user.id,
-          event_table: 'artist_events',
-          status,
-          updated_at: new Date().toISOString()
-        })
-
-      if (error) throw error
+      // Use API route to ensure RLS-safe server-side context and creator override
+      const res = await fetch(`/api/events/${eventId}/attendance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || 'Failed to update attendance')
+      }
 
       await loadAttendanceData()
       toast.success(`You are now ${status} this event!`)

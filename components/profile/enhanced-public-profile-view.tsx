@@ -171,6 +171,8 @@ export function EnhancedPublicProfileView({
   const [shows, setShows] = useState<Show[]>([])
   const [isFollowing, setIsFollowing] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [relationship, setRelationship] = useState<'none' | 'pending' | 'following' | 'friends'>('none')
+  const [isChecking, setIsChecking] = useState(false)
 
   // Load profile colors
   const {
@@ -183,6 +185,28 @@ export function EnhancedPublicProfileView({
 
   useEffect(() => {
     fetchProfileData()
+  }, [profile.id])
+
+  // Check current follow relationship for the viewed profile
+  useEffect(() => {
+    let isMounted = true
+    async function checkRelationship() {
+      try {
+        setIsChecking(true)
+        const res = await fetch(`/api/social/follow-request?action=check&targetUserId=${profile.id}`, { credentials: 'include' })
+        if (!res.ok) return
+        const data = await res.json()
+        if (!isMounted) return
+        setIsFollowing(!!data.isFollowing)
+        setRelationship((data.relationship as any) || (data.isFollowing ? 'following' : (data.requestStatus === 'pending' ? 'pending' : 'none')))
+      } catch (_) {
+        // ignore
+      } finally {
+        if (isMounted) setIsChecking(false)
+      }
+    }
+    checkRelationship()
+    return () => { isMounted = false }
   }, [profile.id])
 
   const fetchProfileData = async () => {
@@ -545,9 +569,10 @@ export function EnhancedPublicProfileView({
                   <>
                     <Button 
                       onClick={() => onFollow?.(profile.id)}
-                      className="bg-white text-black hover:bg-white/90 font-semibold"
+                      className={`bg-white text-black hover:bg-white/90 font-semibold ${relationship === 'friends' ? 'opacity-90' : ''}`}
+                      disabled={relationship === 'pending' || relationship === 'following' || relationship === 'friends' || isChecking}
                     >
-                      {isFollowing ? 'Following' : 'Follow'}
+                      {relationship === 'friends' ? 'Friends' : relationship === 'following' ? 'Following' : relationship === 'pending' ? 'Pending Request' : 'Follow'}
                     </Button>
                     <Button 
                       onClick={() => onMessage?.(profile.id)}
