@@ -119,7 +119,7 @@ class EPKService {
       ])
 
       // Transform and combine data into EPK format
-      return this.transformToEPKData({
+      return await this.transformToEPKData({
         artistProfile,
         epkSettings,
         musicTracks,
@@ -250,28 +250,86 @@ class EPKService {
   }
 
   private async getArtistStats(userId: string) {
-    // For now, return mock stats. This could be enhanced to calculate real stats
-    return {
-      followers: 0,
-      monthlyListeners: 0,
-      totalStreams: 0,
-      eventsPlayed: 0
+    try {
+      // Fetch integrations analytics and profile aggregate
+      const [integrations, profileAgg, tracks, completedEvents] = await Promise.all([
+        supabase.from('artist_social_integrations').select('platform, analytics').eq('user_id', userId),
+        supabase.from('profiles').select('social_followers').eq('id', userId).single(),
+        supabase.from('artist_music').select('stats').eq('user_id', userId),
+        supabase.from('artist_events').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'completed')
+      ])
+
+      // Followers from profile aggregate with fallback to integrations
+      let followers = profileAgg.data?.social_followers || 0
+      let youtubeViews = 0
+      let instagramLikes = 0
+      let facebookEngaged = 0
+      let monthlyListeners = 0
+
+      try {
+        (integrations.data || []).forEach((row: any) => {
+          const a = row.analytics || {}
+          const p = String(row.platform)
+          // Heuristics per platform
+          if (p === 'youtube') youtubeViews += a?.views || a?.data?.[0]?.values?.[0]?.value || 0
+          if (p === 'instagram') instagramLikes += a?.total_likes || a?.data?.[0]?.values?.[0]?.value || 0
+          if (p === 'facebook') facebookEngaged += a?.data?.[0]?.values?.[0]?.value || 0
+          if (p === 'spotify') monthlyListeners = a?.monthly_listeners || monthlyListeners
+          // If no profile aggregate followers, approximate by summing platform follower-like metrics
+          if (!profileAgg.data?.social_followers) {
+            const f = a?.followers || a?.subscribers || a?.data?.[0]?.values?.[0]?.value || 0
+            followers += f
+          }
+        })
+      } catch {}
+
+      // Sum track streams if available
+      const totalTrackStreams = (tracks.data || []).reduce((sum: number, t: any) => sum + (t?.stats?.plays || 0), 0)
+      const totalStreams = totalTrackStreams + youtubeViews
+
+      return {
+        followers,
+        monthlyListeners,
+        totalStreams,
+        eventsPlayed: completedEvents.count || 0
+      }
+    } catch {
+      return {
+        followers: 0,
+        monthlyListeners: 0,
+        totalStreams: 0,
+        eventsPlayed: 0
+      }
     }
   }
 
-  private transformToEPKData({
+  private async transformToEPKData({
     artistProfile,
     epkSettings,
     musicTracks,
     upcomingEvents,
     artistPhotos,
     artistStats
-  }: any): EPKData {
+  }: any): Promise<EPKData> {
     const socialLinks = artistProfile?.social_links || {}
     const professionalSettings = artistProfile?.settings?.professional || {}
     const preferences = artistProfile?.settings?.preferences || {}
 
-    // Transform social links to EPK format
+    // Build platform follower map from integrations analytics if available
+    const followersMap: Record<string, number> = {}
+    try {
+      const { data: integrations } = await supabase
+        .from('artist_social_integrations')
+        .select('platform, analytics')
+        .eq('user_id', artistProfile?.user_id)
+      integrations?.forEach((row: any) => {
+        const a = row.analytics || {}
+        const p = String(row.platform).toLowerCase()
+        followersMap[p] = a?.followers || a?.subscribers || a?.data?.[0]?.values?.[0]?.value || 0
+      })
+    } catch {}
+
+    // Transform social links to EPK format and attach follower counts when available
     const social = Object.entries(socialLinks)
       .filter(([platform, url]) => url && typeof url === 'string' && url.trim())
       .map(([platform, url], index) => ({
@@ -279,7 +337,8 @@ class EPKService {
         platform: platform.charAt(0).toUpperCase() + platform.slice(1),
         url: url as string,
         username: this.extractUsernameFromUrl(url as string, platform),
-        verified: false
+        verified: false,
+        followers: followersMap[platform.toLowerCase()] || undefined
       }))
 
     // Transform music tracks

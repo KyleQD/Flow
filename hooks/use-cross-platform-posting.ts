@@ -71,15 +71,20 @@ export function useCrossPlatformPosting(options: UseCrossPlatformPostingOptions 
       postType?: ScheduledPost['post_type']
       visibility?: ScheduledPost['visibility']
       templateId?: string
+      overrides?: Record<string, { content?: string }>
+      targets?: string[]
     } = {}
   ) => {
     try {
       setError(null)
-      const postId = await crossPlatformPostingService.createCrossPlatformPost(
-        content,
-        targetAccounts,
-        options
-      )
+      // Create internal record and also try provider publishing when not scheduled
+      const { overrides, targets, ...dbOptions } = options
+      const postId = await crossPlatformPostingService.createCrossPlatformPost(content, targetAccounts, dbOptions)
+      if (!options.scheduledFor) {
+        const result = await crossPlatformPostingService.postToProviders(content, options.mediaUrls, targets, overrides)
+        // Optionally surface
+        try { console.debug('provider results', result) } catch {}
+      }
       
       // Refresh data to show new post
       await loadData()

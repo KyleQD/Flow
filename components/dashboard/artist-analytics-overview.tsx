@@ -593,7 +593,7 @@ export function ArtistAnalyticsOverview({
             <Button
               variant="outline"
               size="sm"
-              className="border-blue-500/50 text-blue-400 hover:bg-blue-500/20"
+              className="border-blue-500/50 text-blue-400 hover:bg-blue-500/20 rounded-xl"
             >
               <Activity className="h-4 w-4 mr-1" />
               Full Analytics
@@ -609,7 +609,7 @@ export function ArtistAnalyticsOverview({
               variant={activeTab === tab.id ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center space-x-2 ${
+              className={`flex items-center space-x-2 rounded-xl ${
                 activeTab === tab.id 
                   ? 'bg-blue-600 hover:bg-blue-700' 
                   : 'border-slate-600 text-slate-300 hover:bg-slate-700'

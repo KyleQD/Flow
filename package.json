@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
+    "test:e2e:social": "npx tsx scripts/e2e-social-harness.ts",
     "test:auth": "npx tsx scripts/test-auth-flows.ts",
     "setup:auth": "chmod +x scripts/setup-auth.sh && ./scripts/setup-auth.sh",
     "setup:env": "node scripts/setup-env.js",

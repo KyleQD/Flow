@@ -496,7 +496,7 @@ function TemplatePreview({ template, epkData }: {
               <div className={`text-3xl font-bold ${styles.accent} mb-1 ${
                 template === 'black' ? styles.glow : ''
               }`}>
-                {epkData.social.reduce((total, link) => total + (link.followers || 0), 0).toLocaleString()}
+                {(epkData.stats?.followers ?? epkData.social.reduce((total, link) => total + (link.followers || 0), 0)).toLocaleString()}
               </div>
               <div className={`text-sm ${styles.textSecondary} font-medium`}>Followers</div>
             </div>
@@ -926,6 +926,23 @@ export default function EPKPage() {
               socialLinks={epkData.social}
               onSocialLinksChange={(social) => updateEPKData({ social })}
             />
+            {/* Live analytics refresh */}
+            <div className="mt-4 flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  const token = (await (await import('@supabase/auth-helpers-nextjs')).createClientComponentClient()).auth
+                  const session = await token.getSession()
+                  await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/social-analytics`, {
+                    method: 'POST',
+                    headers: { authorization: `Bearer ${session.data.session?.access_token}` }
+                  })
+                }}
+              >
+                Refresh Analytics
+              </Button>
+              <p className="text-xs text-gray-500">Updates followers and reach from connected platforms</p>
+            </div>
           </TabsContent>
 
           <TabsContent value="media">

@@ -120,6 +120,28 @@ export class CrossPlatformPostingService {
   }
 
   /**
+   * Call Edge Function to post immediately to connected providers
+   */
+  async postToProviders(
+    content: string,
+    mediaUrls: string[] = [],
+    targets?: string[],
+    overrides?: Record<string, { content?: string }>,
+    scheduledPostId?: string
+  ): Promise<Record<string, any>> {
+    const { data: { session } } = await this.supabase.auth.getSession()
+    if (!session) throw new Error('User not authenticated')
+    const fnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/social-post`
+    const res = await fetch(fnUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ content, mediaUrls, targets, overrides, scheduledPostId })
+    })
+    if (!res.ok) throw new Error('Provider post failed')
+    return await res.json()
+  }
+
+  /**
    * Schedule a post for later
    */
   async schedulePost(
@@ -135,6 +157,8 @@ export class CrossPlatformPostingService {
       repeatConfig?: Record<string, any>
       templateId?: string
       timezone?: string
+      targets?: string[]
+      overrides?: Record<string, string>
     } = {}
   ): Promise<ScheduledPost> {
     const { data: { user } } = await this.supabase.auth.getUser()
@@ -166,7 +190,9 @@ export class CrossPlatformPostingService {
         repeat_pattern: repeatPattern,
         repeat_config: repeatConfig,
         target_accounts: targetAccounts,
-        status: 'scheduled'
+        status: 'scheduled',
+        platform_status: (options.targets || ['instagram','facebook','youtube','tiktok','twitter']).reduce((acc: any, p: string) => { acc[p] = 'scheduled'; return acc }, {}),
+        account_specific_content: options.overrides || {}
       })
       .select()
       .single()

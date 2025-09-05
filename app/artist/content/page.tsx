@@ -25,6 +25,12 @@ import {
   Zap,
   Sparkles
 } from "lucide-react"
+import { CrossPlatformComposer } from '@/components/cross-platform/cross-platform-composer'
+import { SocialIntegrationsManager } from '@/components/social/social-integrations-manager'
+import { ArtistAnalyticsOverview } from '@/components/dashboard/artist-analytics-overview'
+import { ScheduledPostsPanel } from '@/components/cross-platform/scheduled-posts-panel'
+import { HashtagGroupsPanel } from '@/components/cross-platform/hashtag-groups-panel'
+import { CrossPlatformAnalyticsOverview } from '@/components/cross-platform/analytics-overview'
 
 interface ContentFeature {
   label: string
@@ -293,7 +299,7 @@ export default function ContentDashboard() {
                     variant={selectedCategory === category.value ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedCategory(category.value)}
-                    className={`transition-all duration-200 ${
+                    className={`transition-all duration-200 rounded-xl ${
                       selectedCategory === category.value
                         ? "bg-purple-600 hover:bg-purple-700 text-white"
                         : "border-slate-700 text-slate-300 hover:bg-slate-800/50"
@@ -344,12 +350,36 @@ export default function ContentDashboard() {
                 setSelectedCategory("all")
               }}
               variant="outline"
-              className="border-slate-700 text-slate-300"
+              className="border-slate-700 text-slate-300 rounded-xl"
             >
               Clear Filters
             </Button>
           </motion.div>
         )}
+
+        {/* Social Posting & Integrations */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
+          <div className="grid grid-cols-1 gap-6">
+            <CrossPlatformComposer />
+            <SocialIntegrationsManager />
+          </div>
+        </motion.div>
+
+        {/* Scheduling & Hashtags */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.55 }}
+        >
+          <div className="grid grid-cols-1 gap-6">
+            <ScheduledPostsPanel />
+            <HashtagGroupsPanel />
+          </div>
+        </motion.div>
 
         {/* Quick Actions */}
         <motion.div
@@ -383,7 +413,7 @@ export default function ContentDashboard() {
                     <Link href={action.href}>
                       <Button
                         variant="ghost"
-                        className="h-20 w-full flex flex-col items-center justify-center space-y-2 hover:bg-slate-800/50 transition-all duration-200"
+                        className="h-20 w-full flex flex-col items-center justify-center space-y-2 hover:bg-slate-800/50 transition-all duration-200 rounded-xl border border-slate-700/50"
                       >
                         <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
                           <action.icon className="h-5 w-5 text-white" />
@@ -396,6 +426,24 @@ export default function ContentDashboard() {
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+
+        {/* Analytics Snapshot */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+        >
+          <ArtistAnalyticsOverview />
+        </motion.div>
+
+        {/* Cross-platform Analytics */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.75 }}
+        >
+          <CrossPlatformAnalyticsOverview />
         </motion.div>
       </div>
     </div>

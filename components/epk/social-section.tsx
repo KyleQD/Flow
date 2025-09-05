@@ -156,7 +156,7 @@ function SocialLinkCard({ link, onEdit, onRemove, onVerify }: {
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-400">
                 <span>{link.username}</span>
-                {link.followers && (
+                {typeof link.followers === 'number' && link.followers > 0 && (
                   <>
                     <span>•</span>
                     <div className="flex items-center gap-1">
