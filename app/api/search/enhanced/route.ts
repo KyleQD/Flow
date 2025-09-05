@@ -350,7 +350,14 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false })
 
       if (params.q) {
-        profileQuery = profileQuery.or(`full_name.ilike.%${params.q}%,username.ilike.%${params.q}%,bio.ilike.%${params.q}%`)
+        const rawTokens = params.q.trim().split(/\s+/).filter(Boolean).slice(0, 5)
+        const tokens = rawTokens.map(t => t.replace(/[\\%_]/g, ''))
+        const orConditions = (tokens.length > 0 ? tokens : [params.q]).flatMap(t => [
+          `full_name.ilike.%${t}%`,
+          `username.ilike.%${t}%`,
+          `bio.ilike.%${t}%`
+        ])
+        profileQuery = profileQuery.or(orConditions.join(','))
       }
 
       if (params.location) {

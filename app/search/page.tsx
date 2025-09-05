@@ -101,11 +101,20 @@ export default function SearchPage() {
         limit: '20'
       })
       
-      const response = await fetch(`/api/search?${params.toString()}`)
+      // Prefer enhanced search API in production; group results by type to fit UI
+      const response = await fetch(`/api/search/enhanced?${params.toString()}`)
       const data = await response.json()
       
       if (response.ok && data.results) {
-        setSearchResults(data.results)
+        const enhanced = Array.isArray(data.results) ? data.results : []
+        const grouped = enhanced.reduce((acc: any, item: any) => {
+          if (item.type === 'artist') acc.artists.push(item)
+          else if (item.type === 'venue') acc.venues.push(item)
+          else acc.users.push(item)
+          return acc
+        }, { artists: [], venues: [], users: [], total: 0 })
+        grouped.total = grouped.artists.length + grouped.venues.length + grouped.users.length
+        setSearchResults(grouped)
       } else {
         toast.error('Failed to load search results')
       }
