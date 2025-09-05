@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Create follow request
-      const { error } = await supabase
+      // Create follow request if the table exists; otherwise gracefully follow directly
+      const insertResult = await supabase
         .from('follow_requests')
         .insert({
           requester_id: user.id,
@@ -75,13 +75,63 @@ export async function POST(request: NextRequest) {
           status: 'pending'
         })
 
-      if (error) {
-        console.error('Error creating follow request:', error)
-        return NextResponse.json(
-          { error: 'Failed to send follow request' },
-          { status: 500 }
-        )
+      if (insertResult.error) {
+        const code = insertResult.error.code
+        const message = insertResult.error.message || ''
+        const isMissingTable = code === '42P01' || /relation .*follow_requests.* does not exist/i.test(message)
+
+        if (!isMissingTable) {
+          console.error('Error creating follow request:', insertResult.error)
+          return NextResponse.json(
+            { error: 'Failed to send follow request' },
+            { status: 500 }
+          )
+        }
+
+        // Fallback: directly create follow when follow_requests table is absent
+        const followInsert = await supabase
+          .from('follows')
+          .insert({
+            follower_id: user.id,
+            following_id: targetUserId
+          })
+          .select('id')
+          .single()
+
+        if (followInsert.error) {
+          // 23505 = unique_violation → already followed
+          if (followInsert.error.code === '23505') {
+            return NextResponse.json({
+              success: true,
+              action: 'already_following',
+              message: 'Already following this user'
+            })
+          }
+
+          console.error('Error creating direct follow:', followInsert.error)
+          return NextResponse.json(
+            { error: 'Failed to follow user' },
+            { status: 500 }
+          )
+        }
+
+        return NextResponse.json({
+          success: true,
+          action: 'follow_created',
+          message: 'Now following this user'
+        })
       }
+
+      // Create in-app notification for the recipient
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: targetUserId,
+          type: 'follow_request',
+          title: 'New follow request',
+          content: 'You have a new follow request',
+          metadata: { requester_id: user.id }
+        })
 
       return NextResponse.json({ 
         success: true, 
@@ -191,7 +241,7 @@ export async function GET(request: NextRequest) {
 
     const { user, supabase } = authResult
 
-    // Check follow request status
+    // Check follow request / relationship status
     if (action === 'check' && targetUserId) {
       const { data: request } = await supabase
         .from('follow_requests')
@@ -207,10 +257,27 @@ export async function GET(request: NextRequest) {
         .eq('following_id', targetUserId)
         .single()
 
+      const { data: reverseFollow } = await supabase
+        .from('follows')
+        .select('id')
+        .eq('follower_id', targetUserId)
+        .eq('following_id', user.id)
+        .single()
+
+      const isFollowing = !!follow
+      const isFollowedBy = !!reverseFollow
+
+      let relationship: 'none' | 'pending' | 'following' | 'friends' = 'none'
+      if (isFollowing && isFollowedBy) relationship = 'friends'
+      else if (isFollowing) relationship = 'following'
+      else if (request?.status === 'pending') relationship = 'pending'
+
       return NextResponse.json({ 
         hasRequest: !!request,
         requestStatus: request?.status || null,
-        isFollowing: !!follow
+        isFollowing,
+        isFollowedBy,
+        relationship
       })
     }
 

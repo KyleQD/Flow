@@ -95,11 +95,19 @@ export async function POST(
       )
     }
 
+    // Allow RSVP if event is public OR user is the creator
     if (!event.is_public) {
-      return NextResponse.json(
-        { error: 'Cannot RSVP to private events' },
-        { status: 403 }
-      )
+      const { data: creator } = await supabase
+        .from('artist_events')
+        .select('user_id')
+        .eq('id', eventId)
+        .single()
+      if (creator?.user_id !== user.id) {
+        return NextResponse.json(
+          { error: 'Cannot RSVP to private events' },
+          { status: 403 }
+        )
+      }
     }
 
     // Update or create attendance record
@@ -111,7 +119,7 @@ export async function POST(
         event_table: 'artist_events',
         status,
         updated_at: new Date().toISOString()
-      })
+      }, { onConflict: 'event_id,user_id,event_table' })
       .select(`
         *,
         profiles:user_id (

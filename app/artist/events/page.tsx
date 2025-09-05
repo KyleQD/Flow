@@ -372,12 +372,19 @@ export default function EventsPage() {
                       
                       <div className="flex items-center gap-2">
                         <Button
-                        onClick={() => router.push(`/events/${event.slug || event.id}`)}
+                          onClick={() => router.push(`/artist/events/${event.id}/manage`)}
+                          className="bg-purple-600 hover:bg-purple-700 text-white"
+                          size="sm"
+                        >
+                          Manage Event
+                        </Button>
+                        <Button
+                          onClick={() => router.push(`/events/${event.slug || event.id}`)}
                           variant="outline"
                           className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
                           size="sm"
                         >
-                        View Public Page
+                          View Public Page
                         </Button>
                       
                       <DropdownMenu>
