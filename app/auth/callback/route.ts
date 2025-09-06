@@ -72,9 +72,9 @@ export async function GET(request: NextRequest) {
     
     // If we have a session but no code was provided, this might be a direct navigation
     if (session && !code) {
-      console.log(`[Auth Callback] Session exists but no code - redirecting to onboarding or dashboard`)
-      // We should check onboarding status and redirect accordingly
-      return NextResponse.redirect(`${requestUrl.origin}/onboarding`)
+      console.log(`[Auth Callback] Session exists but no code - redirecting to dashboard`)
+      // Avoid obsolete onboarding route
+      return NextResponse.redirect(`${requestUrl.origin}/dashboard`)
     }
   } catch (err) {
     console.error(`[Auth Callback] Error checking final session:`, err)

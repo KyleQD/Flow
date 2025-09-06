@@ -80,11 +80,11 @@ export default function VerificationPage() {
     
     const redirectTimer = setTimeout(() => {
       if (isAuthenticated) {
-        const redirectTo = onboardingStatus === false ? '/onboarding' : '/'
+        const redirectTo = '/dashboard'
         console.log(`[Verification] Redirecting authenticated user to: ${redirectTo}`)
         router.push(redirectTo)
       } else if (type === "signup" || type === "recovery") {
-        console.log("[Verification] Redirecting to login after signup")
+        console.log("[Verification] Redirecting to login after signup/recovery")
         router.push('/login')
       }
     }, 5000) // Redirect after 5 seconds to ensure user reads the message
@@ -154,7 +154,7 @@ export default function VerificationPage() {
           {!loading && (
             <div className="text-sm text-slate-400 mt-2">
               {isAuthenticated ? (
-                <p>Redirecting you {onboardingStatus === false ? 'to complete onboarding' : 'to your dashboard'}...</p>
+                <p>Redirecting you to your dashboard...</p>
               ) : isSuccess ? (
                 <p>Redirecting you to the login page to access your verified account...</p>
               ) : type === "signup" ? (
@@ -175,9 +175,9 @@ export default function VerificationPage() {
                 <Button
                   variant="default"
                   className="bg-purple-600 hover:bg-purple-700"
-                  onClick={() => router.push(onboardingStatus === false ? '/onboarding' : '/')}
+                  onClick={() => router.push('/dashboard')}
                 >
-                  {onboardingStatus === false ? 'Continue to Onboarding' : 'Go to Dashboard'}
+                  Go to Dashboard
                 </Button>
               ) : isSuccess ? (
                 <Button
