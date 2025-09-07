@@ -31,10 +31,13 @@ function ArtistLayoutContent({ children }: { children: ReactNode }) {
         <div className="hidden md:block"><AppSidebar /></div>
         <main className="flex-1 overflow-hidden relative pb-16 md:pb-0">
           {/* Background Effects */}
-          <div className="absolute inset-0 grid-pattern opacity-30" />
-          <div className="absolute inset-0 noise-texture" />
+          <div className="absolute inset-0 grid-pattern opacity-30 pointer-events-none" />
+          <div className="absolute inset-0 noise-texture pointer-events-none" />
           
-          <div className="h-full overflow-auto p-4 lg:p-8 artist-content relative z-10">
+          <div
+            className="h-full overflow-auto p-4 lg:p-8 artist-content relative z-10 touch-pan-y focus-within:pb-24"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             {/* Show warning if not in correct account mode */}
             {!isCorrectAccount && (
               <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">

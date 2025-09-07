@@ -225,6 +225,8 @@ export function EnhancedAccountSearch({
                 onFocus={() => {
                   setIsOpen(true)
                   setIsFocused(true)
+                  // On mobile, prevent scroll reset when keyboard opens
+                  requestAnimationFrame(() => searchInputRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
                 }}
                 onBlur={() => setIsFocused(false)}
                 onClick={() => setIsOpen(true)}
