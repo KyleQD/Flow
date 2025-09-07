@@ -4,6 +4,7 @@ import { ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { MobileArtistNav } from "@/components/artist/mobile-artist-nav"
 import { ArtistProvider } from "@/contexts/artist-context"
 import { useRouteAccountSync } from "@/hooks/use-route-account-sync"
 
@@ -26,8 +27,9 @@ function ArtistLayoutContent({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-to-br from-black via-slate-950 to-black">
-        <AppSidebar />
-        <main className="flex-1 overflow-hidden relative">
+        {/* Hide the sidebar on small screens; keep desktop unchanged */}
+        <div className="hidden md:block"><AppSidebar /></div>
+        <main className="flex-1 overflow-hidden relative pb-16 md:pb-0">
           {/* Background Effects */}
           <div className="absolute inset-0 grid-pattern opacity-30" />
           <div className="absolute inset-0 noise-texture" />
@@ -43,6 +45,8 @@ function ArtistLayoutContent({ children }: { children: ReactNode }) {
             )}
             {children}
           </div>
+          {/* Mobile bottom navigation for artist pages */}
+          <MobileArtistNav />
         </main>
       </div>
     </SidebarProvider>
