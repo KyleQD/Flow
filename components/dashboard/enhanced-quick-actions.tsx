@@ -399,7 +399,7 @@ export function EnhancedQuickActions() {
               size="sm"
               variant="outline"
               className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20"
-              onClick={() => router.push('/settings')}
+              onClick={() => router.push('/faq')}
             >
               Explore Features
               <ArrowRight className="h-3 w-3 ml-1" />

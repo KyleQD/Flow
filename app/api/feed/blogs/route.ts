@@ -1,98 +1,107 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateApiRequest } from '@/lib/auth/api-auth'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[Feed Blogs API] GET request started')
-    
-    const authResult = await authenticateApiRequest(request)
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '10')
-    
-    // Use the authenticated supabase client if available, otherwise create a service client
-    let supabase
-    if (authResult) {
-      supabase = authResult.supabase
-      console.log('[Feed Blogs API] Using authenticated client')
-    } else {
-      // For public feed viewing, we can use a service client
-      const { createClient } = await import('@/lib/supabase/server')
-      supabase = await createClient()
-      console.log('[Feed Blogs API] Using service client for public access')
-    }
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const category = searchParams.get('category')
+    const sortBy = searchParams.get('sortBy') || 'recent'
 
-    console.log('[Feed Blogs API] Fetching blog posts, limit:', limit)
-
-    // Get blog posts (posts with type 'blog' or content that looks like a blog)
-    const { data: posts, error: postsError } = await supabase
-      .from('posts')
+    let query = supabase
+      .from('artist_blog_posts')
       .select(`
-        id,
-        content,
-        media_urls,
-        likes_count,
-        comments_count,
-        created_at,
-        updated_at,
-        user_id,
+        *,
         profiles:user_id (
           id,
           username,
+          full_name,
           avatar_url,
           verified
         )
       `)
-      .or('type.eq.blog,content.ilike.%blog%')
-      .order('created_at', { ascending: false })
-      .limit(limit)
+      .eq('status', 'published')
 
-    if (postsError) {
-      console.error('[Feed Blogs API] Error fetching blog posts:', postsError)
+    // Filter by category if specified
+    if (category && category !== 'all') {
+      query = query.eq('category', category)
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case 'popular':
+        query = query.order('stats->views', { ascending: false })
+        break
+      case 'trending':
+        query = query.order('stats->likes', { ascending: false })
+        break
+      case 'recent':
+      default:
+        query = query.order('published_at', { ascending: false })
+        break
+    }
+
+    // Apply limit
+    query = query.limit(limit)
+
+    const { data: blogs, error } = await query
+
+    if (error) {
+      console.error('Error fetching blog posts:', error)
       return NextResponse.json(
         { error: 'Failed to fetch blog posts' },
         { status: 500 }
       )
     }
 
-    console.log('[Feed Blogs API] Found blog posts:', posts?.length || 0)
-
-    // Transform posts to match expected format
-    const transformedPosts = (posts || []).map((post: any) => ({
-      id: post.id,
-      title: post.content.length > 80 ? post.content.slice(0, 77) + '…' : post.content,
-      description: post.content,
-      author: {
-        id: post.user_id,
-        name: post.profiles?.username || 'user',
-        username: post.profiles?.username || 'user',
-        avatar_url: post.profiles?.avatar_url || '',
-        is_verified: post.profiles?.verified || false
-      },
-      cover_image: post.media_urls?.[0] || undefined,
-      created_at: post.created_at,
+    // Transform blogs to match feed format
+    const blogContent = (blogs || []).map(blog => ({
+      id: blog.id,
+      type: 'blog' as const,
+      title: blog.title,
+      description: blog.excerpt || blog.content?.substring(0, 200) + '...',
+      author: blog.profiles ? {
+        id: blog.profiles.id,
+        name: blog.profiles.full_name || blog.profiles.username,
+        username: blog.profiles.username,
+        avatar_url: blog.profiles.avatar_url,
+        is_verified: blog.profiles.verified || false
+      } : undefined,
+      cover_image: blog.featured_image_url,
+      created_at: blog.published_at || blog.created_at,
       engagement: {
-        likes: post.likes_count || 0,
-        views: 0,
-        shares: 0,
-        comments: post.comments_count || 0
+        likes: blog.stats?.likes || 0,
+        views: blog.stats?.views || 0,
+        shares: blog.stats?.shares || 0,
+        comments: blog.stats?.comments || 0
       },
       metadata: {
-        url: `/blog/${post.id}`,
-        tags: ['Blog Post'],
-        reading_time: Math.ceil(post.content.length / 200) // Rough estimate
+        category: blog.categories?.[0] || 'General',
+        tags: blog.tags || [],
+        url: `/blog/${blog.slug}`,
+        reading_time: Math.ceil((blog.content?.length || 0) / 200), // Estimate reading time
+        word_count: blog.content?.length || 0
       },
-      relevance_score: 0.85
+      relevance_score: 0.8
     }))
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      data: transformedPosts 
+      content: blogContent,
+      total: blogContent.length,
+      lastUpdated: new Date().toISOString()
     })
+
   } catch (error) {
-    console.error('[Feed Blogs API] Error:', error)
+    console.error('Error in blog feed API:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
   }
-} 
+}

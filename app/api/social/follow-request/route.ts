@@ -123,15 +123,26 @@ export async function POST(request: NextRequest) {
       }
 
       // Create in-app notification for the recipient
-      await supabase
+      const { error: notificationError } = await supabase
         .from('notifications')
         .insert({
           user_id: targetUserId,
           type: 'follow_request',
-          title: 'New follow request',
-          content: 'You have a new follow request',
-          metadata: { requester_id: user.id }
+          title: 'New Follow Request',
+          content: 'You have received a new follow request',
+          summary: 'New follow request received',
+          related_user_id: user.id,
+          priority: 'normal',
+          is_read: false
         })
+
+      if (notificationError) {
+        console.error('Failed to create follow request notification:', notificationError)
+        // Don't fail the follow request if notification creation fails
+        // Log the error but continue
+      } else {
+        console.log('Follow request notification created successfully')
+      }
 
       return NextResponse.json({ 
         success: true, 

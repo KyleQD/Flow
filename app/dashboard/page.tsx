@@ -219,9 +219,19 @@ export default function DashboardPage() {
           
           console.log('Profile transformed:', transformedProfile)
           setUserProfile(transformedProfile)
+        } else {
+          console.log('No profile data returned, using fallback')
+          // Set fallback profile to prevent hanging
+          setUserProfile({
+            id: dashboardUser.id,
+            username: dashboardUser.email?.split('@')[0] || 'user',
+            full_name: dashboardUser.user_metadata?.full_name || dashboardUser.email?.split('@')[0] || 'User',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as UserProfile)
         }
       } else {
-        console.error('Error fetching profile:', response.status)
+        console.log('Profile API returned status:', response.status, '- using fallback profile')
         // Set fallback profile to prevent hanging
         setUserProfile({
           id: dashboardUser.id,
@@ -231,8 +241,17 @@ export default function DashboardPage() {
           updated_at: new Date().toISOString()
         } as UserProfile)
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching profile:', err)
+      
+      // Log more detailed error information
+      if (err.message) {
+        console.error('Profile fetch error message:', err.message)
+      }
+      if (err.status) {
+        console.error('Profile fetch error status:', err.status)
+      }
+      
       // Set fallback profile to prevent hanging
       setUserProfile({
         id: dashboardUser.id,

@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { 
   User, 
+  Users,
   Music, 
   Building2, 
   Crown,
@@ -38,7 +39,8 @@ import { useMultiAccount } from "@/hooks/use-multi-account"
 import { AccountSwitcher } from "@/components/account-switcher"
 import { TourifyLogo } from "@/components/tourify-logo"
 import { supabase } from "@/lib/supabase"
-import { EnhancedNotificationCenter } from "@/components/notifications/enhanced-notification-center"
+import { WorkingNotificationBell } from "@/components/working-notification-bell"
+import { CompactAccountSwitcher } from "@/components/compact-account-switcher"
 import { EnhancedAccountSearch } from "@/components/search/enhanced-account-search"
 import { MobileSearchModal } from "@/components/search/mobile-search-modal"
 
@@ -215,10 +217,20 @@ export function Nav() {
           </Button>
 
           {/* Notifications */}
-          <EnhancedNotificationCenter />
+          <WorkingNotificationBell />
+
+          {/* Friend Search */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push('/friends/search')}
+            className="relative p-2 hover:bg-slate-800/50 rounded-full transition-all duration-200"
+          >
+            <Users className="h-5 w-5 text-slate-300" />
+          </Button>
 
           {/* Create Button */}
-            <Button
+          <Button
             className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 rounded-full shadow-lg hover:shadow-purple-500/25 transition-all duration-300"
             size="sm" 
             onClick={() => router.push('/create')}
@@ -227,10 +239,8 @@ export function Nav() {
             Create
           </Button>
 
-          {/* Enhanced Account Switcher */}
-          <div className="w-64">
-            <AccountSwitcher />
-          </div>
+          {/* Compact Account Switcher */}
+          <CompactAccountSwitcher />
 
           {/* User Menu */}
           <DropdownMenu>

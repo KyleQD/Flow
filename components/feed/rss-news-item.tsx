@@ -95,10 +95,10 @@ export function RSSNewsItem({ item, index, onBookmark, isBookmarked = false }: R
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
     >
-      <Card className={`bg-slate-900/50 border-slate-700/30 transition-all duration-300 group hover:shadow-xl ${getSourceBorder(item.source)}`}>
-        <CardContent className="p-4 md:p-6">
+      <Card className={`bg-slate-900/50 border-slate-700/30 transition-all duration-300 group hover:shadow-xl overflow-hidden ${getSourceBorder(item.source)}`}>
+        <CardContent className="p-4 md:p-6 overflow-hidden">
           {/* Content Header */}
-          <div className="flex items-start gap-3 md:gap-4 mb-4">
+          <div className="flex items-start gap-3 md:gap-4 mb-4 min-w-0">
             {/* Image */}
             <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 ring-2 ring-purple-500/20 group-hover:ring-purple-500/50 transition-all">
               {item.image && !imageError ? (
@@ -139,30 +139,30 @@ export function RSSNewsItem({ item, index, onBookmark, isBookmarked = false }: R
               </div>
 
               {/* Title */}
-              <h3 className="text-lg md:text-xl font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors line-clamp-2 cursor-pointer" onClick={handleExternalLink}>
+              <h3 className="text-lg md:text-xl font-semibold text-white mb-2 group-hover:text-purple-300 transition-colors line-clamp-2 cursor-pointer break-words overflow-hidden" onClick={handleExternalLink}>
                 {item.title}
               </h3>
 
               {/* Description */}
               {item.description && (
-                <p className="text-slate-300 text-sm mb-3 line-clamp-3 leading-relaxed">
-                  {item.description}
+                <p className="text-slate-300 text-sm mb-3 line-clamp-3 leading-relaxed break-words overflow-hidden">
+                  {item.description.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ')}
                 </p>
               )}
 
               {/* Metadata */}
-              <div className="flex items-center gap-3 md:gap-4 text-slate-400 text-xs md:text-sm flex-wrap">
+              <div className="flex items-center gap-2 md:gap-3 text-slate-400 text-xs md:text-sm flex-wrap min-w-0">
                 {item.author && (
-                  <div className="flex items-center gap-1">
-                    <span>By {item.author}</span>
+                  <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
+                    <span className="truncate max-w-[100px]">By {item.author}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <Clock className="h-3 w-3" />
-                  <span>{formatDistanceToNow(new Date(item.pubDate), { addSuffix: true })}</span>
+                  <span className="whitespace-nowrap">{formatDistanceToNow(new Date(item.pubDate), { addSuffix: true })}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span>Source: {item.source}</span>
+                <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
+                  <span className="truncate max-w-[120px]">Source: {item.source}</span>
                 </div>
               </div>
             </div>

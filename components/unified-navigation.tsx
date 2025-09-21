@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { 
   User, 
+  Users,
   Music, 
   Building2, 
   Crown,
@@ -40,7 +41,8 @@ import { AccountSwitcher } from "@/components/account-switcher"
 import { TourifyLogo } from "@/components/tourify-logo"
 import { supabase } from "@/lib/supabase"
 import { motion } from "framer-motion"
-import { EnhancedNotificationCenter } from "@/components/notifications/enhanced-notification-center"
+import { WorkingNotificationBell } from "@/components/working-notification-bell"
+import { CompactAccountSwitcher } from "@/components/compact-account-switcher"
 import { EnhancedAccountSearch } from "@/components/search/enhanced-account-search"
 
 interface UnifiedNavigationProps {
@@ -274,7 +276,18 @@ export function UnifiedNavigation({ variant = 'header', className = '' }: Unifie
               </div>
 
               {/* Notifications */}
-              <EnhancedNotificationCenter />
+              <WorkingNotificationBell />
+
+              {/* Friend Search */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleNavigation('/friends/search')}
+                className="relative p-2 hover:bg-slate-800/50 rounded-full transition-all duration-200"
+                disabled={isNavigating || isPreloading}
+              >
+                <Users className="h-5 w-5 text-slate-300" />
+              </Button>
 
               {/* Create Button */}
               <Button
@@ -287,10 +300,8 @@ export function UnifiedNavigation({ variant = 'header', className = '' }: Unifie
                 Create
               </Button>
 
-              {/* Enhanced Account Switcher */}
-              <div className="w-64">
-                <AccountSwitcher onAccountSwitch={handleAccountSwitchAndNavigate} />
-              </div>
+              {/* Compact Account Switcher */}
+              <CompactAccountSwitcher onAccountSwitch={handleAccountSwitchAndNavigate} />
 
               {/* User Menu */}
               <DropdownMenu>

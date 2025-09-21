@@ -12,6 +12,8 @@ import { toast } from "sonner"
 import { EnhancedPublicProfileView } from "@/components/profile/enhanced-public-profile-view"
 import socialInteractionsService from "@/lib/services/social-interactions.service"
 import { useAuth } from "@/contexts/auth-context"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   Compass,
   Flame,
@@ -67,6 +69,7 @@ export default function DiscoverPage() {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const { user: currentUser } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     loadDiscover()
@@ -714,6 +717,16 @@ function SkeletonGrid({ count = 8 }: { count?: number }) {
 function ProfileCard({ profile, onOpen, isVenue = false }: { profile: DemoProfile; onOpen: (p: DemoProfile) => void; isVenue?: boolean }) {
   const displayName = profile.profile_data?.name || profile.username
   const colorScheme = isVenue ? 'emerald' : 'purple'
+  const router = useRouter()
+  
+  const handleViewProfile = () => {
+    // Navigate to the appropriate profile page
+    if (isVenue) {
+      router.push(`/venue/${profile.username}`)
+    } else {
+      router.push(`/artist/${profile.username}`)
+    }
+  }
   
   return (
     <Card className="h-full bg-slate-900/50 border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm hover:border-purple-500/30 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-purple-500/10 cursor-pointer" onClick={() => onOpen(profile)}>
@@ -753,10 +766,18 @@ function ProfileCard({ profile, onOpen, isVenue = false }: { profile: DemoProfil
             {isVenue ? 'Venue' : 'Artist'}
           </Badge>
         </div>
-        <Button size="sm" variant="outline" className={`w-full rounded-xl ${
-          isVenue ? 'border-emerald-500/40 text-emerald-200 hover:bg-emerald-500/20 hover:border-emerald-400/60' :
-          'border-purple-500/40 text-purple-200 hover:bg-purple-500/20 hover:border-purple-400/60'
-        } transition-all duration-200`}>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={(e) => {
+            e.stopPropagation()
+            handleViewProfile()
+          }}
+          className={`w-full rounded-xl ${
+            isVenue ? 'border-emerald-500/40 text-emerald-200 hover:bg-emerald-500/20 hover:border-emerald-400/60' :
+            'border-purple-500/40 text-purple-200 hover:bg-purple-500/20 hover:border-purple-400/60'
+          } transition-all duration-200`}
+        >
           <Eye className="h-3.5 w-3.5 mr-2" />
           View Profile
         </Button>
@@ -766,6 +787,17 @@ function ProfileCard({ profile, onOpen, isVenue = false }: { profile: DemoProfil
 }
 
 function EventCard({ event }: { event: any }) {
+  const router = useRouter()
+  
+  const handleViewEvent = () => {
+    // Navigate to the event page
+    if (event.slug) {
+      router.push(`/events/${event.slug}`)
+    } else if (event.id) {
+      router.push(`/events/${event.id}`)
+    }
+  }
+
   return (
     <Card className="h-full bg-slate-900/50 border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm hover:border-blue-500/30 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-blue-500/10">
       <CardContent className="p-4 h-full flex flex-col">
@@ -792,7 +824,12 @@ function EventCard({ event }: { event: any }) {
             )}
           </div>
         </div>
-        <Button size="sm" variant="outline" className="w-full rounded-xl border-blue-500/40 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/60 transition-all duration-200">
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={handleViewEvent}
+          className="w-full rounded-xl border-blue-500/40 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/60 transition-all duration-200"
+        >
           View Event
           <ArrowRight className="h-3 w-3 ml-2" />
         </Button>
@@ -912,6 +949,23 @@ function SkeletonHorizontal({ count = 4 }: { count?: number }) {
 }
 
 function TrendingPostCard({ post }: { post: any }) {
+  const router = useRouter()
+  
+  const handleViewPost = () => {
+    // Determine the correct route based on post type
+    if (post.type === 'blog' || post.content_type === 'blog') {
+      // For blog posts, use the blog route
+      if (post.slug) {
+        router.push(`/blog/${post.slug}`)
+      } else if (post.id) {
+        router.push(`/artist/features/blog/${post.id}`)
+      }
+    } else {
+      // For regular posts, use the posts route
+      router.push(`/venue/dashboard/posts/${post.id}`)
+    }
+  }
+
   return (
     <Card className="w-[280px] h-[200px] bg-slate-900/50 border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm hover:border-purple-500/30 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-purple-500/10">
       <CardContent className="p-4 h-full flex flex-col">
@@ -938,7 +992,12 @@ function TrendingPostCard({ post }: { post: any }) {
           </div>
           <Share2 className="h-3 w-3 hover:text-white cursor-pointer transition-colors" />
         </div>
-        <Button size="sm" variant="outline" className="w-full rounded-xl border-purple-500/40 text-purple-200 hover:bg-purple-500/20 hover:border-purple-400/60 transition-all duration-200">
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={handleViewPost}
+          className="w-full rounded-xl border-purple-500/40 text-purple-200 hover:bg-purple-500/20 hover:border-purple-400/60 transition-all duration-200"
+        >
           <PlayCircle className="h-3 w-3 mr-2" />
           View
         </Button>
@@ -953,6 +1012,16 @@ function CompactProfileCard({ profile, onOpen, isVenue = false }: {
   isVenue?: boolean 
 }) {
   const displayName = profile.profile_data?.name || profile.username
+  const router = useRouter()
+  
+  const handleViewProfile = () => {
+    // Navigate to the appropriate profile page
+    if (isVenue) {
+      router.push(`/venue/${profile.username}`)
+    } else {
+      router.push(`/artist/${profile.username}`)
+    }
+  }
   
   return (
     <Card className="w-[280px] h-[200px] bg-slate-900/50 border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-emerald-500/10 cursor-pointer" onClick={() => onOpen(profile)}>
@@ -1002,10 +1071,18 @@ function CompactProfileCard({ profile, onOpen, isVenue = false }: {
           </Badge>
         </div>
         <div className="flex-1" />
-        <Button size="sm" variant="outline" className={`w-full rounded-xl ${
-          isVenue ? 'border-emerald-500/40 text-emerald-200 hover:bg-emerald-500/20 hover:border-emerald-400/60' :
-          'border-purple-500/40 text-purple-200 hover:bg-purple-500/20 hover:border-purple-400/60'
-        } transition-all duration-200`}>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={(e) => {
+            e.stopPropagation()
+            handleViewProfile()
+          }}
+          className={`w-full rounded-xl ${
+            isVenue ? 'border-emerald-500/40 text-emerald-200 hover:bg-emerald-500/20 hover:border-emerald-400/60' :
+            'border-purple-500/40 text-purple-200 hover:bg-purple-500/20 hover:border-purple-400/60'
+          } transition-all duration-200`}
+        >
           <Eye className="h-3 w-3 mr-2" />
           View Profile
         </Button>
@@ -1015,6 +1092,17 @@ function CompactProfileCard({ profile, onOpen, isVenue = false }: {
 }
 
 function CompactEventCard({ event }: { event: any }) {
+  const router = useRouter()
+  
+  const handleViewEvent = () => {
+    // Navigate to the event page
+    if (event.slug) {
+      router.push(`/events/${event.slug}`)
+    } else if (event.id) {
+      router.push(`/events/${event.id}`)
+    }
+  }
+
   return (
     <Card className="w-[280px] h-[200px] bg-slate-900/50 border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm hover:border-blue-500/30 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-blue-500/10">
       <CardContent className="p-4 h-full flex flex-col">
@@ -1041,7 +1129,12 @@ function CompactEventCard({ event }: { event: any }) {
             )}
           </div>
         </div>
-        <Button size="sm" variant="outline" className="w-full rounded-xl border-blue-500/40 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/60 transition-all duration-200">
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={handleViewEvent}
+          className="w-full rounded-xl border-blue-500/40 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400/60 transition-all duration-200"
+        >
           View Event
           <ArrowRight className="h-3 w-3 ml-2" />
         </Button>

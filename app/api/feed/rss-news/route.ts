@@ -5,6 +5,18 @@ import { createClient } from '@supabase/supabase-js'
 const RSS_SOURCES = [
   // Major Music Publications
   {
+    name: 'Mixmag',
+    url: 'https://mixmag.net/feed',
+    category: 'Electronic Music',
+    priority: 1
+  },
+  {
+    name: 'Resident Advisor',
+    url: 'https://ra.co/xml/rss.xml',
+    category: 'Electronic Music',
+    priority: 1
+  },
+  {
     name: 'Pitchfork',
     url: 'https://pitchfork.com/feed/feed-news/rss/',
     category: 'Music News',
@@ -50,6 +62,60 @@ const RSS_SOURCES = [
     name: 'BBC Music',
     url: 'https://feeds.bbci.co.uk/news/entertainment_and_arts/music/rss.xml',
     category: 'Music News',
+    priority: 2
+  },
+  {
+    name: 'DJ Mag',
+    url: 'https://djmag.com/rss.xml',
+    category: 'Electronic Music',
+    priority: 2
+  },
+  {
+    name: 'Fact Magazine',
+    url: 'https://www.factmag.com/feed/',
+    category: 'Electronic Music',
+    priority: 2
+  },
+  {
+    name: 'The Quietus',
+    url: 'https://thequietus.com/rss',
+    category: 'Music News',
+    priority: 2
+  },
+  {
+    name: 'Clash Magazine',
+    url: 'https://www.clashmusic.com/feed',
+    category: 'Music News',
+    priority: 2
+  },
+  {
+    name: 'Drowned in Sound',
+    url: 'https://drownedinsound.com/rss',
+    category: 'Music News',
+    priority: 3
+  },
+  {
+    name: 'The Line of Best Fit',
+    url: 'https://www.thelineofbestfit.com/feed',
+    category: 'Music News',
+    priority: 2
+  },
+  {
+    name: 'Gorilla vs Bear',
+    url: 'https://gorillavsbear.net/feed/',
+    category: 'Indie Music',
+    priority: 3
+  },
+  {
+    name: 'Pigeons & Planes',
+    url: 'https://pigeonsandplanes.com/feed',
+    category: 'Hip Hop',
+    priority: 2
+  },
+  {
+    name: 'Complex Music',
+    url: 'https://www.complex.com/music/rss.xml',
+    category: 'Hip Hop',
     priority: 2
   },
   

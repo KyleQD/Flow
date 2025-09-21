@@ -37,6 +37,9 @@ import Image from 'next/image'
 import { useAuth } from '@/contexts/auth-context'
 import { ThreadCardV2 } from '@/components/forums/thread-card-v2'
 import { ThreadComposerV2 } from '@/components/forums/thread-composer-v2'
+import { FeedMusicPlayer } from '@/components/feed/feed-music-player'
+import { FeedVideoPlayer } from '@/components/feed/feed-video-player'
+import { StartConversationButton } from '@/components/feed/start-conversation-button'
 
 
 interface ContentItem {
@@ -142,6 +145,61 @@ export function ForYouPage() {
       .slice(0, 8)
   }, [searchQuery])
 
+  // Dynamic trending topics based on active tab
+  const getTrendingTopics = (tab: string) => {
+    const topics = {
+      all: [
+        { label: 'Electronic Music', count: '2.3k' },
+        { label: 'Indie Rock', count: '1.8k' },
+        { label: 'Hip Hop', count: '3.1k' },
+        { label: 'Live Events', count: '1.2k' },
+        { label: 'New Releases', count: '2.7k' },
+        { label: 'Music News', count: '1.9k' }
+      ],
+      music: [
+        { label: 'Electronic', count: '2.3k' },
+        { label: 'Indie Rock', count: '1.8k' },
+        { label: 'Hip Hop', count: '3.1k' },
+        { label: 'Jazz', count: '1.5k' },
+        { label: 'Pop', count: '2.1k' },
+        { label: 'Alternative', count: '1.7k' }
+      ],
+      videos: [
+        { label: 'Music Videos', count: '2.8k' },
+        { label: 'Live Performances', count: '2.1k' },
+        { label: 'Behind the Scenes', count: '1.6k' },
+        { label: 'Tutorials', count: '1.9k' },
+        { label: 'Interviews', count: '1.4k' },
+        { label: 'Concert Footage', count: '2.3k' }
+      ],
+      news: [
+        { label: 'Music Industry', count: '2.5k' },
+        { label: 'Artist News', count: '3.2k' },
+        { label: 'Album Releases', count: '2.1k' },
+        { label: 'Festival Updates', count: '1.8k' },
+        { label: 'Award Shows', count: '1.6k' },
+        { label: 'Music Technology', count: '1.3k' }
+      ],
+      blogs: [
+        { label: 'Music Reviews', count: '2.4k' },
+        { label: 'Artist Stories', count: '1.9k' },
+        { label: 'Music Production', count: '1.7k' },
+        { label: 'Industry Insights', count: '1.5k' },
+        { label: 'Fan Experiences', count: '2.1k' },
+        { label: 'Music History', count: '1.2k' }
+      ],
+      forums: [
+        { label: 'General Discussion', count: '3.5k' },
+        { label: 'Music Production', count: '2.2k' },
+        { label: 'Gear Talk', count: '1.8k' },
+        { label: 'Local Scene', count: '1.6k' },
+        { label: 'New Music', count: '2.7k' },
+        { label: 'Collaboration', count: '1.4k' }
+      ]
+    }
+    return topics[tab as keyof typeof topics] || topics.all
+  }
+
   const contentTypes = [
     { value: 'all', label: 'All', icon: Sparkles },
     { value: 'music', label: 'Music', icon: Music2 },
@@ -181,168 +239,132 @@ export function ForYouPage() {
     try {
       setLoading(true)
       const params = new URLSearchParams({
-        limit: '50',
-        sort: sortBy
+        limit: '20',
+        sortBy: sortBy
       })
       
-      // Add type parameter if a specific tab is selected
-      if (activeTab !== 'all') {
-        const typeMapping: { [key: string]: string } = {
-          'videos': 'video',
-          'blogs': 'blog',
-          'forums': 'forum',
-          'news': 'news' // Fix: explicitly map 'news' to 'news'
-        }
-        const targetType = typeMapping[activeTab] || activeTab.slice(0, -1)
-        params.append('type', targetType)
-      }
+      console.log('[FYP] Loading content for tab:', activeTab)
       
-      console.log('[FYP] Loading content with params:', params.toString())
-      const response = await fetch(`/api/feed/for-you?${params}`)
-      const data = await response.json()
-      
-      if (data.success && data.content) {
-        console.log('[FYP] Received content from API:', {
-          totalItems: data.content.length,
-          contentTypes: data.content.map((item: any) => item.type),
-          newsItems: data.content.filter((item: any) => item.type === 'news').length
-        })
+      // Fetch content based on active tab
+      if (activeTab === 'all') {
+        // Hybrid content: mix of everything
+        const [postsResponse, threadsResponse, musicResponse, videosResponse, blogsResponse, newsResponse] = await Promise.all([
+          fetch(`/api/feed/for-you?${params}`),
+          fetch(`/api/forums/threads?${params}`),
+          fetch(`/api/feed/music?${params}`),
+          fetch(`/api/feed/videos?${params}`),
+          fetch(`/api/feed/blogs?${params}`),
+          fetch(`/api/feed/rss-news?${params}`)
+        ])
         
-        // Initialize engagement data to zero for all content
-        const contentWithZeroEngagement = data.content.map((item: any) => ({
-          ...item,
-          // Harmonize forum payload keys into ContentItem shape
-          type: item.type,
-          title: item.title || item.metadata?.title || 'Untitled',
-          description: item.description,
-          author: item.author,
-          engagement: {
-            likes: item.engagement?.likes || 0,
-            views: item.engagement?.views || 0,
-            shares: item.engagement?.shares || 0,
-            comments: item.engagement?.comments || 0
-          }
-        }))
-        setContent(contentWithZeroEngagement)
-      } else {
-        console.log('[FYP] API failed, using hybrid content (mock + RSS + blogs)')
-        // Hybrid approach: Use mock data + try to fetch RSS news + real blogs
-        let hybridContent = generateMockContent()
-        console.log('[FYP] Generated mock content:', hybridContent.length, 'items')
+        const postsData = await postsResponse.json()
+        const threadsData = await threadsResponse.json()
+        const musicData = await musicResponse.json()
+        const videosData = await videosResponse.json()
+        const blogsData = await blogsResponse.json()
+        const newsData = await newsResponse.json()
         
-        // Try to fetch real blog posts (always fetch for testing)
-        if (true) { // activeTab === 'blogs' || activeTab === 'all'
-          try {
-            console.log('[FYP] Attempting to fetch real blog posts... (activeTab:', activeTab, ')')
-            const blogsResponse = await fetch('/api/feed/blogs?limit=10')
-            console.log('[FYP] Blog API response status:', blogsResponse.status)
-            if (blogsResponse.ok) {
-              const blogsData = await blogsResponse.json()
-              console.log('[FYP] Blog API response data:', blogsData)
-              if (blogsData.data && blogsData.data.length > 0) {
-                console.log('[FYP] Successfully fetched blog posts:', blogsData.data.length, 'items')
-                
-                // Convert blog posts to ContentItem format
-                const blogContent = blogsData.data.map((blog: any) => ({
-                  id: blog.id,
-                  type: 'blog' as const,
-                  title: blog.title,
-                  description: blog.description,
-                  author: blog.author,
-                  cover_image: blog.cover_image,
-                  created_at: blog.created_at,
-                  engagement: blog.engagement,
-                  metadata: {
-                    ...blog.metadata,
-                    url: blog.metadata?.url || `/blog/${blog.slug}`,
-                    // reading_time: blog.metadata?.reading_time || 5
-                  },
-                  relevance_score: blog.relevance_score || 0.85
-                }))
-                
-                // Add blog content to hybrid content (prioritize real blogs)
-                hybridContent = [...blogContent, ...hybridContent.filter(item => item.type !== 'blog')]
-                console.log('[FYP] Hybrid content created with real blog posts:', hybridContent.length, 'total items')
-              }
-            }
-          } catch (blogsError) {
-            console.error('[FYP] Blog posts fetch failed in hybrid mode:', blogsError)
-            console.error('[FYP] Blog posts fetch error details:', blogsError instanceof Error ? blogsError.message : blogsError)
-          }
+        let hybridContent = [
+          ...(postsData.content || []),
+          ...(threadsData.threads || []),
+          ...(musicData.content || []),
+          ...(videosData.content || []),
+          ...(blogsData.content || [])
+        ]
+        
+        // Add RSS news to hybrid content
+        if (newsData.success && newsData.news && newsData.news.length > 0) {
+          console.log('[FYP] Successfully fetched RSS news:', newsData.news.length, 'items')
+          
+          // Convert RSS items to ContentItem format
+          const rssContent = newsData.news.map((item: any, index: number) => ({
+            id: `rss_${item.id}`,
+            type: 'news' as const,
+            title: item.title,
+            description: item.description,
+            author: {
+              id: `rss_${item.source}`,
+              name: item.author || item.source,
+              username: item.source.toLowerCase().replace(/\s+/g, ''),
+              avatar_url: item.image || `https://dummyimage.com/40x40/ef4444/ffffff?text=${item.source.charAt(0)}`,
+              is_verified: true
+            },
+            cover_image: item.image || getPlaceholderImage('news', 400, 250),
+            created_at: item.pubDate,
+            engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+            metadata: {
+              url: item.link,
+              tags: [item.category, item.source].filter(Boolean)
+            },
+            relevance_score: 0.8 + (index * 0.05)
+          }))
+          
+          hybridContent = [...rssContent, ...hybridContent]
+          console.log('[FYP] Hybrid content created with RSS news:', hybridContent.length, 'total items')
         }
-        
-        // Try to fetch RSS news for various tabs
-                  const shouldFetchRSS = ['news', 'all', 'indie', 'hiphop', 'electronic', 'metal', 'jazz', 'underground', 'local'].includes(activeTab)
-        if (shouldFetchRSS) {
-          try {
-            console.log('[FYP] Attempting to fetch RSS news for hybrid content...')
-            
-            // Build RSS query parameters based on active tab
-            let rssParams = 'limit=15'
-                         if (activeTab === 'indie') {
-               rssParams += '&category=Indie Music'
-             } else if (activeTab === 'hiphop') {
-               rssParams += '&category=Hip-Hop'
-             } else if (activeTab === 'electronic') {
-               rssParams += '&category=Electronic Music'
-             } else if (activeTab === 'metal') {
-               rssParams += '&category=Metal Music'
-             } else if (activeTab === 'jazz') {
-               rssParams += '&category=Jazz Music'
-             } else if (activeTab === 'underground') {
-               rssParams += '&category=Underground Music'
-             } else if (activeTab === 'local') {
-               rssParams += '&category=Local Music'
-             }
-            
-            const rssResponse = await fetch(`/api/feed/rss-news?${rssParams}`)
-            if (rssResponse.ok) {
-              const rssData = await rssResponse.json()
-              if (rssData.success && rssData.news && rssData.news.length > 0) {
-                console.log('[FYP] Successfully fetched RSS news:', rssData.news.length, 'items')
-                
-                // Convert RSS items to ContentItem format
-                const rssContent = rssData.news.map((item: any, index: number) => ({
-                  id: `rss_${item.id}`,
-                  type: 'news' as const,
-                  title: item.title,
-                  description: item.description,
-                  author: {
-                    id: `rss_${item.source}`,
-                    name: item.author || item.source,
-                    username: item.source.toLowerCase().replace(/\s+/g, ''),
-                    avatar_url: item.image || `https://dummyimage.com/40x40/ef4444/ffffff?text=${item.source.charAt(0)}`,
-                    is_verified: true
-                  },
-                  cover_image: item.image || getPlaceholderImage('news', 400, 250),
-                  created_at: item.pubDate,
-                  engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
-                  metadata: {
-                    url: item.link,
-                    tags: [item.category, item.source].filter(Boolean)
-                  },
-                  relevance_score: 0.8 + (index * 0.05) // Slightly different scores
-                }))
-                
-                // Add RSS content to hybrid content
-                hybridContent = [...rssContent, ...hybridContent]
-                console.log('[FYP] Hybrid content created with RSS news:', hybridContent.length, 'total items')
-              }
-            }
-          } catch (rssError) {
-            console.error('[FYP] RSS fetch failed in hybrid mode:', rssError)
-          }
-        }
-        
-        console.log('[FYP] Final hybrid content:', hybridContent.length, 'items, types:', hybridContent.map(item => item.type))
         
         // Ensure we always have some content
         if (hybridContent.length === 0) {
-          console.log('[FYP] No content found, using fallback mock data')
           hybridContent = generateMockContent()
         }
         
         setContent(hybridContent)
+      } else if (activeTab === 'music') {
+        // Fetch music tracks
+        const response = await fetch(`/api/feed/music?${params}`)
+        const data = await response.json()
+        setContent(data.content || [])
+      } else if (activeTab === 'videos') {
+        // Fetch videos
+        const response = await fetch(`/api/feed/videos?${params}`)
+        const data = await response.json()
+        setContent(data.content || [])
+      } else if (activeTab === 'blogs') {
+        // Fetch blog posts
+        const response = await fetch(`/api/feed/blogs?${params}`)
+        const data = await response.json()
+        setContent(data.content || [])
+      } else if (activeTab === 'news') {
+        // Fetch RSS news
+        const response = await fetch(`/api/feed/rss-news?${params}`)
+        const data = await response.json()
+        if (data.success && data.news) {
+          // Convert RSS items to ContentItem format
+          const newsContent = data.news.map((item: any, index: number) => ({
+            id: `rss_${item.id}`,
+            type: 'news' as const,
+            title: item.title,
+            description: item.description,
+            author: {
+              id: `rss_${item.source}`,
+              name: item.author || item.source,
+              username: item.source.toLowerCase().replace(/\s+/g, ''),
+              avatar_url: item.image || `https://dummyimage.com/40x40/ef4444/ffffff?text=${item.source.charAt(0)}`,
+              is_verified: true
+            },
+            cover_image: item.image || getPlaceholderImage('news', 400, 250),
+            created_at: item.pubDate,
+            engagement: { likes: 0, views: 0, shares: 0, comments: 0 },
+            metadata: {
+              url: item.link,
+              tags: [item.category, item.source].filter(Boolean)
+            },
+            relevance_score: 0.8 + (index * 0.05)
+          }))
+          setContent(newsContent)
+        } else {
+          setContent([])
+        }
+      } else if (activeTab === 'forums') {
+        // Fetch forum threads
+        const response = await fetch(`/api/forums/threads?${params}`)
+        const data = await response.json()
+        setContent(data.threads || [])
+      } else {
+        // For other tabs, use the existing API
+        const response = await fetch(`/api/feed/for-you?${params}`)
+        const data = await response.json()
+        setContent(data.content || [])
       }
     } catch (error) {
       console.error('Error loading content:', error)
@@ -1026,10 +1048,10 @@ export function ForYouPage() {
               {/* Simplified Filter Row */}
               <div className="flex flex-col lg:flex-row gap-4">
                 {/* Content Type Toggle */}
-                <div className="flex-1">
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-1 gap-1">
-                      {contentTypes.slice(0, 4).map((type) => {
+                <div className="flex-1 flex justify-center">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
+                    <TabsList className="inline-flex bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-1 gap-1">
+                      {contentTypes.slice(0, 6).map((type) => {
                         const Icon = type.icon
                         return (
                           <TabsTrigger
@@ -1196,14 +1218,7 @@ export function ForYouPage() {
                 </Button>
               </div>
               <div className="flex gap-3 flex-wrap">
-                {[
-                  { label: 'Blood Orange', count: '2.3k' },
-                  { label: 'Album Reviews', count: '1.8k' },
-                  { label: 'Indie Music', count: '3.1k' },
-                  { label: 'Live Events', count: '1.2k' },
-                  { label: 'New Releases', count: '2.7k' },
-                  { label: 'Music News', count: '1.9k' }
-                ].map((topic, index) => (
+                {getTrendingTopics(activeTab).map((topic, index) => (
                   <motion.button
                     key={topic.label}
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -1220,73 +1235,12 @@ export function ForYouPage() {
               </div>
             </motion.div>
 
-            {/* Local Events Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mb-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">Local Events</h2>
-                <Button variant="ghost" className="text-purple-400 hover:text-purple-300">
-                  View All Events
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  {
-                    title: 'Indie Night at The Basement',
-                    date: 'Tomorrow, 8:00 PM',
-                    location: 'Downtown Music Hall',
-                    price: '$15',
-                    image: '🎵'
-                  },
-                  {
-                    title: 'Jazz Fusion Workshop',
-                    date: 'Friday, 7:30 PM',
-                    location: 'Blue Note Club',
-                    price: '$25',
-                    image: '🎷'
-                  },
-                  {
-                    title: 'Electronic Music Festival',
-                    date: 'Saturday, 6:00 PM',
-                    location: 'Warehouse District',
-                    price: '$45',
-                    image: '🎧'
-                  }
-                ].map((event, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 * index }}
-                    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="text-3xl">{event.image}</div>
-                      <div className="flex-1">
-                        <h3 className="text-white font-semibold group-hover:text-purple-300 transition-colors">
-                          {event.title}
-                        </h3>
-                        <p className="text-gray-400 text-sm">{event.date}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-300">{event.location}</span>
-                      <span className="text-purple-300 font-medium">{event.price}</span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
 
             {/* Main Content Grid */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
+              transition={{ delay: 0.3 }}
               className="space-y-6"
             >
               <div className="flex items-center justify-between mb-4">
@@ -1313,14 +1267,14 @@ export function ForYouPage() {
                   </Button>
                 </div>
               </div>
-              {/* Thread composer for Forums tab */}
+              {/* Start Conversation button for Forums tab */}
               {activeTab === 'forums' && user && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="mb-6"
                 >
-                  <ThreadComposerV2 onSuccess={() => loadPersonalizedContent()} />
+                  <StartConversationButton onConversationCreated={() => loadPersonalizedContent()} />
                 </motion.div>
               )}
 
@@ -1372,36 +1326,85 @@ export function ForYouPage() {
                             compact={true}
                           />
                         </div>
+                      ) : item.type === 'music' ? (
+                        <FeedMusicPlayer
+                          track={{
+                            id: item.id,
+                            title: item.title,
+                            artist: (item.metadata as any)?.artist || item.author?.name || 'Unknown Artist',
+                            album: (item.metadata as any)?.album,
+                            genre: (item.metadata as any)?.genre,
+                            duration: (item.metadata as any)?.duration,
+                            file_url: (item.metadata as any)?.url || '',
+                            cover_art_url: item.cover_image,
+                            description: item.description,
+                            tags: item.metadata?.tags || [],
+                            is_featured: false,
+                            is_public: true,
+                            stats: {
+                              plays: item.engagement?.views || 0,
+                              likes: item.engagement?.likes || 0,
+                              comments: item.engagement?.comments || 0,
+                              shares: item.engagement?.shares || 0
+                            },
+                            created_at: item.created_at,
+                            author: item.author
+                          }}
+                          isLiked={item.is_liked}
+                          compact={true}
+                        />
+                      ) : item.type === 'video' ? (
+                        <FeedVideoPlayer
+                          video={{
+                            id: item.id,
+                            title: item.title,
+                            description: item.description,
+                            video_url: item.metadata?.url || '',
+                            thumbnail_url: item.cover_image,
+                            duration: (item.metadata as any)?.duration,
+                            category: (item.metadata as any)?.category,
+                            tags: (item.metadata as any)?.tags || [],
+                            created_at: item.created_at,
+                            author: item.author,
+                            engagement: item.engagement,
+                            metadata: {
+                              aspect_ratio: (item.metadata as any)?.aspect_ratio,
+                              orientation: (item.metadata as any)?.orientation
+                            }
+                          }}
+                          isLiked={item.is_liked}
+                          compact={true}
+                        />
                       ) : (
-                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 cursor-pointer group">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="text-3xl">
-                              {item.type === 'music' ? '🎵' : item.type === 'video' ? '🎬' : item.type === 'news' ? '📰' : item.type === 'blog' ? '📝' : '🎪'}
+                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 hover:bg-white/10 transition-all duration-300 cursor-pointer group overflow-hidden">
+                          <div className="flex items-center gap-3 mb-3 min-w-0">
+                            <div className="text-3xl flex-shrink-0">
+                              {item.type === 'news' ? '📰' : item.type === 'blog' ? '📝' : '🎪'}
                             </div>
-                            <div className="flex-1">
-                              <h3 className="text-white font-semibold group-hover:text-purple-300 transition-colors line-clamp-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-white font-semibold group-hover:text-purple-300 transition-colors line-clamp-2 break-words overflow-hidden">
                                 {item.title}
                               </h3>
                               {item.description && (
-                                <p className="text-gray-400 text-sm line-clamp-2 mt-1">
-                                  {item.description}
+                                <p className="text-gray-400 text-sm line-clamp-2 mt-1 break-words overflow-hidden">
+                                  {item.description.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ')}
                                 </p>
                               )}
                             </div>
                           </div>
                           
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-between text-sm min-w-0">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
                               {item.author?.name && (
-                                <span className="text-purple-300 font-medium">{item.author.name}</span>
+                                <span className="text-purple-300 font-medium truncate max-w-[120px]">{item.author.name}</span>
                               )}
                               {item.metadata?.genre && (
-                                <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-2 py-1 text-xs">
+                                <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-2 py-1 text-xs flex-shrink-0">
                                   {item.metadata.genre}
                                 </Badge>
                               )}
                             </div>
-                            <span className="text-gray-400">{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
+                            <span className="text-gray-400 flex-shrink-0 ml-2 whitespace-nowrap">{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
                           </div>
                           
                           {/* Engagement Metrics */}

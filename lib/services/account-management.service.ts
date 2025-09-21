@@ -43,15 +43,75 @@ export class AccountManagementService {
       const accounts: UserAccount[] = []
 
       // Get main profile first
-      const { data: mainProfile, error: profileError } = await clientToUse
+      let mainProfile
+      const { data: profileData, error: profileError } = await clientToUse
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
 
-      if (profileError || !mainProfile) {
+      if (profileError || !profileData) {
         console.error('[Account Management] Error fetching main profile:', profileError)
-        throw profileError
+        
+        // If profile doesn't exist, try to create one via API
+        if (profileError?.code === 'PGRST116' || !profileData) {
+          console.log('[Account Management] Profile not found, attempting to create profile for user:', userId)
+          
+          try {
+            // Try to create profile via API endpoint
+            const response = await fetch('/api/profile/create', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            })
+            
+            if (response.ok) {
+              const result = await response.json()
+              console.log('[Account Management] Profile created successfully via API')
+              
+              // Retry fetching the profile
+              const { data: retryProfile, error: retryError } = await clientToUse
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single()
+              
+              if (retryProfile && !retryError) {
+                console.log('[Account Management] Successfully fetched newly created profile')
+                mainProfile = retryProfile
+              } else {
+                throw new Error('Failed to fetch newly created profile')
+              }
+            } else {
+              throw new Error(`Profile creation API failed: ${response.status}`)
+            }
+          } catch (apiError) {
+            console.error('[Account Management] Failed to create profile via API:', apiError)
+            
+            // Fallback: create a minimal profile object for the session
+            console.log('[Account Management] Creating fallback profile data')
+            mainProfile = {
+              id: userId,
+              username: `user-${userId.slice(0, 8)}`,
+              full_name: 'User',
+              bio: null,
+              avatar_url: null,
+              location: null,
+              website: null,
+              is_verified: false,
+              followers_count: 0,
+              following_count: 0,
+              posts_count: 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          }
+        } else {
+          throw new Error(`Profile fetch failed: ${profileError?.message || 'Unknown error'}`)
+        }
+      } else {
+        mainProfile = profileData
       }
 
       console.log('🔍 [Account Management] Main profile data:', {
@@ -347,47 +407,59 @@ export class AccountManagementService {
     }
   ): Promise<string> {
     try {
-      // Try using the RPC function first (if migration has been applied)
-      try {
-        const { data, error } = await supabase.rpc('create_artist_account', {
+      console.log('Creating artist account for user:', userId, 'with data:', artistData)
+      
+      // Use direct table insert (RPC function has bugs)
+      const { data: artistProfile, error: artistError } = await supabase
+        .from('artist_profiles')
+        .insert({
           user_id: userId,
           artist_name: artistData.artist_name,
           bio: artistData.bio || null,
           genres: artistData.genres || [],
-          social_links: artistData.social_links || {}
-        })
-
-        if (error) throw error
-        return data
-      } catch (rpcError: any) {
-        // If RPC function doesn't exist, fall back to direct table insert
-        console.log('RPC function not available, using fallback method')
-        
-        // Check if artist_profiles table exists and create artist profile directly
-        const { data: artistProfile, error: artistError } = await supabase
-          .from('artist_profiles')
-          .insert({
-            user_id: userId,
-            artist_name: artistData.artist_name,
-            bio: artistData.bio || null,
-            genres: artistData.genres || [],
-            social_links: artistData.social_links || {}
-          })
-          .select()
-          .single()
-
-        if (artistError) {
-          // If artist_profiles table doesn't exist, just return a success message
-          if (artistError.code === '42P01') {
-            console.log('Artist profiles table does not exist yet. Migration needs to be applied.')
-            // Return a placeholder ID for now
-            return 'placeholder-artist-id'
+          social_links: artistData.social_links || {},
+          verification_status: 'unverified',
+          account_tier: 'basic',
+          settings: {
+            allow_bookings: true,
+            public_profile: true,
+            show_contact_info: false,
+            auto_accept_follows: true
           }
-          throw artistError
-        }
+        })
+        .select()
+        .single()
 
-        return artistProfile.id
+      if (artistError) {
+        console.error('Error creating artist profile:', artistError)
+        
+        // If artist_profiles table doesn't exist, just return a success message
+        if (artistError.code === '42P01') {
+          console.log('Artist profiles table does not exist yet. Migration needs to be applied.')
+          // Return a placeholder ID for now
+          return 'placeholder-artist-id'
+        }
+        
+        // If it's a duplicate key error, the account already exists
+        if (artistError.code === '23505') {
+          console.log('Artist account already exists for this user')
+          // Try to get the existing account
+          const { data: existingProfile } = await supabase
+            .from('artist_profiles')
+            .select('id')
+            .eq('user_id', userId)
+            .single()
+          
+          if (existingProfile) {
+            return existingProfile.id
+          }
+        }
+        
+        throw artistError
       }
+
+      console.log('Artist account created successfully:', artistProfile.id)
+      return artistProfile.id
     } catch (error) {
       console.error('Error creating artist account:', error)
       throw error
@@ -408,9 +480,12 @@ export class AccountManagementService {
     }
   ): Promise<string> {
     try {
-      // Try using the RPC function first (if migration has been applied)
-      try {
-        const { data, error } = await supabase.rpc('create_venue_account', {
+      console.log('Creating venue account for user:', userId, 'with data:', venueData)
+      
+      // Use direct table insert (RPC function has bugs)
+      const { data: venueProfile, error: venueError } = await supabase
+        .from('venue_profiles')
+        .insert({
           user_id: userId,
           venue_name: venueData.venue_name,
           description: venueData.description || null,
@@ -418,43 +493,49 @@ export class AccountManagementService {
           capacity: venueData.capacity || null,
           venue_types: venueData.venue_types || [],
           contact_info: venueData.contact_info || {},
-          social_links: venueData.social_links || {}
-        })
-
-        if (error) throw error
-        return data
-      } catch (rpcError: any) {
-        // If RPC function doesn't exist, fall back to direct table insert
-        console.log('RPC function not available, using fallback method')
-        
-        // Check if venue_profiles table exists and create venue profile directly
-        const { data: venueProfile, error: venueError } = await supabase
-          .from('venue_profiles')
-          .insert({
-            user_id: userId,
-            venue_name: venueData.venue_name,
-            description: venueData.description || null,
-            address: venueData.address || null,
-            capacity: venueData.capacity || null,
-            venue_types: venueData.venue_types || [],
-            contact_info: venueData.contact_info || {},
-            social_links: venueData.social_links || {}
-          })
-          .select()
-          .single()
-
-        if (venueError) {
-          // If venue_profiles table doesn't exist, just return a success message
-          if (venueError.code === '42P01') {
-            console.log('Venue profiles table does not exist yet. Migration needs to be applied.')
-            // Return a placeholder ID for now
-            return 'placeholder-venue-id'
+          social_links: venueData.social_links || {},
+          verification_status: 'unverified',
+          account_tier: 'basic',
+          settings: {
+            allow_bookings: true,
+            public_profile: true,
+            show_contact_info: false,
+            auto_accept_follows: true
           }
-          throw venueError
-        }
+        })
+        .select()
+        .single()
 
-        return venueProfile.id
+      if (venueError) {
+        console.error('Error creating venue profile:', venueError)
+        
+        // If venue_profiles table doesn't exist, just return a success message
+        if (venueError.code === '42P01') {
+          console.log('Venue profiles table does not exist yet. Migration needs to be applied.')
+          // Return a placeholder ID for now
+          return 'placeholder-venue-id'
+        }
+        
+        // If it's a duplicate key error, the account already exists
+        if (venueError.code === '23505') {
+          console.log('Venue account already exists for this user')
+          // Try to get the existing account
+          const { data: existingProfile } = await supabase
+            .from('venue_profiles')
+            .select('id')
+            .eq('user_id', userId)
+            .single()
+          
+          if (existingProfile) {
+            return existingProfile.id
+          }
+        }
+        
+        throw venueError
       }
+
+      console.log('Venue account created successfully:', venueProfile.id)
+      return venueProfile.id
     } catch (error) {
       console.error('Error creating venue account:', error)
       throw error

@@ -18,12 +18,27 @@ import { useTravelCoordination } from "@/hooks/use-travel-coordination"
 import { TravelCoordinationHub } from "@/components/admin/travel-coordination-hub"
 import { LogisticsDynamicManager } from "@/components/admin/logistics-dynamic-manager"
 import { LogisticsCollaboration } from "@/components/admin/logistics-collaboration"
+import { SiteMapManager } from "@/components/admin/logistics/site-map-manager"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function LogisticsPage() {
   const { toast } = useToast()
+  const { user, loading: authLoading } = useAuth()
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
   const [selectedTour, setSelectedTour] = useState<string | null>(null)
+
+  // Show loading state while auth is loading
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   // Fetch logistics data
   const { data: logisticsData, loading: logisticsLoading, error: logisticsError, refetch: refetchLogistics } = useLogistics({
@@ -225,191 +240,84 @@ export default function LogisticsPage() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="bg-slate-800/50 p-1 mb-6 grid grid-cols-7 gap-1 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-xl">
+        <TabsList className="bg-slate-900/80 p-1 mb-8 grid grid-cols-8 gap-2 backdrop-blur-xl border border-slate-700/30 rounded-2xl shadow-2xl shadow-slate-900/50">
           <TabsTrigger
             value="overview"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:text-purple-400 data-[state=active]:border-purple-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/30 data-[state=active]:to-blue-500/30 data-[state=active]:text-purple-300 data-[state=active]:border-purple-400/50 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 data-[state=active]:backdrop-blur-sm relative group hover:bg-slate-800/50 hover:scale-105 transition-all duration-500 rounded-xl p-4 border border-transparent"
           >
-            <div className="flex flex-col items-center space-y-1">
-              <div className="flex items-center space-x-2">
-                <Truck className="h-4 w-4" />
-                <span className="text-sm font-medium">Overview</span>
-              </div>
-              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500 ease-out"
-                  style={{ width: `${Math.round(((metrics?.transportation?.percentage || 0) + (metrics?.accommodations?.percentage || 0) + (metrics?.equipment?.percentage || 0) + (metrics?.backline?.percentage || 0) + (metrics?.rentals?.percentage || 0) + (metrics?.lodging?.percentage || 0) + (metrics?.travelCoordination?.percentage || 0) + (metrics?.catering?.percentage || 0) + (metrics?.communication?.percentage || 0)) / 9)}%` }}
-                />
-                <div className="h-full w-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
-              </div>
+            <div className="flex items-center justify-center space-x-2">
+              <Truck className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span className="text-sm font-medium tracking-wide">Overview</span>
             </div>
           </TabsTrigger>
           
           <TabsTrigger
             value="transportation"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600/20 data-[state=active]:to-cyan-600/20 data-[state=active]:text-blue-400 data-[state=active]:border-blue-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/30 data-[state=active]:to-cyan-500/30 data-[state=active]:text-blue-300 data-[state=active]:border-blue-400/50 data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 data-[state=active]:backdrop-blur-sm relative group hover:bg-slate-800/50 hover:scale-105 transition-all duration-500 rounded-xl p-4 border border-transparent"
           >
-            <div className="flex flex-col items-center space-y-1">
-              <div className="flex items-center space-x-2">
-                <Truck className="h-4 w-4" />
-                <span className="text-sm font-medium">Transport</span>
-                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                  {metrics?.transportation?.completed || 0}/{metrics?.transportation?.items || 0}
-                </Badge>
-              </div>
-              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
-                  style={{ width: `${metrics?.transportation?.percentage || 0}%` }}
-                />
-              </div>
-              <div className="absolute -top-1 -right-1">
-                <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  metrics?.transportation?.status === 'Completed' ? 'bg-green-500 shadow-lg shadow-green-500/50' :
-                  metrics?.transportation?.status === 'In Progress' ? 'bg-yellow-500 shadow-lg shadow-yellow-500/50' :
-                  'bg-slate-500'
-                }`} />
-              </div>
+            <div className="flex items-center justify-center space-x-2">
+              <Truck className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span className="text-sm font-medium tracking-wide">Transport</span>
             </div>
           </TabsTrigger>
           
           <TabsTrigger
             value="accommodations"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600/20 data-[state=active]:to-emerald-600/20 data-[state=active]:text-green-400 data-[state=active]:border-green-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-green-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500/30 data-[state=active]:to-emerald-500/30 data-[state=active]:text-green-300 data-[state=active]:border-green-400/50 data-[state=active]:shadow-lg data-[state=active]:shadow-green-500/25 data-[state=active]:backdrop-blur-sm relative group hover:bg-slate-800/50 hover:scale-105 transition-all duration-500 rounded-xl p-4 border border-transparent"
           >
-            <div className="flex flex-col items-center space-y-1">
-              <div className="flex items-center space-x-2">
-                <Building className="h-4 w-4" />
-                <span className="text-sm font-medium">Hotels & Flights</span>
-                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                  {metrics?.accommodations?.completed || 0}/{metrics?.accommodations?.items || 0}
-                </Badge>
-              </div>
-              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
-                  style={{ width: `${metrics?.accommodations?.percentage || 0}%` }}
-                />
-              </div>
-              <div className="absolute -top-1 -right-1">
-                <div className={`w-2 h-2 rounded-full ${
-                  metrics?.accommodations?.status === 'Confirmed' ? 'bg-green-500' :
-                  metrics?.accommodations?.status === 'In Progress' ? 'bg-yellow-500' :
-                  'bg-slate-500'
-                }`} />
-              </div>
+            <div className="flex items-center justify-center space-x-2">
+              <Building className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span className="text-sm font-medium tracking-wide">Hotels & Flights</span>
             </div>
           </TabsTrigger>
           
           <TabsTrigger
             value="equipment"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600/20 data-[state=active]:to-red-600/20 data-[state=active]:text-orange-400 data-[state=active]:border-orange-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500/30 data-[state=active]:to-red-500/30 data-[state=active]:text-orange-300 data-[state=active]:border-orange-400/50 data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/25 data-[state=active]:backdrop-blur-sm relative group hover:bg-slate-800/50 hover:scale-105 transition-all duration-500 rounded-xl p-4 border border-transparent"
           >
-            <div className="flex flex-col items-center space-y-1">
-              <div className="flex items-center space-x-2">
-                <Box className="h-4 w-4" />
-                <span className="text-sm font-medium">Equipment</span>
-                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                  {metrics?.equipment?.completed || 0}/{metrics?.equipment?.items || 0}
-                </Badge>
-              </div>
-              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300"
-                  style={{ width: `${metrics?.equipment?.percentage || 0}%` }}
-                />
-              </div>
-              <div className="absolute -top-1 -right-1">
-                <div className={`w-2 h-2 rounded-full ${
-                  metrics?.equipment?.status === 'Completed' ? 'bg-green-500' :
-                  metrics?.equipment?.status === 'In Progress' ? 'bg-yellow-500' :
-                  'bg-slate-500'
-                }`} />
-              </div>
+            <div className="flex items-center justify-center space-x-2">
+              <Box className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span className="text-sm font-medium tracking-wide">Equipment</span>
             </div>
           </TabsTrigger>
           
           <TabsTrigger
             value="backline"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600/20 data-[state=active]:to-pink-600/20 data-[state=active]:text-purple-400 data-[state=active]:border-purple-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/30 data-[state=active]:to-pink-500/30 data-[state=active]:text-purple-300 data-[state=active]:border-purple-400/50 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 data-[state=active]:backdrop-blur-sm relative group hover:bg-slate-800/50 hover:scale-105 transition-all duration-500 rounded-xl p-4 border border-transparent"
           >
-            <div className="flex flex-col items-center space-y-1">
-              <div className="flex items-center space-x-2">
-                <Zap className="h-4 w-4" />
-                <span className="text-sm font-medium">Backline</span>
-                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                  {metrics?.backline?.completed || 0}/{metrics?.backline?.items || 0}
-                </Badge>
-              </div>
-              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
-                  style={{ width: `${metrics?.backline?.percentage || 0}%` }}
-                />
-              </div>
-              <div className="absolute -top-1 -right-1">
-                <div className={`w-2 h-2 rounded-full ${
-                  metrics?.backline?.status === 'Completed' ? 'bg-green-500' :
-                  metrics?.backline?.status === 'In Progress' ? 'bg-yellow-500' :
-                  'bg-slate-500'
-                }`} />
-              </div>
+            <div className="flex items-center justify-center space-x-2">
+              <Zap className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span className="text-sm font-medium tracking-wide">Backline</span>
             </div>
           </TabsTrigger>
           
           <TabsTrigger
             value="catering"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-600/20 data-[state=active]:to-orange-600/20 data-[state=active]:text-yellow-400 data-[state=active]:border-yellow-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-yellow-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500/30 data-[state=active]:to-orange-500/30 data-[state=active]:text-yellow-300 data-[state=active]:border-yellow-400/50 data-[state=active]:shadow-lg data-[state=active]:shadow-yellow-500/25 data-[state=active]:backdrop-blur-sm relative group hover:bg-slate-800/50 hover:scale-105 transition-all duration-500 rounded-xl p-4 border border-transparent"
           >
-            <div className="flex flex-col items-center space-y-1">
-              <div className="flex items-center space-x-2">
-                <Utensils className="h-4 w-4" />
-                <span className="text-sm font-medium">Catering</span>
-                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                  {metrics?.catering?.completed || 0}/{metrics?.catering?.items || 0}
-                </Badge>
-              </div>
-              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300"
-                  style={{ width: `${metrics?.catering?.percentage || 0}%` }}
-                />
-              </div>
-              <div className="absolute -top-1 -right-1">
-                <div className={`w-2 h-2 rounded-full ${
-                  metrics?.catering?.status === 'Completed' ? 'bg-green-500' :
-                  metrics?.catering?.status === 'In Progress' ? 'bg-yellow-500' :
-                  'bg-slate-500'
-                }`} />
-              </div>
+            <div className="flex items-center justify-center space-x-2">
+              <Utensils className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span className="text-sm font-medium tracking-wide">Catering</span>
             </div>
           </TabsTrigger>
           
           <TabsTrigger
             value="communication"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600/20 data-[state=active]:to-blue-600/20 data-[state=active]:text-cyan-400 data-[state=active]:border-cyan-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/20 relative group hover:bg-slate-700/30 transition-all duration-300 rounded-md p-3"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/30 data-[state=active]:to-blue-500/30 data-[state=active]:text-cyan-300 data-[state=active]:border-cyan-400/50 data-[state=active]:shadow-lg data-[state=active]:shadow-cyan-500/25 data-[state=active]:backdrop-blur-sm relative group hover:bg-slate-800/50 hover:scale-105 transition-all duration-500 rounded-xl p-4 border border-transparent"
           >
-            <div className="flex flex-col items-center space-y-1">
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="h-4 w-4" />
-                <span className="text-sm font-medium">Communication</span>
-                <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                  {metrics?.communication?.completed || 0}/{metrics?.communication?.items || 0}
-                </Badge>
-              </div>
-              <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
-                  style={{ width: `${metrics?.communication?.percentage || 0}%` }}
-                />
-              </div>
-              <div className="absolute -top-1 -right-1">
-                <div className={`w-2 h-2 rounded-full ${
-                  metrics?.communication?.status === 'Active' ? 'bg-green-500' :
-                  metrics?.communication?.status === 'In Progress' ? 'bg-yellow-500' :
-                  'bg-slate-500'
-                }`} />
-              </div>
+            <div className="flex items-center justify-center space-x-2">
+              <MessageSquare className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span className="text-sm font-medium tracking-wide">Communication</span>
+            </div>
+          </TabsTrigger>
+          
+          <TabsTrigger
+            value="site-maps"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500/30 data-[state=active]:to-teal-500/30 data-[state=active]:text-emerald-300 data-[state=active]:border-emerald-400/50 data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 data-[state=active]:backdrop-blur-sm relative group hover:bg-slate-800/50 hover:scale-105 transition-all duration-500 rounded-xl p-4 border border-transparent"
+          >
+            <div className="flex items-center justify-center space-x-2">
+              <MapPin className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span className="text-sm font-medium tracking-wide">Site Maps</span>
             </div>
           </TabsTrigger>
         </TabsList>
@@ -988,6 +896,18 @@ export default function LogisticsPage() {
               eventId={selectedEvent || undefined}
               tourId={selectedTour || undefined}
               teamMembers={['John Smith', 'Sarah Johnson', 'Mike Wilson', 'Lisa Davis']}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="site-maps" className="mt-0">
+          <div className="space-y-6">
+            {/* Interactive Site Maps */}
+            <SiteMapManager
+              eventId={selectedEvent || undefined}
+              tourId={selectedTour || undefined}
+              vendorId={user?.id}
+              isVendorView={true}
             />
           </div>
         </TabsContent>

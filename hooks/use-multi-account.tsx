@@ -147,9 +147,27 @@ export function MultiAccountProvider({ children }: MultiAccountProviderProps) {
       
       console.log('✅ [MultiAccount] Account refresh completed successfully')
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching accounts:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch accounts')
+      
+      let errorMessage = 'Failed to fetch accounts'
+      
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if (err && typeof err === 'object') {
+        if (err.message) {
+          errorMessage = err.message
+        } else if (err.error) {
+          errorMessage = err.error
+        } else if (err.details) {
+          errorMessage = err.details
+        } else {
+          // Handle empty objects by providing a more helpful message
+          errorMessage = 'Account data unavailable. Please try refreshing the page.'
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }

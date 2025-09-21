@@ -118,23 +118,37 @@ export function EnhancedNotificationCenter({ className = "" }: NotificationCente
   useEffect(() => {
     fetchNotifications()
 
-    const channel = supabase
-      .channel('notifications')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'notifications',
-        filter: `user_id=eq.${(async () => {
-          const { data: { session } } = await supabase.auth.getSession()
-          return session?.user?.id
-        })()}`
-      }, () => {
-        fetchNotifications()
-      })
-      .subscribe()
+    // Get current user ID for filtering
+    const setupSubscription = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) return
+
+      const channel = supabase
+        .channel('notifications')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'notifications'
+        }, (payload) => {
+          // Only handle notifications for the current user
+          if (payload.new && payload.new.user_id === session.user.id) {
+            fetchNotifications()
+          }
+        })
+        .subscribe()
+
+      return channel
+    }
+
+    let channel: any
+    setupSubscription().then(ch => {
+      channel = ch
+    })
 
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
   }, [fetchNotifications])
 

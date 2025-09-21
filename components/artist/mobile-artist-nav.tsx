@@ -48,7 +48,9 @@ export function MobileArtistNav() {
           "md:hidden fixed bottom-0 left-0 right-0 z-50",
           "backdrop-blur supports-[backdrop-filter]:bg-black/60",
           "border-t border-slate-800/60",
-          "bg-gradient-to-t from-black/80 to-slate-950/40"
+          "bg-gradient-to-t from-black/80 to-slate-950/40",
+          // Prevent accidental scroll chaining and provide stable touch behavior
+          "select-none"
         )
       }
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -90,7 +92,7 @@ export function MobileArtistNav() {
                 <span className="leading-none">More</span>
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="p-4">
+            <SheetContent side="bottom" className="p-4" data-state>
               <SheetHeader>
                 <SheetTitle>Artist navigation</SheetTitle>
               </SheetHeader>

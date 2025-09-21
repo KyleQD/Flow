@@ -26,16 +26,34 @@ export default function Notifications() {
 
   useEffect(() => {
     fetchNotifications()
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('notifications')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
-        fetchNotifications()
-      })
-      .subscribe()
+    
+    // Set up real-time subscription with proper user filtering
+    const setupSubscription = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) return
+
+      const channel = supabase
+        .channel('notifications')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload) => {
+          // Only handle notifications for the current user
+          if (payload.new && payload.new.user_id === session.user.id) {
+            fetchNotifications()
+          }
+        })
+        .subscribe()
+
+      return channel
+    }
+
+    let channel: any
+    setupSubscription().then(ch => {
+      channel = ch
+    })
 
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
   }, [])
 
@@ -55,13 +73,13 @@ export default function Notifications() {
     }
 
     setNotifications(data || [])
-    setUnreadCount(data?.filter(n => !n.read).length || 0)
+    setUnreadCount(data?.filter(n => !n.is_read).length || 0)
   }
 
   const markAsRead = async (id: string) => {
     const { error } = await supabase
       .from("notifications")
-      .update({ read: true })
+      .update({ is_read: true, read_at: new Date().toISOString() })
       .eq("id", id)
 
     if (error) {
@@ -73,10 +91,13 @@ export default function Notifications() {
   }
 
   const markAllAsRead = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user?.id) return
+    
     const { error } = await supabase
       .from("notifications")
-      .update({ read: true })
-      .eq("user_id", (await supabase.auth.getSession()).data.session?.user.id)
+      .update({ is_read: true, read_at: new Date().toISOString() })
+      .eq("user_id", session.user.id)
 
     if (error) {
       toast.error("Failed to mark notifications as read")
