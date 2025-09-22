@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { EnhancedFriendSearch } from '@/components/social/enhanced-friend-search'
-import { SuggestedConnections } from '@/components/social/suggested-connections'
+import { SimpleSuggestedConnections } from '@/components/social/simple-suggested-connections'
 import { useRouter } from 'next/navigation'
 
 export default function FriendSearchPage() {
@@ -151,7 +151,7 @@ export default function FriendSearchPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <SuggestedConnections 
+                  <SimpleSuggestedConnections 
                     limit={5}
                     onConnect={(userId) => {
                       console.log('Connected with:', userId)
