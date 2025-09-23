@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceRoleClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 import { authenticateApiRequest } from '@/lib/auth/api-auth'
 
 export async function GET(request: NextRequest) {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       .select('following_id')
       .eq('follower_id', user.id)
 
-    const connectionIds = currentConnections?.map(c => c.following_id) || []
+    const connectionIds = currentConnections?.map((c: any) => c.following_id) || []
 
     // Get user's pending requests to avoid showing them
     const { data: pendingRequests } = await supabase
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       .eq('requester_id', user.id)
       .eq('status', 'pending')
 
-    const pendingIds = pendingRequests?.map(r => r.target_id) || []
+    const pendingIds = pendingRequests?.map((r: any) => r.target_id) || []
 
     // Combine excluded IDs
     const excludedIds = [user.id, ...connectionIds, ...pendingIds]
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     if (mutualOnly && enrichedResults.length > 0) {
       // Get mutual connections for each user
-      const userIds = enrichedResults.map(r => r.id)
+      const userIds = enrichedResults.map((r: any) => r.id)
       
       const { data: mutualData } = await supabase
         .from('follows')
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
 
       // Group mutual connections by user
       const mutualMap = new Map()
-      mutualData?.forEach(connection => {
+      mutualData?.forEach((connection: any) => {
         if (!mutualMap.has(connection.following_id)) {
           mutualMap.set(connection.following_id, [])
         }
@@ -118,14 +118,14 @@ export async function GET(request: NextRequest) {
       })
 
       // Filter to only users with mutual connections
-      enrichedResults = enrichedResults.filter(user => 
+      enrichedResults = enrichedResults.filter((user: any) => 
         mutualMap.has(user.id) && mutualMap.get(user.id).length > 0
       )
     }
 
     // Enrich results with additional data
     const enrichedUsers = await Promise.all(
-      enrichedResults.map(async (profile) => {
+      enrichedResults.map(async (profile: any) => {
         // Check if there are any mutual connections
         const { data: mutualConnections } = await supabase
           .from('follows')
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
           .in('follower_id', connectionIds)
           .limit(3)
 
-        const mutualFriends = mutualConnections?.map(mc => mc.profiles) || []
+        const mutualFriends = mutualConnections?.map((mc: any) => mc.profiles) || []
 
         // Check if user has sent a follow request to this person
         const { data: outgoingRequest } = await supabase

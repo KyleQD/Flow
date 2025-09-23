@@ -129,12 +129,12 @@ export function EnhancedNotificationCenter({ className = "" }: NotificationCente
           event: '*', 
           schema: 'public', 
           table: 'notifications'
-        }, (payload) => {
-          // Only handle notifications for the current user
-          if (payload.new && payload.new.user_id === session.user.id) {
-            fetchNotifications()
-          }
-        })
+             }, (payload: any) => {
+               // Only handle notifications for the current user
+               if (payload.new && payload.new.user_id === session.user.id) {
+                 fetchNotifications()
+               }
+             })
         .subscribe()
 
       return channel

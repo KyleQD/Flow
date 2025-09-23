@@ -34,7 +34,7 @@ export default function Notifications() {
 
       const channel = supabase
         .channel('notifications')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload) => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload: any) => {
           // Only handle notifications for the current user
           if (payload.new && payload.new.user_id === session.user.id) {
             fetchNotifications()

@@ -1,7 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { hasEntityPermission } from '@/lib/services/rbac'
 import type { CreateSiteMapRequest, UpdateSiteMapRequest } from '@/types/site-map'
+
+// Create service role client for database operations (bypasses RLS)
+function createServiceRoleClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Missing Supabase environment variables for service role')
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
 
 // Helper function to manually parse the auth session from cookies (same as middleware)
 function parseAuthFromCookies(request: NextRequest) {
@@ -70,7 +87,7 @@ function tryParseCookieValue(cookieValue: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceRoleClient()
     
     // First try the standard Supabase method
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -102,10 +119,7 @@ export async function GET(request: NextRequest) {
     const includeData = searchParams.get('includeData') === 'true'
 
     // Use service role to bypass RLS for now
-    const serviceSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const serviceSupabase = createServiceRoleClient()
     
     let query = serviceSupabase
       .from('site_maps')
@@ -151,7 +165,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = createServiceRoleClient()
     
     // First try the standard Supabase method
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -186,7 +200,6 @@ export async function POST(request: NextRequest) {
       body = {
         name: formData.get('name') as string,
         description: formData.get('description') as string || '',
-        environment: formData.get('environment') as string || 'outdoor',
         width: parseInt(formData.get('width') as string) || 1000,
         height: parseInt(formData.get('height') as string) || 1000,
         scale: parseFloat(formData.get('scale') as string) || 1.0,
@@ -194,10 +207,8 @@ export async function POST(request: NextRequest) {
         gridEnabled: formData.get('gridEnabled') === 'true',
         gridSize: parseInt(formData.get('gridSize') as string) || 20,
         isPublic: formData.get('isPublic') === 'true',
-        eventId: formData.get('eventId') as string || null,
-        tourId: formData.get('tourId') as string || null,
-        approximateSize: formData.get('approximateSize') as string || 'medium',
-        backgroundImage: formData.get('backgroundImage') as File || null
+        eventId: formData.get('eventId') as string || undefined,
+        tourId: formData.get('tourId') as string || undefined
       }
     } else {
       // Handle JSON

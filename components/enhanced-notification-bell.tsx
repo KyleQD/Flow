@@ -132,7 +132,7 @@ export function EnhancedNotificationBell({ className = "" }: EnhancedNotificatio
         },
         body: JSON.stringify({
           action: action,
-          targetUserId: notification.related_user_id
+          targetUserId: notification.related_user?.id
         }),
       })
 
@@ -167,7 +167,7 @@ export function EnhancedNotificationBell({ className = "" }: EnhancedNotificatio
           event: '*', 
           schema: 'public', 
           table: 'notifications'
-        }, (payload) => {
+        }, (payload: any) => {
           // Only handle notifications for the current user
           if (payload.new && payload.new.user_id === session.user.id) {
             fetchNotifications()
