@@ -1,9 +1,9 @@
 // =============================================================================
-// TOURIFY DESIGN SYSTEM - UNIFIED THEME
+// FLOW DESIGN SYSTEM - UNIFIED THEME
 // Comprehensive design system for consistent UI/UX across all platform features
 // =============================================================================
 
-export const tourifyTheme = {
+export const flowTheme = {
   // =============================================================================
   // COLOR PALETTE - Cohesive brand colors
   // =============================================================================
@@ -113,7 +113,7 @@ export const tourifyTheme = {
     roles: {
       admin: '#ef4444',      // red-500
       manager: '#f59e0b',    // amber-500
-      tour_manager: '#8b5cf6', // violet-500
+      tour_manager: '#89CFF0', // baby blue
       event_coordinator: '#06b6d4', // cyan-500
       artist: '#d946ef',     // fuchsia-500
       crew_member: '#22c55e', // green-500
@@ -221,9 +221,9 @@ export const tourifyTheme = {
     inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
     
     // Special effect shadows
-    glow: '0 0 20px rgb(139 92 246 / 0.3)',
-    glowSm: '0 0 10px rgb(139 92 246 / 0.2)',
-    glowLg: '0 0 40px rgb(139 92 246 / 0.4)'
+    glow: '0 0 20px rgb(137 207 240 / 0.3)',
+    glowSm: '0 0 10px rgb(137 207 240 / 0.2)',
+    glowLg: '0 0 40px rgb(137 207 240 / 0.4)'
   },
 
   // =============================================================================
@@ -389,7 +389,7 @@ export const componentVariants = {
 export const themeUtils = {
   // Get role color
   getRoleColor: (role: string) => {
-    return tourifyTheme.colors.roles[role as keyof typeof tourifyTheme.colors.roles] || tourifyTheme.colors.neutral[500]
+    return flowTheme.colors.roles[role as keyof typeof flowTheme.colors.roles] || flowTheme.colors.neutral[500]
   },
 
   // Get role classes
@@ -397,7 +397,7 @@ export const themeUtils = {
     const colorMap: Record<string, string> = {
       admin: 'text-red-400 bg-red-500/10 border-red-500/20',
       manager: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-      tour_manager: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
+      tour_manager: 'text-blue-300 bg-blue-400/10 border-blue-400/20',
       event_coordinator: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
       artist: 'text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/20',
       crew_member: 'text-green-400 bg-green-500/10 border-green-500/20',
@@ -427,7 +427,7 @@ export const themeUtils = {
       pending: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
       completed: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
       cancelled: 'text-red-400 bg-red-500/10 border-red-500/30',
-      planning: 'text-purple-400 bg-purple-500/10 border-purple-500/30',
+      planning: 'text-blue-300 bg-blue-400/10 border-blue-400/30',
       confirmed: 'text-green-400 bg-green-500/10 border-green-500/30',
       scheduled: 'text-blue-400 bg-blue-500/10 border-blue-500/30'
     }
@@ -435,12 +435,12 @@ export const themeUtils = {
   },
 
   // Generate consistent spacing classes
-  getSpacingClass: (size: keyof typeof tourifyTheme.spacing) => {
+  getSpacingClass: (size: keyof typeof flowTheme.spacing) => {
     return `p-${size}`
   },
 
   // Generate consistent shadow classes
-  getShadowClass: (level: keyof typeof tourifyTheme.shadows) => {
+  getShadowClass: (level: keyof typeof flowTheme.shadows) => {
     return `shadow-${level}`
   }
 }
@@ -449,4 +449,4 @@ export const themeUtils = {
 // EXPORT DEFAULT THEME
 // =============================================================================
 
-export default tourifyTheme
+export default flowTheme

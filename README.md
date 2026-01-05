@@ -1,4 +1,4 @@
-# Tourify Platform
+# Flow Platform
 
 The ultimate platform for artists, venues, and music industry professionals to connect, create, and tour.
 

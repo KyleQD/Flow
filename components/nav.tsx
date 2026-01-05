@@ -37,7 +37,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useProfile } from "@/hooks/use-profile"
 import { useMultiAccount } from "@/hooks/use-multi-account"
 import { AccountSwitcher } from "@/components/account-switcher"
-import { TourifyLogo } from "@/components/tourify-logo"
+import { FlowLogo } from "@/components/tourify-logo"
 import { supabase } from "@/lib/supabase"
 import { WorkingNotificationBell } from "@/components/working-notification-bell"
 import { CompactAccountSwitcher } from "@/components/compact-account-switcher"
@@ -131,7 +131,7 @@ export function Nav() {
         >
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-            <TourifyLogo
+            <FlowLogo
               variant="white"
               size="xl"
               className="h-12 w-auto relative z-10 group-hover:brightness-110 transition-all duration-300"

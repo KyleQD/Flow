@@ -3,7 +3,7 @@
 import { ReactNode, useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth/role-based-auth'
 import { usePlatformStatus } from '@/hooks/use-platform-sync'
-import { tourifyTheme, themeUtils } from '@/lib/design-system/theme'
+import { flowTheme, themeUtils } from '@/lib/design-system/theme'
 import { NavigationSidebar } from './navigation-sidebar'
 import { TopBar } from './top-bar'
 

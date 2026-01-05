@@ -33,6 +33,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { MobileOptimizedCard } from '@/components/mobile/mobile-optimized-card'
+import { usePhotoViewer } from '@/hooks/use-photo-viewer'
 
 interface PostData {
   id: string
@@ -42,6 +43,7 @@ interface PostData {
   visibility: string
   location?: string
   hashtags?: string[]
+  media_urls?: string[]
   likes_count: number
   comments_count: number
   shares_count: number
@@ -92,6 +94,7 @@ export function DashboardFeed() {
   const router = useRouter()
   const supabase = createClientComponentClient<Database>()
   const { isMobile } = useIsMobile()
+  const photoViewer = usePhotoViewer()
 
   const loadPosts = async (feedType = activeTab) => {
     try {
@@ -110,7 +113,20 @@ export function DashboardFeed() {
       }
       
       // Standardize on { posts } but gracefully support { data }
-      setPosts(result.posts || result.data || [])
+      const postsData = result.posts || result.data || []
+      console.log('📱 Loaded posts data:', postsData)
+      
+      // Debug each post to see its structure
+      postsData.forEach((post: any, index: number) => {
+        console.log(`📝 Post ${index}:`, {
+          id: post.id,
+          content: post.content,
+          media_urls: post.media_urls,
+          hasMedia: !!(post.media_urls && post.media_urls.length > 0)
+        })
+      })
+      
+      setPosts(postsData)
       
       // Handle API messages (like empty feed guidance)
       if (result.message) {
@@ -451,6 +467,89 @@ export function DashboardFeed() {
                             />
                           )}
                           
+                          {/* Media Display */}
+                          {post.media_urls && post.media_urls.length > 0 && post.media_urls[0] && (
+                            <div className="mt-3">
+                              {post.media_urls.length === 1 ? (
+                                // Single image - full width with natural aspect ratio
+                                <div 
+                                  className="relative bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => {
+                                    console.log('🖼️ Opening photo viewer:', {
+                                      photos: post.media_urls,
+                                      post: post,
+                                      index: 0,
+                                      firstPhoto: post.media_urls?.[0]
+                                    })
+                                    if (post.media_urls && post.media_urls.length > 0) {
+                                      photoViewer.openPhotoViewer(post.media_urls, 0, post)
+                                    } else {
+                                      console.error('❌ No media URLs available for this post')
+                                    }
+                                  }}
+                                >
+                                  <img
+                                    src={post.media_urls?.[0] || ''}
+                                    alt="Post media"
+                                    className="w-full h-auto max-h-96 object-cover"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      console.error('❌ Failed to load image:', post.media_urls?.[0])
+                                      e.currentTarget.style.display = 'none'
+                                    }}
+                                    onLoad={() => {
+                                      console.log('✅ Image loaded successfully:', post.media_urls?.[0])
+                                    }}
+                                  />
+                                </div>
+                              ) : (
+                                // Multiple images - grid layout
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {post.media_urls.slice(0, 4).map((url, index) => (
+                                    url && (
+                                      <div 
+                                        key={index} 
+                                        className="relative aspect-square bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => {
+                                          console.log('🖼️ Opening photo viewer (multiple):', {
+                                            photos: post.media_urls,
+                                            post: post,
+                                            index: index,
+                                            currentUrl: url
+                                          })
+                                          if (post.media_urls && post.media_urls.length > 0) {
+                                            photoViewer.openPhotoViewer(post.media_urls, index, post)
+                                          } else {
+                                            console.error('❌ No media URLs available for this post')
+                                          }
+                                        }}
+                                      >
+                                        <img
+                                          src={url}
+                                          alt={`Post media ${index + 1}`}
+                                          className="w-full h-full object-cover"
+                                          loading="lazy"
+                                          onError={(e) => {
+                                            console.error('❌ Failed to load image:', url)
+                                            e.currentTarget.style.display = 'none'
+                                          }}
+                                          onLoad={() => {
+                                            console.log('✅ Image loaded successfully:', url)
+                                          }}
+                                        />
+                                      </div>
+                                    )
+                                  ))}
+                                </div>
+                              )}
+                              {post.media_urls.length > 4 && (
+                                <p className="text-gray-400 text-xs mt-2">
+                                  +{post.media_urls.length - 4} more photos
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          
                           {post.hashtags && post.hashtags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
                               {post.hashtags.slice(0, 3).map((hashtag) => (
@@ -631,6 +730,7 @@ export function DashboardFeed() {
           </TabsContent>
         </Tabs>
       </CardContent>
+
     </Card>
   )
 } 

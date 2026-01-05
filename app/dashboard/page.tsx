@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { BrandLoadingScreen } from '@/components/ui/brand-loading-screen'
 import { EnhancedAccountCards } from '@/components/dashboard/enhanced-account-cards'
 import { DashboardFeed } from '@/components/dashboard/dashboard-feed'
 // import { QuickActions } from '@/components/dashboard/quick-actions'
@@ -459,18 +460,11 @@ export default function DashboardPage() {
 
   if (loading && !forceLoad) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="relative mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto animate-pulse">
-              <Music className="h-8 w-8 text-white" />
-            </div>
-            <div className="absolute -inset-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl blur opacity-20 animate-ping"></div>
-          </div>
-          <h2 className="text-2xl font-bold mb-2">Loading Dashboard</h2>
-          <p className="text-gray-400">Preparing your creative workspace...</p>
-        </div>
-      </div>
+      <BrandLoadingScreen
+        message="Loading..."
+        logoSrc="/tourify-logo-white.svg"
+        fullScreen={true}
+      />
     )
   }
 

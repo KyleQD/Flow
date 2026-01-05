@@ -12,7 +12,7 @@
   --card-foreground: 0 0% 98%;
   --popover: 0 0% 3.9%;
   --popover-foreground: 0 0% 98%;
-  --primary: 262.1 83.3% 57.8%;
+  --primary: 195 100% 75%;
   --primary-foreground: 210 20% 98%;
   --secondary: 217.2 32.6% 17.5%;
   --secondary-foreground: 210 20% 98%;
@@ -60,7 +60,7 @@ body {
   bottom: 0;
   border-radius: inherit;
   padding: 2px;
-  background: linear-gradient(to right, #6d28d9, #4f46e5);
+  background: linear-gradient(to right, #89CFF0, #5DB3E3);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -86,8 +86,8 @@ select {
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: #9333ea !important;
-  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2) !important;
+  border-color: #89CFF0 !important;
+  box-shadow: 0 0 0 2px rgba(137, 207, 240, 0.2) !important;
 }
 
 /* Card hover effects */
@@ -195,7 +195,7 @@ select:focus {
 
 /* Gradient text utilities */
 .gradient-text {
-  background: linear-gradient(45deg, #9333ea, #3b82f6, #06b6d4);
+  background: linear-gradient(45deg, #89CFF0, #5DB3E3, #87CEEB);
   background-size: 300% 300%;
   background-clip: text;
   -webkit-background-clip: text;
@@ -224,7 +224,7 @@ select:focus {
 
 /* Neon glow effects */
 .neon-purple {
-  box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+  box-shadow: 0 0 20px rgba(137, 207, 240, 0.3);
 }
 
 .neon-blue {
@@ -237,7 +237,7 @@ select:focus {
 
 /* Progress bar enhancements */
 .progress-glow {
-  background: linear-gradient(90deg, #9333ea, #3b82f6, #06b6d4);
+  background: linear-gradient(90deg, #89CFF0, #5DB3E3, #87CEEB);
   background-size: 200% 100%;
   animation: progress-flow 2s ease-in-out infinite;
 }
@@ -253,7 +253,7 @@ select:focus {
 
 /* Loading spinner enhancements */
 .spinner-glow {
-  filter: drop-shadow(0 0 10px rgba(147, 51, 234, 0.5));
+  filter: drop-shadow(0 0 10px rgba(137, 207, 240, 0.5));
 }
 
 /* Button pulse effect */
@@ -274,8 +274,8 @@ select:focus {
 .border-glow {
   position: relative;
   border: 1px solid transparent;
-  background: linear-gradient(45deg, rgba(147, 51, 234, 0.1), rgba(59, 130, 246, 0.1)) padding-box,
-              linear-gradient(45deg, #9333ea, #3b82f6) border-box;
+  background: linear-gradient(45deg, rgba(137, 207, 240, 0.1), rgba(59, 130, 246, 0.1)) padding-box,
+              linear-gradient(45deg, #89CFF0, #5DB3E3) border-box;
 }
 
 .border-glow::before {
@@ -283,7 +283,7 @@ select:focus {
   position: absolute;
   inset: 0;
   padding: 1px;
-  background: linear-gradient(45deg, #9333ea, #3b82f6);
+  background: linear-gradient(45deg, #89CFF0, #5DB3E3);
   border-radius: inherit;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
@@ -300,29 +300,29 @@ select:focus {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #9333ea, #3b82f6);
+  background: linear-gradient(180deg, #89CFF0, #5DB3E3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #7c3aed, #2563eb);
+  background: linear-gradient(180deg, #5DB3E3, #4A9FD9);
 }
 
 /* Text selection styling */
 ::selection {
-  background: rgba(147, 51, 234, 0.3);
+  background: rgba(137, 207, 240, 0.3);
   color: white;
 }
 
 ::-moz-selection {
-  background: rgba(147, 51, 234, 0.3);
+  background: rgba(137, 207, 240, 0.3);
   color: white;
 }
 
 /* Focus styles */
 .focus-glow:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.5);
+  box-shadow: 0 0 0 2px rgba(137, 207, 240, 0.5);
 }
 
 /* Loading state utilities */
@@ -453,10 +453,10 @@ select:focus {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+    box-shadow: 0 0 20px rgba(137, 207, 240, 0.3);
   }
   50% {
-    box-shadow: 0 0 40px rgba(147, 51, 234, 0.6);
+    box-shadow: 0 0 40px rgba(137, 207, 240, 0.6);
   }
 }
 
@@ -571,7 +571,7 @@ select:focus {
 }
 
 .hover-glow:hover {
-  box-shadow: 0 0 30px rgba(147, 51, 234, 0.4);
+  box-shadow: 0 0 30px rgba(137, 207, 240, 0.4);
 }
 
 /* Custom scrollbar for webkit browsers */
@@ -706,7 +706,7 @@ select:focus {
 }
 
 .artist-content::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #8b5cf6, #06b6d4);
+  background: linear-gradient(180deg, #89CFF0, #87CEEB);
   border-radius: 3px;
   transition: all 0.3s ease;
 }
@@ -785,7 +785,7 @@ select:focus {
 }
 
 .gradient-text {
-  background: linear-gradient(-45deg, #8b5cf6, #06b6d4, #8b5cf6, #06b6d4);
+  background: linear-gradient(-45deg, #89CFF0, #87CEEB, #89CFF0, #87CEEB);
   background-size: 400% 400%;
   animation: gradient-shift 3s ease infinite;
   -webkit-background-clip: text;
@@ -796,7 +796,7 @@ select:focus {
 .neon-border {
   position: relative;
   border: 2px solid transparent;
-  background: linear-gradient(45deg, #8b5cf6, #06b6d4) border-box;
+  background: linear-gradient(45deg, #89CFF0, #87CEEB) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: subtract;
 }
@@ -810,7 +810,7 @@ select:focus {
 }
 
 .btn-futuristic {
-  background: linear-gradient(45deg, #8b5cf6, #06b6d4);
+  background: linear-gradient(45deg, #89CFF0, #87CEEB);
   border: none;
   position: relative;
   overflow: hidden;

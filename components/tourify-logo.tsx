@@ -1,17 +1,17 @@
 import type { ImgHTMLAttributes } from "react"
 import { cn } from "@/lib/utils"
 
-interface TourifyLogoProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'> {
+interface FlowLogoProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'> {
   variant?: 'light' | 'dark' | 'white'
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl'
 }
 
-export function TourifyLogo({ 
+export function FlowLogo({ 
   variant = 'light', 
   size = 'md', 
   className,
   ...props 
-}: TourifyLogoProps) {
+}: FlowLogoProps) {
   const sizeClasses = {
     xs: 'h-4 w-auto',
     sm: 'h-6 w-auto',
@@ -27,13 +27,13 @@ export function TourifyLogo({
 
   // Determine which logo file to use based on variant
   const logoSrc = variant === 'white' || variant === 'dark' 
-    ? "/tourify-logo-white.png"
-    : "/tourify-logo.png"
+    ? "/flow-logo-white.png"
+    : "/flow-logo.png"
   
   return (
     <img
       src={logoSrc}
-      alt="Tourify"
+      alt="Flow"
       className={cn(sizeClasses[size], className)}
       {...props}
     />

@@ -116,10 +116,10 @@ const config = {
         },
         "pulse-glow": {
           "0%, 100%": {
-            "box-shadow": "0 0 20px rgba(147, 51, 234, 0.3)",
+            "box-shadow": "0 0 20px rgba(137, 207, 240, 0.3)",
           },
           "50%": {
-            "box-shadow": "0 0 40px rgba(147, 51, 234, 0.6)",
+            "box-shadow": "0 0 40px rgba(137, 207, 240, 0.6)",
           },
         },
       },
@@ -134,10 +134,10 @@ const config = {
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
       },
       boxShadow: {
-        "glow-purple": "0 0 15px rgba(147, 51, 234, 0.5)",
-        "glow-indigo": "0 0 15px rgba(79, 70, 229, 0.5)",
-        "glow-pink": "0 0 15px rgba(236, 72, 153, 0.5)",
+        "glow-baby-blue": "0 0 15px rgba(137, 207, 240, 0.5)",
         "glow-blue": "0 0 15px rgba(59, 130, 246, 0.5)",
+        "glow-pink": "0 0 15px rgba(236, 72, 153, 0.5)",
+        "glow-sky-blue": "0 0 15px rgba(135, 206, 235, 0.5)",
         "glow-green": "0 0 15px rgba(34, 197, 94, 0.5)",
         "glow-red": "0 0 15px rgba(239, 68, 68, 0.5)",
         "3xl": "0 35px 60px -12px rgba(0, 0, 0, 0.25)",

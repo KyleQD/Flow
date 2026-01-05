@@ -373,16 +373,16 @@ export default function TourPlannerPage() {
   const CurrentStepComponent = steps[currentStep - 1].component
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-500/20 border border-purple-500/40">
-              <Globe className="w-6 h-6 text-purple-400" />
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-400/20 border border-blue-400/40">
+              <Globe className="w-6 h-6 text-blue-300" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">Tourify</h1>
+              <h1 className="text-3xl font-bold text-white">Flow</h1>
               <p className="text-slate-400">Plan your perfect tour</p>
             </div>
           </div>
@@ -390,7 +390,7 @@ export default function TourPlannerPage() {
           {/* Progress Bar */}
           <div className="w-full bg-slate-800 rounded-full h-2 mb-4">
             <div 
-              className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+              className="bg-gradient-to-r from-blue-400 to-sky-300 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(currentStep / steps.length) * 100}%` }}
             />
           </div>
