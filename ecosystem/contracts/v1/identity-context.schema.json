@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Flow identity-context contract v1 (DRAFT, NOT production authorized)",
+  "description": "Additive versioned transport contract; server verification, authorization and data minimization required by integration adapters.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "principal_id",
+    "issuer",
+    "audience",
+    "source_auth_ref",
+    "verified_at"
+  ],
+  "properties": {
+    "principal_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "issuer": {
+      "type": "string",
+      "format": "uri"
+    },
+    "audience": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_auth_ref": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "tenant_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  }
+}
