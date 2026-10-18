@@ -1,0 +1,29 @@
+name: Flow Ecosystem Contracts (offline only)
+on:
+  pull_request:
+    paths:
+      - "ecosystem/**"
+      - ".github/workflows/ecosystem-contracts.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ecosystem
+    steps:
+      - name: Checkout unprivileged code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate registries, code and contracts
+        run: npm run check
+      - name: Run offline contract and projection tests
+        run: npm test
