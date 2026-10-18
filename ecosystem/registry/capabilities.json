@@ -1,0 +1,131 @@
+{
+  "version": "0.1.0",
+  "status": "DRAFT_NOT_AUTHORIZATION_SOURCE",
+  "default_policy": "DENY",
+  "note": "Capability identifiers for design/contract review only. No application grants permissions from this registry. Runtime grants require verified identity and server-resolved entitlements.",
+  "products": [
+    {
+      "app_id": "flow",
+      "capabilities": [
+        "feed.read",
+        "account.manage",
+        "cross-product.navigate"
+      ],
+      "scope_types": [
+        "person"
+      ],
+      "status": "draft"
+    },
+    {
+      "app_id": "flow-pro",
+      "capabilities": [
+        "workspace.read",
+        "cross-product.delegate",
+        "workspace.manage"
+      ],
+      "scope_types": [
+        "person",
+        "organization"
+      ],
+      "status": "draft"
+    },
+    {
+      "app_id": "tourify",
+      "capabilities": [
+        "tour.read",
+        "tour.manage",
+        "event.advance",
+        "crew.manage"
+      ],
+      "scope_types": [
+        "organization",
+        "event"
+      ],
+      "status": "existing-roles-not-mapped"
+    },
+    {
+      "app_id": "heat",
+      "capabilities": [
+        "event.discover",
+        "event.star",
+        "event.publish"
+      ],
+      "scope_types": [
+        "person",
+        "organization"
+      ],
+      "status": "draft"
+    },
+    {
+      "app_id": "werk",
+      "capabilities": [
+        "jobs.read",
+        "jobs.apply",
+        "jobs.post",
+        "applications.review",
+        "badges.verify"
+      ],
+      "scope_types": [
+        "person",
+        "organization"
+      ],
+      "status": "draft"
+    },
+    {
+      "app_id": "bzar",
+      "capabilities": [
+        "listings.read",
+        "listings.manage",
+        "orders.read",
+        "orders.fulfill"
+      ],
+      "scope_types": [
+        "person",
+        "organization"
+      ],
+      "status": "draft"
+    },
+    {
+      "app_id": "dreamstream",
+      "capabilities": [
+        "media.read",
+        "media.upload",
+        "rights.manage",
+        "streams.publish"
+      ],
+      "scope_types": [
+        "person",
+        "organization"
+      ],
+      "status": "draft"
+    },
+    {
+      "app_id": "54",
+      "capabilities": [
+        "venues.read",
+        "venues.manage",
+        "resources.schedule",
+        "staff.roster"
+      ],
+      "scope_types": [
+        "organization",
+        "venue"
+      ],
+      "status": "draft"
+    },
+    {
+      "app_id": "prez",
+      "capabilities": [
+        "press.read",
+        "press.campaign",
+        "assets.approve",
+        "embargo.manage"
+      ],
+      "scope_types": [
+        "person",
+        "organization"
+      ],
+      "status": "draft"
+    }
+  ]
+}
