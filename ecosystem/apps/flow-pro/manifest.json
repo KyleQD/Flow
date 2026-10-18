@@ -1,0 +1,29 @@
+{
+  "manifest_version": "0.1.0",
+  "app_id": "flow-pro",
+  "display_name": "Flow Pro",
+  "phase": "F0",
+  "status": "planned",
+  "canonical_codebase": null,
+  "proposed_runtime": "TBD",
+  "data_boundary": "multi-product-professional-facade",
+  "required_draft_contracts": [
+    "identity-context",
+    "entitlement",
+    "job-reference",
+    "listing-reference"
+  ],
+  "authentication": "NOT_IMPLEMENTED_PENDING_IDENTITY_ADR",
+  "authorization": "NOT_IMPLEMENTED_PENDING_TENANCY_ADR",
+  "database": "NOT_PROVISIONED",
+  "deployment": "NOT_PROVISIONED_BY_THIS_BOOTSTRAP",
+  "production_ready": false,
+  "approval_required": [
+    "canonical-repo",
+    "identity",
+    "data-ownership",
+    "security",
+    "non-production-infrastructure"
+  ],
+  "notes": "This manifest is planning infrastructure, not a deployed application."
+}
