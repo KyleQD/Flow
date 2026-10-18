@@ -1,0 +1,102 @@
+{
+  "version": "0.1.0",
+  "status": "DRAFT",
+  "contracts": [
+    {
+      "id": "domain-event",
+      "version": "1.0.0",
+      "path": "contracts/v1/domain-event.schema.json",
+      "publisher": "all",
+      "consumers": [
+        "all"
+      ],
+      "security": "server-only",
+      "status": "draft"
+    },
+    {
+      "id": "event-publication",
+      "version": "1.0.0",
+      "path": "contracts/v1/event-publication.schema.json",
+      "publisher": "tourify",
+      "consumers": [
+        "heat",
+        "flow",
+        "prez"
+      ],
+      "security": "public-projection-only",
+      "status": "draft"
+    },
+    {
+      "id": "identity-context",
+      "version": "1.0.0",
+      "path": "contracts/v1/identity-context.schema.json",
+      "publisher": "identity-bridge",
+      "consumers": [
+        "all"
+      ],
+      "security": "server-verified-only",
+      "status": "draft"
+    },
+    {
+      "id": "entitlement",
+      "version": "1.0.0",
+      "path": "contracts/v1/entitlement.schema.json",
+      "publisher": "identity-bridge",
+      "consumers": [
+        "flow-pro",
+        "all"
+      ],
+      "security": "server-verified-only",
+      "status": "draft"
+    },
+    {
+      "id": "job-reference",
+      "version": "1.0.0",
+      "path": "contracts/v1/job-reference.schema.json",
+      "publisher": "tourify",
+      "consumers": [
+        "werk",
+        "54"
+      ],
+      "security": "public-summary-only",
+      "status": "draft"
+    },
+    {
+      "id": "listing-reference",
+      "version": "1.0.0",
+      "path": "contracts/v1/listing-reference.schema.json",
+      "publisher": "tourify",
+      "consumers": [
+        "bzar",
+        "flow"
+      ],
+      "security": "public-summary-only",
+      "status": "draft"
+    },
+    {
+      "id": "venue-reference",
+      "version": "1.0.0",
+      "path": "contracts/v1/venue-reference.schema.json",
+      "publisher": "tourify",
+      "consumers": [
+        "54",
+        "heat",
+        "flow"
+      ],
+      "security": "public-summary-only",
+      "status": "draft"
+    },
+    {
+      "id": "asset-reference",
+      "version": "1.0.0",
+      "path": "contracts/v1/asset-reference.schema.json",
+      "publisher": "tourify",
+      "consumers": [
+        "dreamstream",
+        "prez"
+      ],
+      "security": "rights-checked-summary-only",
+      "status": "draft"
+    }
+  ]
+}
