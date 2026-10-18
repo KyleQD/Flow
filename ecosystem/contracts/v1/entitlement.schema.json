@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Flow entitlement contract v1 (DRAFT, NOT production authorized)",
+  "description": "Additive versioned transport contract; server verification, authorization and data minimization required by integration adapters.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "principal_id",
+    "product_id",
+    "capability",
+    "scope_type",
+    "scope_id",
+    "grant_id",
+    "status",
+    "issued_at"
+  ],
+  "properties": {
+    "principal_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "product_id": {
+      "enum": [
+        "flow",
+        "flow-pro",
+        "tourify",
+        "heat",
+        "werk",
+        "bzar",
+        "dreamstream",
+        "54",
+        "prez"
+      ]
+    },
+    "capability": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.:-]+$"
+    },
+    "scope_type": {
+      "enum": [
+        "person",
+        "organization",
+        "venue",
+        "event"
+      ]
+    },
+    "scope_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "grant_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "suspended",
+        "revoked",
+        "expired"
+      ]
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
