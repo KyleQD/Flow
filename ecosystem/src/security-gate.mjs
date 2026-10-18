@@ -15,7 +15,7 @@ export function createAuthorizationGate({verifySession,loadGrants,expectedIssuer
       const principal = await verifySession(token);
       if (!principal || typeof principal.principal_id !== 'string' || principal.issuer !== expectedIssuer ||
           principal.audience !== expectedAudience || typeof principal.expires_at !== 'string' ||
-          Date.parse(principal.expires_at) <= now().getTime()) return DENIED;
+          !Number.isFinite(Date.parse(principal.expires_at)) || Date.parse(principal.expires_at) <= now().getTime()) return DENIED;
       const grants = await loadGrants(principal.principal_id);
       if (!Array.isArray(grants)) return DENIED;
       for (const grant of grants) {
