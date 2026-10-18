@@ -1,0 +1,69 @@
+{
+  "version": "0.1.0",
+  "status": "DRAFT",
+  "owners": [
+    {
+      "domain": "identity",
+      "owner": "tourify",
+      "phase": "bridge",
+      "transferTo": "flow",
+      "writerPolicy": "keep existing Supabase Auth subject authoritative until approved identity cutover"
+    },
+    {
+      "domain": "general-account",
+      "owner": "tourify",
+      "phase": "bridge",
+      "transferTo": "flow",
+      "writerPolicy": "no re-registration, no duplicate account minting"
+    },
+    {
+      "domain": "tour-operations",
+      "owner": "tourify",
+      "phase": "current",
+      "transferTo": null,
+      "writerPolicy": "single writer"
+    },
+    {
+      "domain": "venue-operations",
+      "owner": "tourify",
+      "phase": "current",
+      "transferTo": "54",
+      "writerPolicy": "change only after audited extraction"
+    },
+    {
+      "domain": "workforce",
+      "owner": "tourify",
+      "phase": "current",
+      "transferTo": "werk",
+      "writerPolicy": "compatibility facade, no unsupervised dual writes"
+    },
+    {
+      "domain": "commerce",
+      "owner": "tourify",
+      "phase": "current",
+      "transferTo": "bzar",
+      "writerPolicy": "financial ledger remains single-writer"
+    },
+    {
+      "domain": "public-event-discovery",
+      "owner": "heat",
+      "phase": "current",
+      "transferTo": null,
+      "writerPolicy": "consumes sanitized revisions; does not modify Tourify source events"
+    },
+    {
+      "domain": "media-rights",
+      "owner": "tourify",
+      "phase": "current",
+      "transferTo": "dreamstream",
+      "writerPolicy": "rights records and consent preserved"
+    },
+    {
+      "domain": "press",
+      "owner": "tourify",
+      "phase": "current",
+      "transferTo": "prez",
+      "writerPolicy": "extract only with approved media consent contract"
+    }
+  ]
+}

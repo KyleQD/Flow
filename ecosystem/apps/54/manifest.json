@@ -1,0 +1,28 @@
+{
+  "manifest_version": "0.1.0",
+  "app_id": "54",
+  "display_name": "54",
+  "phase": "F0",
+  "status": "planned",
+  "canonical_codebase": null,
+  "proposed_runtime": "TBD",
+  "data_boundary": "venue-availability-and-physical-operations",
+  "required_draft_contracts": [
+    "venue-reference",
+    "job-reference",
+    "identity-context"
+  ],
+  "authentication": "NOT_IMPLEMENTED_PENDING_IDENTITY_ADR",
+  "authorization": "NOT_IMPLEMENTED_PENDING_TENANCY_ADR",
+  "database": "NOT_PROVISIONED",
+  "deployment": "NOT_PROVISIONED_BY_THIS_BOOTSTRAP",
+  "production_ready": false,
+  "approval_required": [
+    "canonical-repo",
+    "identity",
+    "data-ownership",
+    "security",
+    "non-production-infrastructure"
+  ],
+  "notes": "This manifest is planning infrastructure, not a deployed application."
+}

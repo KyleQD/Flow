@@ -1,0 +1,80 @@
+{
+  "version": "0.1.0",
+  "status": "DRAFT_NOT_PROVISIONED",
+  "guardrails": {
+    "default": "no-production-access",
+    "preview_secrets": "distinct-and-least-privilege",
+    "data": "synthetic-by-default",
+    "region": "requires-data-residency-ADR",
+    "spend": "human-approval-required",
+    "deploy": "blocked-until-review"
+  },
+  "environments": [
+    {
+      "name": "local",
+      "isolation": "developer-or-agent-specific",
+      "backend": "synthetic-fixtures",
+      "deployment": "none"
+    },
+    {
+      "name": "preview",
+      "isolation": "isolated-by-app-and-pr",
+      "backend": "provisioning-pending",
+      "deployment": "none"
+    },
+    {
+      "name": "staging",
+      "isolation": "separate-from-production",
+      "backend": "provisioning-pending",
+      "deployment": "none"
+    },
+    {
+      "name": "production",
+      "isolation": "per-product-approved-boundary",
+      "backend": "NOT_PROVISIONED_BY_FOUNDATION",
+      "deployment": "none"
+    }
+  ],
+  "product_status": [
+    {
+      "app_id": "flow",
+      "nonprod_state": "not-provisioned",
+      "production_state": "not-provisioned-by-this-change"
+    },
+    {
+      "app_id": "flow-pro",
+      "nonprod_state": "not-provisioned",
+      "production_state": "not-provisioned-by-this-change"
+    },
+    {
+      "app_id": "heat",
+      "nonprod_state": "not-provisioned",
+      "production_state": "not-provisioned-by-this-change"
+    },
+    {
+      "app_id": "werk",
+      "nonprod_state": "not-provisioned",
+      "production_state": "not-provisioned-by-this-change"
+    },
+    {
+      "app_id": "bzar",
+      "nonprod_state": "not-provisioned",
+      "production_state": "not-provisioned-by-this-change"
+    },
+    {
+      "app_id": "dreamstream",
+      "nonprod_state": "not-provisioned",
+      "production_state": "not-provisioned-by-this-change"
+    },
+    {
+      "app_id": "54",
+      "nonprod_state": "not-provisioned",
+      "production_state": "not-provisioned-by-this-change"
+    },
+    {
+      "app_id": "prez",
+      "nonprod_state": "not-provisioned",
+      "production_state": "not-provisioned-by-this-change"
+    }
+  ]
+}

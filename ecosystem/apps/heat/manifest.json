@@ -1,0 +1,27 @@
+{
+  "manifest_version": "0.1.0",
+  "app_id": "heat",
+  "display_name": "Heat",
+  "phase": "F0",
+  "status": "existing-independent-codebase",
+  "canonical_codebase": "KyleQD/heat",
+  "proposed_runtime": "Fastify+PostGIS API and SwiftUI iOS (do not replace)",
+  "data_boundary": "event-discovery-and-geospatial",
+  "required_draft_contracts": [
+    "event-publication",
+    "identity-context"
+  ],
+  "authentication": "NOT_IMPLEMENTED_PENDING_IDENTITY_ADR",
+  "authorization": "NOT_IMPLEMENTED_PENDING_TENANCY_ADR",
+  "database": "NOT_PROVISIONED",
+  "deployment": "NOT_PROVISIONED_BY_THIS_BOOTSTRAP",
+  "production_ready": false,
+  "approval_required": [
+    "canonical-repo",
+    "identity",
+    "data-ownership",
+    "security",
+    "non-production-infrastructure"
+  ],
+  "notes": "This manifest is planning infrastructure, not a deployed application."
+}

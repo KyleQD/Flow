@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Flow job-reference contract v1 (DRAFT, NOT production authorized)",
+  "description": "Additive versioned transport contract; server verification, authorization and data minimization required by integration adapters.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "job_id",
+    "source_product",
+    "owner_id",
+    "revision",
+    "title",
+    "status"
+  ],
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source_product": {
+      "const": "tourify"
+    },
+    "owner_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "published",
+        "closed",
+        "retracted"
+      ]
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "role_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "location_label": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

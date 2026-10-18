@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Flow venue-reference contract v1 (DRAFT, NOT production authorized)",
+  "description": "Additive versioned transport contract; server verification, authorization and data minimization required by integration adapters.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "venue_id",
+    "source_product",
+    "revision",
+    "name",
+    "city",
+    "country",
+    "status"
+  ],
+  "properties": {
+    "venue_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source_product": {
+      "const": "tourify"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1
+    },
+    "region": {
+      "type": "string",
+      "minLength": 1
+    },
+    "country": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "active",
+        "unpublished",
+        "closed"
+      ]
+    },
+    "public_url": {
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}

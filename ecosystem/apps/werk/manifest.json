@@ -1,0 +1,28 @@
+{
+  "manifest_version": "0.1.0",
+  "app_id": "werk",
+  "display_name": "Werk",
+  "phase": "F0",
+  "status": "planned",
+  "canonical_codebase": null,
+  "proposed_runtime": "TBD",
+  "data_boundary": "employment-worker-and-credential-lifecycle",
+  "required_draft_contracts": [
+    "job-reference",
+    "identity-context",
+    "entitlement"
+  ],
+  "authentication": "NOT_IMPLEMENTED_PENDING_IDENTITY_ADR",
+  "authorization": "NOT_IMPLEMENTED_PENDING_TENANCY_ADR",
+  "database": "NOT_PROVISIONED",
+  "deployment": "NOT_PROVISIONED_BY_THIS_BOOTSTRAP",
+  "production_ready": false,
+  "approval_required": [
+    "canonical-repo",
+    "identity",
+    "data-ownership",
+    "security",
+    "non-production-infrastructure"
+  ],
+  "notes": "This manifest is planning infrastructure, not a deployed application."
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@flow/ecosystem-foundation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "node scripts/check-registry.mjs && node --check src/contracts.mjs && node --check src/projection.mjs"
+  }
+}

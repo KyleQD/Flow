@@ -1,0 +1,158 @@
+{
+  "version": "0.1.0",
+  "status": "DRAFT",
+  "products": [
+    {
+      "id": "flow",
+      "name": "Flow",
+      "role": "General account, aggregated experience and ecosystem access",
+      "repo": "KyleQD/Flow",
+      "state": "legacy-repository-under-review",
+      "authority": "PROPOSED",
+      "owns": [
+        "universal-experience"
+      ],
+      "consumes": [
+        "identity",
+        "entitlements",
+        "notifications",
+        "public-events"
+      ]
+    },
+    {
+      "id": "flow-pro",
+      "name": "Flow Pro",
+      "role": "Cross-product paid professional facade",
+      "repo": null,
+      "state": "planned",
+      "authority": "PROPOSED",
+      "owns": [
+        "cross-product-workspace"
+      ],
+      "consumes": [
+        "identity",
+        "entitlements",
+        "tour-operations",
+        "staffing",
+        "commerce"
+      ]
+    },
+    {
+      "id": "tourify",
+      "name": "Tourify",
+      "role": "Tours, event production, advancing and logistics",
+      "repo": "KyleQD/Tourify",
+      "state": "existing-production",
+      "authority": "EXISTING_TEMPORARY",
+      "owns": [
+        "tours",
+        "production",
+        "advancing",
+        "existing-workforce",
+        "existing-venue-operations"
+      ],
+      "consumes": [
+        "identity",
+        "publications",
+        "commerce"
+      ]
+    },
+    {
+      "id": "heat",
+      "name": "Heat",
+      "role": "Public event discovery, interest and geospatial routing",
+      "repo": "KyleQD/heat",
+      "state": "existing-codebase",
+      "authority": "EXISTING",
+      "owns": [
+        "discovery-projections",
+        "interest",
+        "geospatial-enrichment"
+      ],
+      "consumes": [
+        "public-events",
+        "identity"
+      ]
+    },
+    {
+      "id": "werk",
+      "name": "Werk",
+      "role": "Employment, workers, hiring and verified progression",
+      "repo": null,
+      "state": "planned",
+      "authority": "PROPOSED",
+      "owns": [
+        "future-workforce-marketplace"
+      ],
+      "consumes": [
+        "identity",
+        "organizations",
+        "published-jobs"
+      ]
+    },
+    {
+      "id": "bzar",
+      "name": "Bzar",
+      "role": "Listings, seller tooling, commerce and fulfillment",
+      "repo": null,
+      "state": "planned",
+      "authority": "PROPOSED",
+      "owns": [
+        "future-commerce"
+      ],
+      "consumes": [
+        "identity",
+        "organizations",
+        "public-events"
+      ]
+    },
+    {
+      "id": "dreamstream",
+      "name": "DreamStream",
+      "role": "Media and content-rights lifecycle",
+      "repo": null,
+      "state": "vercel-prototype-observed",
+      "authority": "PROPOSED",
+      "owns": [
+        "future-streaming-media"
+      ],
+      "consumes": [
+        "identity",
+        "content-rights"
+      ]
+    },
+    {
+      "id": "54",
+      "name": "54",
+      "role": "Venue operations and physical resources",
+      "repo": null,
+      "state": "planned",
+      "authority": "PROPOSED",
+      "owns": [
+        "future-venue-operations"
+      ],
+      "consumes": [
+        "identity",
+        "production",
+        "staffing",
+        "venue-references"
+      ]
+    },
+    {
+      "id": "prez",
+      "name": "Prez",
+      "role": "Press/media relations and approved publication",
+      "repo": null,
+      "state": "planned",
+      "authority": "PROPOSED",
+      "owns": [
+        "future-press-campaigns"
+      ],
+      "consumes": [
+        "identity",
+        "public-events",
+        "approved-assets"
+      ]
+    }
+  ]
+}
